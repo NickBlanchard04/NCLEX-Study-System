@@ -15,10 +15,11 @@ import {
   Stethoscope,
   Users,
 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { clsx } from 'clsx'
 import type React from 'react'
+import { Shift3DEngine } from '../game/shift3d-engine'
 
 type PatientStatus = 'stable' | 'watch' | 'urgent' | 'critical'
 type ActionCategory = 'assessment' | 'intervention' | 'delegation' | 'escalation' | 'documentation'
@@ -370,6 +371,7 @@ export function ShiftSimulatorGame() {
   const [selectedPatientId, setSelectedPatientId] = useState(patients[3].id)
   const [completedActions, setCompletedActions] = useState<Set<string>>(new Set())
   const [penalizedEvents, setPenalizedEvents] = useState<Set<string>>(new Set())
+  const [nearbyPatientId, setNearbyPatientId] = useState<string | null>(null)
   const [log, setLog] = useState<LogEntry[]>([
     {
       id: 'handoff',
@@ -408,6 +410,11 @@ export function ShiftSimulatorGame() {
 
   const shiftProgress = Math.min(1, (clock - shiftStart) / (shiftEnd - shiftStart))
   const totalScore = Math.round((score.safety + score.prioritization + score.delegation + score.documentation) / 4)
+  const completedPatientIds = patients
+    .filter((patient) =>
+      patient.correctActions.every((actionId) => completedActions.has(`${patient.id}:${actionId}`)),
+    )
+    .map((patient) => patient.id)
   const addLog = (entry: Omit<LogEntry, 'id' | 'time'>, at = clock) => {
     setLog((current) => [
       {
@@ -524,6 +531,7 @@ export function ShiftSimulatorGame() {
     setPhase('briefing')
     setClock(shiftStart)
     setSelectedPatientId(patients[3].id)
+    setNearbyPatientId(null)
     setCompletedActions(new Set())
     setPenalizedEvents(new Set())
     setScore({ safety: 72, prioritization: 64, delegation: 50, documentation: 35 })
@@ -624,7 +632,7 @@ export function ShiftSimulatorGame() {
             </div>
           </section>
         ) : (
-          <section className="grid flex-1 gap-5 py-5 xl:grid-cols-[300px_1fr_360px]">
+          <section className="grid flex-1 gap-5 py-5 xl:grid-cols-[300px_minmax(0,1fr)_360px]">
             <aside className="space-y-4">
               <Panel title="Patient Census" icon={<Users className="h-4 w-4" />}>
                 <div className="space-y-3">
@@ -658,6 +666,16 @@ export function ShiftSimulatorGame() {
             </aside>
 
             <section className="space-y-5">
+              <Shift3DViewport
+                patients={patients}
+                selectedPatientId={selectedPatientId}
+                activeEventPatientIds={activeEvents.map((event) => event.patientId)}
+                completedPatientIds={completedPatientIds}
+                nearbyPatientId={nearbyPatientId}
+                onSelectPatient={setSelectedPatientId}
+                onProximityChange={setNearbyPatientId}
+              />
+
               <Panel
                 title={`${selectedPatient.room} - ${selectedPatient.name}`}
                 icon={<HeartPulse className="h-4 w-4" />}
@@ -857,6 +875,144 @@ function Panel({
       </div>
       {children}
     </section>
+  )
+}
+
+function Shift3DViewport({
+  patients,
+  selectedPatientId,
+  activeEventPatientIds,
+  completedPatientIds,
+  nearbyPatientId,
+  onSelectPatient,
+  onProximityChange,
+}: {
+  patients: ShiftPatient[]
+  selectedPatientId: string
+  activeEventPatientIds: string[]
+  completedPatientIds: string[]
+  nearbyPatientId: string | null
+  onSelectPatient: (patientId: string) => void
+  onProximityChange: (patientId: string | null) => void
+}) {
+  const mountRef = useRef<HTMLDivElement | null>(null)
+  const engineRef = useRef<Shift3DEngine | null>(null)
+  const patientSceneData = useMemo(
+    () =>
+      patients.map((patient) => ({
+        id: patient.id,
+        room: patient.room,
+        name: patient.name,
+        risk: patient.risk,
+      })),
+    [patients],
+  )
+  const nearbyPatient = nearbyPatientId
+    ? patients.find((patient) => patient.id === nearbyPatientId) ?? null
+    : null
+
+  useEffect(() => {
+    if (!mountRef.current || engineRef.current) return
+    engineRef.current = new Shift3DEngine({
+      mount: mountRef.current,
+      patients: patientSceneData,
+      selectedPatientId,
+      activeEventPatientIds,
+      completedPatientIds,
+      onSelectPatient,
+      onProximityChange,
+    })
+
+    return () => {
+      engineRef.current?.dispose()
+      engineRef.current = null
+    }
+    // The 3D engine is intentionally created once. Live state is patched through engine.update below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    engineRef.current?.update({
+      selectedPatientId,
+      activeEventPatientIds,
+      completedPatientIds,
+      onSelectPatient,
+      onProximityChange,
+    })
+  }, [activeEventPatientIds, completedPatientIds, onProximityChange, onSelectPatient, selectedPatientId])
+
+  const setMove = (x: number, z: number) => {
+    engineRef.current?.setVirtualDirection(x, z)
+  }
+
+  return (
+    <section className="relative min-h-[520px] overflow-hidden rounded-[30px] border border-white/10 bg-[#071624] shadow-[0_30px_90px_rgba(0,0,0,0.32)]">
+      <div ref={mountRef} className="absolute inset-0" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 bg-gradient-to-b from-[#071624]/88 to-transparent p-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">3D Shift Engine</p>
+            <h2 className="mt-1 text-2xl font-black tracking-[-0.04em] text-white">Move through the unit</h2>
+            <p className="mt-1 max-w-2xl text-sm text-slate-300">
+              Use WASD or arrows. Click a patient room to select. Press E near a bedside to open that chart.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-slate-200 backdrop-blur">
+            {nearbyPatient ? (
+              <>
+                <span className="font-black text-emerald-200">Nearby:</span> {nearbyPatient.room} - {nearbyPatient.name}
+              </>
+            ) : (
+              'Walk near a patient to interact'
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="absolute bottom-4 left-4 grid grid-cols-3 gap-2 md:hidden">
+        <span />
+        <TouchMoveButton label="↑" onPress={() => setMove(0, -1)} onRelease={() => setMove(0, 0)} />
+        <span />
+        <TouchMoveButton label="←" onPress={() => setMove(-1, 0)} onRelease={() => setMove(0, 0)} />
+        <TouchMoveButton label="↓" onPress={() => setMove(0, 1)} onRelease={() => setMove(0, 0)} />
+        <TouchMoveButton label="→" onPress={() => setMove(1, 0)} onRelease={() => setMove(0, 0)} />
+      </div>
+
+      <div className="absolute bottom-4 right-4 flex flex-col gap-2">
+        <button
+          type="button"
+          onClick={() => nearbyPatientId && onSelectPatient(nearbyPatientId)}
+          disabled={!nearbyPatientId}
+          className="rounded-2xl border border-white/10 bg-white/12 px-4 py-3 text-sm font-black text-white backdrop-blur transition hover:bg-white/18 disabled:cursor-not-allowed disabled:opacity-45"
+        >
+          Interact
+        </button>
+      </div>
+    </section>
+  )
+}
+
+function TouchMoveButton({
+  label,
+  onPress,
+  onRelease,
+}: {
+  label: string
+  onPress: () => void
+  onRelease: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onPointerDown={onPress}
+      onPointerUp={onRelease}
+      onPointerCancel={onRelease}
+      onPointerLeave={onRelease}
+      className="h-12 w-12 rounded-2xl border border-white/10 bg-white/14 text-lg font-black text-white backdrop-blur active:scale-95"
+      aria-label={`Move ${label}`}
+    >
+      {label}
+    </button>
   )
 }
 
