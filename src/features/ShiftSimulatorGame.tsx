@@ -8,11 +8,15 @@ import {
   Clock3,
   FileText,
   HeartPulse,
+  ListChecks,
   PhoneCall,
   Play,
+  Radio,
   ShieldAlert,
   Sparkles,
   Stethoscope,
+  Target,
+  UserCheck,
   Users,
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -23,6 +27,7 @@ import { Shift3DEngine } from '../game/shift3d-engine'
 
 type PatientStatus = 'stable' | 'watch' | 'urgent' | 'critical'
 type ActionCategory = 'assessment' | 'intervention' | 'delegation' | 'escalation' | 'documentation'
+type NpcRole = 'uap' | 'rt' | 'provider' | 'charge'
 
 interface ShiftPatient {
   id: string
@@ -73,6 +78,23 @@ interface LogEntry {
   time: number
   tone: 'safe' | 'warn' | 'danger' | 'info'
   text: string
+}
+
+interface MissionCard {
+  id: string
+  title: string
+  description: string
+  reward: string
+  complete: boolean
+}
+
+interface DelegationAssignment {
+  id: string
+  role: NpcRole
+  patientId: string
+  actionId: string
+  startedAt: number
+  safe: boolean
 }
 
 const shiftStart = 7 * 60
@@ -365,12 +387,43 @@ const categoryIcon: Record<ActionCategory, React.ReactNode> = {
   documentation: <FileText className="h-4 w-4" />,
 }
 
+const npcRoster: Record<NpcRole, { label: string; cue: string; color: string }> = {
+  uap: {
+    label: 'UAP',
+    cue: 'Best for routine vitals, transport, I&O, and safety rounds after RN assessment.',
+    color: 'text-emerald-200',
+  },
+  rt: {
+    label: 'Respiratory Therapy',
+    cue: 'Best when airway or breathing cues need treatment support now.',
+    color: 'text-sky-200',
+  },
+  provider: {
+    label: 'Provider',
+    cue: 'Best for unstable trends, orders, rapid response, and escalation.',
+    color: 'text-violet-200',
+  },
+  charge: {
+    label: 'Charge RN',
+    cue: 'Best for getting help, protecting staffing, and coordinating high-risk care.',
+    color: 'text-amber-200',
+  },
+}
+
+const npcOptions: Array<{ role: NpcRole; actionId: string; label: string }> = [
+  { role: 'uap', actionId: 'delegate-vitals', label: 'Send UAP for routine vitals' },
+  { role: 'rt', actionId: 'respiratory-therapy', label: 'Dispatch respiratory therapy' },
+  { role: 'provider', actionId: 'notify-provider', label: 'Page provider / rapid response' },
+  { role: 'charge', actionId: 'fall-precautions', label: 'Ask charge RN to coordinate safety' },
+]
+
 export function ShiftSimulatorGame() {
   const [phase, setPhase] = useState<'briefing' | 'running' | 'ended'>('briefing')
   const [clock, setClock] = useState(shiftStart)
   const [selectedPatientId, setSelectedPatientId] = useState(patients[3].id)
   const [completedActions, setCompletedActions] = useState<Set<string>>(new Set())
   const [penalizedEvents, setPenalizedEvents] = useState<Set<string>>(new Set())
+  const [delegationAssignments, setDelegationAssignments] = useState<DelegationAssignment[]>([])
   const [nearbyPatientId, setNearbyPatientId] = useState<string | null>(null)
   const [log, setLog] = useState<LogEntry[]>([
     {
@@ -408,6 +461,22 @@ export function ShiftSimulatorGame() {
     [clock, penalizedEvents, resolvedEvents],
   )
 
+  const deterioratedEvents = useMemo(
+    () => shiftEvents.filter((event) => penalizedEvents.has(event.id)),
+    [penalizedEvents],
+  )
+
+  const deterioratingPatientIds = useMemo(
+    () =>
+      Array.from(
+        new Set([
+          ...activeEvents.map((event) => event.patientId),
+          ...deterioratedEvents.map((event) => event.patientId),
+        ]),
+      ),
+    [activeEvents, deterioratedEvents],
+  )
+
   const shiftProgress = Math.min(1, (clock - shiftStart) / (shiftEnd - shiftStart))
   const totalScore = Math.round((score.safety + score.prioritization + score.delegation + score.documentation) / 4)
   const completedPatientIds = patients
@@ -415,6 +484,65 @@ export function ShiftSimulatorGame() {
       patient.correctActions.every((actionId) => completedActions.has(`${patient.id}:${actionId}`)),
     )
     .map((patient) => patient.id)
+  const missionCards = useMemo<MissionCard[]>(() => {
+    const has = (patientId: string, actionId: string) => completedActions.has(`${patientId}:${actionId}`)
+    const resolved = (eventId: string) => resolvedEvents.some((event) => event.id === eventId)
+    const noPenalty = (eventId: string) => !penalizedEvents.has(eventId)
+    const documentsCompleted = patients.filter((patient) => has(patient.id, 'document')).length
+    const safeDelegations = delegationAssignments.filter((item) => item.safe).length
+    const unsafeDelegations = delegationAssignments.filter((item) => !item.safe).length
+
+    return [
+      {
+        id: 'rescue-airway',
+        title: 'Airway Rescue',
+        description: 'Stabilize Evan with oxygen, respiratory therapy, provider escalation, and reassessment.',
+        reward: '+ safety command',
+        complete:
+          has('p4', 'oxygen') &&
+          has('p4', 'respiratory-therapy') &&
+          has('p4', 'notify-provider') &&
+          has('p4', 'reassess') &&
+          noPenalty('respiratory-distress'),
+      },
+      {
+        id: 'reverse-glucose',
+        title: 'Reverse Hypoglycemia',
+        description: 'Treat Theo before neuro changes escalate, then reassess the response.',
+        reward: '+ priority timing',
+        complete: resolved('hypoglycemia') && noPenalty('hypoglycemia'),
+      },
+      {
+        id: 'stop-hemorrhage',
+        title: 'Stop the Bleed',
+        description: 'Recognize postpartum hemorrhage cues and activate the care pathway.',
+        reward: '+ OB judgment',
+        complete: resolved('postpartum-bleeding') && noPenalty('postpartum-bleeding'),
+      },
+      {
+        id: 'prevent-fall',
+        title: 'Prevent a Fall',
+        description: 'Protect Mara before dizziness turns into an injury event.',
+        reward: '+ safety prevention',
+        complete: has('p1', 'fall-precautions') && noPenalty('fall-risk'),
+      },
+      {
+        id: 'delegate-smart',
+        title: 'Delegate Without Dumping',
+        description: 'Use the team for tasks within scope without assigning RN judgment away.',
+        reward: '+ team leadership',
+        complete: safeDelegations >= 2 && unsafeDelegations === 0,
+      },
+      {
+        id: 'close-loop',
+        title: 'Close the Charting Loop',
+        description: 'Document outcomes on at least four patients before end-of-shift handoff.',
+        reward: '+ continuity of care',
+        complete: documentsCompleted >= 4,
+      },
+    ]
+  }, [completedActions, delegationAssignments, penalizedEvents, resolvedEvents])
+  const completedMissions = missionCards.filter((mission) => mission.complete).length
   const addLog = (entry: Omit<LogEntry, 'id' | 'time'>, at = clock) => {
     setLog((current) => [
       {
@@ -451,7 +579,7 @@ export function ShiftSimulatorGame() {
         addLog(
           {
             tone: 'danger',
-            text: `Missed escalation window for ${patient?.name ?? 'patient'}: ${event.impact}`,
+            text: `${patient?.name ?? 'Patient'} deteriorated after the escalation window was missed: ${event.impact}`,
           },
           event.deadline,
         )
@@ -527,6 +655,74 @@ export function ShiftSimulatorGame() {
     }
   }
 
+  const delegateNpc = (role: NpcRole, actionId: string) => {
+    if (phase !== 'running') return
+    const action = actions.find((item) => item.id === actionId)
+    if (!action) return
+
+    const key = `${selectedPatient.id}:${action.id}`
+    const alreadyDone = completedActions.has(key)
+    const isCorrectForPatient = selectedPatient.correctActions.includes(action.id)
+    const isUnsafeForPatient = selectedPatient.unsafeActions.includes(action.id)
+    const isWithinScope =
+      (role === 'uap' && action.scope === 'uap' && selectedPatient.risk !== 'urgent' && selectedPatient.risk !== 'critical') ||
+      (role === 'rt' && action.id === 'respiratory-therapy') ||
+      (role === 'provider' && action.id === 'notify-provider') ||
+      (role === 'charge' && (action.id === 'fall-precautions' || action.id === 'notify-provider'))
+    const safe = isWithinScope && isCorrectForPatient && !isUnsafeForPatient
+
+    setDelegationAssignments((current) => [
+      {
+        id: crypto.randomUUID(),
+        role,
+        patientId: selectedPatient.id,
+        actionId: action.id,
+        startedAt: clock,
+        safe,
+      },
+      ...current,
+    ])
+
+    if (safe) {
+      if (!alreadyDone) {
+        setCompletedActions((current) => new Set([...current, key]))
+      }
+      adjustScore({
+        safety: role === 'uap' ? 3 : 6,
+        prioritization: selectedPatient.risk === 'critical' || selectedPatient.risk === 'urgent' ? 7 : 3,
+        delegation: 10,
+      })
+      addLog({
+        tone: 'safe',
+        text: `${npcRoster[role].label} assigned to ${selectedPatient.name}: ${action.label}. Smart team use within scope.`,
+      })
+    } else {
+      adjustScore({ safety: -10, prioritization: -6, delegation: -14 })
+      addLog({
+        tone: 'danger',
+        text: `${npcRoster[role].label} assignment was unsafe for ${selectedPatient.name}. Delegate tasks, not assessment, interpretation, or rescue judgment.`,
+      })
+    }
+
+    const activeEvent = activeEvents.find((event) => event.patientId === selectedPatient.id)
+    const delegatedMinutes = Math.max(2, Math.round(action.minutes * 0.45))
+    advanceClock(delegatedMinutes)
+
+    if (
+      safe &&
+      activeEvent &&
+      activeEvent.requiredActions.every((requiredActionId) =>
+        requiredActionId === action.id ? true : completedActions.has(`${activeEvent.patientId}:${requiredActionId}`),
+      )
+    ) {
+      adjustScore({ safety: 8, prioritization: 6, delegation: 4 })
+      addLog({
+        tone: 'safe',
+        text: `Team response helped resolve ${activeEvent.title}. You used support without losing RN accountability.`,
+      })
+    }
+  }
+
   const resetGame = () => {
     setPhase('briefing')
     setClock(shiftStart)
@@ -534,6 +730,7 @@ export function ShiftSimulatorGame() {
     setNearbyPatientId(null)
     setCompletedActions(new Set())
     setPenalizedEvents(new Set())
+    setDelegationAssignments([])
     setScore({ safety: 72, prioritization: 64, delegation: 50, documentation: 35 })
     setLog([
       {
@@ -576,7 +773,7 @@ export function ShiftSimulatorGame() {
             <HudStat icon={<Clock3 className="h-4 w-4" />} label="Shift Clock" value={formatTime(clock)} />
             <HudStat icon={<Activity className="h-4 w-4" />} label="Readiness" value={`${totalScore}%`} />
             <HudStat icon={<ShieldAlert className="h-4 w-4" />} label="Active Alerts" value={`${activeEvents.length}`} />
-            <HudStat icon={<ClipboardCheck className="h-4 w-4" />} label="Tasks Done" value={`${completedActions.size}`} />
+            <HudStat icon={<Target className="h-4 w-4" />} label="Missions" value={`${completedMissions}/${missionCards.length}`} />
           </div>
         </header>
 
@@ -619,13 +816,15 @@ export function ShiftSimulatorGame() {
 
             <div className="grid gap-4">
               {patients.map((patient) => (
-                <PatientRow
-                  key={patient.id}
-                  patient={patient}
-                  selected={patient.id === selectedPatientId}
-                  completed={patient.correctActions.filter((actionId) =>
-                    completedActions.has(`${patient.id}:${actionId}`),
-                  ).length}
+                  <PatientRow
+                    key={patient.id}
+                    patient={patient}
+                    selected={patient.id === selectedPatientId}
+                    deteriorating={deterioratingPatientIds.includes(patient.id)}
+                    deteriorated={deterioratedEvents.some((event) => event.patientId === patient.id)}
+                    completed={patient.correctActions.filter((actionId) =>
+                      completedActions.has(`${patient.id}:${actionId}`),
+                    ).length}
                   onSelect={() => setSelectedPatientId(patient.id)}
                 />
               ))}
@@ -641,6 +840,8 @@ export function ShiftSimulatorGame() {
                       key={patient.id}
                       patient={patient}
                       selected={patient.id === selectedPatientId}
+                      deteriorating={deterioratingPatientIds.includes(patient.id)}
+                      deteriorated={deterioratedEvents.some((event) => event.patientId === patient.id)}
                       completed={patient.correctActions.filter((actionId) =>
                         completedActions.has(`${patient.id}:${actionId}`),
                       ).length}
@@ -663,6 +864,14 @@ export function ShiftSimulatorGame() {
                 </div>
                 <p className="mt-2 text-xs text-slate-400">Shift progress: {Math.round(shiftProgress * 100)}%</p>
               </Panel>
+
+              <Panel title="Mission Board" icon={<ListChecks className="h-4 w-4" />}>
+                <div className="space-y-3">
+                  {missionCards.map((mission) => (
+                    <MissionRow key={mission.id} mission={mission} />
+                  ))}
+                </div>
+              </Panel>
             </aside>
 
             <section className="space-y-5">
@@ -670,7 +879,9 @@ export function ShiftSimulatorGame() {
                 patients={patients}
                 selectedPatientId={selectedPatientId}
                 activeEventPatientIds={activeEvents.map((event) => event.patientId)}
+                deterioratingPatientIds={deterioratingPatientIds}
                 completedPatientIds={completedPatientIds}
+                delegatedPatientIds={delegationAssignments.slice(0, 6).map((assignment) => assignment.patientId)}
                 nearbyPatientId={nearbyPatientId}
                 onSelectPatient={setSelectedPatientId}
                 onProximityChange={setNearbyPatientId}
@@ -691,6 +902,16 @@ export function ShiftSimulatorGame() {
                       <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-200">Priority Frame</p>
                       <p className="mt-2 text-sm leading-6 text-slate-200">{selectedPatient.priorityFrame}</p>
                     </div>
+                    {deterioratingPatientIds.includes(selectedPatient.id) ? (
+                      <div className="mt-4 rounded-2xl border border-rose-300/30 bg-rose-500/12 p-4">
+                        <p className="text-xs font-black uppercase tracking-[0.16em] text-rose-200">
+                          Patient deterioration
+                        </p>
+                        <p className="mt-2 text-sm leading-6 text-rose-100">
+                          This patient is trending unsafe. Prioritize assessment, rescue intervention, escalation, then reassessment.
+                        </p>
+                      </div>
+                    ) : null}
                   </div>
                   <VitalsCard patient={selectedPatient} />
                 </div>
@@ -762,6 +983,58 @@ export function ShiftSimulatorGame() {
             </section>
 
             <aside className="space-y-4">
+              <Panel title="Team Console" icon={<Radio className="h-4 w-4" />}>
+                <div className="mb-4 rounded-2xl border border-white/8 bg-white/6 p-3">
+                  <p className="text-sm font-black text-white">Selected: {selectedPatient.room}</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-400">
+                    Delegate safe tasks to NPC teammates. Bad delegation hurts the shift just like the real floor.
+                  </p>
+                </div>
+                <div className="space-y-3">
+                  {npcOptions.map((option) => {
+                    const role = npcRoster[option.role]
+                    return (
+                      <button
+                        key={`${option.role}:${option.actionId}`}
+                        type="button"
+                        onClick={() => delegateNpc(option.role, option.actionId)}
+                        disabled={phase !== 'running'}
+                        className="w-full rounded-2xl border border-white/10 bg-white/6 p-3 text-left transition hover:-translate-y-0.5 hover:border-sky-300/35 hover:bg-sky-400/10 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="flex items-center gap-2 text-sm font-black text-white">
+                            <UserCheck className="h-4 w-4" />
+                            {option.label}
+                          </span>
+                          <span className={clsx('text-[11px] font-black uppercase tracking-[0.12em]', role.color)}>
+                            {role.label}
+                          </span>
+                        </div>
+                        <p className="mt-2 text-xs leading-5 text-slate-400">{role.cue}</p>
+                      </button>
+                    )
+                  })}
+                </div>
+                {delegationAssignments.length ? (
+                  <div className="mt-4 space-y-2">
+                    {delegationAssignments.slice(0, 3).map((assignment) => {
+                      const patient = patients.find((item) => item.id === assignment.patientId)
+                      const action = actions.find((item) => item.id === assignment.actionId)
+                      return (
+                        <div key={assignment.id} className="rounded-2xl border border-white/8 bg-white/6 px-3 py-2">
+                          <p className="text-xs font-black text-white">
+                            {npcRoster[assignment.role].label} - {patient?.room}
+                          </p>
+                          <p className={clsx('mt-1 text-xs', assignment.safe ? 'text-emerald-200' : 'text-rose-200')}>
+                            {assignment.safe ? 'Safe delegation' : 'Unsafe delegation'}: {action?.label}
+                          </p>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : null}
+              </Panel>
+
               <Panel title="Live Event Feed" icon={<AlertTriangle className="h-4 w-4" />}>
                 <AnimatePresence>
                   {activeEvents.length ? (
@@ -846,7 +1119,7 @@ export function ShiftSimulatorGame() {
         )}
 
         {phase === 'ended' ? (
-          <EndShiftModal totalScore={totalScore} score={score} log={log} onRestart={resetGame} />
+          <EndShiftModal totalScore={totalScore} score={score} log={log} missions={missionCards} onRestart={resetGame} />
         ) : null}
       </div>
     </main>
@@ -882,7 +1155,9 @@ function Shift3DViewport({
   patients,
   selectedPatientId,
   activeEventPatientIds,
+  deterioratingPatientIds,
   completedPatientIds,
+  delegatedPatientIds,
   nearbyPatientId,
   onSelectPatient,
   onProximityChange,
@@ -890,7 +1165,9 @@ function Shift3DViewport({
   patients: ShiftPatient[]
   selectedPatientId: string
   activeEventPatientIds: string[]
+  deterioratingPatientIds: string[]
   completedPatientIds: string[]
+  delegatedPatientIds: string[]
   nearbyPatientId: string | null
   onSelectPatient: (patientId: string) => void
   onProximityChange: (patientId: string | null) => void
@@ -918,7 +1195,9 @@ function Shift3DViewport({
       patients: patientSceneData,
       selectedPatientId,
       activeEventPatientIds,
+      deterioratingPatientIds,
       completedPatientIds,
+      delegatedPatientIds,
       onSelectPatient,
       onProximityChange,
     })
@@ -935,11 +1214,21 @@ function Shift3DViewport({
     engineRef.current?.update({
       selectedPatientId,
       activeEventPatientIds,
+      deterioratingPatientIds,
       completedPatientIds,
+      delegatedPatientIds,
       onSelectPatient,
       onProximityChange,
     })
-  }, [activeEventPatientIds, completedPatientIds, onProximityChange, onSelectPatient, selectedPatientId])
+  }, [
+    activeEventPatientIds,
+    completedPatientIds,
+    delegatedPatientIds,
+    deterioratingPatientIds,
+    onProximityChange,
+    onSelectPatient,
+    selectedPatientId,
+  ])
 
   const setMove = (x: number, z: number) => {
     engineRef.current?.setVirtualDirection(x, z)
@@ -1028,14 +1317,45 @@ function HudStat({ icon, label, value }: { icon: React.ReactNode; label: string;
   )
 }
 
+function MissionRow({ mission }: { mission: MissionCard }) {
+  return (
+    <div
+      className={clsx(
+        'rounded-2xl border p-3 transition',
+        mission.complete ? 'border-emerald-300/25 bg-emerald-400/10' : 'border-white/10 bg-white/6',
+      )}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-black text-white">{mission.title}</p>
+          <p className="mt-1 text-xs leading-5 text-slate-400">{mission.description}</p>
+        </div>
+        <span
+          className={clsx(
+            'rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.12em]',
+            mission.complete ? 'bg-emerald-400/15 text-emerald-200' : 'bg-white/8 text-slate-400',
+          )}
+        >
+          {mission.complete ? 'complete' : 'open'}
+        </span>
+      </div>
+      <p className="mt-2 text-[11px] font-bold text-sky-200">{mission.reward}</p>
+    </div>
+  )
+}
+
 function PatientRow({
   patient,
   selected,
+  deteriorating,
+  deteriorated,
   completed,
   onSelect,
 }: {
   patient: ShiftPatient
   selected: boolean
+  deteriorating: boolean
+  deteriorated: boolean
   completed: number
   onSelect: () => void
 }) {
@@ -1057,6 +1377,11 @@ function PatientRow({
           {patient.risk}
         </span>
       </div>
+      {deteriorating || deteriorated ? (
+        <p className={clsx('mt-2 text-[11px] font-black uppercase tracking-[0.12em]', deteriorated ? 'text-rose-200' : 'text-amber-200')}>
+          {deteriorated ? 'Deteriorated' : 'Deteriorating now'}
+        </p>
+      ) : null}
       <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
         <div
           className="h-full rounded-full bg-gradient-to-r from-[#2a7de1] to-[#10b981]"
@@ -1129,15 +1454,18 @@ function EndShiftModal({
   totalScore,
   score,
   log,
+  missions,
   onRestart,
 }: {
   totalScore: number
   score: { safety: number; prioritization: number; delegation: number; documentation: number }
   log: LogEntry[]
+  missions: MissionCard[]
   onRestart: () => void
 }) {
   const dangerCount = log.filter((entry) => entry.tone === 'danger').length
   const safeCount = log.filter((entry) => entry.tone === 'safe').length
+  const completedMissions = missions.filter((mission) => mission.complete).length
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/70 p-4 backdrop-blur-md">
@@ -1162,6 +1490,9 @@ function EndShiftModal({
             <CheckCircle2 className="h-10 w-10 text-emerald-300" />
             <p className="mt-3 text-sm font-bold text-slate-300">{safeCount} safe decisions</p>
             <p className="mt-1 text-sm font-bold text-rose-300">{dangerCount} critical misses</p>
+            <p className="mt-1 text-sm font-bold text-sky-200">
+              {completedMissions}/{missions.length} missions complete
+            </p>
           </div>
         </div>
         <div className="mt-6 grid gap-3 md:grid-cols-4">

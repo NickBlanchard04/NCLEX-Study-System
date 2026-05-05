@@ -23,6 +23,7 @@ interface MovingEntity {
   origin: THREE.Vector3
   amplitude: number
   speed: number
+  beacon: THREE.PointLight
 }
 
 export interface Shift3DEngineOptions {
@@ -30,7 +31,9 @@ export interface Shift3DEngineOptions {
   patients: Shift3DPatient[]
   selectedPatientId: string
   activeEventPatientIds: string[]
+  deterioratingPatientIds?: string[]
   completedPatientIds: string[]
+  delegatedPatientIds?: string[]
   onSelectPatient: (patientId: string) => void
   onProximityChange: (patientId: string | null) => void
 }
@@ -66,7 +69,9 @@ export class Shift3DEngine {
   private movingEntities: MovingEntity[] = []
   private selectedPatientId: string
   private activeEventPatientIds = new Set<string>()
+  private deterioratingPatientIds = new Set<string>()
   private completedPatientIds = new Set<string>()
+  private delegatedPatientIds = new Set<string>()
   private nearestPatientId: string | null = null
   private virtualDirection = new THREE.Vector3()
   private onSelectPatient: (patientId: string) => void
@@ -76,7 +81,9 @@ export class Shift3DEngine {
     this.mount = options.mount
     this.selectedPatientId = options.selectedPatientId
     this.activeEventPatientIds = new Set(options.activeEventPatientIds)
+    this.deterioratingPatientIds = new Set(options.deterioratingPatientIds ?? [])
     this.completedPatientIds = new Set(options.completedPatientIds)
+    this.delegatedPatientIds = new Set(options.delegatedPatientIds ?? [])
     this.onSelectPatient = options.onSelectPatient
     this.onProximityChange = options.onProximityChange
 
@@ -101,7 +108,9 @@ export class Shift3DEngine {
   update(options: Partial<Omit<Shift3DEngineOptions, 'mount' | 'patients'>>) {
     if (options.selectedPatientId) this.selectedPatientId = options.selectedPatientId
     if (options.activeEventPatientIds) this.activeEventPatientIds = new Set(options.activeEventPatientIds)
+    if (options.deterioratingPatientIds) this.deterioratingPatientIds = new Set(options.deterioratingPatientIds)
     if (options.completedPatientIds) this.completedPatientIds = new Set(options.completedPatientIds)
+    if (options.delegatedPatientIds) this.delegatedPatientIds = new Set(options.delegatedPatientIds)
     if (options.onSelectPatient) this.onSelectPatient = options.onSelectPatient
     if (options.onProximityChange) this.onProximityChange = options.onProximityChange
     this.paintPatientStates()
@@ -151,6 +160,8 @@ export class Shift3DEngine {
     patients.forEach((patient, index) => this.addPatientRoom(patient, roomPositions[index] ?? new THREE.Vector3()))
     this.addMovingStaff('uap', new THREE.Vector3(-5, 0, -12), 6, 0.8, 0x10b981)
     this.addMovingStaff('charge', new THREE.Vector3(6, 0, 10), 4, 0.65, 0xf59e0b)
+    this.addMovingStaff('rt', new THREE.Vector3(9, 0, -11), 5, 0.92, 0x38bdf8)
+    this.addMovingStaff('provider', new THREE.Vector3(-8, 0, 11), 3.5, 0.58, 0xa78bfa)
     this.paintPatientStates()
   }
 
@@ -325,9 +336,13 @@ export class Shift3DEngine {
     tag.scale.set(1.8, 0.55, 1)
     group.add(tag)
 
+    const beacon = new THREE.PointLight(color, 0, 8)
+    beacon.position.y = 2.15
+    group.add(beacon)
+
     group.position.copy(origin)
     this.scene.add(group)
-    this.movingEntities.push({ group, origin, amplitude, speed })
+    this.movingEntities.push({ group, origin, amplitude, speed, beacon })
   }
 
   private createLabelTexture(text: string) {
@@ -357,16 +372,18 @@ export class Shift3DEngine {
   private paintPatientStates() {
     this.patientEntities.forEach((entity, patientId) => {
       const active = this.activeEventPatientIds.has(patientId)
+      const deteriorating = this.deterioratingPatientIds.has(patientId)
       const selected = this.selectedPatientId === patientId
       const completed = this.completedPatientIds.has(patientId)
-      const baseColor = completed ? 0x10b981 : active ? 0xef4444 : statusColor[entity.patient.risk]
+      const pulse = (Math.sin(this.clock.elapsedTime * 6) + 1) / 2
+      const baseColor = completed ? 0x10b981 : deteriorating ? 0xff2d55 : active ? 0xef4444 : statusColor[entity.patient.risk]
       const material = entity.monitor.material
       if (material instanceof THREE.MeshBasicMaterial) {
         material.color.setHex(baseColor)
       }
       entity.alertLight.color.setHex(baseColor)
-      entity.alertLight.intensity = selected ? 18 : active ? 22 : completed ? 8 : 10
-      entity.group.scale.setScalar(selected ? 1.045 : 1)
+      entity.alertLight.intensity = deteriorating ? 28 + pulse * 18 : selected ? 18 : active ? 22 : completed ? 8 : 10
+      entity.group.scale.setScalar(deteriorating ? 1.02 + pulse * 0.035 : selected ? 1.045 : 1)
     })
   }
 
@@ -446,10 +463,13 @@ export class Shift3DEngine {
 
   private updateMovingEntities() {
     const elapsed = this.clock.elapsedTime
+    const hasDelegation = this.delegatedPatientIds.size > 0
     this.movingEntities.forEach((entity) => {
-      entity.group.position.x = entity.origin.x + Math.sin(elapsed * entity.speed) * entity.amplitude
-      entity.group.position.z = entity.origin.z + Math.cos(elapsed * entity.speed * 0.7) * 1.8
+      const urgencyBoost = hasDelegation ? 1.45 : 1
+      entity.group.position.x = entity.origin.x + Math.sin(elapsed * entity.speed * urgencyBoost) * entity.amplitude
+      entity.group.position.z = entity.origin.z + Math.cos(elapsed * entity.speed * 0.7 * urgencyBoost) * (hasDelegation ? 2.8 : 1.8)
       entity.group.rotation.y = Math.sin(elapsed * entity.speed) * 0.6
+      entity.beacon.intensity = hasDelegation ? 8 + Math.sin(elapsed * 7) * 3 : 0
     })
   }
 
