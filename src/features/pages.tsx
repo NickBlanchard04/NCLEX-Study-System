@@ -32,6 +32,7 @@ import {
   Flame,
   FolderOpen,
   Goal,
+  HeartPulse,
   Link2,
   LoaderCircle,
   NotebookPen,
@@ -167,6 +168,14 @@ export function StudyMenuPage() {
       action: 'What would you do first?',
       route: '/clinical-simulator',
       icon: <ShieldCheck className="h-5 w-5" />,
+    },
+    {
+      title: 'Nurse Shift Command',
+      description: 'Play a 12-hour shift: manage patients, delegate, rescue, and document.',
+      action: 'Run the floor',
+      route: '/shift-command',
+      featured: true,
+      icon: <HeartPulse className="h-5 w-5" />,
     },
     {
       title: 'Flashcards',

@@ -13,6 +13,7 @@ import {
   FolderOpen,
   Headphones,
   HelpCircle,
+  HeartPulse,
   LayoutGrid,
   Menu,
   NotebookPen,
@@ -28,6 +29,7 @@ import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-d
 import { clsx } from 'clsx'
 import { RetroMedicalDashboard } from '../features/RetroMedicalDashboard'
 import { PwaInstallPrompt } from '../features/PwaInstallPrompt'
+import { ShiftSimulatorGame } from '../features/ShiftSimulatorGame'
 import {
   DashboardPage,
   ClinicalSimulatorPage,
@@ -57,6 +59,7 @@ const mainNavigation = [
   { label: 'Question Bank', icon: ClipboardList, to: '/practice-questions' },
   { label: 'Quizzes', icon: Flashlight, to: '/quick-study' },
   { label: 'Exams', icon: Target, to: '/test-mode' },
+  { label: 'Shift Game', icon: HeartPulse, to: '/shift-command' },
   { label: 'Simulator', icon: Brain, to: '/clinical-simulator' },
   { label: 'Performance', icon: Trophy, to: '/performance-analytics' },
   { label: 'Notes', icon: NotebookPen, to: '/notes' },
@@ -82,6 +85,10 @@ export function AppShell() {
 
   if (location.pathname.startsWith('/medical-command-center')) {
     return <RetroMedicalDashboard />
+  }
+
+  if (location.pathname.startsWith('/shift-command')) {
+    return <ShiftSimulatorGame />
   }
 
   return <NclexAppShell />
