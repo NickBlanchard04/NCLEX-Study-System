@@ -1,0 +1,51 @@
+{
+  "name": "NCLEX Study System",
+  "short_name": "NCLEX Study",
+  "description": "A premium adaptive study system for NCLEX, FNP, and CCMA exam prep.",
+  "id": ".",
+  "start_url": ".?source=pwa",
+  "scope": ".",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
+  "background_color": "#F6F8FB",
+  "theme_color": "#003B66",
+  "categories": ["education", "medical", "productivity"],
+  "icons": [
+    {
+      "src": "app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "maskable-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Quick Study",
+      "short_name": "Quick Study",
+      "description": "Start a fast focused question session.",
+      "url": "quick-study?source=pwa-shortcut",
+      "icons": [{ "src": "app-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "My Materials",
+      "short_name": "Materials",
+      "description": "Open uploaded study materials.",
+      "url": "my-materials?source=pwa-shortcut",
+      "icons": [{ "src": "app-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Flashcards",
+      "short_name": "Cards",
+      "description": "Review due flashcards.",
+      "url": "flashcards?source=pwa-shortcut",
+      "icons": [{ "src": "app-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    }
+  ]
+}

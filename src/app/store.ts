@@ -1,0 +1,1020 @@
+import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
+import type {
+  ActiveSession,
+  AuthSession,
+  AuthUser,
+  ConfidenceLevel,
+  FlashcardReviewState,
+  FlashcardStatus,
+  GeneratedFromMaterialSessionConfig,
+  MaterialFlashcard,
+  MaterialQuestion,
+  MaterialQuizSession,
+  Note,
+  QuestionAttempt,
+  QuestionCategory,
+  StudyIntensity,
+  StudyMaterial,
+  SyncEvent,
+  SyncStatus,
+  UserProfile,
+} from './types'
+import { initialProfile, seededAttempts, seededFlashcardProgress, seededNotes } from '../data/seed'
+import {
+  deleteMaterialBundle,
+  getMaterialFlashcards,
+  getMaterialLibrary,
+  getMaterialQuestions,
+  saveMaterialBundle,
+  updateMaterialFlashcard,
+  updateStudyMaterialMeta as persistMaterialMeta,
+} from '../services/material-db'
+import {
+  createErroredMaterial,
+  createPendingStudyMaterial,
+  createPendingStudyMaterialFromUrl,
+  createStudyMaterialRecord,
+  createStudyMaterialRecordFromUrl,
+  extractMaterialText,
+  extractMaterialTextFromUrl,
+  generateCleanFlashcardsFromMaterial,
+  generateCleanQuestionsFromMaterial,
+  materialNeedsRepair,
+  repairStudyMaterialContent,
+} from '../services/material-pipeline'
+import {
+  generateClinicalThinkingSession,
+  generatePracticeSet,
+  generateQuickStudySession,
+  generateTestSession,
+  getQuestionResult,
+  updateNote,
+} from '../services/study-system'
+import {
+  getCurrentAuthSnapshot,
+  onAuthSnapshotChange,
+  requestPasswordReset,
+  signInWithPassword,
+  signOutCurrentUser,
+  signUpWithPassword,
+} from '../services/auth-service'
+import {
+  deleteMaterialCloud,
+  loadCloudState,
+  saveAttempts,
+  saveFlashcardReviews,
+  saveMaterials,
+  saveNotes,
+  saveProfile,
+  saveSyncEvents,
+  uploadMaterialFile,
+} from '../services/cloud-repositories'
+import { isSupabaseConfigured } from '../services/supabase'
+
+interface StudySystemState {
+  authUser: AuthUser | null
+  authSession: AuthSession | null
+  authInitialized: boolean
+  authConfigured: boolean
+  authError: string | null
+  isDemoMode: boolean
+  syncStatus: SyncStatus
+  syncError: string | null
+  syncEvents: SyncEvent[]
+  migrationPromptVisible: boolean
+  profile: UserProfile
+  attempts: QuestionAttempt[]
+  notes: Note[]
+  flashcardProgress: Record<string, FlashcardStatus>
+  flashcardReview: Record<string, FlashcardReviewState>
+  materials: StudyMaterial[]
+  materialFlashcards: MaterialFlashcard[]
+  materialQuestions: MaterialQuestion[]
+  materialsHydrated: boolean
+  preferredMaterialFlashcardsId: null | string
+  activeSession: ActiveSession | null
+  activeMaterialQuizSession: MaterialQuizSession | null
+  initializeAuth: () => Promise<void>
+  signIn: (email: string, password: string) => Promise<void>
+  signUp: (email: string, password: string) => Promise<void>
+  signOut: () => Promise<void>
+  requestPasswordReset: (email: string) => Promise<void>
+  continueAsDemo: () => void
+  hydrateCloudState: () => Promise<void>
+  migrateLocalDataToCloud: () => Promise<void>
+  dismissMigrationPrompt: () => void
+  syncNow: () => Promise<void>
+  initializeMaterials: () => Promise<void>
+  startQuickStudy: (category?: QuestionCategory) => void
+  startPracticeSession: (filters: {
+    category?: QuestionCategory | 'All'
+    domain?: string | 'All'
+    system?: string | 'All'
+    board?: string | 'All'
+    questionStatus?: 'unused' | 'incorrect' | 'all'
+    format?: 'multiple-choice' | 'select-all-that-apply' | 'mixed'
+    difficulty?: 'foundation' | 'developing' | 'advanced' | 'adaptive' | 'mixed'
+    questionCount?: number
+  }) => void
+  startTestSession: (config: {
+    questionCount: number
+    timed: boolean
+    noBacktracking: boolean
+  }) => void
+  startClinicalThinking: (focus: string) => void
+  goToSessionQuestion: (index: number) => void
+  submitCurrentResponse: (payload: {
+    selectedAnswer: string[]
+    confidence: ConfidenceLevel
+    flagged: boolean
+    timeSpentSec: number
+  }) => void
+  nextQuestion: () => void
+  previousQuestion: () => void
+  finishSession: () => void
+  abandonSession: () => void
+  updateFlashcardStatus: (id: string, status: FlashcardStatus) => void
+  updateMaterialFlashcardStatus: (id: string, status: FlashcardStatus) => Promise<void>
+  importStudyMaterial: (file: File) => Promise<void>
+  importStudyMaterialFromUrl: (url: string) => Promise<void>
+  deleteStudyMaterial: (id: string) => Promise<void>
+  updateStudyMaterialMeta: (id: string, updates: Partial<StudyMaterial>) => Promise<void>
+  regenerateMaterialStudyTools: (id: string) => Promise<void>
+  approveMaterialStudyTools: (
+    id: string,
+    flashcards: MaterialFlashcard[],
+    questions: MaterialQuestion[],
+  ) => Promise<void>
+  startMaterialFlashcards: (materialId: string) => void
+  clearMaterialFlashcardsPreference: () => void
+  startMaterialQuiz: (
+    materialId: string,
+    config?: Partial<GeneratedFromMaterialSessionConfig>,
+  ) => void
+  submitMaterialQuizResponse: (questionId: string, selectedAnswer: string[]) => void
+  nextMaterialQuizQuestion: () => void
+  previousMaterialQuizQuestion: () => void
+  finishMaterialQuiz: () => void
+  abandonMaterialQuiz: () => void
+  saveNote: (note: Note) => void
+  deleteNote: (id: string) => void
+  updateProfile: (updates: Partial<UserProfile>) => void
+  setExamDate: (examDate: string) => void
+  setStudyIntensity: (studyIntensity: StudyIntensity) => void
+  resetProgress: () => Promise<void>
+}
+
+const baseState = {
+  authUser: null as AuthUser | null,
+  authSession: null as AuthSession | null,
+  authInitialized: false,
+  authConfigured: isSupabaseConfigured,
+  authError: null as string | null,
+  isDemoMode: !isSupabaseConfigured,
+  syncStatus: 'idle' as SyncStatus,
+  syncError: null as string | null,
+  syncEvents: [] as SyncEvent[],
+  migrationPromptVisible: false,
+  profile: initialProfile,
+  attempts: seededAttempts,
+  notes: seededNotes,
+  flashcardProgress: seededFlashcardProgress,
+  flashcardReview: {} as Record<string, FlashcardReviewState>,
+  materials: [] as StudyMaterial[],
+  materialFlashcards: [] as MaterialFlashcard[],
+  materialQuestions: [] as MaterialQuestion[],
+  materialsHydrated: false,
+  preferredMaterialFlashcardsId: null as null | string,
+  activeSession: null as ActiveSession | null,
+  activeMaterialQuizSession: null as MaterialQuizSession | null,
+}
+
+const getNextReviewState = (
+  previous: FlashcardReviewState | undefined,
+  status: FlashcardStatus,
+): FlashcardReviewState => {
+  const now = new Date()
+  const lapses = status === 'needs-review' ? (previous?.lapses ?? 0) + 1 : previous?.lapses ?? 0
+  const intervalDays =
+    status === 'known'
+      ? Math.max(1, (previous?.intervalDays ?? 0) * 2 || 1)
+      : status === 'needs-review' && lapses >= 2
+        ? 1
+        : 0
+  const nextReview = new Date(now)
+
+  if (status === 'known') {
+    nextReview.setDate(nextReview.getDate() + intervalDays)
+  } else if (status === 'needs-review' && lapses >= 2) {
+    nextReview.setDate(nextReview.getDate() + 1)
+  } else {
+    nextReview.setHours(nextReview.getHours() + 3)
+  }
+
+  return {
+    status,
+    lastReviewedAt: now.toISOString(),
+    nextReviewAt: nextReview.toISOString(),
+    lapses,
+    intervalDays,
+  }
+}
+
+const hasMeaningfulLocalData = (state: StudySystemState) =>
+  state.attempts.length > 0 ||
+  state.notes.length > 0 ||
+  Object.keys(state.flashcardReview).length > 0 ||
+  state.materials.length > 0 ||
+  state.materialFlashcards.length > 0 ||
+  state.materialQuestions.length > 0
+
+const makeSyncEvent = (
+  entityType: SyncEvent['entityType'],
+  entityId: string,
+  operation: SyncEvent['operation'] = 'upsert',
+  payload?: unknown,
+): SyncEvent => ({
+  id: crypto.randomUUID(),
+  entityType,
+  entityId,
+  operation,
+  payload,
+  createdAt: new Date().toISOString(),
+})
+
+export const useStudySystemStore = create<StudySystemState>()(
+  persist(
+    (set, get) => ({
+      ...baseState,
+      initializeAuth: async () => {
+        if (get().authInitialized) return
+
+        if (!isSupabaseConfigured) {
+          set({
+            authConfigured: false,
+            authInitialized: true,
+            isDemoMode: true,
+            syncStatus: 'idle',
+          })
+          return
+        }
+
+        try {
+          const snapshot = await getCurrentAuthSnapshot()
+          set({
+            authUser: snapshot.user,
+            authSession: snapshot.session,
+            authConfigured: true,
+            authInitialized: true,
+            isDemoMode: !snapshot.user,
+            authError: null,
+          })
+
+          onAuthSnapshotChange((nextSnapshot) => {
+            set({
+              authUser: nextSnapshot.user,
+              authSession: nextSnapshot.session,
+              isDemoMode: !nextSnapshot.user,
+            })
+            if (nextSnapshot.user) {
+              void get().hydrateCloudState()
+            }
+          })
+
+          if (snapshot.user) {
+            await get().hydrateCloudState()
+          }
+        } catch (error) {
+          set({
+            authInitialized: true,
+            authError: error instanceof Error ? error.message : 'Could not initialize authentication.',
+            isDemoMode: true,
+          })
+        }
+      },
+      signIn: async (email, password) => {
+        set({ authError: null, syncStatus: 'syncing' })
+        try {
+          const snapshot = await signInWithPassword(email, password)
+          set({
+            authUser: snapshot.user,
+            authSession: snapshot.session,
+            isDemoMode: false,
+            authError: null,
+          })
+          await get().hydrateCloudState()
+        } catch (error) {
+          set({
+            authError: error instanceof Error ? error.message : 'Could not sign in.',
+            syncStatus: 'error',
+          })
+          throw error
+        }
+      },
+      signUp: async (email, password) => {
+        set({ authError: null, syncStatus: 'syncing' })
+        try {
+          const snapshot = await signUpWithPassword(email, password, get().profile)
+          set({
+            authUser: snapshot.user,
+            authSession: snapshot.session,
+            isDemoMode: false,
+            authError: null,
+          })
+          if (snapshot.user) {
+            await get().migrateLocalDataToCloud()
+          }
+        } catch (error) {
+          set({
+            authError: error instanceof Error ? error.message : 'Could not create your account.',
+            syncStatus: 'error',
+          })
+          throw error
+        }
+      },
+      signOut: async () => {
+        try {
+          if (get().authUser) {
+            await get().syncNow()
+          }
+          await signOutCurrentUser()
+        } finally {
+          set({
+            authUser: null,
+            authSession: null,
+            isDemoMode: true,
+            syncStatus: 'idle',
+            migrationPromptVisible: false,
+          })
+        }
+      },
+      requestPasswordReset: async (email) => {
+        set({ authError: null })
+        try {
+          await requestPasswordReset(email)
+        } catch (error) {
+          set({ authError: error instanceof Error ? error.message : 'Could not send reset email.' })
+          throw error
+        }
+      },
+      continueAsDemo: () => {
+        set({ isDemoMode: true, authError: null, migrationPromptVisible: false })
+      },
+      hydrateCloudState: async () => {
+        const user = get().authUser
+        if (!user) return
+        set({ syncStatus: 'syncing', syncError: null })
+        try {
+          const cloud = await loadCloudState(user.id)
+          const cloudHasData =
+            Boolean(cloud.profile) ||
+            cloud.attempts.length > 0 ||
+            cloud.notes.length > 0 ||
+            Object.keys(cloud.flashcardReview).length > 0 ||
+            cloud.materials.length > 0
+
+          if (!cloudHasData) {
+            set((state) => ({
+              syncStatus: 'idle',
+              migrationPromptVisible: hasMeaningfulLocalData(state),
+            }))
+            return
+          }
+
+          set((state) => ({
+            profile: cloud.profile ?? state.profile,
+            attempts: cloud.attempts.length ? cloud.attempts : state.attempts,
+            notes: cloud.notes.length ? cloud.notes : state.notes,
+            flashcardReview: Object.keys(cloud.flashcardReview).length
+              ? cloud.flashcardReview
+              : state.flashcardReview,
+            flashcardProgress: Object.keys(cloud.flashcardReview).length
+              ? Object.fromEntries(
+                  Object.entries(cloud.flashcardReview).map(([id, review]) => [id, review.status]),
+                )
+              : state.flashcardProgress,
+            materials: cloud.materials.length ? cloud.materials : state.materials,
+            materialFlashcards: cloud.materialFlashcards.length ? cloud.materialFlashcards : state.materialFlashcards,
+            materialQuestions: cloud.materialQuestions.length ? cloud.materialQuestions : state.materialQuestions,
+            activeMaterialQuizSession: cloud.materialQuizSessions[0] ?? state.activeMaterialQuizSession,
+            syncStatus: 'idle',
+            syncError: null,
+            migrationPromptVisible: false,
+          }))
+        } catch (error) {
+          set({
+            syncStatus: navigator.onLine ? 'error' : 'offline',
+            syncError: error instanceof Error ? error.message : 'Cloud hydration failed.',
+          })
+        }
+      },
+      migrateLocalDataToCloud: async () => {
+        const user = get().authUser
+        if (!user) return
+        await get().syncNow()
+        set({ migrationPromptVisible: false })
+      },
+      dismissMigrationPrompt: () => set({ migrationPromptVisible: false }),
+      syncNow: async () => {
+        const state = get()
+        const user = state.authUser
+        if (!user || state.isDemoMode || !isSupabaseConfigured) return
+
+        set({ syncStatus: 'syncing', syncError: null })
+        try {
+          await Promise.all([
+            saveProfile(user.id, state.profile),
+            saveAttempts(user.id, state.attempts),
+            saveNotes(user.id, state.notes),
+            saveFlashcardReviews(user.id, state.flashcardReview),
+            saveMaterials(
+              user.id,
+              state.materials,
+              state.materialFlashcards,
+              state.materialQuestions,
+              state.activeMaterialQuizSession,
+            ),
+            saveSyncEvents(user.id, state.syncEvents),
+          ])
+          set({ syncStatus: 'idle', syncError: null, syncEvents: [] })
+        } catch (error) {
+          set((current) => ({
+            syncStatus: navigator.onLine ? 'error' : 'offline',
+            syncError: error instanceof Error ? error.message : 'Cloud sync failed.',
+            syncEvents: current.syncEvents.length
+              ? current.syncEvents
+              : [makeSyncEvent('profile', user.id, 'upsert', current.profile)],
+          }))
+        }
+      },
+      initializeMaterials: async () => {
+        if (get().materialsHydrated) return
+        const [materials, materialFlashcards, materialQuestions] = await Promise.all([
+          getMaterialLibrary(),
+          getMaterialFlashcards(),
+          getMaterialQuestions(),
+        ])
+
+        let nextMaterials = materials
+        let nextFlashcards = materialFlashcards
+        let nextQuestions = materialQuestions
+        const repairs = materials.filter((material) => materialNeedsRepair(material, materialFlashcards))
+
+        for (const material of repairs) {
+          const repairedMaterial = repairStudyMaterialContent(material)
+          const flashcards = generateCleanFlashcardsFromMaterial(repairedMaterial)
+          const questions = generateCleanQuestionsFromMaterial(repairedMaterial, flashcards)
+          const nextMaterial = {
+            ...repairedMaterial,
+            generatedFlashcardIds: flashcards.map((item) => item.id),
+            generatedQuestionIds: questions.map((item) => item.id),
+          }
+
+          await saveMaterialBundle({
+            material: nextMaterial,
+            flashcards,
+            questions,
+          })
+
+          nextMaterials = nextMaterials.map((item) => (item.id === material.id ? nextMaterial : item))
+          nextFlashcards = [
+            ...flashcards,
+            ...nextFlashcards.filter((item) => item.sourceMaterialId !== material.id),
+          ]
+          nextQuestions = [
+            ...questions,
+            ...nextQuestions.filter((item) => item.sourceMaterialId !== material.id),
+          ]
+        }
+
+        set({
+          materials: nextMaterials,
+          materialFlashcards: nextFlashcards,
+          materialQuestions: nextQuestions,
+          materialsHydrated: true,
+        })
+      },
+      startQuickStudy: (category) =>
+        set((state) => ({
+          activeSession: generateQuickStudySession(state.attempts, state.profile.examTrack ?? 'nclex-rn', category),
+        })),
+      startPracticeSession: (filters) =>
+        set((state) => ({
+          activeSession: generatePracticeSet(state.attempts, state.profile.examTrack ?? 'nclex-rn', filters),
+        })),
+      startTestSession: (config) =>
+        set((state) => ({
+          activeSession: generateTestSession(state.attempts, state.profile.examTrack ?? 'nclex-rn', config),
+        })),
+      startClinicalThinking: (focus) =>
+        set((state) => ({
+          activeSession: generateClinicalThinkingSession(state.attempts, state.profile.examTrack ?? 'nclex-rn', focus),
+        })),
+      goToSessionQuestion: (index) =>
+        set((state) =>
+          state.activeSession
+            ? {
+                activeSession: {
+                  ...state.activeSession,
+                  currentIndex: index,
+                },
+              }
+            : state,
+        ),
+      submitCurrentResponse: ({ selectedAnswer, confidence, flagged, timeSpentSec }) => {
+        set((state) => {
+          if (!state.activeSession) return state
+          const questionId = state.activeSession.questionIds[state.activeSession.currentIndex]
+          const isCorrect = getQuestionResult(questionId, selectedAnswer)
+          const response = {
+            questionId,
+            selectedAnswer,
+            isCorrect,
+            confidence,
+            flagged,
+            timeSpentSec,
+            submittedAt: new Date().toISOString(),
+          }
+
+          if (state.activeSession.responses.some((entry) => entry.questionId === questionId)) {
+            return state
+          }
+
+          const attempt: QuestionAttempt = {
+            id: crypto.randomUUID(),
+            questionId,
+            examTrack: state.profile.examTrack ?? 'nclex-rn',
+            selectedAnswer,
+            isCorrect,
+            confidence,
+            timeSpentSec,
+            flagged,
+            completedAt: response.submittedAt,
+            sessionType: state.activeSession.mode,
+          }
+
+          return {
+            attempts: [...state.attempts, attempt],
+            syncEvents: [...state.syncEvents, makeSyncEvent('attempt', attempt.id, 'upsert', attempt)],
+            activeSession: {
+              ...state.activeSession,
+              responses: [...state.activeSession.responses, response],
+            },
+          }
+        })
+        void get().syncNow()
+      },
+      nextQuestion: () =>
+        set((state) => {
+          if (!state.activeSession) return state
+          return {
+            activeSession: {
+              ...state.activeSession,
+              currentIndex: Math.min(
+                state.activeSession.currentIndex + 1,
+                state.activeSession.questionIds.length - 1,
+              ),
+            },
+          }
+        }),
+      previousQuestion: () =>
+        set((state) => {
+          if (!state.activeSession) return state
+          return {
+            activeSession: {
+              ...state.activeSession,
+              currentIndex: Math.max(state.activeSession.currentIndex - 1, 0),
+            },
+          }
+        }),
+      finishSession: () =>
+        set((state) =>
+          state.activeSession
+            ? {
+                activeSession: {
+                  ...state.activeSession,
+                  endedAt: new Date().toISOString(),
+                  score:
+                    state.activeSession.responses.length === 0
+                      ? 0
+                      : state.activeSession.responses.filter((response) => response.isCorrect).length /
+                        state.activeSession.responses.length,
+                },
+              }
+            : state,
+        ),
+      abandonSession: () => set({ activeSession: null }),
+      updateFlashcardStatus: (id, status) => {
+        set((state) => ({
+          flashcardProgress: {
+            ...state.flashcardProgress,
+            [id]: status,
+          },
+          flashcardReview: {
+            ...state.flashcardReview,
+            [id]: getNextReviewState(state.flashcardReview[id], status),
+          },
+          syncEvents: [...state.syncEvents, makeSyncEvent('flashcard-review', id)],
+        }))
+        void get().syncNow()
+      },
+      updateMaterialFlashcardStatus: async (id, status) => {
+        const updated = await updateMaterialFlashcard(id, { status })
+        if (!updated) return
+        set((state) => ({
+          materialFlashcards: state.materialFlashcards.map((item) =>
+            item.id === id ? updated : item,
+          ),
+          flashcardReview: {
+            ...state.flashcardReview,
+            [id]: getNextReviewState(state.flashcardReview[id], status),
+          },
+          syncEvents: [...state.syncEvents, makeSyncEvent('material-flashcard', id, 'upsert', updated)],
+        }))
+        void get().syncNow()
+      },
+      importStudyMaterial: async (file) => {
+        const pending = createPendingStudyMaterial(file)
+        set((state) => ({
+          materials: [pending, ...state.materials.filter((item) => item.id !== pending.id)],
+        }))
+
+        try {
+          const extracted = await extractMaterialText(file)
+          const storagePath =
+            get().authUser && !get().isDemoMode
+              ? await uploadMaterialFile(get().authUser!.id, pending.id, file).catch((error) => {
+                  set({
+                    syncStatus: 'error',
+                    syncError: error instanceof Error ? error.message : 'Cloud file upload failed.',
+                  })
+                  return undefined
+                })
+              : undefined
+          const material = {
+            ...createStudyMaterialRecord(file, extracted, pending.id),
+            storagePath,
+          }
+          const flashcards = generateCleanFlashcardsFromMaterial(material)
+          const questions = generateCleanQuestionsFromMaterial(material, flashcards)
+          const nextMaterial = {
+            ...material,
+            reviewStatus: 'pending-review' as const,
+            generatedFlashcardIds: [],
+            generatedQuestionIds: [],
+            pendingFlashcards: flashcards,
+            pendingQuestions: questions,
+          }
+
+          await saveMaterialBundle({
+            material: nextMaterial,
+            flashcards: [],
+            questions: [],
+          })
+
+          set((state) => ({
+            materials: [nextMaterial, ...state.materials.filter((item) => item.id !== pending.id)],
+            syncEvents: [...state.syncEvents, makeSyncEvent('material', nextMaterial.id, 'upsert', nextMaterial)],
+          }))
+          void get().syncNow()
+        } catch (error) {
+          const failure = createErroredMaterial(
+            pending,
+            error instanceof Error ? error.message : 'We could not import this file.',
+          )
+          await saveMaterialBundle({ material: failure, flashcards: [], questions: [] })
+          set((state) => ({
+            materials: [failure, ...state.materials.filter((item) => item.id !== pending.id)],
+            syncEvents: [...state.syncEvents, makeSyncEvent('material', failure.id, 'upsert', failure)],
+          }))
+          void get().syncNow()
+        }
+      },
+      importStudyMaterialFromUrl: async (url) => {
+        const pending = createPendingStudyMaterialFromUrl(url)
+        set((state) => ({
+          materials: [pending, ...state.materials.filter((item) => item.id !== pending.id)],
+        }))
+
+        try {
+          const extracted = await extractMaterialTextFromUrl(url)
+          const material = createStudyMaterialRecordFromUrl(url, extracted, pending.id)
+          const flashcards = generateCleanFlashcardsFromMaterial(material)
+          const questions = generateCleanQuestionsFromMaterial(material, flashcards)
+          const nextMaterial = {
+            ...material,
+            reviewStatus: 'pending-review' as const,
+            generatedFlashcardIds: [],
+            generatedQuestionIds: [],
+            pendingFlashcards: flashcards,
+            pendingQuestions: questions,
+          }
+
+          await saveMaterialBundle({
+            material: nextMaterial,
+            flashcards: [],
+            questions: [],
+          })
+
+          set((state) => ({
+            materials: [nextMaterial, ...state.materials.filter((item) => item.id !== pending.id)],
+            syncEvents: [...state.syncEvents, makeSyncEvent('material', nextMaterial.id, 'upsert', nextMaterial)],
+          }))
+          void get().syncNow()
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'We could not import this link.'
+          const failure = createErroredMaterial(
+            pending,
+            message,
+          )
+          await saveMaterialBundle({ material: failure, flashcards: [], questions: [] })
+          set((state) => ({
+            materials: [failure, ...state.materials.filter((item) => item.id !== pending.id)],
+            syncEvents: [...state.syncEvents, makeSyncEvent('material', failure.id, 'upsert', failure)],
+          }))
+          void get().syncNow()
+          throw new Error(message, { cause: error })
+        }
+      },
+      deleteStudyMaterial: async (id) => {
+        await deleteMaterialBundle(id)
+        if (get().authUser && !get().isDemoMode) {
+          await deleteMaterialCloud(get().authUser!.id, id).catch((error) =>
+            set({
+              syncStatus: 'error',
+              syncError: error instanceof Error ? error.message : 'Cloud material delete failed.',
+            }),
+          )
+        }
+        set((state) => ({
+          materials: state.materials.filter((item) => item.id !== id),
+          materialFlashcards: state.materialFlashcards.filter((item) => item.sourceMaterialId !== id),
+          materialQuestions: state.materialQuestions.filter((item) => item.sourceMaterialId !== id),
+          syncEvents: [...state.syncEvents, makeSyncEvent('material', id, 'delete')],
+          preferredMaterialFlashcardsId:
+            state.preferredMaterialFlashcardsId === id ? null : state.preferredMaterialFlashcardsId,
+          activeMaterialQuizSession:
+            state.activeMaterialQuizSession?.materialId === id ? null : state.activeMaterialQuizSession,
+        }))
+        void get().syncNow()
+      },
+      updateStudyMaterialMeta: async (id, updates) => {
+        const updated = await persistMaterialMeta(id, updates)
+        if (!updated) return
+        set((state) => ({
+          materials: state.materials.map((item) => (item.id === id ? updated : item)),
+          syncEvents: [...state.syncEvents, makeSyncEvent('material', id, 'upsert', updated)],
+        }))
+        void get().syncNow()
+      },
+      regenerateMaterialStudyTools: async (id) => {
+        const material = get().materials.find((item) => item.id === id)
+        if (!material || material.extractionStatus !== 'ready') return
+
+        const repairedMaterial = repairStudyMaterialContent(material)
+        const flashcards = generateCleanFlashcardsFromMaterial(repairedMaterial)
+        const questions = generateCleanQuestionsFromMaterial(repairedMaterial, flashcards)
+        const nextMaterial = {
+          ...repairedMaterial,
+          reviewStatus: 'pending-review' as const,
+          pendingFlashcards: flashcards,
+          pendingQuestions: questions,
+          error: undefined,
+        }
+
+        await saveMaterialBundle({
+          material: nextMaterial,
+          flashcards: get().materialFlashcards.filter((item) => item.sourceMaterialId === id),
+          questions: get().materialQuestions.filter((item) => item.sourceMaterialId === id),
+        })
+
+        set((state) => ({
+          materials: state.materials.map((item) => (item.id === id ? nextMaterial : item)),
+          syncEvents: [...state.syncEvents, makeSyncEvent('material', id, 'upsert', nextMaterial)],
+        }))
+        void get().syncNow()
+      },
+      approveMaterialStudyTools: async (id, flashcards, questions) => {
+        const material = get().materials.find((item) => item.id === id)
+        if (!material || material.extractionStatus !== 'ready') return
+
+        const approvedFlashcards = flashcards.map((card) => ({
+          ...card,
+          sourceMaterialId: id,
+          sourceTitle: material.displayTitle,
+          createdAt: card.createdAt || new Date().toISOString(),
+        }))
+        const approvedQuestions = questions.map((question) => ({
+          ...question,
+          sourceMaterialId: id,
+          sourceTitle: material.displayTitle,
+          createdAt: question.createdAt || new Date().toISOString(),
+        }))
+        const nextMaterial = {
+          ...material,
+          reviewStatus: 'approved' as const,
+          generatedFlashcardIds: approvedFlashcards.map((item) => item.id),
+          generatedQuestionIds: approvedQuestions.map((item) => item.id),
+          pendingFlashcards: [],
+          pendingQuestions: [],
+        }
+
+        await saveMaterialBundle({
+          material: nextMaterial,
+          flashcards: approvedFlashcards,
+          questions: approvedQuestions,
+        })
+
+        set((state) => ({
+          materials: state.materials.map((item) => (item.id === id ? nextMaterial : item)),
+          materialFlashcards: [
+            ...approvedFlashcards,
+            ...state.materialFlashcards.filter((item) => item.sourceMaterialId !== id),
+          ],
+          materialQuestions: [
+            ...approvedQuestions,
+            ...state.materialQuestions.filter((item) => item.sourceMaterialId !== id),
+          ],
+          syncEvents: [
+            ...state.syncEvents,
+            makeSyncEvent('material', id, 'upsert', nextMaterial),
+            ...approvedFlashcards.map((item) => makeSyncEvent('material-flashcard', item.id, 'upsert', item)),
+            ...approvedQuestions.map((item) => makeSyncEvent('material-question', item.id, 'upsert', item)),
+          ],
+        }))
+        void get().syncNow()
+      },
+      startMaterialFlashcards: (materialId) => set({ preferredMaterialFlashcardsId: materialId }),
+      clearMaterialFlashcardsPreference: () => set({ preferredMaterialFlashcardsId: null }),
+      startMaterialQuiz: (materialId, config) =>
+        set((state) => {
+          const material = state.materials.find((item) => item.id === materialId)
+          const questions = state.materialQuestions.filter((item) => item.sourceMaterialId === materialId)
+          const questionCount = Math.min(config?.questionCount ?? 5, questions.length)
+          if (!material || !questionCount) return state
+
+          return {
+            activeMaterialQuizSession: {
+              id: crypto.randomUUID(),
+              materialId,
+              title: config?.title ?? `Study from ${material.displayTitle}`,
+              questionIds: questions.slice(0, questionCount).map((item) => item.id),
+              startedAt: new Date().toISOString(),
+              currentIndex: 0,
+              responses: [],
+            },
+          }
+        }),
+      submitMaterialQuizResponse: (questionId, selectedAnswer) => {
+        set((state) => {
+          if (!state.activeMaterialQuizSession) return state
+          const question = state.materialQuestions.find((item) => item.id === questionId)
+          if (!question) return state
+          if (state.activeMaterialQuizSession.responses.some((item) => item.questionId === questionId)) {
+            return state
+          }
+
+          const isCorrect =
+            [...selectedAnswer].sort().join('|') === [...question.correctAnswer].sort().join('|')
+
+          return {
+            activeMaterialQuizSession: {
+              ...state.activeMaterialQuizSession,
+              responses: [
+                ...state.activeMaterialQuizSession.responses,
+                {
+                  questionId,
+                  selectedAnswer,
+                  isCorrect,
+                  submittedAt: new Date().toISOString(),
+                },
+              ],
+            },
+            syncEvents: [
+              ...state.syncEvents,
+              makeSyncEvent('material-quiz-session', state.activeMaterialQuizSession.id),
+            ],
+          }
+        })
+        void get().syncNow()
+      },
+      nextMaterialQuizQuestion: () =>
+        set((state) => {
+          if (!state.activeMaterialQuizSession) return state
+          return {
+            activeMaterialQuizSession: {
+              ...state.activeMaterialQuizSession,
+              currentIndex: Math.min(
+                state.activeMaterialQuizSession.currentIndex + 1,
+                state.activeMaterialQuizSession.questionIds.length - 1,
+              ),
+            },
+          }
+        }),
+      previousMaterialQuizQuestion: () =>
+        set((state) => {
+          if (!state.activeMaterialQuizSession) return state
+          return {
+            activeMaterialQuizSession: {
+              ...state.activeMaterialQuizSession,
+              currentIndex: Math.max(state.activeMaterialQuizSession.currentIndex - 1, 0),
+            },
+          }
+        }),
+      finishMaterialQuiz: () => {
+        set((state) => {
+          if (!state.activeMaterialQuizSession) return state
+          const responses = state.activeMaterialQuizSession.responses
+          return {
+            activeMaterialQuizSession: {
+              ...state.activeMaterialQuizSession,
+              endedAt: new Date().toISOString(),
+              score: responses.length
+                ? responses.filter((item) => item.isCorrect).length / responses.length
+                : 0,
+            },
+            syncEvents: [
+              ...state.syncEvents,
+              makeSyncEvent('material-quiz-session', state.activeMaterialQuizSession.id),
+            ],
+          }
+        })
+        void get().syncNow()
+      },
+      abandonMaterialQuiz: () => set({ activeMaterialQuizSession: null }),
+      saveNote: (note) => {
+        const stampedNote = {
+          ...note,
+          updatedAt: new Date().toISOString(),
+          createdAt: note.createdAt ?? new Date().toISOString(),
+        }
+        set((state) => ({
+          notes: updateNote(state.notes, {
+            ...stampedNote,
+          }),
+          syncEvents: [...state.syncEvents, makeSyncEvent('note', stampedNote.id, 'upsert', stampedNote)],
+        }))
+        void get().syncNow()
+      },
+      deleteNote: (id) => {
+        set((state) => ({
+          notes: state.notes.filter((note) => note.id !== id),
+          syncEvents: [...state.syncEvents, makeSyncEvent('note', id, 'delete')],
+        }))
+        void get().syncNow()
+      },
+      updateProfile: (updates) => {
+        set((state) => ({
+          profile: {
+            ...state.profile,
+            examTrack: state.profile.examTrack ?? 'nclex-rn',
+            ...updates,
+            updatedAt: new Date().toISOString(),
+            preferences: {
+              ...state.profile.preferences,
+              analyticsScope: state.profile.preferences.analyticsScope ?? 'selected-track',
+              ...updates.preferences,
+            },
+          },
+          syncEvents: [...state.syncEvents, makeSyncEvent('profile', state.authUser?.id ?? 'local-profile')],
+        }))
+        void get().syncNow()
+      },
+      setExamDate: (examDate) => {
+        set((state) => ({
+          profile: { ...state.profile, examDate, updatedAt: new Date().toISOString() },
+          syncEvents: [...state.syncEvents, makeSyncEvent('profile', state.authUser?.id ?? 'local-profile')],
+        }))
+        void get().syncNow()
+      },
+      setStudyIntensity: (studyIntensity) => {
+        set((state) => ({
+          profile: { ...state.profile, studyIntensity, updatedAt: new Date().toISOString() },
+          syncEvents: [...state.syncEvents, makeSyncEvent('profile', state.authUser?.id ?? 'local-profile')],
+        }))
+        void get().syncNow()
+      },
+      resetProgress: async () => {
+        const materials = await getMaterialLibrary()
+        await Promise.all(materials.map((item) => deleteMaterialBundle(item.id)))
+        set(baseState)
+      },
+    }),
+    {
+      name: 'nclex-study-system',
+      partialize: (state) => ({
+        isDemoMode: state.isDemoMode,
+        syncEvents: state.syncEvents,
+        profile: state.profile,
+        attempts: state.attempts,
+        notes: state.notes,
+        flashcardProgress: state.flashcardProgress,
+        flashcardReview: state.flashcardReview,
+        activeSession: state.activeSession,
+        preferredMaterialFlashcardsId: state.preferredMaterialFlashcardsId,
+        activeMaterialQuizSession: state.activeMaterialQuizSession,
+      }),
+    },
+  ),
+)
