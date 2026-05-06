@@ -106,6 +106,16 @@ const seededHash = (value: string) => {
   return hash
 }
 
+interface LaunchTool {
+  title: string
+  description: string
+  action: string
+  route: string
+  icon: React.ReactNode
+  featured?: boolean
+  onSelect?: () => void
+}
+
 export function StudyMenuPage() {
   const navigate = useNavigate()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
@@ -127,98 +137,150 @@ export function StudyMenuPage() {
   const readyMaterials = materials.filter((item) => item.extractionStatus === 'ready')
   const extractingMaterials = materials.filter((item) => item.extractionStatus === 'extracting')
   const weakestCategory = dashboard.weakestCategories[0]?.category ?? 'Pharmacology'
+  const activeExamTrack = getExamTrack(profile.examTrack ?? 'nclex-rn')
+  const smartPriority = dashboard.weakestCategories[0]
+    ? `Focus on ${shortCategoryLabel(weakestCategory)}`
+    : dashboard.recommendation.title
 
-  const studyTools = [
+  const menuGroups: Array<{ title: string; description: string; tools: LaunchTool[] }> = [
     {
-      title: 'Quick Study',
-      description: 'Start a 5-question sprint from your weakest area.',
-      action: 'Start 10-minute session',
-      route: '/quick-study',
-      featured: true,
-      icon: <Zap className="h-5 w-5" />,
-      onSelect: () => {
-        startQuickStudy()
-        navigate('/quick-study')
-      },
+      title: 'Continue',
+      description: 'Pick up where the system thinks you will improve fastest.',
+      tools: [
+        {
+          title: 'Smart Dashboard',
+          description: 'See the next best move, streak, goal, and weak areas.',
+          action: 'Open dashboard',
+          route: '/dashboard',
+          icon: <Goal className="h-5 w-5" />,
+        },
+        {
+          title: 'Quick Study',
+          description: 'Start a 5-question sprint from your weakest area.',
+          action: 'Start 10-minute session',
+          route: '/quick-study',
+          featured: true,
+          icon: <Zap className="h-5 w-5" />,
+          onSelect: () => {
+            startQuickStudy()
+            navigate('/quick-study')
+          },
+        },
+        {
+          title: "Today's Study Plan",
+          description: 'Open your daily checklist and weekly focus blocks.',
+          action: 'Open plan',
+          route: '/study-plan',
+          icon: <CalendarClock className="h-5 w-5" />,
+        },
+      ],
     },
     {
-      title: 'Exam Prep Tracks',
-      description: 'Switch between NCLEX-RN, NCLEX-PN, FNP, and CCMA prep.',
-      action: 'Choose exam track',
-      route: '/exam-prep',
-      icon: <Target className="h-5 w-5" />,
+      title: 'Practice',
+      description: 'Questions, quizzes, exam mode, and track-specific prep.',
+      tools: [
+        {
+          title: 'Question Bank',
+          description: 'Practice MCQ, SATA, and clinical judgment scenarios.',
+          action: 'Open bank',
+          route: '/practice-questions',
+          icon: <ClipboardList className="h-5 w-5" />,
+        },
+        {
+          title: 'Quizzes',
+          description: 'Run a focused short session when you have a few minutes.',
+          action: 'Start quiz',
+          route: '/quick-study',
+          icon: <Shuffle className="h-5 w-5" />,
+        },
+        {
+          title: 'Exams',
+          description: 'Use timed or untimed test mode for a realistic check.',
+          action: 'Configure exam',
+          route: '/test-mode',
+          icon: <Target className="h-5 w-5" />,
+        },
+        {
+          title: 'Exam Prep',
+          description: 'Switch NCLEX-RN, NCLEX-PN, FNP, or CCMA tracks.',
+          action: 'Choose track',
+          route: '/exam-prep',
+          icon: <Target className="h-5 w-5" />,
+        },
+      ],
     },
     {
-      title: 'Question Bank',
-      description: 'Practice MCQ, SATA, and clinical judgment scenarios.',
-      action: 'Open question bank',
-      route: '/practice-questions',
-      icon: <ClipboardList className="h-5 w-5" />,
+      title: 'Clinical Skills',
+      description: 'Train judgment, prioritization, delegation, and safety.',
+      tools: [
+        {
+          title: 'Shift Game',
+          description: 'Play a 12-hour shift: manage patients, rescue, delegate, document.',
+          action: 'Run the floor',
+          route: '/shift-command',
+          featured: true,
+          icon: <HeartPulse className="h-5 w-5" />,
+        },
+        {
+          title: 'Simulator',
+          description: 'Work through patient decisions step by step.',
+          action: 'Practice first action',
+          route: '/clinical-simulator',
+          icon: <ShieldCheck className="h-5 w-5" />,
+        },
+        {
+          title: 'Resources',
+          description: 'Train ABCs, delegation, safety, and answer elimination.',
+          action: 'Open resources',
+          route: '/strategy-training',
+          icon: <BrainCircuit className="h-5 w-5" />,
+        },
+      ],
     },
     {
-      title: 'Exam Simulator',
-      description: 'Run timed or untimed NCLEX-style test mode.',
-      action: 'Configure exam',
-      route: '/test-mode',
-      icon: <Target className="h-5 w-5" />,
+      title: 'Review',
+      description: 'Turn misses into repeatable confidence.',
+      tools: [
+        {
+          title: 'Remediation',
+          description: 'Fix weak areas with targeted review and practice.',
+          action: 'Fix weak areas',
+          route: '/weak-areas',
+          icon: <TrendingUp className="h-5 w-5" />,
+        },
+        {
+          title: 'Flashcards',
+          description: 'Review meds, labs, safety rules, and imported cards.',
+          action: 'Review cards',
+          route: '/flashcards',
+          icon: <SquareStack className="h-5 w-5" />,
+        },
+        {
+          title: 'Performance',
+          description: 'Track accuracy, confidence patterns, and momentum.',
+          action: 'View analytics',
+          route: '/performance-analytics',
+          icon: <BarChart3 className="h-5 w-5" />,
+        },
+      ],
     },
-    {
-      title: 'Clinical Simulator',
-      description: 'Work through patient decisions step by step.',
-      action: 'What would you do first?',
-      route: '/clinical-simulator',
-      icon: <ShieldCheck className="h-5 w-5" />,
-    },
-    {
-      title: 'Nurse Shift Command',
-      description: 'Play a 12-hour shift: manage patients, delegate, rescue, and document.',
-      action: 'Run the floor',
-      route: '/shift-command',
-      featured: true,
-      icon: <HeartPulse className="h-5 w-5" />,
-    },
-    {
-      title: 'Flashcards',
-      description: 'Review native and imported cards with quick status marking.',
-      action: 'Review cards',
-      route: '/flashcards',
-      icon: <SquareStack className="h-5 w-5" />,
-    },
-    {
-      title: 'Remediation',
-      description: 'Turn weak areas into targeted quizzes and reviews.',
-      action: 'Fix weak areas',
-      route: '/weak-areas',
-      icon: <ShieldCheck className="h-5 w-5" />,
-    },
-    {
-      title: 'Study Plan',
-      description: 'See daily focus blocks based on your exam date.',
-      action: 'Open plan',
-      route: '/study-plan',
-      icon: <BookOpen className="h-5 w-5" />,
-    },
-    {
-      title: 'Strategy Training',
-      description: 'Sharpen ABCs, delegation, safety, and elimination frameworks.',
-      action: 'Train strategy',
-      route: '/strategy-training',
-      icon: <BrainCircuit className="h-5 w-5" />,
-    },
-    {
-      title: 'Performance',
-      description: 'Track accuracy, confidence patterns, and momentum.',
-      action: 'View analytics',
-      route: '/performance-analytics',
-      icon: <BarChart3 className="h-5 w-5" />,
-    },
-    {
-      title: 'Notes',
-      description: 'Capture your personal rules, rationales, and reminders.',
-      action: 'Open notes',
-      route: '/notes',
-      icon: <NotebookPen className="h-5 w-5" />,
-    },
+  ]
+
+  const allTools = [
+    ['Dashboard', '/dashboard'],
+    ['Exam Prep', '/exam-prep'],
+    ['Study Plan', '/study-plan'],
+    ['Question Bank', '/practice-questions'],
+    ['Quizzes', '/quick-study'],
+    ['Exams', '/test-mode'],
+    ['Shift Game', '/shift-command'],
+    ['Simulator', '/clinical-simulator'],
+    ['Performance', '/performance-analytics'],
+    ['Notes', '/notes'],
+    ['My Materials', '/my-materials'],
+    ['Remediation', '/weak-areas'],
+    ['Flashcards', '/flashcards'],
+    ['Resources', '/strategy-training'],
   ]
 
   const handleMenuFiles = async (files: FileList | File[]) => {
@@ -255,258 +317,312 @@ export function StudyMenuPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <section className="mobile-app-card overflow-hidden">
-        <div className="grid gap-6 bg-[radial-gradient(circle_at_84%_18%,rgba(42,125,225,0.18),transparent_28%),linear-gradient(135deg,#ffffff_0%,#eef5ff_100%)] px-5 py-6 md:px-7 lg:grid-cols-[1fr_360px] lg:items-center lg:py-8">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--nclex-blue)]">
-              Mobile Study Launcher
-            </p>
-            <h1 className="mt-3 font-serif text-4xl leading-tight text-[var(--nclex-text)] md:text-5xl">
-              Choose your next {getExamTrack(profile.examTrack ?? 'nclex-rn').shortName} study tool.
-            </h1>
-            <p className="mt-4 max-w-3xl text-base leading-8 text-[var(--nclex-text-muted)]">
-              Start with a fast focused session, open the full question bank, or turn your own class files and links into flashcards and quizzes.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  startQuickStudy()
-                  navigate('/quick-study')
-                }}
-                className="nclex-btn-primary inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold"
-              >
-                <Sparkles className="h-4 w-4" />
-                Start Quick Study
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate('/my-materials')}
-                className="nclex-btn-secondary inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold"
-              >
-                <FolderOpen className="h-4 w-4" />
-                Open My Materials
-              </button>
-            </div>
-          </div>
-
-          <Surface className="bg-white/90">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-blue)]">
-              Smart next move
-            </p>
-            <h2 className="mt-3 font-serif text-2xl text-[var(--nclex-text)]">
-              Focus on {shortCategoryLabel(weakestCategory)}
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-[var(--nclex-text-muted)]">
-              Your current recommendation points here. A short session now keeps the daily loop moving.
-            </p>
-            <div className="mt-5 grid grid-cols-2 gap-3">
-              <MetricChip label="Accuracy" value={`${Math.round(analytics.overallAccuracy * 100)}%`} />
-              <MetricChip label="Streak" value={`${dashboard.streak}d`} />
-            </div>
-          </Surface>
-        </div>
-      </section>
-
-      <div className="grid gap-3 sm:hidden">
-        <button
-          type="button"
-          onClick={() => {
-            startQuickStudy()
-            navigate('/quick-study')
-          }}
-          className="nclex-btn-primary flex items-center justify-between rounded-[24px] px-5 py-4 text-left"
-        >
-          <span>
-            <span className="block text-xs font-bold uppercase tracking-[0.16em] text-white/80">
-              Best next action
-            </span>
-            <span className="mt-1 block text-base font-bold">Start a 5-question sprint</span>
-          </span>
-          <ArrowRight className="h-5 w-5" />
-        </button>
-        <div className="grid grid-cols-3 gap-3">
-          <MetricChip label="Accuracy" value={`${Math.round(analytics.overallAccuracy * 100)}%`} />
-          <MetricChip label="Streak" value={`${dashboard.streak}d`} />
-          <MetricChip label="Due" value={`${dashboard.todayCompleted}/${dashboard.dailyGoal}`} />
-        </div>
+    <div className="relative min-h-[calc(100vh-1rem)] overflow-hidden px-4 pb-10 pt-20 md:px-6 lg:px-8">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -left-32 top-10 h-72 w-72 rounded-full bg-[#2a7de1]/12 blur-3xl" />
+        <div className="absolute right-0 top-24 h-96 w-96 rounded-full bg-[#10b981]/10 blur-3xl" />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.02fr_0.98fr]">
-        <Surface>
-          <SectionHeading
-            title="Study tools"
-            description="Pick the mode that matches your energy, time, and weakest topic today."
-          />
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
-            {studyTools.map((tool) => (
-              <button
-                key={tool.title}
-                type="button"
-                onClick={() => {
-                  if (tool.onSelect) {
-                    tool.onSelect()
-                    return
-                  }
-                  navigate(tool.route)
-                }}
-                className={clsx(
-                  'group rounded-[20px] border p-4 text-left transition hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(15,37,61,0.1)]',
-                  tool.featured
-                    ? 'border-[#b8d8ff] bg-[linear-gradient(135deg,#eff6ff_0%,#ffffff_100%)]'
-                    : 'border-[var(--nclex-border)] bg-white hover:border-[#c9dbef]',
-                )}
-              >
-                <div className="flex items-start gap-3">
-                  <div
-                    className={clsx(
-                      'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl',
-                      tool.featured
-                        ? 'bg-[var(--nclex-blue)] text-white'
-                        : 'bg-[var(--nclex-blue-soft)] text-[var(--nclex-blue)]',
-                    )}
-                  >
-                    {tool.icon}
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-[var(--nclex-text)]">{tool.title}</h3>
-                    <p className="mt-1 text-sm leading-6 text-[var(--nclex-text-muted)]">
-                      {tool.description}
-                    </p>
-                    <span className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-[var(--nclex-blue)]">
-                      {tool.action}
-                      <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
-                    </span>
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        </Surface>
-
-        <Surface className="overflow-hidden p-0">
-          <div className="border-b border-[var(--nclex-border)] bg-[linear-gradient(135deg,#ffffff_0%,#f4f8ff_100%)] px-5 py-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-blue)]">
-              Bring your own material
+      <div className="relative mx-auto max-w-[1500px]">
+        <header className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+          <div className="max-w-4xl">
+            <div className="flex items-center gap-3">
+              <div className="grid h-14 w-14 place-items-center rounded-2xl bg-[linear-gradient(180deg,#3388ef_0%,#1f66c7_100%)] text-white shadow-[0_18px_36px_rgba(42,125,225,0.28)]">
+                <Sparkles className="h-7 w-7" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--nclex-blue)]">
+                  NCLEX Study System
+                </p>
+                <p className="mt-1 text-sm font-semibold text-[var(--nclex-text-muted)]">
+                  Your plan. Your progress. Your license.
+                </p>
+              </div>
+            </div>
+            <h1 className="mt-7 font-serif text-5xl leading-[1.02] tracking-[-0.04em] text-[var(--nclex-text)] md:text-7xl">
+              What do you want to do right now?
+            </h1>
+            <p className="mt-5 max-w-3xl text-lg leading-8 text-[var(--nclex-text-muted)]">
+              Choose a simple path into your {activeExamTrack.shortName} prep. The app will keep the detailed tools organized behind each choice.
             </p>
-            <h2 className="mt-2 font-serif text-3xl text-[var(--nclex-text)]">
-              Upload a file or import a study link.
+          </div>
+
+          <div className="grid grid-cols-3 gap-3 md:min-w-[360px]">
+            <MetricChip label="Accuracy" value={`${Math.round(analytics.overallAccuracy * 100)}%`} />
+            <MetricChip label="Streak" value={`${dashboard.streak}d`} />
+            <MetricChip label="Today" value={`${dashboard.todayCompleted}/${dashboard.dailyGoal}`} />
+          </div>
+        </header>
+
+        <section className="mt-8 grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+          <button
+            type="button"
+            onClick={() => {
+              startQuickStudy()
+              navigate('/quick-study')
+            }}
+            className="group overflow-hidden rounded-[32px] border border-[#b8d8ff] bg-[radial-gradient(circle_at_86%_20%,rgba(42,125,225,0.2),transparent_28%),linear-gradient(135deg,#ffffff_0%,#eef5ff_100%)] p-6 text-left shadow-[0_28px_70px_rgba(15,37,61,0.12)] transition hover:-translate-y-1 md:p-7"
+          >
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--nclex-blue)]">
+                  What should I do right now?
+                </p>
+                <h2 className="mt-3 font-serif text-4xl leading-tight text-[var(--nclex-text)]">
+                  {smartPriority}
+                </h2>
+                <p className="mt-3 max-w-2xl text-base leading-7 text-[var(--nclex-text-muted)]">
+                  {dashboard.recommendation.description}
+                </p>
+              </div>
+              <div className="rounded-[24px] bg-[var(--nclex-blue)] px-5 py-4 text-white shadow-[0_18px_38px_rgba(42,125,225,0.32)]">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/75">Best first move</p>
+                <p className="mt-2 flex items-center gap-2 text-lg font-bold">
+                  Start Quick Study
+                  <ArrowRight className="h-5 w-5 transition group-hover:translate-x-1" />
+                </p>
+              </div>
+            </div>
+          </button>
+
+          <Surface className="bg-white/92">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-blue)]">
+              Exam track
+            </p>
+            <h2 className="mt-3 font-serif text-3xl text-[var(--nclex-text)]">
+              {activeExamTrack.title}
             </h2>
             <p className="mt-2 text-sm leading-7 text-[var(--nclex-text-muted)]">
-              The app extracts readable text, creates flashcards, and builds a separate quiz from your material.
+              Dashboard copy, study plan topics, weak areas, filters, and question banks follow this selected track.
             </p>
-          </div>
-
-          <div className="space-y-5 p-5">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf,.docx,.txt,.md"
-              multiple
-              className="hidden"
-              onChange={(event) => {
-                if (event.target.files) void handleMenuFiles(event.target.files)
-                event.currentTarget.value = ''
-              }}
-            />
             <button
               type="button"
-              onClick={() => fileInputRef.current?.click()}
-              onDragEnter={(event) => {
-                event.preventDefault()
-                setDragActive(true)
-              }}
-              onDragOver={(event) => {
-                event.preventDefault()
-                setDragActive(true)
-              }}
-              onDragLeave={(event) => {
-                event.preventDefault()
-                setDragActive(false)
-              }}
-              onDrop={(event) => {
-                event.preventDefault()
-                setDragActive(false)
-                void handleMenuFiles(event.dataTransfer.files)
-              }}
-              className={clsx(
-                'w-full rounded-[22px] border border-dashed p-6 text-left transition',
-                dragActive
-                  ? 'border-[var(--nclex-blue)] bg-[var(--nclex-blue-soft)]'
-                  : 'border-[#c7d7ea] bg-[var(--nclex-card-muted)] hover:border-[var(--nclex-blue)]',
-              )}
+              onClick={() => navigate('/exam-prep')}
+              className="mt-5 nclex-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold"
             >
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-[var(--nclex-blue)] shadow-sm">
-                  <UploadCloud className="h-6 w-6" />
-                </div>
-                <div>
-                  <p className="font-semibold text-[var(--nclex-text)]">Drop files here or browse</p>
-                  <p className="mt-1 text-sm leading-6 text-[var(--nclex-text-muted)]">
-                    Supports PDF, DOCX, TXT, and MD files under 8 MB.
-                  </p>
-                </div>
-              </div>
+              Manage exam prep
+              <ArrowRight className="h-4 w-4" />
             </button>
+          </Surface>
+        </section>
 
-            <form onSubmit={handleUrlImport} className="rounded-[22px] border border-[var(--nclex-border)] bg-white p-4">
-              <Field label="Import from link">
-                <div className="flex flex-col gap-3 sm:flex-row">
-                  <div className="relative flex-1">
-                    <Link2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--nclex-text-muted)]" />
-                    <input
-                      value={materialUrl}
-                      onChange={(event) => setMaterialUrl(event.target.value)}
-                      placeholder="https://example.com/study-guide"
-                      className={`${inputClass} pl-10`}
-                    />
+        <section className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1fr)_410px]">
+          <div className="grid gap-5">
+            {menuGroups.map((group) => (
+              <Surface key={group.title}>
+                <div className="flex flex-col gap-1 md:flex-row md:items-end md:justify-between">
+                  <div>
+                    <h2 className="font-serif text-3xl text-[var(--nclex-text)]">{group.title}</h2>
+                    <p className="mt-1 text-sm leading-6 text-[var(--nclex-text-muted)]">{group.description}</p>
                   </div>
+                </div>
+                <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {group.tools.map((tool) => (
+                    <LaunchFeatureCard
+                      key={tool.title}
+                      tool={tool}
+                      onSelect={() => {
+                        if (tool.onSelect) {
+                          tool.onSelect()
+                          return
+                        }
+                        navigate(tool.route)
+                      }}
+                    />
+                  ))}
+                </div>
+              </Surface>
+            ))}
+          </div>
+
+          <aside className="space-y-5">
+            <Surface className="overflow-hidden p-0">
+              <div className="border-b border-[var(--nclex-border)] bg-[linear-gradient(135deg,#ffffff_0%,#f4f8ff_100%)] px-5 py-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-blue)]">
+                  Build from my material
+                </p>
+                <h2 className="mt-2 font-serif text-3xl text-[var(--nclex-text)]">
+                  Turn notes into study tools.
+                </h2>
+                <p className="mt-2 text-sm leading-7 text-[var(--nclex-text-muted)]">
+                  Upload a file or paste a link. Review generated flashcards and quiz items before they enter your deck.
+                </p>
+              </div>
+
+              <div className="space-y-4 p-5">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,.docx,.txt,.md"
+                  multiple
+                  className="hidden"
+                  onChange={(event) => {
+                    if (event.target.files) void handleMenuFiles(event.target.files)
+                    event.currentTarget.value = ''
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragEnter={(event) => {
+                    event.preventDefault()
+                    setDragActive(true)
+                  }}
+                  onDragOver={(event) => {
+                    event.preventDefault()
+                    setDragActive(true)
+                  }}
+                  onDragLeave={(event) => {
+                    event.preventDefault()
+                    setDragActive(false)
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault()
+                    setDragActive(false)
+                    void handleMenuFiles(event.dataTransfer.files)
+                  }}
+                  className={clsx(
+                    'w-full rounded-[22px] border border-dashed p-5 text-left transition',
+                    dragActive
+                      ? 'border-[var(--nclex-blue)] bg-[var(--nclex-blue-soft)]'
+                      : 'border-[#c7d7ea] bg-[var(--nclex-card-muted)] hover:border-[var(--nclex-blue)]',
+                  )}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-[var(--nclex-blue)] shadow-sm">
+                      <UploadCloud className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-[var(--nclex-text)]">Drop files here or browse</p>
+                      <p className="mt-1 text-sm leading-6 text-[var(--nclex-text-muted)]">
+                        PDF, DOCX, TXT, or MD under 8 MB.
+                      </p>
+                    </div>
+                  </div>
+                </button>
+
+                <form onSubmit={handleUrlImport} className="rounded-[22px] border border-[var(--nclex-border)] bg-white p-4">
+                  <Field label="Import a study link">
+                    <div className="grid gap-3">
+                      <div className="relative">
+                        <Link2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--nclex-text-muted)]" />
+                        <input
+                          value={materialUrl}
+                          onChange={(event) => setMaterialUrl(event.target.value)}
+                          placeholder="https://example.com/study-guide"
+                          className={`${inputClass} pl-10`}
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={isImporting || !materialUrl.trim()}
+                        className="nclex-btn-primary inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {isImporting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
+                        Import link
+                      </button>
+                    </div>
+                  </Field>
+                </form>
+
+                {importMessage ? (
+                  <div className="rounded-[18px] border border-[#bfdbfe] bg-[#eff6ff] px-4 py-3 text-sm font-semibold text-[var(--nclex-blue)]">
+                    {importMessage}
+                  </div>
+                ) : null}
+
+                <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+                  <MetricChip label="Materials" value={`${readyMaterials.length}`} />
+                  <MetricChip label="Flashcards" value={`${materialFlashcards.length}`} />
+                  <MetricChip label="Quiz items" value={`${materialQuestions.length}`} />
+                </div>
+
+                {extractingMaterials.length ? (
+                  <div className="flex items-center gap-3 rounded-[18px] border border-[var(--nclex-border)] bg-[var(--nclex-card-muted)] px-4 py-3 text-sm text-[var(--nclex-text-secondary)]">
+                    <LoaderCircle className="h-4 w-4 animate-spin text-[var(--nclex-blue)]" />
+                    Pulling study material into your library.
+                  </div>
+                ) : null}
+
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
                   <button
-                    type="submit"
-                    disabled={isImporting || !materialUrl.trim()}
-                    className="nclex-btn-primary inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+                    type="button"
+                    onClick={() => navigate('/my-materials')}
+                    className="w-full rounded-xl border border-[var(--nclex-border)] bg-white px-4 py-3 text-sm font-semibold text-[var(--nclex-blue)] transition hover:border-[#c9dbef]"
                   >
-                    {isImporting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
-                    Import link
+                    Open My Materials
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/notes')}
+                    className="w-full rounded-xl border border-[var(--nclex-border)] bg-white px-4 py-3 text-sm font-semibold text-[var(--nclex-blue)] transition hover:border-[#c9dbef]"
+                  >
+                    Open Notes
                   </button>
                 </div>
-              </Field>
-              <p className="mt-3 text-xs leading-5 text-[var(--nclex-text-muted)]">
-                Some websites block browser imports. If a link fails, upload the source file instead.
+              </div>
+            </Surface>
+
+            <Surface>
+              <h2 className="font-serif text-2xl text-[var(--nclex-text)]">All tools</h2>
+              <p className="mt-1 text-sm text-[var(--nclex-text-muted)]">
+                Everything is still here when you need the full toolbox.
               </p>
-            </form>
-
-            {importMessage ? (
-              <div className="rounded-[18px] border border-[#bfdbfe] bg-[#eff6ff] px-4 py-3 text-sm font-semibold text-[var(--nclex-blue)]">
-                {importMessage}
+              <div className="mt-4 flex flex-wrap gap-2">
+                {allTools.map(([label, route]) => (
+                  <button
+                    key={route}
+                    type="button"
+                    onClick={() => navigate(route)}
+                    className="rounded-full border border-[var(--nclex-border)] bg-white px-3 py-2 text-sm font-semibold text-[var(--nclex-text-secondary)] transition hover:border-[#c9dbef] hover:text-[var(--nclex-blue)]"
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
-            ) : null}
-
-            <div className="grid gap-3 sm:grid-cols-3">
-              <MetricChip label="Materials" value={`${readyMaterials.length}`} />
-              <MetricChip label="Flashcards" value={`${materialFlashcards.length}`} />
-              <MetricChip label="Quiz items" value={`${materialQuestions.length}`} />
-            </div>
-
-            {extractingMaterials.length ? (
-              <div className="flex items-center gap-3 rounded-[18px] border border-[var(--nclex-border)] bg-[var(--nclex-card-muted)] px-4 py-3 text-sm text-[var(--nclex-text-secondary)]">
-                <LoaderCircle className="h-4 w-4 animate-spin text-[var(--nclex-blue)]" />
-                Pulling study material into your library.
-              </div>
-            ) : null}
-
-            <button
-              type="button"
-              onClick={() => navigate('/my-materials')}
-              className="w-full rounded-xl border border-[var(--nclex-border)] bg-white px-4 py-3 text-sm font-semibold text-[var(--nclex-blue)] transition hover:border-[#c9dbef]"
-            >
-              Manage generated study tools
-            </button>
-          </div>
-        </Surface>
+            </Surface>
+          </aside>
+        </section>
       </div>
     </div>
+  )
+}
+
+function LaunchFeatureCard({
+  tool,
+  onSelect,
+}: {
+  tool: LaunchTool
+  onSelect: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={clsx(
+        'group min-h-[172px] rounded-[24px] border p-5 text-left transition hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(15,37,61,0.1)]',
+        tool.featured
+          ? 'border-[#b8d8ff] bg-[linear-gradient(135deg,#eff6ff_0%,#ffffff_100%)]'
+          : 'border-[var(--nclex-border)] bg-white hover:border-[#c9dbef]',
+      )}
+    >
+      <div
+        className={clsx(
+          'inline-flex h-12 w-12 items-center justify-center rounded-2xl',
+          tool.featured
+            ? 'bg-[var(--nclex-blue)] text-white'
+            : 'bg-[var(--nclex-blue-soft)] text-[var(--nclex-blue)]',
+        )}
+      >
+        {tool.icon}
+      </div>
+      <h3 className="mt-4 text-lg font-semibold text-[var(--nclex-text)]">{tool.title}</h3>
+      <p className="mt-2 text-sm leading-6 text-[var(--nclex-text-muted)]">{tool.description}</p>
+      <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[var(--nclex-blue)]">
+        {tool.action}
+        <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+      </span>
+    </button>
   )
 }
 

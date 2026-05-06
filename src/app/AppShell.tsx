@@ -140,6 +140,130 @@ function NclexAppShell() {
     [profile.name],
   )
 
+  if (location.pathname === '/') {
+    return (
+      <AuthGate>
+        <div className="nclex-shell-bg min-h-screen text-[var(--nclex-text)]">
+          <div className="safe-top fixed right-4 top-4 z-30 flex items-center gap-2 md:right-6">
+            <button
+              type="button"
+              onClick={() => void syncNow()}
+              className={clsx(
+                'hidden items-center gap-2 rounded-xl border px-3 py-2 text-xs font-bold uppercase tracking-[0.12em] shadow-sm transition md:inline-flex',
+                syncStatus === 'error'
+                  ? 'border-[#ffd1d1] bg-[var(--nclex-danger-soft)] text-[var(--nclex-danger)]'
+                  : syncStatus === 'offline'
+                    ? 'border-[#ffe0b0] bg-[var(--nclex-warning-soft)] text-[var(--nclex-warning)]'
+                    : isDemoMode
+                      ? 'border-[var(--nclex-border)] bg-white text-[var(--nclex-text-muted)]'
+                      : 'border-[#c8eddc] bg-[var(--nclex-success-soft)] text-[var(--nclex-success)]',
+              )}
+              title={syncError ?? (isDemoMode ? 'Local demo mode' : 'Cloud sync is active')}
+            >
+              {isDemoMode ? <CloudOff className="h-4 w-4" /> : <Cloud className="h-4 w-4" />}
+              {syncStatus === 'syncing' ? 'Syncing' : isDemoMode ? 'Local' : 'Synced'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setSupportOpen(true)}
+              className="hidden rounded-xl border border-[var(--nclex-border)] bg-white px-3 py-2 text-sm font-semibold text-[var(--nclex-blue)] shadow-sm transition hover:border-[#c9dbef] md:inline-flex"
+            >
+              Help
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/settings')}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--nclex-border)] bg-white text-[var(--nclex-text-secondary)] shadow-sm transition hover:text-[var(--nclex-blue)]"
+              aria-label="Open settings"
+            >
+              <Settings className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setAccountOpen((current) => !current)}
+              className="flex items-center gap-2 rounded-xl border border-[var(--nclex-border)] bg-white px-2 py-1.5 shadow-sm transition hover:border-[#c9dbef]"
+            >
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ddecff_0%,#bfd9ff_100%)] text-sm font-semibold text-[var(--nclex-navy)]">
+                {initials}
+              </div>
+              <ChevronDown className="hidden h-4 w-4 text-[var(--nclex-text-muted)] md:block" />
+            </button>
+            {accountOpen ? (
+              <div className="absolute right-0 top-[3.4rem] z-30 w-[290px] rounded-[20px] border border-[var(--nclex-border)] bg-white p-4 shadow-[0_24px_60px_rgba(15,37,61,0.14)]">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-text-muted)]">
+                  Account
+                </p>
+                <p className="mt-2 font-semibold text-[var(--nclex-text)]">{authUser?.email ?? profile.name}</p>
+                <p className="mt-1 text-sm text-[var(--nclex-text-muted)]">
+                  {isDemoMode ? 'Local demo mode. Sign in to sync across devices.' : `${activeExamTrack.shortName} cloud sync active.`}
+                </p>
+                <div className="mt-4 grid gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void syncNow()}
+                    className="nclex-btn-secondary inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    Sync now
+                  </button>
+                  {authUser ? (
+                    <button
+                      type="button"
+                      onClick={() => void signOut()}
+                      className="rounded-xl border border-[#ffd1d1] bg-[var(--nclex-danger-soft)] px-3 py-2 text-sm font-semibold text-[var(--nclex-danger)]"
+                    >
+                      Sign out
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="mx-auto w-full max-w-[1520px] px-4 pt-4 md:px-6">
+            <PwaInstallPrompt />
+            {migrationPromptVisible ? (
+              <div className="mb-5 rounded-[20px] border border-[#cfe1f7] bg-[linear-gradient(135deg,#ffffff_0%,#eef5ff_100%)] p-4 shadow-sm">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-blue)]">
+                      Cloud migration ready
+                    </p>
+                    <h2 className="mt-1 font-serif text-2xl text-[var(--nclex-text)]">
+                      Move this device's study progress into your account.
+                    </h2>
+                    <p className="mt-1 text-sm text-[var(--nclex-text-muted)]">
+                      We found local attempts, notes, flashcards, or materials that can be synced now.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void migrateLocalDataToCloud()}
+                      className="nclex-btn-primary rounded-xl px-4 py-2.5 text-sm font-semibold"
+                    >
+                      Import local progress
+                    </button>
+                    <button
+                      type="button"
+                      onClick={dismissMigrationPrompt}
+                      className="nclex-btn-secondary rounded-xl px-4 py-2.5 text-sm font-semibold"
+                    >
+                      Start fresh
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          <StudyMenuPage />
+          <SupportSheet open={supportOpen} onClose={() => setSupportOpen(false)} />
+        </div>
+      </AuthGate>
+    )
+  }
+
   return (
     <AuthGate>
     <div className="nclex-shell-bg min-h-screen text-[var(--nclex-text)]">
