@@ -143,7 +143,7 @@ function NclexAppShell() {
   if (location.pathname === '/') {
     return (
       <AuthGate>
-        <div className="nclex-shell-bg min-h-screen text-[var(--nclex-text)]">
+        <div className="min-h-screen bg-[#04101f] text-white">
           <div className="safe-top fixed right-4 top-4 z-30 flex items-center gap-2 md:right-6">
             <button
               type="button"
@@ -155,8 +155,8 @@ function NclexAppShell() {
                   : syncStatus === 'offline'
                     ? 'border-[#ffe0b0] bg-[var(--nclex-warning-soft)] text-[var(--nclex-warning)]'
                     : isDemoMode
-                      ? 'border-[var(--nclex-border)] bg-white text-[var(--nclex-text-muted)]'
-                      : 'border-[#c8eddc] bg-[var(--nclex-success-soft)] text-[var(--nclex-success)]',
+                       ? 'border-sky-300/25 bg-[#071d34]/80 text-sky-100/70'
+                       : 'border-emerald-300/25 bg-emerald-400/10 text-emerald-200',
               )}
               title={syncError ?? (isDemoMode ? 'Local demo mode' : 'Cloud sync is active')}
             >
@@ -166,14 +166,14 @@ function NclexAppShell() {
             <button
               type="button"
               onClick={() => setSupportOpen(true)}
-              className="hidden rounded-xl border border-[var(--nclex-border)] bg-white px-3 py-2 text-sm font-semibold text-[var(--nclex-blue)] shadow-sm transition hover:border-[#c9dbef] md:inline-flex"
+              className="hidden rounded-xl border border-sky-300/25 bg-[#071d34]/80 px-3 py-2 text-sm font-semibold text-sky-100 shadow-[0_0_18px_rgba(43,148,255,0.16)] transition hover:border-sky-200/70 md:inline-flex"
             >
               Help
             </button>
             <button
               type="button"
               onClick={() => navigate('/settings')}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--nclex-border)] bg-white text-[var(--nclex-text-secondary)] shadow-sm transition hover:text-[var(--nclex-blue)]"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-sky-300/25 bg-[#071d34]/80 text-sky-100 shadow-[0_0_18px_rgba(43,148,255,0.16)] transition hover:border-sky-200/70"
               aria-label="Open settings"
             >
               <Settings className="h-4 w-4" />
@@ -181,12 +181,12 @@ function NclexAppShell() {
             <button
               type="button"
               onClick={() => setAccountOpen((current) => !current)}
-              className="flex items-center gap-2 rounded-xl border border-[var(--nclex-border)] bg-white px-2 py-1.5 shadow-sm transition hover:border-[#c9dbef]"
+              className="flex items-center gap-2 rounded-xl border border-sky-300/25 bg-[#071d34]/80 px-2 py-1.5 shadow-[0_0_18px_rgba(43,148,255,0.16)] transition hover:border-sky-200/70"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ddecff_0%,#bfd9ff_100%)] text-sm font-semibold text-[var(--nclex-navy)]">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ddecff_0%,#5eb4ff_100%)] text-sm font-semibold text-[#04101f]">
                 {initials}
               </div>
-              <ChevronDown className="hidden h-4 w-4 text-[var(--nclex-text-muted)] md:block" />
+              <ChevronDown className="hidden h-4 w-4 text-sky-100/70 md:block" />
             </button>
             {accountOpen ? (
               <div className="absolute right-0 top-[3.4rem] z-30 w-[290px] rounded-[20px] border border-[var(--nclex-border)] bg-white p-4 shadow-[0_24px_60px_rgba(15,37,61,0.14)]">
@@ -220,7 +220,7 @@ function NclexAppShell() {
             ) : null}
           </div>
 
-          <div className="mx-auto w-full max-w-[1520px] px-4 pt-4 md:px-6">
+          <div className="w-full">
             <PwaInstallPrompt />
             {migrationPromptVisible ? (
               <div className="mb-5 rounded-[20px] border border-[#cfe1f7] bg-[linear-gradient(135deg,#ffffff_0%,#eef5ff_100%)] p-4 shadow-sm">
