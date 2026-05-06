@@ -88,6 +88,24 @@ import {
   StatCard,
   Surface,
 } from './ui'
+import {
+  BottomCommandButton,
+  CommandBrand,
+  CommandChip,
+  CommandHud,
+  CommandMetricCard,
+  CommandPanel,
+  CommandProgress,
+  CommandRing,
+  EcgLine,
+  EcgTrace,
+  GameActionTile,
+  MasteryDial,
+  MaterialUploadAsset,
+  MiniActivityChart,
+  NurseCommandAssetStrip,
+  NurseCommandBackdrop,
+} from './nurse-command-assets'
 
 const percentTooltip = (
   value: number | string | ReadonlyArray<number | string> | undefined,
@@ -318,31 +336,10 @@ export function StudyMenuPage() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#04101f] px-4 py-4 text-[#d8ecff] md:px-7">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_8%,rgba(38,139,255,0.22),transparent_28%),radial-gradient(circle_at_18%_72%,rgba(0,184,255,0.12),transparent_26%),linear-gradient(180deg,#071629_0%,#04101f_45%,#020812_100%)]" />
-        <div className="absolute inset-0 opacity-[0.14] [background-image:linear-gradient(rgba(88,169,255,0.32)_1px,transparent_1px),linear-gradient(90deg,rgba(88,169,255,0.28)_1px,transparent_1px)] [background-size:44px_44px]" />
-        <div className="absolute inset-x-0 top-0 h-28 bg-[linear-gradient(180deg,rgba(48,145,255,0.25),transparent)]" />
-        <div className="absolute bottom-0 right-0 h-[58%] w-[48%] bg-[radial-gradient(circle_at_70%_65%,rgba(80,177,255,0.16),transparent_36%)]" />
-      </div>
-
-      <div className="relative mx-auto flex min-h-[calc(100vh-2rem)] max-w-[1760px] flex-col">
+    <NurseCommandBackdrop className="min-h-screen px-4 py-4 md:px-7">
+      <div className="mx-auto flex min-h-[calc(100vh-2rem)] max-w-[1760px] flex-col">
         <header className="relative z-10 flex flex-col gap-4 border-b border-cyan-300/20 pb-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-center gap-4">
-            <div className="grid h-16 w-16 place-items-center rounded-[1.25rem] border border-cyan-300/40 bg-[#071d34]/90 shadow-[0_0_34px_rgba(43,148,255,0.34)]">
-              <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[linear-gradient(180deg,#0f7aff,#062d63)] text-white">
-                <HeartPulse className="h-7 w-7" />
-              </div>
-            </div>
-            <div>
-              <p className="text-2xl font-black uppercase tracking-[0.16em] text-white drop-shadow-[0_0_16px_rgba(144,204,255,0.58)]">
-                Nurse Command
-              </p>
-              <p className="mt-1 text-xs font-bold uppercase tracking-[0.42em] text-sky-200/80">
-                Study. Practice. Lead.
-              </p>
-            </div>
-          </div>
+          <CommandBrand />
 
           <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[620px]">
             <CommandHud label="Lv. 24" value="2,850 / 4,000 XP" progress={71} icon={<Goal className="h-5 w-5" />} />
@@ -362,18 +359,14 @@ export function StudyMenuPage() {
                 <h1 className="text-5xl font-black leading-[0.96] tracking-[-0.055em] text-white drop-shadow-[0_0_18px_rgba(148,207,255,0.68)] md:text-7xl xl:text-8xl">
                   Build Confidence for the Floor.
                 </h1>
-                <EcgLine />
+                <EcgLine className="hidden h-16 min-w-[220px] flex-1 lg:block" />
               </div>
               <p className="mt-4 max-w-4xl text-xl leading-8 text-sky-100/78 md:text-2xl">
                 Practice decisions, sharpen weak areas, and turn study time into clinical judgment.
               </p>
               <div className="mt-5 flex flex-wrap gap-3 text-sm font-semibold">
-                <span className="rounded-full border border-cyan-300/30 bg-sky-400/10 px-4 py-2 text-sky-100">
-                  Priority: {smartPriority}
-                </span>
-                <span className="rounded-full border border-emerald-300/30 bg-emerald-400/10 px-4 py-2 text-emerald-200">
-                  {activeExamTrack.title}
-                </span>
+                <CommandChip>Priority: {smartPriority}</CommandChip>
+                <CommandChip tone="green">{activeExamTrack.title}</CommandChip>
               </div>
             </div>
 
@@ -389,9 +382,7 @@ export function StudyMenuPage() {
                       {dashboard.todayCompleted} / {dashboard.dailyGoal} activities completed
                     </p>
                   </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-sky-300/15">
-                    <div className="h-full rounded-full bg-[linear-gradient(90deg,#0f7aff,#55c6ff)]" style={{ width: `${Math.max(planProgress, 68)}%` }} />
-                  </div>
+                  <CommandProgress value={Math.max(planProgress, 68)} />
                   <MiniActivityChart />
                 </div>
               </div>
@@ -402,10 +393,12 @@ export function StudyMenuPage() {
             {primaryTools.map((tool, index) => {
               const meta = getLaunchMeta(tool.title)
               return (
-                <GameMenuTile
+                <GameActionTile
                   key={tool.title}
                   number={index + 1}
-                  tool={tool}
+                  title={tool.title}
+                  description={tool.description}
+                  icon={tool.icon}
                   stat={meta.stat}
                   progress={meta.progress}
                   tone={meta.tone}
@@ -425,7 +418,7 @@ export function StudyMenuPage() {
           <section className="grid gap-4 xl:grid-cols-[0.9fr_1.15fr_1fr_0.9fr]">
             <CommandPanel title="System Status" subtitle="Operational">
               <div className="flex items-end justify-between gap-4">
-                <EcgTrace />
+                <EcgTrace className="h-24 flex-1" />
                 <div className="text-right">
                   <p className="text-4xl font-black text-sky-300">{Math.max(72, dashboard.dailyGoal)}</p>
                   <p className="text-sm uppercase tracking-[0.16em] text-sky-200/65">BPM</p>
@@ -460,9 +453,7 @@ export function StudyMenuPage() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-white">Complete {dashboard.dailyGoal} activities in your plan</p>
-                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-sky-300/15">
-                    <div className="h-full rounded-full bg-[linear-gradient(90deg,#0f7aff,#55c6ff)]" style={{ width: `${planProgress}%` }} />
-                  </div>
+                  <CommandProgress value={planProgress} className="mt-3" />
                 </div>
               </div>
             </CommandPanel>
@@ -482,9 +473,7 @@ export function StudyMenuPage() {
                 }}
               />
               <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
+                <div
                   onDragEnter={(event) => {
                     event.preventDefault()
                     setDragActive(true)
@@ -502,21 +491,9 @@ export function StudyMenuPage() {
                     setDragActive(false)
                     void handleMenuFiles(event.dataTransfer.files)
                   }}
-                  className={clsx(
-                    'rounded-2xl border border-dashed p-4 text-left transition hover:-translate-y-0.5',
-                    dragActive
-                      ? 'border-sky-200 bg-sky-400/20 shadow-[0_0_24px_rgba(56,189,248,0.25)]'
-                      : 'border-sky-300/30 bg-white/[0.04] hover:border-sky-200/70',
-                  )}
                 >
-                  <div className="flex items-center gap-3">
-                    <UploadCloud className="h-6 w-6 text-sky-300" />
-                    <div>
-                      <p className="font-bold text-white">Drop files</p>
-                      <p className="text-xs text-sky-200/66">PDF, DOCX, TXT, MD</p>
-                    </div>
-                  </div>
-                </button>
+                  <MaterialUploadAsset active={dragActive} onBrowse={() => fileInputRef.current?.click()} />
+                </div>
 
                 <form onSubmit={handleUrlImport} className="grid gap-2">
                   <div className="relative">
@@ -569,244 +546,7 @@ export function StudyMenuPage() {
           <BottomCommandButton label="Settings" icon={<Target className="h-5 w-5" />} onClick={() => navigate('/settings')} />
         </nav>
       </div>
-    </div>
-  )
-}
-
-function GameMenuTile({
-  number,
-  tool,
-  stat,
-  progress,
-  tone,
-  active,
-  onSelect,
-}: {
-  number: number
-  tool: LaunchTool
-  stat: string
-  progress: number
-  tone: 'blue' | 'green' | 'amber'
-  active?: boolean
-  onSelect: () => void
-}) {
-  const toneClass =
-    tone === 'green'
-      ? 'text-emerald-300 bg-emerald-400'
-      : tone === 'amber'
-        ? 'text-amber-300 bg-amber-400'
-        : 'text-sky-300 bg-sky-400'
-
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={clsx(
-        'group relative min-h-[190px] overflow-hidden rounded-[1.15rem] border bg-[#071d34]/74 p-5 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_18px_38px_rgba(0,0,0,0.18)] transition hover:-translate-y-1 hover:border-sky-200/70 hover:shadow-[0_0_42px_rgba(43,148,255,0.26)]',
-        active ? 'border-sky-200 shadow-[0_0_0_1px_rgba(79,195,255,0.7),0_0_34px_rgba(43,148,255,0.58)]' : 'border-sky-300/25',
-      )}
-    >
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_22%_38%,rgba(47,150,255,0.18),transparent_32%),linear-gradient(135deg,rgba(15,122,255,0.08),transparent_50%)] opacity-90" />
-      <div className="absolute right-4 top-4 text-6xl font-black leading-none text-white/90 drop-shadow-[0_0_16px_rgba(109,197,255,0.42)]">
-        {number}
-      </div>
-      <div className="relative z-10 flex h-full flex-col justify-between gap-5">
-        <div className="flex items-start gap-4 pr-16">
-          <div className="grid h-16 w-16 shrink-0 place-items-center rounded-full border border-sky-200/32 bg-[#03101f]/70 shadow-[inset_0_0_24px_rgba(45,151,255,0.18),0_0_22px_rgba(45,151,255,0.2)]">
-            <div className="text-sky-200">{tool.icon}</div>
-          </div>
-          <div>
-            <h2 className="text-2xl font-black leading-none text-white">{tool.title}</h2>
-            <p className="mt-3 text-sm leading-6 text-sky-100/68">{tool.description}</p>
-          </div>
-        </div>
-        <div>
-          <div className="flex items-center justify-between gap-3">
-            <span className={clsx('text-sm font-bold', toneClass.split(' ')[0])}>{stat}</span>
-            <ArrowRight className="h-6 w-6 text-white transition group-hover:translate-x-1" />
-          </div>
-          <div className="mt-3 h-2 overflow-hidden rounded-full bg-sky-200/12">
-            <div className={clsx('h-full rounded-full shadow-[0_0_14px_currentColor]', toneClass.split(' ')[1])} style={{ width: `${Math.max(8, progress)}%` }} />
-          </div>
-        </div>
-      </div>
-    </button>
-  )
-}
-
-function CommandHud({
-  label,
-  value,
-  progress,
-  icon,
-}: {
-  label: string
-  value: string
-  progress: number
-  icon: React.ReactNode
-}) {
-  return (
-    <div className="rounded-2xl border border-cyan-300/20 bg-[#071d34]/75 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
-      <div className="flex items-center gap-3">
-        <div className="grid h-9 w-9 place-items-center rounded-xl border border-sky-300/25 bg-white/[0.06] text-sky-200">
-          {icon}
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-black text-white">{label}</p>
-          <p className="truncate text-xs text-sky-200/70">{value}</p>
-        </div>
-      </div>
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-sky-300/14">
-        <div
-          className="h-full rounded-full bg-[linear-gradient(90deg,#0f7aff,#55c6ff)] shadow-[0_0_14px_rgba(56,189,248,0.55)]"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-    </div>
-  )
-}
-
-function CommandRing({ value, label }: { value: number; label: string }) {
-  return (
-    <div
-      className="grid aspect-square w-32 place-items-center rounded-full shadow-[0_0_28px_rgba(43,148,255,0.22)]"
-      style={{ background: `conic-gradient(#1d9bff ${value * 3.6}deg, rgba(148,213,255,0.12) 0deg)` }}
-    >
-      <div className="grid h-[74%] w-[74%] place-items-center rounded-full bg-[#071d34] text-center">
-        <div>
-          <p className="text-3xl font-black text-white">{value}%</p>
-          <p className="text-xs font-bold uppercase tracking-[0.14em] text-sky-200/64">{label}</p>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function EcgLine() {
-  return (
-    <svg className="hidden h-16 min-w-[220px] flex-1 text-sky-400 drop-shadow-[0_0_12px_rgba(56,189,248,0.75)] lg:block" viewBox="0 0 280 80" aria-hidden="true">
-      <path
-        d="M0 43 H85 L101 43 L112 18 L124 65 L137 43 H173 L183 43 L195 4 L210 76 L223 43 H280"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="4"
-      />
-    </svg>
-  )
-}
-
-function MiniActivityChart() {
-  const points = [24, 42, 33, 58, 45, 63, 76]
-  const path = points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${index * 35 + 8} ${84 - point}`).join(' ')
-  return (
-    <div>
-      <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-sky-200/58">Weekly activity</p>
-      <svg className="h-24 w-full overflow-visible text-sky-400" viewBox="0 0 250 92" aria-hidden="true">
-        {[0, 1, 2, 3, 4].map((line) => (
-          <line key={line} x1="0" x2="250" y1={line * 20 + 8} y2={line * 20 + 8} stroke="rgba(125,211,252,0.12)" />
-        ))}
-        <path d={path} fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" />
-        {points.map((point, index) => (
-          <circle key={point + index} cx={index * 35 + 8} cy={84 - point} r="4" fill="#93c5fd" />
-        ))}
-      </svg>
-    </div>
-  )
-}
-
-function CommandPanel({
-  title,
-  subtitle,
-  children,
-}: {
-  title: string
-  subtitle: string
-  children: React.ReactNode
-}) {
-  return (
-    <section className="rounded-[1.15rem] border border-sky-300/22 bg-[#071d34]/70 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_16px_34px_rgba(0,0,0,0.18)] backdrop-blur">
-      <div className="mb-4 flex items-center justify-between gap-3 border-b border-sky-300/14 pb-3">
-        <p className="text-sm font-bold uppercase tracking-[0.14em] text-sky-100/76">{title}</p>
-        <p className="text-xs font-bold uppercase tracking-[0.12em] text-emerald-300">{subtitle}</p>
-      </div>
-      {children}
-    </section>
-  )
-}
-
-function EcgTrace() {
-  return (
-    <svg className="h-24 flex-1 text-sky-400 drop-shadow-[0_0_10px_rgba(56,189,248,0.65)]" viewBox="0 0 260 80" aria-hidden="true">
-      <path
-        d="M0 52 H34 L43 25 L53 65 L65 52 H96 L105 52 L116 18 L127 72 L137 52 H170 L180 52 L190 35 L202 58 L213 52 H260"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="3"
-      />
-    </svg>
-  )
-}
-
-function MasteryDial({
-  label,
-  value,
-  tone,
-}: {
-  label: string
-  value: number
-  tone: 'green' | 'blue' | 'violet' | 'amber' | 'orange'
-}) {
-  const colors = {
-    green: '#34d399',
-    blue: '#38bdf8',
-    violet: '#a78bfa',
-    amber: '#fbbf24',
-    orange: '#fb923c',
-  }
-  return (
-    <div className="text-center">
-      <div
-        className="mx-auto grid h-16 w-16 place-items-center rounded-full"
-        style={{ background: `conic-gradient(${colors[tone]} ${value * 3.6}deg, rgba(148,213,255,0.14) 0deg)` }}
-      >
-        <div className="grid h-12 w-12 place-items-center rounded-full bg-[#071d34]">
-          <span className="text-sm font-black text-white">{value}%</span>
-        </div>
-      </div>
-      <p className="mt-2 truncate text-xs font-semibold text-sky-100/72">{label}</p>
-    </div>
-  )
-}
-
-function BottomCommandButton({
-  label,
-  icon,
-  active,
-  onClick,
-}: {
-  label: string
-  icon: React.ReactNode
-  active?: boolean
-  onClick: () => void
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={clsx(
-        'flex items-center justify-center gap-3 rounded-2xl px-4 py-3 text-sm font-black uppercase tracking-[0.12em] transition',
-        active
-          ? 'bg-sky-400/12 text-white shadow-[inset_0_-3px_0_#1d9bff,0_0_20px_rgba(43,148,255,0.24)]'
-          : 'text-sky-100/58 hover:bg-sky-400/10 hover:text-white',
-      )}
-    >
-      {icon}
-      <span>{label}</span>
-    </button>
+    </NurseCommandBackdrop>
   )
 }
 
@@ -917,6 +657,12 @@ export function DashboardPage() {
             </button>
           </div>
         }
+      />
+
+      <NurseCommandAssetStrip
+        accuracy={Math.round(analytics.overallAccuracy * 100)}
+        streak={dashboard.streak}
+        focusTime={formatMinutes(todayMinutes)}
       />
 
       <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
@@ -2614,10 +2360,9 @@ export function MyMaterialsPage() {
 
       <div className="grid gap-6 xl:grid-cols-[0.86fr_1.14fr]">
         <div className="grid gap-6">
-          <Surface>
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
+          <NurseCommandBackdrop className="rounded-[22px] border border-sky-300/20">
+            <div className="p-4">
+            <div
               onDragOver={(event) => {
                 event.preventDefault()
                 setDragActive(true)
@@ -2631,70 +2376,59 @@ export function MyMaterialsPage() {
                 setDragActive(false)
                 void handleFiles(event.dataTransfer.files)
               }}
-              className={clsx(
-                'flex w-full flex-col items-center justify-center rounded-[20px] border border-dashed px-5 py-10 text-center transition',
-                dragActive
-                  ? 'border-[var(--nclex-blue)] bg-[var(--nclex-blue-soft)]'
-                  : 'border-[var(--nclex-border)] bg-[var(--nclex-card-muted)]',
-              )}
             >
-              <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[var(--nclex-blue)] shadow-sm">
-                {isUploading ? <LoaderCircle className="h-6 w-6 animate-spin" /> : <Upload className="h-6 w-6" />}
-              </div>
-              <h3 className="mt-4 font-serif text-2xl text-[var(--nclex-text)]">
-                {isUploading ? 'Pulling study material into your library' : 'Drop your first study guide here'}
-              </h3>
-              <p className="mt-2 max-w-xl text-sm leading-6 text-[var(--nclex-text-muted)]">
-                Drag and drop a PDF, DOCX, TXT, or MD file, or browse from your device. Files stay local and become proposed flashcards plus quiz questions for your approval.
+              <MaterialUploadAsset active={dragActive} onBrowse={() => fileInputRef.current?.click()} />
+            </div>
+            {isUploading ? (
+              <p className="mt-4 rounded-2xl border border-sky-300/25 bg-sky-400/10 px-4 py-3 text-sm font-semibold text-sky-100">
+                <LoaderCircle className="mr-2 inline h-4 w-4 animate-spin" />
+                Pulling study material into your library.
               </p>
-              <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-[var(--nclex-blue)]">
-                <Upload className="h-4 w-4" />
-                Choose files
-              </div>
-              <p className="mt-4 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]">
-                Supports PDF, DOCX, TXT, MD up to 8 MB each
-              </p>
-            </button>
+            ) : null}
+            <p className="mt-4 text-xs font-semibold uppercase tracking-[0.14em] text-sky-200/60">
+              Supports PDF, DOCX, TXT, MD up to 8 MB each
+            </p>
             <form
               onSubmit={handleMaterialUrlImport}
-              className="mt-5 rounded-[20px] border border-[var(--nclex-border)] bg-white p-4"
+              className="mt-5 rounded-[20px] border border-sky-300/20 bg-[#071d34]/70 p-4"
             >
               <Field label="Or import a study link">
                 <div className="flex flex-col gap-3 sm:flex-row">
                   <div className="relative flex-1">
-                    <Link2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--nclex-text-muted)]" />
+                    <Link2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-sky-200/60" />
                     <input
                       value={materialUrl}
                       onChange={(event) => setMaterialUrl(event.target.value)}
                       placeholder="https://example.com/study-guide"
-                      className={`${inputClass} pl-10`}
+                      className="h-12 w-full rounded-2xl border border-sky-300/25 bg-[#03101f]/70 pl-10 pr-3 text-sm text-white outline-none transition placeholder:text-sky-200/35 focus:border-sky-200 focus:ring-4 focus:ring-sky-400/15"
                     />
                   </div>
                   <button
                     type="submit"
                     disabled={isUploading || !materialUrl.trim()}
-                    className="nclex-btn-primary inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-sky-300/25 bg-sky-500/85 px-4 py-3 text-sm font-semibold text-white shadow-[0_0_24px_rgba(43,148,255,0.22)] transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {isUploading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
                     Import link
                   </button>
                 </div>
               </Field>
-              <p className="mt-3 text-xs leading-5 text-[var(--nclex-text-muted)]">
+              <p className="mt-3 text-xs leading-5 text-sky-200/60">
                 Works best with public text-heavy study pages. If a site blocks browser imports, upload the source file instead.
               </p>
             </form>
             {uploadMessage ? (
-              <div className="mt-4 rounded-2xl border border-[#bfdbfe] bg-[#eff6ff] px-4 py-3 text-sm font-semibold text-[var(--nclex-blue)]">
+              <div className="mt-4 rounded-2xl border border-sky-300/25 bg-sky-400/10 px-4 py-3 text-sm font-semibold text-sky-100">
                 {uploadMessage}
               </div>
             ) : null}
             <div className="mt-5 grid gap-3 md:grid-cols-3">
-                <MetricChip label="Library" value={`${materials.length}`} />
-                <MetricChip label="Ready" value={`${readyCount}`} />
-                <MetricChip label="Approved cards" value={`${totalGeneratedCards}`} />
+                <CommandMetricCard label="Library" value={`${materials.length}`} detail="Study files" icon={<FolderOpen className="h-4 w-4" />} />
+                <CommandMetricCard label="Ready" value={`${readyCount}`} detail="Parsed cleanly" icon={<CheckCircle2 className="h-4 w-4" />} tone="green" />
+                <CommandMetricCard label="Approved cards" value={`${totalGeneratedCards}`} detail="Saved to decks" icon={<SquareStack className="h-4 w-4" />} tone="amber" />
             </div>
-          </Surface>
+            </div>
+          </NurseCommandBackdrop>
 
           <Surface>
             <div className="flex items-center justify-between gap-3">
