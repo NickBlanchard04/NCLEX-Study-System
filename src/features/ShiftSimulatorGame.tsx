@@ -9,6 +9,8 @@ import {
   FileText,
   HeartPulse,
   ListChecks,
+  Maximize2,
+  Minimize2,
   PhoneCall,
   Play,
   Radio,
@@ -26,6 +28,7 @@ import type React from 'react'
 import { Shift3DEngine } from '../game/shift3d-engine'
 
 type PatientStatus = 'stable' | 'watch' | 'urgent' | 'critical'
+type DisplayStatus = PatientStatus | 'deteriorating' | 'stabilized'
 type ActionCategory = 'assessment' | 'intervention' | 'delegation' | 'escalation' | 'documentation'
 type NpcRole = 'uap' | 'rt' | 'provider' | 'charge'
 
@@ -95,6 +98,25 @@ interface DelegationAssignment {
   actionId: string
   startedAt: number
   safe: boolean
+}
+
+interface RecommendedStep {
+  id: string
+  label: string
+  actionId?: string
+  role?: NpcRole
+  tone: 'primary' | 'safe' | 'warn'
+}
+
+interface CurrentPriority {
+  patient: ShiftPatient
+  status: DisplayStatus
+  urgencyLabel: string
+  reason: string
+  framework: string
+  deadline?: number
+  event?: ShiftEvent
+  recommendedSteps: RecommendedStep[]
 }
 
 const shiftStart = 7 * 60
@@ -372,11 +394,22 @@ const formatTime = (minutes: number) => {
   return `${displayHour}:${minute.toString().padStart(2, '0')} ${suffix}`
 }
 
-const statusStyles: Record<PatientStatus, string> = {
-  stable: 'border-emerald-400/30 bg-emerald-400/10 text-emerald-100',
-  watch: 'border-sky-400/30 bg-sky-400/10 text-sky-100',
-  urgent: 'border-amber-400/30 bg-amber-400/10 text-amber-100',
-  critical: 'border-rose-400/40 bg-rose-400/10 text-rose-100',
+const displayStatusStyles: Record<DisplayStatus, string> = {
+  stable: 'border-sky-300/25 bg-sky-400/10 text-sky-100',
+  watch: 'border-amber-300/25 bg-amber-400/10 text-amber-100',
+  urgent: 'border-orange-300/30 bg-orange-400/10 text-orange-100',
+  critical: 'border-rose-300/40 bg-rose-400/10 text-rose-100 shadow-[0_0_28px_rgba(244,63,94,0.14)]',
+  deteriorating: 'border-rose-200/60 bg-rose-500/20 text-rose-50 shadow-[0_0_34px_rgba(244,63,94,0.25)]',
+  stabilized: 'border-emerald-300/35 bg-emerald-400/12 text-emerald-100',
+}
+
+const displayStatusLabel: Record<DisplayStatus, string> = {
+  stable: 'Stable',
+  watch: 'Watch',
+  urgent: 'Urgent',
+  critical: 'Critical',
+  deteriorating: 'Deteriorating',
+  stabilized: 'Stabilized',
 }
 
 const categoryIcon: Record<ActionCategory, React.ReactNode> = {
@@ -417,7 +450,179 @@ const npcOptions: Array<{ role: NpcRole; actionId: string; label: string }> = [
   { role: 'charge', actionId: 'fall-precautions', label: 'Ask charge RN to coordinate safety' },
 ]
 
+const riskRank: Record<PatientStatus, number> = {
+  stable: 1,
+  watch: 2,
+  urgent: 3,
+  critical: 4,
+}
+
+function getPatientDisplayStatus(
+  patient: ShiftPatient,
+  completedPatientIds: string[],
+  deterioratingPatientIds: string[],
+): DisplayStatus {
+  if (completedPatientIds.includes(patient.id)) return 'stabilized'
+  if (deterioratingPatientIds.includes(patient.id)) return 'deteriorating'
+  return patient.risk
+}
+
+function getActionScopeLabel(action: ShiftAction) {
+  if (action.id === 'respiratory-therapy') return 'RT'
+  if (action.id === 'notify-provider') return 'Provider'
+  if (action.id === 'delegate-vitals') return 'UAP-safe'
+  if (action.id === 'delegate-assessment') return 'Unsafe'
+  if (action.scope === 'uap') return 'UAP-safe'
+  return 'RN-only'
+}
+
+function getActionWhy(action: ShiftAction, patient: ShiftPatient) {
+  if (action.id === 'oxygen') return 'Breathing comes before routine care.'
+  if (action.id === 'glucose-protocol') return 'Low glucose with confusion can become a seizure.'
+  if (action.id === 'hemorrhage-protocol') return 'Bleeding plus low BP can become shock.'
+  if (action.id === 'notify-provider') return 'Escalate unstable trends before time runs out.'
+  if (action.id === 'reassess') return 'Check whether the patient improved after care.'
+  if (action.id === 'document') return 'Close the loop for handoff and continuity.'
+  if (action.id === 'delegate-vitals') return patient.risk === 'watch' ? 'Good team use after RN keeps oversight.' : 'Only delegate routine data when stable enough.'
+  return action.description
+}
+
+function getCurrentPriority({
+  clock,
+  activeEvents,
+  deterioratedEvents,
+  completedActions,
+  completedPatientIds,
+  deterioratingPatientIds,
+}: {
+  clock: number
+  activeEvents: ShiftEvent[]
+  deterioratedEvents: ShiftEvent[]
+  completedActions: Set<string>
+  completedPatientIds: string[]
+  deterioratingPatientIds: string[]
+}): CurrentPriority {
+  const urgentEvent =
+    [...activeEvents].sort((left, right) => left.deadline - right.deadline)[0] ??
+    [...deterioratedEvents].sort((left, right) => right.deadline - left.deadline)[0]
+  const patient =
+    patients.find((item) => item.id === urgentEvent?.patientId) ??
+    [...patients]
+      .filter((item) => !completedPatientIds.includes(item.id))
+      .sort((left, right) => riskRank[right.risk] - riskRank[left.risk])[0] ??
+    patients[0]
+  const status = getPatientDisplayStatus(patient, completedPatientIds, deterioratingPatientIds)
+  const missingActions = patient.correctActions.filter((actionId) => !completedActions.has(`${patient.id}:${actionId}`))
+  const rescueAction = urgentEvent?.requiredActions.find((actionId) => !completedActions.has(`${patient.id}:${actionId}`))
+  const firstAction = rescueAction ?? missingActions[0]
+  const secondAction = missingActions.find((actionId) => actionId !== firstAction)
+  const recommendedSteps: RecommendedStep[] = [
+    {
+      id: `select-${patient.id}`,
+      label: `Go to ${patient.room}`,
+      tone: 'primary',
+    },
+  ]
+
+  if (firstAction) {
+    recommendedSteps.push({
+      id: `act-${firstAction}`,
+      label: actions.find((action) => action.id === firstAction)?.label ?? 'Do next care step',
+      actionId: firstAction,
+      tone: 'safe',
+    })
+  }
+
+  if (secondAction) {
+    recommendedSteps.push({
+      id: `act-${secondAction}`,
+      label: actions.find((action) => action.id === secondAction)?.label ?? 'Continue care loop',
+      actionId: secondAction,
+      tone: 'safe',
+    })
+  }
+
+  if (patient.risk !== 'critical' && !completedActions.has(`${patient.id}:delegate-vitals`)) {
+    recommendedSteps.push({
+      id: 'delegate-vitals',
+      label: 'Delegate routine vitals',
+      actionId: 'delegate-vitals',
+      role: 'uap',
+      tone: 'warn',
+    })
+  }
+
+  return {
+    patient,
+    status,
+    urgencyLabel:
+      status === 'deteriorating'
+        ? 'Act now'
+        : urgentEvent
+          ? `${Math.max(0, urgentEvent.deadline - clock)} min left`
+          : patient.risk === 'critical'
+            ? 'Highest risk'
+            : 'Next best patient',
+    reason: urgentEvent?.message ?? patient.chiefConcern,
+    framework:
+      patient.id === 'p4'
+        ? 'Use ABCs: breathing first.'
+        : patient.id === 'p3'
+          ? 'Think perfusion: bleeding can become shock.'
+          : patient.id === 'p2'
+            ? 'Treat unstable glucose, then reassess.'
+            : patient.id === 'p1'
+              ? 'Prevent harm before mobility.'
+              : 'Delegate routine data, then interpret trends.',
+    deadline: urgentEvent?.deadline,
+    event: urgentEvent,
+    recommendedSteps: recommendedSteps.slice(0, 4),
+  }
+}
+
+function getLatestTeachingFeedback(log: LogEntry[]) {
+  const entry = log[0]
+  if (!entry) {
+    return {
+      headline: 'Start with the sickest patient.',
+      body: 'The game will point out the priority cue, then let you choose.',
+      tone: 'info' as const,
+    }
+  }
+
+  if (entry.tone === 'safe') {
+    return {
+      headline: entry.text.includes('Event resolved') ? 'You stabilized the patient.' : 'Good catch.',
+      body: entry.text,
+      tone: 'safe' as const,
+    }
+  }
+
+  if (entry.tone === 'danger') {
+    return {
+      headline: entry.text.includes('unsafe') ? 'Unsafe delegation.' : 'This patient got worse.',
+      body: entry.text,
+      tone: 'danger' as const,
+    }
+  }
+
+  if (entry.tone === 'warn') {
+    return {
+      headline: 'Safe, but not the strongest move.',
+      body: entry.text,
+      tone: 'warn' as const,
+    }
+  }
+
+  return {
+    headline: 'Handoff received.',
+    body: entry.text,
+    tone: 'info' as const,
+  }
+}
+
 export function ShiftSimulatorGame() {
+  const gameRootRef = useRef<HTMLElement | null>(null)
   const [phase, setPhase] = useState<'briefing' | 'running' | 'ended'>('briefing')
   const [clock, setClock] = useState(shiftStart)
   const [selectedPatientId, setSelectedPatientId] = useState(patients[3].id)
@@ -425,6 +630,8 @@ export function ShiftSimulatorGame() {
   const [penalizedEvents, setPenalizedEvents] = useState<Set<string>>(new Set())
   const [delegationAssignments, setDelegationAssignments] = useState<DelegationAssignment[]>([])
   const [nearbyPatientId, setNearbyPatientId] = useState<string | null>(null)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [fullscreenMessage, setFullscreenMessage] = useState('')
   const [log, setLog] = useState<LogEntry[]>([
     {
       id: 'handoff',
@@ -441,6 +648,7 @@ export function ShiftSimulatorGame() {
   })
 
   const selectedPatient = patients.find((patient) => patient.id === selectedPatientId) ?? patients[0]
+  const fullscreenSupported = typeof document !== 'undefined' && document.fullscreenEnabled
 
   const resolvedEvents = useMemo(
     () =>
@@ -543,6 +751,49 @@ export function ShiftSimulatorGame() {
     ]
   }, [completedActions, delegationAssignments, penalizedEvents, resolvedEvents])
   const completedMissions = missionCards.filter((mission) => mission.complete).length
+  const currentPriority = useMemo(
+    () =>
+      getCurrentPriority({
+        clock,
+        activeEvents,
+        deterioratedEvents,
+        completedActions,
+        completedPatientIds,
+        deterioratingPatientIds,
+      }),
+    [activeEvents, clock, completedActions, completedPatientIds, deterioratedEvents, deterioratingPatientIds],
+  )
+  const activeMission = missionCards.find((mission) => !mission.complete) ?? missionCards[missionCards.length - 1]
+  const latestFeedback = useMemo(() => getLatestTeachingFeedback(log), [log])
+
+  useEffect(() => {
+    const syncFullscreenState = () => {
+      setIsFullscreen(document.fullscreenElement === gameRootRef.current)
+      if (document.fullscreenElement === gameRootRef.current) setFullscreenMessage('')
+    }
+
+    document.addEventListener('fullscreenchange', syncFullscreenState)
+    return () => document.removeEventListener('fullscreenchange', syncFullscreenState)
+  }, [])
+
+  const toggleFullscreen = async () => {
+    if (!gameRootRef.current) return
+
+    if (!document.fullscreenEnabled || typeof gameRootRef.current.requestFullscreen !== 'function') {
+      setFullscreenMessage('Full screen is not available in this browser. You can still play normally.')
+      return
+    }
+
+    try {
+      if (document.fullscreenElement === gameRootRef.current) {
+        await document.exitFullscreen()
+      } else {
+        await gameRootRef.current.requestFullscreen()
+      }
+    } catch {
+      setFullscreenMessage('Full screen could not start here. Try your browser full-screen control instead.')
+    }
+  }
   const addLog = (entry: Omit<LogEntry, 'id' | 'time'>, at = clock) => {
     setLog((current) => [
       {
@@ -743,14 +994,25 @@ export function ShiftSimulatorGame() {
   }
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#071624] text-slate-100">
+    <main
+      ref={gameRootRef}
+      className={clsx(
+        'min-h-screen overflow-hidden bg-[#071624] text-slate-100',
+        isFullscreen && 'h-screen overflow-y-auto',
+      )}
+    >
       <div className="pointer-events-none fixed inset-0 opacity-70">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_16%_10%,rgba(42,125,225,0.28),transparent_30%),radial-gradient(circle_at_84%_14%,rgba(16,185,129,0.18),transparent_28%),linear-gradient(180deg,#071624_0%,#0b1d31_52%,#07111f_100%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[size:28px_28px]" />
       </div>
 
-      <div className="relative mx-auto flex min-h-screen max-w-[1500px] flex-col p-4 md:p-6">
-        <header className="flex flex-col gap-4 rounded-[28px] border border-white/10 bg-white/8 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.28)] backdrop-blur-xl md:flex-row md:items-center md:justify-between">
+      <div
+        className={clsx(
+          'relative mx-auto flex min-h-screen flex-col p-4 md:p-6',
+          isFullscreen ? 'max-w-[1760px]' : 'max-w-[1500px]',
+        )}
+      >
+        <header className="sticky top-4 z-30 flex flex-col gap-4 rounded-[28px] border border-white/10 bg-[#071624]/82 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.28)] backdrop-blur-xl md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-4">
             <Link
               to="/"
@@ -764,18 +1026,30 @@ export function ShiftSimulatorGame() {
                 Nurse Shift Command
               </h1>
               <p className="mt-1 text-sm text-slate-300">
-                A 12-hour clinical judgment strategy game: prioritize, delegate, rescue, document.
+                Who needs you first? Prioritize, delegate, rescue, then close the loop.
               </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <HudStat icon={<Clock3 className="h-4 w-4" />} label="Shift Clock" value={formatTime(clock)} />
-            <HudStat icon={<Activity className="h-4 w-4" />} label="Readiness" value={`${totalScore}%`} />
-            <HudStat icon={<ShieldAlert className="h-4 w-4" />} label="Active Alerts" value={`${activeEvents.length}`} />
-            <HudStat icon={<Target className="h-4 w-4" />} label="Missions" value={`${completedMissions}/${missionCards.length}`} />
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <HudStat icon={<Clock3 className="h-4 w-4" />} label="Clock" value={formatTime(clock)} />
+              <HudStat icon={<Activity className="h-4 w-4" />} label="Readiness" value={`${totalScore}%`} />
+              <HudStat icon={<ShieldAlert className="h-4 w-4" />} label="Alerts" value={`${activeEvents.length}`} />
+              <HudStat icon={<Target className="h-4 w-4" />} label="Missions" value={`${completedMissions}/${missionCards.length}`} />
+            </div>
+            <FullscreenButton
+              isFullscreen={isFullscreen}
+              supported={fullscreenSupported}
+              onToggle={toggleFullscreen}
+            />
           </div>
         </header>
+        {fullscreenMessage ? (
+          <p className="relative z-20 mx-auto mt-3 rounded-2xl border border-amber-300/25 bg-amber-400/10 px-4 py-3 text-sm font-bold text-amber-100">
+            {fullscreenMessage}
+          </p>
+        ) : null}
 
         {phase === 'briefing' ? (
           <section className="grid flex-1 items-center gap-6 py-8 lg:grid-cols-[1.05fr_0.95fr]">
@@ -788,13 +1062,26 @@ export function ShiftSimulatorGame() {
                 <Sparkles className="h-7 w-7" />
               </div>
               <h2 className="mt-7 max-w-3xl text-4xl font-black leading-[0.95] tracking-[-0.06em] text-white md:text-6xl">
-                Run the floor. Catch the crash before it happens.
+                Who needs you first?
               </h2>
               <p className="mt-5 max-w-2xl text-base leading-8 text-slate-300">
-                You are the RN for five patients from 7 AM to 7 PM. Every action costs time. Choose who to see first,
-                what to delegate, when to call for help, and when to document. The game scores safety, prioritization,
-                delegation, and documentation.
+                You are the RN for five patients. The screen will show the sickest cue, the safest next move, and who
+                can help. Move through the unit, choose care actions, delegate safely, then reassess and document.
               </p>
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                {[
+                  ['1', 'Spot the priority', 'Look for red or amber cues first.'],
+                  ['2', 'Choose care', 'Actions explain what happens before you click.'],
+                  ['3', 'Use your team', 'NPC cards show safe scope and risk.'],
+                  ['4', 'Close the loop', 'Reassess and document after rescue care.'],
+                ].map(([step, title, copy]) => (
+                  <div key={step} className="rounded-2xl border border-white/10 bg-white/6 p-4">
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">Step {step}</p>
+                    <p className="mt-2 text-base font-black text-white">{title}</p>
+                    <p className="mt-1 text-sm leading-6 text-slate-400">{copy}</p>
+                  </div>
+                ))}
+              </div>
               <div className="mt-7 flex flex-wrap gap-3">
                 <button
                   type="button"
@@ -811,27 +1098,44 @@ export function ShiftSimulatorGame() {
                 >
                   Reset briefing
                 </button>
+                <FullscreenButton
+                  isFullscreen={isFullscreen}
+                  supported={fullscreenSupported}
+                  onToggle={toggleFullscreen}
+                />
               </div>
             </motion.div>
 
             <div className="grid gap-4">
+              <CurrentPriorityPanel
+                priority={currentPriority}
+                canPerformActions={false}
+                onSelectPatient={setSelectedPatientId}
+                onPerformAction={() => setSelectedPatientId(currentPriority.patient.id)}
+              />
               {patients.map((patient) => (
-                  <PatientRow
-                    key={patient.id}
-                    patient={patient}
-                    selected={patient.id === selectedPatientId}
-                    deteriorating={deterioratingPatientIds.includes(patient.id)}
-                    deteriorated={deterioratedEvents.some((event) => event.patientId === patient.id)}
-                    completed={patient.correctActions.filter((actionId) =>
-                      completedActions.has(`${patient.id}:${actionId}`),
-                    ).length}
+                <PatientRow
+                  key={patient.id}
+                  patient={patient}
+                  selected={patient.id === selectedPatientId}
+                  displayStatus={getPatientDisplayStatus(patient, completedPatientIds, deterioratingPatientIds)}
+                  completed={patient.correctActions.filter((actionId) =>
+                    completedActions.has(`${patient.id}:${actionId}`),
+                  ).length}
                   onSelect={() => setSelectedPatientId(patient.id)}
                 />
               ))}
             </div>
           </section>
         ) : (
-          <section className="grid flex-1 gap-5 py-5 xl:grid-cols-[300px_minmax(0,1fr)_360px]">
+          <section
+            className={clsx(
+              'grid flex-1 gap-5 py-5',
+              isFullscreen
+                ? 'xl:grid-cols-[270px_minmax(0,1fr)_320px]'
+                : 'xl:grid-cols-[300px_minmax(0,1fr)_360px]',
+            )}
+          >
             <aside className="space-y-4">
               <Panel title="Patient Census" icon={<Users className="h-4 w-4" />}>
                 <div className="space-y-3">
@@ -840,8 +1144,7 @@ export function ShiftSimulatorGame() {
                       key={patient.id}
                       patient={patient}
                       selected={patient.id === selectedPatientId}
-                      deteriorating={deterioratingPatientIds.includes(patient.id)}
-                      deteriorated={deterioratedEvents.some((event) => event.patientId === patient.id)}
+                      displayStatus={getPatientDisplayStatus(patient, completedPatientIds, deterioratingPatientIds)}
                       completed={patient.correctActions.filter((actionId) =>
                         completedActions.has(`${patient.id}:${actionId}`),
                       ).length}
@@ -865,16 +1168,42 @@ export function ShiftSimulatorGame() {
                 <p className="mt-2 text-xs text-slate-400">Shift progress: {Math.round(shiftProgress * 100)}%</p>
               </Panel>
 
-              <Panel title="Mission Board" icon={<ListChecks className="h-4 w-4" />}>
-                <div className="space-y-3">
+              <Panel
+                title="Mission Focus"
+                icon={<ListChecks className="h-4 w-4" />}
+                right={<span className="text-xs font-black text-emerald-200">{completedMissions}/{missionCards.length}</span>}
+              >
+                <MissionRow mission={activeMission} featured />
+                <div className="mt-4 grid grid-cols-6 gap-2">
                   {missionCards.map((mission) => (
-                    <MissionRow key={mission.id} mission={mission} />
+                    <span
+                      key={mission.id}
+                      className={clsx(
+                        'grid h-8 place-items-center rounded-full border text-xs font-black',
+                        mission.complete
+                          ? 'border-emerald-300/30 bg-emerald-400/15 text-emerald-100'
+                          : 'border-white/10 bg-white/6 text-slate-500',
+                      )}
+                      aria-label={`${mission.title}: ${mission.complete ? 'complete' : 'open'}`}
+                    >
+                      {mission.complete ? <CheckCircle2 className="h-4 w-4" /> : ''}
+                    </span>
                   ))}
                 </div>
               </Panel>
             </aside>
 
             <section className="space-y-5">
+              <CurrentPriorityPanel
+                priority={currentPriority}
+                canPerformActions={selectedPatient.id === currentPriority.patient.id}
+                onSelectPatient={(patientId) => setSelectedPatientId(patientId)}
+                onPerformAction={(actionId) => {
+                  const action = actions.find((item) => item.id === actionId)
+                  if (action) performAction(action)
+                }}
+              />
+
               <Shift3DViewport
                 patients={patients}
                 selectedPatientId={selectedPatientId}
@@ -885,12 +1214,17 @@ export function ShiftSimulatorGame() {
                 nearbyPatientId={nearbyPatientId}
                 onSelectPatient={setSelectedPatientId}
                 onProximityChange={setNearbyPatientId}
+                immersive={isFullscreen}
               />
 
               <Panel
                 title={`${selectedPatient.room} - ${selectedPatient.name}`}
                 icon={<HeartPulse className="h-4 w-4" />}
-                right={<span className={clsx('rounded-full border px-3 py-1 text-xs font-black uppercase', statusStyles[selectedPatient.risk])}>{selectedPatient.risk}</span>}
+                right={
+                  <PatientUrgencyBadge
+                    status={getPatientDisplayStatus(selectedPatient, completedPatientIds, deterioratingPatientIds)}
+                  />
+                }
               >
                 <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
                   <div>
@@ -947,34 +1281,20 @@ export function ShiftSimulatorGame() {
                   </div>
                 </Panel>
 
-                <Panel title="Action Console" icon={<Stethoscope className="h-4 w-4" />}>
+                <Panel title="Choose Care Action" icon={<Stethoscope className="h-4 w-4" />}>
                   <div className="grid gap-3 sm:grid-cols-2">
                     {actions.map((action) => {
                       const completed = completedActions.has(`${selectedPatient.id}:${action.id}`)
                       return (
-                        <button
+                        <ActionCard
                           key={action.id}
-                          type="button"
-                          onClick={() => performAction(action)}
+                          action={action}
+                          patient={selectedPatient}
+                          completed={completed}
                           disabled={phase !== 'running'}
-                          className={clsx(
-                            'group min-h-[88px] rounded-2xl border p-3 text-left transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50',
-                            completed
-                              ? 'border-emerald-300/30 bg-emerald-400/10'
-                              : 'border-white/10 bg-white/6 hover:border-sky-300/35 hover:bg-sky-400/10',
-                          )}
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <span className="flex items-center gap-2 text-sm font-black text-white">
-                              {categoryIcon[action.category]}
-                              {action.label}
-                            </span>
-                            <span className="rounded-full bg-white/8 px-2 py-1 text-[11px] font-bold text-slate-300">
-                              {action.minutes}m
-                            </span>
-                          </div>
-                          <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-400">{action.description}</p>
-                        </button>
+                          recommended={currentPriority.patient.id === selectedPatient.id && currentPriority.recommendedSteps.some((step) => step.actionId === action.id)}
+                          onClick={() => performAction(action)}
+                        />
                       )
                     })}
                   </div>
@@ -983,35 +1303,31 @@ export function ShiftSimulatorGame() {
             </section>
 
             <aside className="space-y-4">
-              <Panel title="Team Console" icon={<Radio className="h-4 w-4" />}>
+              <Panel title="Delegate Or Do It Yourself?" icon={<Radio className="h-4 w-4" />}>
                 <div className="mb-4 rounded-2xl border border-white/8 bg-white/6 p-3">
                   <p className="text-sm font-black text-white">Selected: {selectedPatient.room}</p>
                   <p className="mt-1 text-xs leading-5 text-slate-400">
-                    Delegate safe tasks to NPC teammates. Bad delegation hurts the shift just like the real floor.
+                    The card tells you what the teammate can safely do before you send them.
                   </p>
                 </div>
                 <div className="space-y-3">
                   {npcOptions.map((option) => {
-                    const role = npcRoster[option.role]
+                    const action = actions.find((item) => item.id === option.actionId)
                     return (
-                      <button
+                      <TeamMemberCard
                         key={`${option.role}:${option.actionId}`}
-                        type="button"
-                        onClick={() => delegateNpc(option.role, option.actionId)}
+                        option={option}
+                        patient={selectedPatient}
+                        action={action}
+                        latestAssignment={delegationAssignments.find(
+                          (assignment) =>
+                            assignment.patientId === selectedPatient.id &&
+                            assignment.role === option.role &&
+                            assignment.actionId === option.actionId,
+                        )}
                         disabled={phase !== 'running'}
-                        className="w-full rounded-2xl border border-white/10 bg-white/6 p-3 text-left transition hover:-translate-y-0.5 hover:border-sky-300/35 hover:bg-sky-400/10 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="flex items-center gap-2 text-sm font-black text-white">
-                            <UserCheck className="h-4 w-4" />
-                            {option.label}
-                          </span>
-                          <span className={clsx('text-[11px] font-black uppercase tracking-[0.12em]', role.color)}>
-                            {role.label}
-                          </span>
-                        </div>
-                        <p className="mt-2 text-xs leading-5 text-slate-400">{role.cue}</p>
-                      </button>
+                        onClick={() => delegateNpc(option.role, option.actionId)}
+                      />
                     )
                   })}
                 </div>
@@ -1069,7 +1385,8 @@ export function ShiftSimulatorGame() {
                 </AnimatePresence>
               </Panel>
 
-              <Panel title="Charting Log" icon={<FileText className="h-4 w-4" />}>
+              <Panel title="What Just Happened?" icon={<FileText className="h-4 w-4" />}>
+                <TeachingFeedbackCard feedback={latestFeedback} />
                 <div className="max-h-[390px] space-y-3 overflow-y-auto pr-1">
                   {log.map((entry) => (
                     <div key={entry.id} className="rounded-2xl border border-white/8 bg-white/6 p-3">
@@ -1126,6 +1443,119 @@ export function ShiftSimulatorGame() {
   )
 }
 
+function FullscreenButton({
+  isFullscreen,
+  supported,
+  onToggle,
+}: {
+  isFullscreen: boolean
+  supported: boolean
+  onToggle: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className={clsx(
+        'inline-flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-black transition',
+        supported
+          ? 'border-white/12 bg-white/8 text-white hover:-translate-y-0.5 hover:bg-white/12'
+          : 'border-amber-300/20 bg-amber-400/10 text-amber-100',
+      )}
+    >
+      {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+      {isFullscreen ? 'Exit Full Screen' : 'Enter Full Screen'}
+    </button>
+  )
+}
+
+function CurrentPriorityPanel({
+  priority,
+  canPerformActions,
+  onSelectPatient,
+  onPerformAction,
+}: {
+  priority: CurrentPriority
+  canPerformActions: boolean
+  onSelectPatient: (patientId: string) => void
+  onPerformAction: (actionId: string) => void
+}) {
+  return (
+    <section className="rounded-[28px] border border-sky-300/20 bg-gradient-to-br from-sky-400/16 via-white/8 to-emerald-400/10 p-4 shadow-[0_24px_80px_rgba(42,125,225,0.16)] backdrop-blur-xl md:p-5">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-200">Current Priority</p>
+          <h2 className="mt-2 text-3xl font-black tracking-[-0.05em] text-white">
+            Who needs you first? {priority.patient.room} - {priority.patient.name}
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">{priority.reason}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <PatientUrgencyBadge status={priority.status} />
+          <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-xs font-black uppercase tracking-[0.12em] text-white">
+            {priority.urgencyLabel}
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_auto] lg:items-end">
+        <div className="rounded-2xl border border-white/10 bg-[#071624]/48 p-4">
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-200">Think like a nurse</p>
+          <p className="mt-2 text-sm leading-6 text-slate-200">{priority.framework}</p>
+          {priority.deadline ? (
+            <p className="mt-2 text-xs font-bold text-amber-200">Resolve by {formatTime(priority.deadline)}.</p>
+          ) : null}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {priority.recommendedSteps.map((step) => (
+            <RecommendedStepChip
+              key={step.id}
+              step={step}
+              onClick={() => {
+                onSelectPatient(priority.patient.id)
+                if (step.actionId && canPerformActions) onPerformAction(step.actionId)
+              }}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function RecommendedStepChip({ step, onClick }: { step: RecommendedStep; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={clsx(
+        'rounded-full border px-4 py-2 text-sm font-black transition hover:-translate-y-0.5',
+        step.tone === 'primary'
+          ? 'border-sky-200/40 bg-sky-400/20 text-sky-50'
+          : step.tone === 'safe'
+            ? 'border-emerald-200/35 bg-emerald-400/14 text-emerald-50'
+            : 'border-amber-200/35 bg-amber-400/14 text-amber-50',
+      )}
+    >
+      {step.label}
+    </button>
+  )
+}
+
+function PatientUrgencyBadge({ status }: { status: DisplayStatus }) {
+  return (
+    <span
+      className={clsx(
+        'inline-flex items-center rounded-full border px-3 py-1 text-xs font-black uppercase tracking-[0.12em]',
+        displayStatusStyles[status],
+        status === 'deteriorating' && 'animate-pulse',
+      )}
+    >
+      {displayStatusLabel[status]}
+    </span>
+  )
+}
+
 function Panel({
   title,
   icon,
@@ -1161,6 +1591,7 @@ function Shift3DViewport({
   nearbyPatientId,
   onSelectPatient,
   onProximityChange,
+  immersive,
 }: {
   patients: ShiftPatient[]
   selectedPatientId: string
@@ -1171,6 +1602,7 @@ function Shift3DViewport({
   nearbyPatientId: string | null
   onSelectPatient: (patientId: string) => void
   onProximityChange: (patientId: string | null) => void
+  immersive: boolean
 }) {
   const mountRef = useRef<HTMLDivElement | null>(null)
   const engineRef = useRef<Shift3DEngine | null>(null)
@@ -1235,7 +1667,12 @@ function Shift3DViewport({
   }
 
   return (
-    <section className="relative min-h-[520px] overflow-hidden rounded-[30px] border border-white/10 bg-[#071624] shadow-[0_30px_90px_rgba(0,0,0,0.32)]">
+    <section
+      className={clsx(
+        'relative overflow-hidden rounded-[30px] border border-white/10 bg-[#071624] shadow-[0_30px_90px_rgba(0,0,0,0.32)]',
+        immersive ? 'min-h-[68vh]' : 'min-h-[520px]',
+      )}
+    >
       <div ref={mountRef} className="absolute inset-0" />
       <div className="pointer-events-none absolute inset-x-0 top-0 bg-gradient-to-b from-[#071624]/88 to-transparent p-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -1260,11 +1697,11 @@ function Shift3DViewport({
 
       <div className="absolute bottom-4 left-4 grid grid-cols-3 gap-2 md:hidden">
         <span />
-        <TouchMoveButton label="↑" onPress={() => setMove(0, -1)} onRelease={() => setMove(0, 0)} />
+        <TouchMoveButton label="Up" onPress={() => setMove(0, -1)} onRelease={() => setMove(0, 0)} />
         <span />
-        <TouchMoveButton label="←" onPress={() => setMove(-1, 0)} onRelease={() => setMove(0, 0)} />
-        <TouchMoveButton label="↓" onPress={() => setMove(0, 1)} onRelease={() => setMove(0, 0)} />
-        <TouchMoveButton label="→" onPress={() => setMove(1, 0)} onRelease={() => setMove(0, 0)} />
+        <TouchMoveButton label="Left" onPress={() => setMove(-1, 0)} onRelease={() => setMove(0, 0)} />
+        <TouchMoveButton label="Down" onPress={() => setMove(0, 1)} onRelease={() => setMove(0, 0)} />
+        <TouchMoveButton label="Right" onPress={() => setMove(1, 0)} onRelease={() => setMove(0, 0)} />
       </div>
 
       <div className="absolute bottom-4 right-4 flex flex-col gap-2">
@@ -1297,7 +1734,7 @@ function TouchMoveButton({
       onPointerUp={onRelease}
       onPointerCancel={onRelease}
       onPointerLeave={onRelease}
-      className="h-12 w-12 rounded-2xl border border-white/10 bg-white/14 text-lg font-black text-white backdrop-blur active:scale-95"
+      className="h-12 min-w-12 rounded-2xl border border-white/10 bg-white/14 px-3 text-xs font-black text-white backdrop-blur active:scale-95"
       aria-label={`Move ${label}`}
     >
       {label}
@@ -1317,11 +1754,148 @@ function HudStat({ icon, label, value }: { icon: React.ReactNode; label: string;
   )
 }
 
-function MissionRow({ mission }: { mission: MissionCard }) {
+function ActionCard({
+  action,
+  patient,
+  completed,
+  recommended,
+  disabled,
+  onClick,
+}: {
+  action: ShiftAction
+  patient: ShiftPatient
+  completed: boolean
+  recommended: boolean
+  disabled: boolean
+  onClick: () => void
+}) {
+  const unsafe = patient.unsafeActions.includes(action.id)
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={clsx(
+        'group min-h-[122px] rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50',
+        completed
+          ? 'border-emerald-300/35 bg-emerald-400/12'
+          : recommended
+            ? 'border-sky-200/45 bg-sky-400/14 shadow-[0_16px_38px_rgba(56,189,248,0.13)]'
+            : unsafe
+              ? 'border-rose-300/24 bg-rose-400/8'
+              : 'border-white/10 bg-white/6 hover:border-sky-300/35 hover:bg-sky-400/10',
+      )}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <span className="flex items-center gap-2 text-sm font-black text-white">
+          {categoryIcon[action.category]}
+          {action.label}
+        </span>
+        <span
+          className={clsx(
+            'rounded-full px-2 py-1 text-[11px] font-black uppercase tracking-[0.1em]',
+            unsafe ? 'bg-rose-400/15 text-rose-100' : 'bg-white/8 text-slate-300',
+          )}
+        >
+          {getActionScopeLabel(action)}
+        </span>
+      </div>
+      <p className="mt-3 text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+        {action.minutes} min · {recommended ? 'Recommended now' : completed ? 'Done' : 'Available'}
+      </p>
+      <p className="mt-2 text-sm leading-6 text-slate-300">{getActionWhy(action, patient)}</p>
+    </button>
+  )
+}
+
+function TeamMemberCard({
+  option,
+  patient,
+  action,
+  latestAssignment,
+  disabled,
+  onClick,
+}: {
+  option: { role: NpcRole; actionId: string; label: string }
+  patient: ShiftPatient
+  action?: ShiftAction
+  latestAssignment?: DelegationAssignment
+  disabled: boolean
+  onClick: () => void
+}) {
+  const role = npcRoster[option.role]
+  const safeFit =
+    Boolean(action) &&
+    !patient.unsafeActions.includes(option.actionId) &&
+    patient.correctActions.includes(option.actionId) &&
+    ((option.role === 'uap' && action?.scope === 'uap' && patient.risk !== 'urgent' && patient.risk !== 'critical') ||
+      (option.role === 'rt' && option.actionId === 'respiratory-therapy') ||
+      (option.role === 'provider' && option.actionId === 'notify-provider') ||
+      (option.role === 'charge' && (option.actionId === 'fall-precautions' || option.actionId === 'notify-provider')))
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={clsx(
+        'w-full rounded-2xl border p-3 text-left transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50',
+        safeFit ? 'border-emerald-300/25 bg-emerald-400/10 hover:bg-emerald-400/14' : 'border-white/10 bg-white/6 hover:border-sky-300/35 hover:bg-sky-400/10',
+      )}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <span className="flex items-center gap-2 text-sm font-black text-white">
+          <UserCheck className="h-4 w-4" />
+          {option.label}
+        </span>
+        <span className={clsx('text-[11px] font-black uppercase tracking-[0.12em]', role.color)}>
+          {role.label}
+        </span>
+      </div>
+      <p className="mt-2 text-xs leading-5 text-slate-400">{role.cue}</p>
+      <p className={clsx('mt-2 text-xs font-black', safeFit ? 'text-emerald-200' : 'text-amber-200')}>
+        {safeFit ? 'Good fit for this patient.' : 'Think twice: this may be RN-only or not priority.'}
+      </p>
+      {latestAssignment ? (
+        <p className={clsx('mt-2 rounded-xl px-3 py-2 text-xs font-bold', latestAssignment.safe ? 'bg-emerald-400/12 text-emerald-100' : 'bg-rose-400/12 text-rose-100')}>
+          Last try: {latestAssignment.safe ? 'safe delegation' : 'unsafe delegation'}
+        </p>
+      ) : null}
+    </button>
+  )
+}
+
+function TeachingFeedbackCard({
+  feedback,
+}: {
+  feedback: { headline: string; body: string; tone: 'safe' | 'warn' | 'danger' | 'info' }
+}) {
+  return (
+    <div
+      className={clsx(
+        'mb-3 rounded-2xl border p-4',
+        feedback.tone === 'safe'
+          ? 'border-emerald-300/25 bg-emerald-400/10'
+          : feedback.tone === 'danger'
+            ? 'border-rose-300/30 bg-rose-400/10'
+            : feedback.tone === 'warn'
+              ? 'border-amber-300/25 bg-amber-400/10'
+              : 'border-sky-300/25 bg-sky-400/10',
+      )}
+    >
+      <p className="text-base font-black text-white">{feedback.headline}</p>
+      <p className="mt-2 text-sm leading-6 text-slate-300">{feedback.body}</p>
+    </div>
+  )
+}
+
+function MissionRow({ mission, featured = false }: { mission: MissionCard; featured?: boolean }) {
   return (
     <div
       className={clsx(
         'rounded-2xl border p-3 transition',
+        featured && 'p-4',
         mission.complete ? 'border-emerald-300/25 bg-emerald-400/10' : 'border-white/10 bg-white/6',
       )}
     >
@@ -1347,15 +1921,13 @@ function MissionRow({ mission }: { mission: MissionCard }) {
 function PatientRow({
   patient,
   selected,
-  deteriorating,
-  deteriorated,
+  displayStatus,
   completed,
   onSelect,
 }: {
   patient: ShiftPatient
   selected: boolean
-  deteriorating: boolean
-  deteriorated: boolean
+  displayStatus: DisplayStatus
   completed: number
   onSelect: () => void
 }) {
@@ -1373,13 +1945,11 @@ function PatientRow({
           <p className="text-sm font-black text-white">{patient.room} - {patient.name}</p>
           <p className="mt-1 line-clamp-1 text-xs text-slate-400">{patient.diagnosis}</p>
         </div>
-        <span className={clsx('rounded-full border px-2 py-1 text-[10px] font-black uppercase', statusStyles[patient.risk])}>
-          {patient.risk}
-        </span>
+        <PatientUrgencyBadge status={displayStatus} />
       </div>
-      {deteriorating || deteriorated ? (
-        <p className={clsx('mt-2 text-[11px] font-black uppercase tracking-[0.12em]', deteriorated ? 'text-rose-200' : 'text-amber-200')}>
-          {deteriorated ? 'Deteriorated' : 'Deteriorating now'}
+      {displayStatus === 'deteriorating' || displayStatus === 'stabilized' ? (
+        <p className={clsx('mt-2 text-[11px] font-black uppercase tracking-[0.12em]', displayStatus === 'stabilized' ? 'text-emerald-200' : 'text-rose-200')}>
+          {displayStatus === 'stabilized' ? 'Care loop complete' : 'This patient is getting worse'}
         </p>
       ) : null}
       <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
