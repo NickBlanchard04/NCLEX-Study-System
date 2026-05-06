@@ -64,7 +64,7 @@ export function PwaInstallPrompt() {
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 10 }}
-          className="mb-5 overflow-hidden rounded-[22px] border border-[#cfe1f7] bg-[linear-gradient(135deg,#ffffff_0%,#eef5ff_100%)] p-4 shadow-sm"
+          className="mb-5 overflow-hidden rounded-[22px] border border-[var(--nclex-border)] bg-[var(--nclex-card)] p-4 shadow-sm"
         >
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex items-start gap-3">

@@ -143,7 +143,7 @@ function NclexAppShell() {
   if (location.pathname === '/') {
     return (
       <AuthGate>
-        <div className="min-h-screen bg-[#04101f] text-white">
+        <div className="nurse-command-app min-h-screen bg-[#04101f] text-white">
           <div className="w-full">
             <PwaInstallPrompt />
             {migrationPromptVisible ? (
@@ -190,8 +190,8 @@ function NclexAppShell() {
 
   return (
     <AuthGate>
-    <div className="nclex-shell-bg min-h-screen text-[var(--nclex-text)]">
-      <div className="mx-auto flex min-h-screen max-w-[1540px]">
+    <div className="nurse-command-app nclex-shell-bg min-h-screen text-[var(--nclex-text)]">
+      <div className="mx-auto flex min-h-screen max-w-[1760px]">
         <aside className="nclex-sidebar hidden w-[262px] shrink-0 px-5 py-5 text-white lg:flex lg:flex-col">
           <BrandLockup />
           <nav className="mt-8 flex-1 space-y-1.5">
@@ -216,7 +216,7 @@ function NclexAppShell() {
 
         <div className="flex min-h-screen min-w-0 flex-1 flex-col">
           <header className="nclex-topbar safe-top sticky top-0 z-20 px-4 py-4 md:px-6 lg:px-8">
-            <div className="mx-auto flex w-full max-w-[1180px] items-center justify-between gap-3">
+            <div className="mx-auto flex w-full max-w-[1420px] items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
                 <button
                   type="button"
@@ -238,7 +238,7 @@ function NclexAppShell() {
                   <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-text-muted)]">
                     NCLEX Study System
                   </p>
-                  <h1 className="truncate font-serif text-lg text-[var(--nclex-text)] md:text-xl">
+                  <h1 className="truncate text-lg font-black text-[var(--nclex-text)] md:text-xl">
                     {pageMeta.label}
                   </h1>
                 </div>
@@ -327,7 +327,7 @@ function NclexAppShell() {
           </header>
 
           <main className="page-mobile-pad flex-1 px-4 py-5 md:px-6 lg:px-8 lg:py-8">
-            <div className="mx-auto w-full max-w-[1180px]">
+            <div className="mx-auto w-full max-w-[1420px]">
               <PwaInstallPrompt />
               {migrationPromptVisible ? (
                 <div className="mb-5 rounded-[20px] border border-[#cfe1f7] bg-[linear-gradient(135deg,#ffffff_0%,#eef5ff_100%)] p-4 shadow-sm">
@@ -640,23 +640,21 @@ function MobileTabBar({
 
 function BrandLockup({ compact = false }: { compact?: boolean }) {
   return (
-    <div className={clsx('rounded-[18px] border border-white/10 bg-white/6 p-4', compact && 'p-3')}>
+    <div className={clsx('rounded-[18px] border border-cyan-300/22 bg-[#071d34]/75 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_24px_rgba(43,148,255,0.14)]', compact && 'p-3')}>
       <div className="flex items-start gap-3">
-        <div className="relative mt-0.5 h-11 w-11 shrink-0 overflow-hidden rounded-[14px] bg-[linear-gradient(180deg,#2f87f0_0%,#1f6bd1_100%)] shadow-[0_12px_24px_rgba(42,125,225,0.3)]">
-          <div className="absolute left-1/2 top-[7px] h-5 w-1.5 -translate-x-1/2 rounded-full bg-white" />
-          <div className="absolute left-1/2 top-[14px] h-1.5 w-5 -translate-x-1/2 rounded-full bg-white" />
-          <div className="absolute bottom-[9px] left-1/2 h-0 w-0 -translate-x-1/2 border-x-[13px] border-t-[8px] border-x-transparent border-t-white/95" />
-          <div className="absolute bottom-[4px] left-1/2 h-[2px] w-6 -translate-x-1/2 rounded-full bg-white/90" />
-          <div className="absolute bottom-[1px] left-1/2 h-[2px] w-8 -translate-x-1/2 rounded-full bg-white/65" />
+        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[16px] border border-cyan-300/35 bg-[linear-gradient(180deg,#0f7aff_0%,#062d63_100%)] text-white shadow-[0_0_26px_rgba(43,148,255,0.34)]">
+          <HeartPulse className="h-7 w-7" />
         </div>
         <div className="min-w-0">
-          <p className="text-xl font-semibold tracking-[0.02em] text-white">NCLEX</p>
-          <p className="-mt-0.5 text-[11px] font-semibold uppercase tracking-[0.28em] text-sky-100">
-            Study System
+          <p className="text-lg font-black uppercase tracking-[0.16em] text-white drop-shadow-[0_0_12px_rgba(144,204,255,0.45)]">
+            Nurse Command
+          </p>
+          <p className="-mt-0.5 text-[10px] font-bold uppercase tracking-[0.32em] text-sky-100">
+            Study. Practice. Lead.
           </p>
           {!compact ? (
             <p className="mt-2 text-xs leading-5 text-slate-300">
-              Your plan. Your progress. Your license.
+              Build confidence for the floor.
             </p>
           ) : null}
         </div>

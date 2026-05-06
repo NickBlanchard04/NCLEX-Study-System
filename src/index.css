@@ -74,6 +74,54 @@ textarea {
     linear-gradient(180deg, #f9fbfe 0%, #f6f8fb 50%, #f3f7fc 100%);
 }
 
+.nurse-command-app {
+  --nclex-navy: #04101f;
+  --nclex-navy-2: #071d34;
+  --nclex-blue: #38bdf8;
+  --nclex-blue-strong: #0ea5e9;
+  --nclex-blue-soft: rgba(56, 189, 248, 0.12);
+  --nclex-bg: #04101f;
+  --nclex-card: rgba(7, 29, 52, 0.74);
+  --nclex-card-muted: rgba(3, 16, 31, 0.72);
+  --nclex-border: rgba(125, 211, 252, 0.22);
+  --nclex-border-strong: rgba(125, 211, 252, 0.38);
+  --nclex-text: #ffffff;
+  --nclex-text-secondary: rgba(216, 236, 255, 0.84);
+  --nclex-text-muted: rgba(186, 210, 232, 0.68);
+  --nclex-success: #34d399;
+  --nclex-success-soft: rgba(52, 211, 153, 0.14);
+  --nclex-warning: #fbbf24;
+  --nclex-warning-soft: rgba(251, 191, 36, 0.14);
+  --nclex-danger: #fb7185;
+  --nclex-danger-soft: rgba(251, 113, 133, 0.14);
+  --nclex-shadow-sm: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 16px 34px rgba(0, 0, 0, 0.18);
+  --nclex-shadow-md: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 20px 44px rgba(0, 0, 0, 0.24);
+  --nclex-shadow-lg: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 28px 70px rgba(0, 0, 0, 0.3);
+  color: var(--nclex-text);
+  background:
+    radial-gradient(circle at 70% 8%, rgba(38, 139, 255, 0.22), transparent 28%),
+    radial-gradient(circle at 18% 72%, rgba(0, 184, 255, 0.12), transparent 26%),
+    linear-gradient(180deg, #071629 0%, #04101f 45%, #020812 100%);
+}
+
+.nurse-command-app::before {
+  content: '';
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background-image:
+    linear-gradient(rgba(88, 169, 255, 0.22) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(88, 169, 255, 0.18) 1px, transparent 1px);
+  background-size: 44px 44px;
+  opacity: 0.12;
+}
+
+.nurse-command-app > * {
+  position: relative;
+  z-index: 1;
+}
+
 .nclex-sidebar {
   background: linear-gradient(180deg, var(--nclex-navy) 0%, #082c4b 100%);
   box-shadow: 34px 0 64px rgba(0, 40, 77, 0.18);
@@ -204,6 +252,217 @@ textarea {
   box-shadow:
     0 0 0 4px rgba(42, 125, 225, 0.12),
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.nurse-command-app .nclex-shell-bg,
+.nurse-command-app.nclex-shell-bg {
+  background:
+    radial-gradient(circle at 70% 8%, rgba(38, 139, 255, 0.22), transparent 28%),
+    radial-gradient(circle at 18% 72%, rgba(0, 184, 255, 0.12), transparent 26%),
+    linear-gradient(180deg, #071629 0%, #04101f 45%, #020812 100%);
+}
+
+.nurse-command-app .nclex-sidebar {
+  background: rgba(4, 16, 31, 0.9);
+  border-right: 1px solid rgba(125, 211, 252, 0.18);
+  box-shadow: 30px 0 70px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(18px);
+}
+
+.nurse-command-app .nclex-sidebar-card,
+.nurse-command-app .mobile-app-card {
+  background: rgba(7, 29, 52, 0.76);
+  border-color: rgba(125, 211, 252, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 16px 34px rgba(0, 0, 0, 0.18);
+}
+
+.nurse-command-app .nclex-topbar {
+  background: rgba(4, 16, 31, 0.82);
+  border-bottom: 1px solid rgba(125, 211, 252, 0.2);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(18px);
+}
+
+.nurse-command-app .nclex-surface,
+.nurse-command-app .nclex-soft-panel,
+.nurse-command-app .nclex-surface-muted {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 24% 20%, rgba(47, 150, 255, 0.14), transparent 30%),
+    linear-gradient(135deg, rgba(7, 29, 52, 0.82), rgba(3, 16, 31, 0.74));
+  border: 1px solid rgba(125, 211, 252, 0.24);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 18px 38px rgba(0, 0, 0, 0.22);
+  color: var(--nclex-text);
+  backdrop-filter: blur(12px);
+}
+
+.nurse-command-app .nclex-dark-panel {
+  background:
+    radial-gradient(circle at 22% 38%, rgba(47, 150, 255, 0.18), transparent 32%),
+    linear-gradient(135deg, rgba(7, 29, 52, 0.9), rgba(4, 16, 31, 0.82));
+  border-color: rgba(125, 211, 252, 0.28);
+  box-shadow: 0 0 42px rgba(43, 148, 255, 0.18);
+}
+
+.nurse-command-app .nclex-label {
+  color: #38bdf8;
+}
+
+.nurse-command-app .nclex-chip {
+  border: 1px solid currentColor;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.nurse-command-app .nclex-chip-info {
+  color: #38bdf8;
+}
+
+.nurse-command-app .nclex-chip-success {
+  color: #34d399;
+}
+
+.nurse-command-app .nclex-chip-warning {
+  color: #fbbf24;
+}
+
+.nurse-command-app .nclex-chip-danger {
+  color: #fb7185;
+}
+
+.nurse-command-app .nclex-btn-primary {
+  background: linear-gradient(180deg, #0ea5e9 0%, #0369a1 100%);
+  border: 1px solid rgba(125, 211, 252, 0.35);
+  color: #ffffff;
+  box-shadow: 0 0 24px rgba(56, 189, 248, 0.22), 0 14px 28px rgba(0, 0, 0, 0.2);
+}
+
+.nurse-command-app .nclex-btn-secondary {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(125, 211, 252, 0.26);
+  color: #bae6fd;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 12px 24px rgba(0, 0, 0, 0.16);
+}
+
+.nurse-command-app .nclex-btn-danger {
+  background: linear-gradient(180deg, #fb7185 0%, #be123c 100%);
+  border-color: rgba(251, 113, 133, 0.35);
+  color: #fff;
+}
+
+.nurse-command-app .nclex-input,
+.nurse-command-app input,
+.nurse-command-app select,
+.nurse-command-app textarea {
+  background: rgba(3, 16, 31, 0.72);
+  border: 1px solid rgba(125, 211, 252, 0.28);
+  color: #ffffff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.nurse-command-app input::placeholder,
+.nurse-command-app textarea::placeholder {
+  color: rgba(186, 210, 232, 0.48);
+}
+
+.nurse-command-app input:focus,
+.nurse-command-app select:focus,
+.nurse-command-app textarea:focus,
+.nurse-command-app .nclex-input:focus {
+  outline: none;
+  border-color: rgba(125, 211, 252, 0.82);
+  box-shadow:
+    0 0 0 4px rgba(56, 189, 248, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.nurse-command-app select option {
+  color: #e0f2fe;
+  background: #04101f;
+}
+
+.nurse-command-app .nclex-answer {
+  background: rgba(7, 29, 52, 0.78);
+  border-color: rgba(125, 211, 252, 0.24);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 12px 24px rgba(0, 0, 0, 0.18);
+}
+
+.nurse-command-app .nclex-answer:hover,
+.nurse-command-app .nclex-answer-selected {
+  background: rgba(14, 165, 233, 0.14);
+  border-color: rgba(125, 211, 252, 0.72);
+  box-shadow: 0 0 28px rgba(56, 189, 248, 0.2);
+}
+
+.nurse-command-app .nclex-answer-correct {
+  background: rgba(52, 211, 153, 0.13);
+  border-color: rgba(52, 211, 153, 0.55);
+}
+
+.nurse-command-app .nclex-answer-incorrect {
+  background: rgba(251, 113, 133, 0.12);
+  border-color: rgba(251, 113, 133, 0.5);
+}
+
+.nurse-command-app .bg-white,
+.nurse-command-app .bg-white\/92,
+.nurse-command-app .bg-white\/94,
+.nurse-command-app .bg-white\/96 {
+  background-color: rgba(7, 29, 52, 0.82) !important;
+}
+
+.nurse-command-app [class*="bg-[linear-gradient"],
+.nurse-command-app [class*="bg-[#eef5ff"],
+.nurse-command-app [class*="bg-[#eff6ff"],
+.nurse-command-app [class*="bg-[#f9fbff"],
+.nurse-command-app [class*="bg-[#f8fbff"],
+.nurse-command-app [class*="bg-[#edfdf6"],
+.nurse-command-app [class*="bg-[#fff1f3"] {
+  background: rgba(7, 29, 52, 0.82) !important;
+}
+
+.nurse-command-app .bg-\[var\(--nclex-card-muted\)\],
+.nurse-command-app .bg-\[var\(--nclex-blue-soft\)\],
+.nurse-command-app .bg-\[var\(--nclex-success-soft\)\],
+.nurse-command-app .bg-\[var\(--nclex-warning-soft\)\],
+.nurse-command-app .bg-\[var\(--nclex-danger-soft\)\] {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.nurse-command-app .border-\[var\(--nclex-border\)\],
+.nurse-command-app .border-\[var\(--nclex-border-strong\)\] {
+  border-color: rgba(125, 211, 252, 0.24) !important;
+}
+
+.nurse-command-app .text-\[var\(--nclex-text\)\],
+.nurse-command-app .text-slate-950,
+.nurse-command-app .text-slate-900 {
+  color: #ffffff !important;
+}
+
+.nurse-command-app .text-\[var\(--nclex-text-secondary\)\],
+.nurse-command-app .text-slate-700,
+.nurse-command-app .text-slate-600 {
+  color: rgba(216, 236, 255, 0.84) !important;
+}
+
+.nurse-command-app .text-\[var\(--nclex-text-muted\)\],
+.nurse-command-app .text-slate-500,
+.nurse-command-app .text-slate-400 {
+  color: rgba(186, 210, 232, 0.68) !important;
+}
+
+.nurse-command-app table,
+.nurse-command-app thead,
+.nurse-command-app tbody,
+.nurse-command-app tr {
+  border-color: rgba(125, 211, 252, 0.18);
+}
+
+.nurse-command-app ::selection {
+  background: rgba(56, 189, 248, 0.35);
 }
 
 .nclex-answer {
