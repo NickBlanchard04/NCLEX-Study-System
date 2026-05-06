@@ -37,7 +37,6 @@ import {
   LoaderCircle,
   NotebookPen,
   RefreshCw,
-  ShieldCheck,
   Shuffle,
   Sparkles,
   SquareStack,
@@ -145,120 +144,81 @@ export function StudyMenuPage() {
   const menuGroups: Array<{ title: string; description: string; tools: LaunchTool[] }> = [
     {
       title: 'Continue',
-      description: 'Pick up where the system thinks you will improve fastest.',
+      description: 'Start with the plan or step into a clinical shift.',
       tools: [
         {
-          title: 'Smart Dashboard',
-          description: 'See the next best move, streak, goal, and weak areas.',
-          action: 'Open dashboard',
+          title: 'Continue My Plan',
+          description: 'Open your personalized roadmap, daily priority, streak, and weak areas.',
+          action: 'Open my plan',
           route: '/dashboard',
           icon: <Goal className="h-5 w-5" />,
         },
         {
-          title: 'Quick Study',
-          description: 'Start a 5-question sprint from your weakest area.',
-          action: 'Start 10-minute session',
-          route: '/quick-study',
-          featured: true,
-          icon: <Zap className="h-5 w-5" />,
-          onSelect: () => {
-            startQuickStudy()
-            navigate('/quick-study')
-          },
-        },
-        {
-          title: "Today's Study Plan",
-          description: 'Open your daily checklist and weekly focus blocks.',
-          action: 'Open plan',
-          route: '/study-plan',
-          icon: <CalendarClock className="h-5 w-5" />,
-        },
-      ],
-    },
-    {
-      title: 'Practice',
-      description: 'Questions, quizzes, exam mode, and track-specific prep.',
-      tools: [
-        {
-          title: 'Question Bank',
-          description: 'Practice MCQ, SATA, and clinical judgment scenarios.',
-          action: 'Open bank',
-          route: '/practice-questions',
-          icon: <ClipboardList className="h-5 w-5" />,
-        },
-        {
-          title: 'Quizzes',
-          description: 'Run a focused short session when you have a few minutes.',
-          action: 'Start quiz',
-          route: '/quick-study',
-          icon: <Shuffle className="h-5 w-5" />,
-        },
-        {
-          title: 'Exams',
-          description: 'Use timed or untimed test mode for a realistic check.',
-          action: 'Configure exam',
-          route: '/test-mode',
-          icon: <Target className="h-5 w-5" />,
-        },
-        {
-          title: 'Exam Prep',
-          description: 'Switch NCLEX-RN, NCLEX-PN, FNP, or CCMA tracks.',
-          action: 'Choose track',
-          route: '/exam-prep',
-          icon: <Target className="h-5 w-5" />,
-        },
-      ],
-    },
-    {
-      title: 'Clinical Skills',
-      description: 'Train judgment, prioritization, delegation, and safety.',
-      tools: [
-        {
-          title: 'Shift Game',
+          title: 'Start a Shift Game',
           description: 'Play a 12-hour shift: manage patients, rescue, delegate, document.',
           action: 'Run the floor',
           route: '/shift-command',
           featured: true,
           icon: <HeartPulse className="h-5 w-5" />,
         },
+      ],
+    },
+    {
+      title: 'Practice',
+      description: 'Train with questions or simulate exam pressure.',
+      tools: [
         {
-          title: 'Simulator',
-          description: 'Work through patient decisions step by step.',
-          action: 'Practice first action',
-          route: '/clinical-simulator',
-          icon: <ShieldCheck className="h-5 w-5" />,
+          title: 'Practice Questions',
+          description: 'Practice MCQ, SATA, and clinical judgment scenarios.',
+          action: 'Open question bank',
+          route: '/practice-questions',
+          icon: <ClipboardList className="h-5 w-5" />,
         },
         {
-          title: 'Resources',
-          description: 'Train ABCs, delegation, safety, and answer elimination.',
-          action: 'Open resources',
-          route: '/strategy-training',
-          icon: <BrainCircuit className="h-5 w-5" />,
+          title: 'Take an Exam',
+          description: 'Use timed or untimed test mode for a realistic check.',
+          action: 'Configure exam',
+          route: '/test-mode',
+          icon: <Target className="h-5 w-5" />,
+        },
+      ],
+    },
+    {
+      title: 'Improve',
+      description: 'Turn weak spots and class materials into better judgment.',
+      tools: [
+        {
+          title: 'Train Weak Areas',
+          description: 'Fix weak areas with targeted remediation and confidence-building practice.',
+          action: 'Train weak areas',
+          route: '/weak-areas',
+          icon: <TrendingUp className="h-5 w-5" />,
+        },
+        {
+          title: 'Build From My Materials',
+          description: 'Upload notes, guides, or links and turn them into study tools.',
+          action: 'Open materials',
+          route: '/my-materials',
+          featured: true,
+          icon: <UploadCloud className="h-5 w-5" />,
         },
       ],
     },
     {
       title: 'Review',
-      description: 'Turn misses into repeatable confidence.',
+      description: 'Reinforce what you know and track real progress.',
       tools: [
         {
-          title: 'Remediation',
-          description: 'Fix weak areas with targeted review and practice.',
-          action: 'Fix weak areas',
-          route: '/weak-areas',
-          icon: <TrendingUp className="h-5 w-5" />,
-        },
-        {
-          title: 'Flashcards',
+          title: 'Review Flashcards',
           description: 'Review meds, labs, safety rules, and imported cards.',
           action: 'Review cards',
           route: '/flashcards',
           icon: <SquareStack className="h-5 w-5" />,
         },
         {
-          title: 'Performance',
+          title: 'Check My Progress',
           description: 'Track accuracy, confidence patterns, and momentum.',
-          action: 'View analytics',
+          action: 'View progress',
           route: '/performance-analytics',
           icon: <BarChart3 className="h-5 w-5" />,
         },
@@ -267,20 +227,21 @@ export function StudyMenuPage() {
   ]
 
   const allTools = [
-    ['Dashboard', '/dashboard'],
+    ['Continue My Plan', '/dashboard'],
     ['Exam Prep', '/exam-prep'],
     ['Study Plan', '/study-plan'],
-    ['Question Bank', '/practice-questions'],
+    ['Practice Questions', '/practice-questions'],
     ['Quizzes', '/quick-study'],
-    ['Exams', '/test-mode'],
-    ['Shift Game', '/shift-command'],
+    ['Take an Exam', '/test-mode'],
+    ['Start a Shift Game', '/shift-command'],
     ['Simulator', '/clinical-simulator'],
-    ['Performance', '/performance-analytics'],
+    ['Check My Progress', '/performance-analytics'],
     ['Notes', '/notes'],
-    ['My Materials', '/my-materials'],
-    ['Remediation', '/weak-areas'],
-    ['Flashcards', '/flashcards'],
+    ['Build From My Materials', '/my-materials'],
+    ['Train Weak Areas', '/weak-areas'],
+    ['Review Flashcards', '/flashcards'],
     ['Resources', '/strategy-training'],
+    ['Settings', '/settings'],
   ]
 
   const handleMenuFiles = async (files: FileList | File[]) => {
@@ -340,10 +301,10 @@ export function StudyMenuPage() {
               </div>
             </div>
             <h1 className="mt-7 font-serif text-5xl leading-[1.02] tracking-[-0.04em] text-[var(--nclex-text)] md:text-7xl">
-              What do you want to do right now?
+              Build Confidence for the Floor.
             </h1>
             <p className="mt-5 max-w-3xl text-lg leading-8 text-[var(--nclex-text-muted)]">
-              Choose a simple path into your {activeExamTrack.shortName} prep. The app will keep the detailed tools organized behind each choice.
+              Practice decisions, sharpen weak areas, and turn study time into clinical judgment.
             </p>
           </div>
 
@@ -378,7 +339,7 @@ export function StudyMenuPage() {
               <div className="rounded-[24px] bg-[var(--nclex-blue)] px-5 py-4 text-white shadow-[0_18px_38px_rgba(42,125,225,0.32)]">
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/75">Best first move</p>
                 <p className="mt-2 flex items-center gap-2 text-lg font-bold">
-                  Start Quick Study
+                  Start confidence session
                   <ArrowRight className="h-5 w-5 transition group-hover:translate-x-1" />
                 </p>
               </div>
@@ -407,7 +368,7 @@ export function StudyMenuPage() {
         </section>
 
         <section className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1fr)_410px]">
-          <div className="grid gap-5">
+          <div className="grid gap-5 lg:grid-cols-2">
             {menuGroups.map((group) => (
               <Surface key={group.title}>
                 <div className="flex flex-col gap-1 md:flex-row md:items-end md:justify-between">
@@ -416,7 +377,7 @@ export function StudyMenuPage() {
                     <p className="mt-1 text-sm leading-6 text-[var(--nclex-text-muted)]">{group.description}</p>
                   </div>
                 </div>
-                <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <div className="mt-5 grid gap-4 sm:grid-cols-2">
                   {group.tools.map((tool) => (
                     <LaunchFeatureCard
                       key={tool.title}
@@ -439,7 +400,7 @@ export function StudyMenuPage() {
             <Surface className="overflow-hidden p-0">
               <div className="border-b border-[var(--nclex-border)] bg-[linear-gradient(135deg,#ffffff_0%,#f4f8ff_100%)] px-5 py-5">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-blue)]">
-                  Build from my material
+                  Build From My Materials
                 </p>
                 <h2 className="mt-2 font-serif text-3xl text-[var(--nclex-text)]">
                   Turn notes into study tools.
