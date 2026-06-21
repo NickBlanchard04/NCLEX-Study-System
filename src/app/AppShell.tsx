@@ -236,7 +236,7 @@ function NclexAppShell() {
                 </button>
                 <div className="min-w-0">
                   <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-text-muted)]">
-                    NCLEX Study System
+                    Nurse Command
                   </p>
                   <h1 className="truncate text-lg font-black text-[var(--nclex-text)] md:text-xl">
                     {pageMeta.label}

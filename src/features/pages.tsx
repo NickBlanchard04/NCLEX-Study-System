@@ -336,7 +336,7 @@ export function StudyMenuPage() {
   }
 
   return (
-    <NurseCommandBackdrop className="min-h-screen px-4 py-4 md:px-7">
+    <NurseCommandBackdrop className="min-h-screen w-full overflow-x-hidden px-4 py-4 md:px-7">
       <div className="mx-auto flex min-h-[calc(100vh-2rem)] max-w-[1760px] flex-col">
         <header className="relative z-10 flex flex-col gap-4 border-b border-cyan-300/20 pb-4 lg:flex-row lg:items-center lg:justify-between">
           <CommandBrand />
@@ -356,7 +356,7 @@ export function StudyMenuPage() {
           <section className="grid gap-5 xl:grid-cols-[minmax(0,1.25fr)_610px]">
             <div className="rounded-[1.35rem] border border-cyan-300/20 bg-[#061b31]/55 px-5 py-5 shadow-[0_0_48px_rgba(0,98,180,0.14)] backdrop-blur md:px-7">
               <div className="flex items-center gap-4">
-                <h1 className="text-5xl font-black leading-[0.96] tracking-[-0.055em] text-white drop-shadow-[0_0_18px_rgba(148,207,255,0.68)] md:text-7xl xl:text-8xl">
+                <h1 className="text-5xl font-black leading-[0.95] tracking-normal text-white drop-shadow-[0_0_18px_rgba(148,207,255,0.68)] sm:text-6xl md:text-7xl xl:text-[5.25rem] 2xl:text-[5.75rem]">
                   Build Confidence for the Floor.
                 </h1>
                 <EcgLine className="hidden h-16 min-w-[220px] flex-1 lg:block" />
@@ -540,8 +540,8 @@ export function StudyMenuPage() {
 
         <nav className="sticky bottom-0 z-20 mt-4 grid grid-cols-2 gap-2 border-t border-cyan-300/20 bg-[#020812]/85 px-2 py-3 backdrop-blur md:grid-cols-5">
           <BottomCommandButton label="Home" icon={<Goal className="h-5 w-5" />} active onClick={() => navigate('/')} />
-          <BottomCommandButton label="Calendar" icon={<CalendarClock className="h-5 w-5" />} onClick={() => navigate('/study-plan')} />
-          <BottomCommandButton label="Achievements" icon={<BarChart3 className="h-5 w-5" />} onClick={() => navigate('/performance-analytics')} />
+          <BottomCommandButton label="Study Plan" icon={<CalendarClock className="h-5 w-5" />} onClick={() => navigate('/study-plan')} />
+          <BottomCommandButton label="Performance" icon={<BarChart3 className="h-5 w-5" />} onClick={() => navigate('/performance-analytics')} />
           <BottomCommandButton label="Resources" icon={<BookOpen className="h-5 w-5" />} onClick={() => navigate('/strategy-training')} />
           <BottomCommandButton label="Settings" icon={<Target className="h-5 w-5" />} onClick={() => navigate('/settings')} />
         </nav>
@@ -798,7 +798,7 @@ export function DashboardPage() {
           label="Current Streak"
           value={`${dashboard.streak} days`}
           detail="Keep the habit alive."
-          trend="â†‘ 2 days"
+          trend="+2 days"
           tone="success"
           icon={<Flame className="h-5 w-5" />}
           sparkline={completionTrend}
@@ -815,7 +815,7 @@ export function DashboardPage() {
           label="Accuracy"
           value={`${Math.round(dashboard.recentAccuracy * 100)}%`}
           detail="Across your most recent set."
-          trend={dashboard.recentAccuracy >= 0.75 ? 'â†‘ 6% this week' : 'Focus on stability'}
+          trend={dashboard.recentAccuracy >= 0.75 ? '+6% this week' : 'Focus on stability'}
           tone={dashboard.recentAccuracy >= 0.75 ? 'success' : 'warning'}
           icon={<CheckCircle2 className="h-5 w-5" />}
           sparkline={accuracyTrend}
@@ -872,7 +872,7 @@ export function DashboardPage() {
             <CircularProgress
               value={weakestArea?.accuracy ?? dashboard.recentAccuracy}
               label="Mastery"
-              detail="â†‘ 12% improvement"
+              detail="+12% improvement"
               tone="green"
             />
           </div>
@@ -1050,8 +1050,8 @@ export function DashboardPage() {
             title="Recent performance"
             action={<span className="nclex-chip nclex-chip-info">Last 7 days</span>}
           />
-          <div className="mt-5 h-[280px]">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="mt-5 h-[280px] min-h-[280px] min-w-0">
+            <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 1, height: 1 }} minWidth={0}>
               <AreaChart data={analytics.dailyAccuracy}>
                 <defs>
                   <linearGradient id="accuracyFill" x1="0" y1="0" x2="0" y2="1">
@@ -1506,7 +1506,7 @@ export function QuickStudyPage() {
       <PageHeader
         eyebrow="Quick Study"
         title="Only have 10 minutes?"
-        description="Letâ€™s focus on your weakest area and turn this into a quick, confidence-building win."
+        description="Let's focus on your weakest area and turn this into a quick, confidence-building win."
         action={
           <button
             type="button"
@@ -1538,7 +1538,7 @@ export function QuickStudyPage() {
           <ul className="mt-5 space-y-4 text-sm leading-6 text-[#4f687a]">
             <li>No setup friction. One tap starts the set.</li>
             <li>Weak-area targeting keeps every question valuable.</li>
-            <li>Confidence tracking catches the answers you only â€œsort ofâ€ know.</li>
+            <li>Confidence tracking catches the answers you only "sort of" know.</li>
             <li>End-of-set summaries tell you exactly what to reinforce next.</li>
           </ul>
         </Surface>
@@ -1574,7 +1574,7 @@ export function TestModePage() {
       <PageHeader
         eyebrow="Exam Simulation"
         title={`Practice ${activeTrack.shortName} pressure before test day.`}
-        description={`This exam mode pulls from the ${activeTrack.shortName} bank and uses that trackâ€™s domains, systems, and blueprint emphasis.`}
+        description={`This exam mode pulls from the ${activeTrack.shortName} bank and uses that track's domains, systems, and blueprint emphasis.`}
       />
       <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
         <Surface>
@@ -1752,8 +1752,8 @@ export function PerformanceAnalyticsPage() {
             <h3 className="font-serif text-2xl text-[#163042]">Accuracy trend</h3>
             <span className="nclex-chip nclex-chip-info">daily</span>
           </div>
-          <div className="mt-5 h-[320px]">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="mt-5 h-[320px] min-h-[320px] min-w-0">
+            <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 1, height: 1 }} minWidth={0}>
               <LineChart data={analytics.dailyAccuracy}>
                 <CartesianGrid vertical={false} stroke="#e2e8f0" />
                 <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
@@ -1769,8 +1769,8 @@ export function PerformanceAnalyticsPage() {
             <h3 className="font-serif text-2xl text-[#163042]">Category accuracy</h3>
             <span className="nclex-chip nclex-chip-info">by system</span>
           </div>
-          <div className="mt-5 h-[320px]">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="mt-5 h-[320px] min-h-[320px] min-w-0">
+            <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 1, height: 1 }} minWidth={0}>
               <BarChart data={analytics.categoryStats}>
                 <CartesianGrid vertical={false} stroke="#e2e8f0" />
                 <XAxis dataKey="category" hide />
@@ -1802,8 +1802,8 @@ export function PerformanceAnalyticsPage() {
             <h3 className="font-serif text-2xl text-[#163042]">Confidence trend</h3>
             <span className="nclex-chip nclex-chip-info">stability</span>
           </div>
-          <div className="mt-5 h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="mt-5 h-[300px] min-h-[300px] min-w-0">
+            <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 1, height: 1 }} minWidth={0}>
               <AreaChart data={analytics.confidenceTrend}>
                 <defs>
                   <linearGradient id="confidenceFill" x1="0" y1="0" x2="0" y2="1">
@@ -2498,7 +2498,7 @@ export function MyMaterialsPage() {
               ) : (
                 <EmptyState
                   title="Your materials library is empty."
-                  description="Upload a study guide and weâ€™ll turn it into a reusable review set."
+                  description="Upload a study guide and we'll turn it into a reusable review set."
                 />
               )}
             </div>
@@ -2514,7 +2514,7 @@ export function MyMaterialsPage() {
                     <span className="nclex-chip nclex-chip-info">{selectedMaterial.fileType.toUpperCase()}</span>
                     <span className={materialStatusClass(selectedMaterial.extractionStatus)}>
                       {selectedMaterial.extractionStatus === 'error'
-                        ? 'We couldnâ€™t read this file cleanly'
+                        ? "We couldn't read this file cleanly"
                         : selectedMaterial.extractionStatus === 'extracting'
                           ? 'Pulling study material into your library'
                           : 'Study tools ready'}
@@ -4053,7 +4053,7 @@ function buildMaterialStudyGuide(material: StudyMaterial) {
         ...material.tags,
         ...assets.flatMap((asset) =>
           asset.content
-            .split(/\s*[-â€¢]\s*|\n/)
+            .split(/\s*[-\u2022]\s*|\n/)
             .filter((item) => item.includes(':'))
             .map((item) => item.split(':')[0]?.trim())
             .filter(Boolean),
