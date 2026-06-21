@@ -484,7 +484,7 @@ function NclexAppShell() {
               initial={{ y: 24, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 24, opacity: 0 }}
-              className="safe-bottom fixed inset-x-0 bottom-0 rounded-t-[28px] bg-white px-4 pb-6 pt-4 shadow-[0_-18px_44px_rgba(15,37,61,0.12)]"
+              className="safe-bottom fixed inset-x-0 bottom-0 flex max-h-[calc(100vh-1rem)] flex-col rounded-t-[28px] bg-white px-4 pb-6 pt-4 shadow-[0_-18px_44px_rgba(15,37,61,0.12)]"
               onClick={(event) => event.stopPropagation()}
             >
               <div className="mx-auto mb-4 h-1.5 w-14 rounded-full bg-[var(--nclex-border)]" />
@@ -503,7 +503,7 @@ function NclexAppShell() {
                   <X className="h-4 w-4" />
                 </button>
               </div>
-              <div className="mt-5 grid gap-3">
+              <div className="mt-5 grid min-h-0 gap-3 overflow-y-auto pr-1">
                 {[...mainNavigation.slice(1), ...secondaryNavigation].map(({ label, icon: Icon, to }) => (
                   <button
                     key={to}

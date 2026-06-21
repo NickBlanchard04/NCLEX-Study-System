@@ -117,7 +117,7 @@ textarea {
   opacity: 0.12;
 }
 
-.nurse-command-app > * {
+.nurse-command-app > :not(.fixed) {
   position: relative;
   z-index: 1;
 }
@@ -531,6 +531,20 @@ textarea {
 }
 
 @media (min-width: 1024px) {
+  .nurse-command-app .nclex-sidebar {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
+  }
+
+  .nurse-command-app .nclex-sidebar > nav {
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 0.25rem;
+  }
+
   .page-mobile-pad {
     padding-bottom: 2rem;
   }
