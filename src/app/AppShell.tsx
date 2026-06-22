@@ -60,7 +60,7 @@ const mainNavigation = [
   { label: 'Question Bank', icon: ClipboardList, to: '/practice-questions' },
   { label: 'Quizzes', icon: Flashlight, to: '/quick-study' },
   { label: 'Exams', icon: Target, to: '/test-mode' },
-  { label: 'Nurse Command Lab', icon: Gamepad2, to: '/nurse-command-lab' },
+  { label: 'Nurse Lab', icon: Gamepad2, to: '/nurse-command-lab' },
   { label: 'Shift Game', icon: HeartPulse, to: '/shift-command' },
   { label: 'Hospitalvania', icon: Gamepad2, to: '/hospitalvania' },
   { label: 'Tycoon', icon: BadgeDollarSign, to: '/nurse-tycoon' },
@@ -479,7 +479,7 @@ function NclexAppShell() {
         onOpenQuickStudy={() => navigate('/quick-study')}
       />
 
-      {location.pathname !== '/quick-study' ? (
+      {location.pathname !== '/quick-study' && !location.pathname.startsWith('/nurse-command-lab') ? (
         <button
           type="button"
           onClick={() => navigate('/quick-study')}
