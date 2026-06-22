@@ -138,52 +138,58 @@ const launchToneClasses: Record<
     text: string
     meta: string
     hover: string
+    glow: string
   }
 > = {
   cyan: {
-    accent: 'bg-cyan-300',
-    border: 'border-cyan-300/36',
-    surface: 'bg-cyan-400/[0.085]',
-    icon: 'border-cyan-300/35 bg-cyan-300/12 text-cyan-200',
-    text: 'text-cyan-200',
-    meta: 'border-cyan-300/24 bg-cyan-300/10 text-cyan-100',
-    hover: 'hover:border-cyan-200/72 hover:bg-cyan-400/[0.13]',
+    accent: 'bg-cyan-300 shadow-[0_0_18px_rgba(103,232,249,0.75)]',
+    border: 'border-cyan-200/55',
+    surface: 'bg-gradient-to-br from-cyan-400/[0.26] via-[#06243d]/90 to-[#061426]/92',
+    icon: 'border-cyan-200/65 bg-cyan-300/24 text-cyan-50 shadow-[0_0_22px_rgba(34,211,238,0.22)]',
+    text: 'text-cyan-50',
+    meta: 'border-cyan-100/45 bg-cyan-300/22 text-cyan-50',
+    hover: 'hover:border-cyan-100/85 hover:from-cyan-300/[0.32]',
+    glow: 'bg-cyan-300/30',
   },
   emerald: {
-    accent: 'bg-emerald-300',
-    border: 'border-emerald-300/32',
-    surface: 'bg-emerald-400/[0.075]',
-    icon: 'border-emerald-300/35 bg-emerald-300/12 text-emerald-200',
-    text: 'text-emerald-200',
-    meta: 'border-emerald-300/24 bg-emerald-300/10 text-emerald-100',
-    hover: 'hover:border-emerald-200/68 hover:bg-emerald-400/[0.12]',
+    accent: 'bg-emerald-300 shadow-[0_0_18px_rgba(110,231,183,0.75)]',
+    border: 'border-emerald-200/50',
+    surface: 'bg-gradient-to-br from-emerald-400/[0.24] via-[#052a2c]/88 to-[#061426]/92',
+    icon: 'border-emerald-200/60 bg-emerald-300/22 text-emerald-50 shadow-[0_0_22px_rgba(52,211,153,0.2)]',
+    text: 'text-emerald-50',
+    meta: 'border-emerald-100/42 bg-emerald-300/20 text-emerald-50',
+    hover: 'hover:border-emerald-100/80 hover:from-emerald-300/[0.3]',
+    glow: 'bg-emerald-300/28',
   },
   amber: {
-    accent: 'bg-amber-300',
-    border: 'border-amber-300/32',
-    surface: 'bg-amber-300/[0.075]',
-    icon: 'border-amber-300/35 bg-amber-300/12 text-amber-200',
-    text: 'text-amber-200',
-    meta: 'border-amber-300/24 bg-amber-300/10 text-amber-100',
-    hover: 'hover:border-amber-200/68 hover:bg-amber-300/[0.12]',
+    accent: 'bg-amber-300 shadow-[0_0_18px_rgba(252,211,77,0.75)]',
+    border: 'border-amber-200/52',
+    surface: 'bg-gradient-to-br from-amber-300/[0.25] via-[#2b2412]/78 to-[#061426]/92',
+    icon: 'border-amber-200/62 bg-amber-300/24 text-amber-50 shadow-[0_0_22px_rgba(251,191,36,0.2)]',
+    text: 'text-amber-50',
+    meta: 'border-amber-100/42 bg-amber-300/22 text-amber-50',
+    hover: 'hover:border-amber-100/80 hover:from-amber-300/[0.32]',
+    glow: 'bg-amber-300/28',
   },
   rose: {
-    accent: 'bg-rose-300',
-    border: 'border-rose-300/32',
-    surface: 'bg-rose-400/[0.07]',
-    icon: 'border-rose-300/35 bg-rose-300/12 text-rose-200',
-    text: 'text-rose-200',
-    meta: 'border-rose-300/24 bg-rose-300/10 text-rose-100',
-    hover: 'hover:border-rose-200/68 hover:bg-rose-400/[0.11]',
+    accent: 'bg-rose-300 shadow-[0_0_18px_rgba(253,164,175,0.72)]',
+    border: 'border-rose-200/50',
+    surface: 'bg-gradient-to-br from-rose-400/[0.23] via-[#2b1428]/78 to-[#061426]/92',
+    icon: 'border-rose-200/58 bg-rose-300/22 text-rose-50 shadow-[0_0_22px_rgba(251,113,133,0.2)]',
+    text: 'text-rose-50',
+    meta: 'border-rose-100/42 bg-rose-300/20 text-rose-50',
+    hover: 'hover:border-rose-100/78 hover:from-rose-300/[0.3]',
+    glow: 'bg-rose-300/26',
   },
   violet: {
-    accent: 'bg-violet-300',
-    border: 'border-violet-300/34',
-    surface: 'bg-violet-400/[0.08]',
-    icon: 'border-violet-300/35 bg-violet-300/12 text-violet-200',
-    text: 'text-violet-200',
-    meta: 'border-violet-300/24 bg-violet-300/10 text-violet-100',
-    hover: 'hover:border-violet-200/70 hover:bg-violet-400/[0.12]',
+    accent: 'bg-violet-300 shadow-[0_0_18px_rgba(196,181,253,0.74)]',
+    border: 'border-violet-200/52',
+    surface: 'bg-gradient-to-br from-violet-400/[0.24] via-[#1d1b42]/82 to-[#061426]/92',
+    icon: 'border-violet-200/62 bg-violet-300/22 text-violet-50 shadow-[0_0_22px_rgba(167,139,250,0.2)]',
+    text: 'text-violet-50',
+    meta: 'border-violet-100/42 bg-violet-300/21 text-violet-50',
+    hover: 'hover:border-violet-100/80 hover:from-violet-300/[0.31]',
+    glow: 'bg-violet-300/28',
   },
 }
 
@@ -420,9 +426,12 @@ export function StudyMenuPage() {
 
         <main className="relative z-10 flex flex-1 flex-col gap-5 pb-4 pt-5">
           <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-stretch">
-            <div className="relative overflow-hidden rounded-xl border border-cyan-300/28 bg-[#061b31]/70 p-5 shadow-[0_14px_34px_rgba(0,0,0,0.2)] md:p-6">
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,#22d3ee,#34d399,#fbbf24,#fb7185,#a78bfa)]" />
-              <div className="max-w-3xl">
+            <div className="relative overflow-hidden rounded-xl border border-cyan-200/45 bg-[#061b31]/78 p-5 shadow-[0_18px_42px_rgba(0,0,0,0.24),0_0_42px_rgba(34,211,238,0.1)] md:p-6">
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-1.5 bg-[linear-gradient(90deg,#22d3ee,#34d399,#fbbf24,#fb7185,#a78bfa)]" />
+              <div className="pointer-events-none absolute -left-16 -top-20 h-48 w-48 rounded-full bg-cyan-300/18 blur-3xl" />
+              <div className="pointer-events-none absolute right-6 top-10 h-32 w-32 rounded-full bg-emerald-300/14 blur-3xl" />
+              <div className="pointer-events-none absolute -bottom-24 right-24 h-52 w-52 rounded-full bg-violet-300/16 blur-3xl" />
+              <div className="relative max-w-3xl">
                 <h1 className="text-4xl font-black leading-tight tracking-normal text-white sm:text-5xl lg:text-6xl">
                   Nurse Command
                 </h1>
@@ -430,11 +439,11 @@ export function StudyMenuPage() {
                   A clean launch point for today's plan, fast practice, progress, and study materials.
                 </p>
               </div>
-              <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="relative mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <button
                   type="button"
                   onClick={() => navigate('/dashboard')}
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-cyan-100/65 bg-gradient-to-r from-cyan-300 via-sky-300 to-emerald-300 px-4 py-3 text-sm font-black text-[#03101f] shadow-[0_0_24px_rgba(34,211,238,0.28),0_12px_26px_rgba(0,0,0,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-cyan-300/30"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-cyan-50/70 bg-gradient-to-r from-cyan-200 via-sky-300 to-emerald-300 px-4 py-3 text-sm font-black text-[#03101f] shadow-[0_0_32px_rgba(34,211,238,0.38),0_12px_26px_rgba(0,0,0,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-cyan-300/30"
                 >
                   Continue My Plan
                   <ArrowRight className="h-4 w-4" />
@@ -445,27 +454,31 @@ export function StudyMenuPage() {
               </div>
             </div>
 
-            <aside className="relative overflow-hidden rounded-xl border border-emerald-300/24 bg-[#071d34]/78 p-5 shadow-[0_14px_34px_rgba(0,0,0,0.18)]">
-              <div className="pointer-events-none absolute inset-y-4 left-0 w-1 rounded-r-full bg-emerald-300/80" />
-              <p className="text-sm font-semibold text-sky-100/72">Today's focus</p>
+            <aside className="relative overflow-hidden rounded-xl border border-emerald-200/42 bg-gradient-to-br from-emerald-400/[0.16] via-[#082838]/88 to-[#071d34]/92 p-5 shadow-[0_14px_34px_rgba(0,0,0,0.18),0_0_36px_rgba(52,211,153,0.1)]">
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-emerald-300 via-cyan-300 to-amber-300" />
+              <div className="pointer-events-none absolute inset-y-4 left-0 w-1.5 rounded-r-full bg-emerald-300/90 shadow-[0_0_18px_rgba(110,231,183,0.72)]" />
+              <div className="pointer-events-none absolute -right-16 -top-16 h-36 w-36 rounded-full bg-emerald-300/20 blur-3xl" />
+              <div className="relative">
+              <p className="text-sm font-semibold text-emerald-50/82">Today's focus</p>
               <h2 className="mt-2 text-2xl font-black leading-tight text-white">{todayPriority}</h2>
-              <p className="mt-2 text-sm leading-6 text-sky-100/68">
+              <p className="mt-2 text-sm leading-6 text-sky-50/72">
                 {dashboard.todayCompleted} of {dashboard.dailyGoal} planned activities complete. Keep the next action obvious and the rest secondary.
               </p>
               <CommandProgress value={planProgress} tone="green" className="mt-4" />
               <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs font-semibold text-sky-100/70">
-                <div className="rounded-lg border border-emerald-300/20 bg-emerald-300/[0.06] px-2 py-2">
+                <div className="rounded-lg border border-emerald-200/36 bg-emerald-300/[0.14] px-2 py-2">
                   <p className="text-base font-black text-white">{Math.max(1, accuracyPct)}%</p>
                   <p>Accuracy</p>
                 </div>
-                <div className="rounded-lg border border-amber-300/20 bg-amber-300/[0.06] px-2 py-2">
+                <div className="rounded-lg border border-amber-200/36 bg-amber-300/[0.14] px-2 py-2">
                   <p className="text-base font-black text-white">{Math.max(dueCards, 0)}</p>
                   <p>Cards</p>
                 </div>
-                <div className="rounded-lg border border-violet-300/20 bg-violet-300/[0.06] px-2 py-2">
+                <div className="rounded-lg border border-violet-200/36 bg-violet-300/[0.14] px-2 py-2">
                   <p className="text-base font-black text-white">{materialCount}</p>
                   <p>Files</p>
                 </div>
+              </div>
               </div>
             </aside>
           </section>
@@ -488,8 +501,10 @@ export function StudyMenuPage() {
                       : 'shadow-[0_12px_28px_rgba(0,0,0,0.16)]',
                   )}
                 >
-                  <span className={clsx('pointer-events-none absolute inset-y-3 left-0 w-1 rounded-r-full', tone.accent)} />
-                  <div className="flex items-start justify-between gap-3">
+                  <span className={clsx('pointer-events-none absolute -right-10 -top-12 h-28 w-28 rounded-full blur-2xl transition group-hover:scale-110', tone.glow)} />
+                  <span className={clsx('pointer-events-none absolute inset-x-0 top-0 h-1.5', tone.accent)} />
+                  <span className={clsx('pointer-events-none absolute inset-y-4 left-0 w-1.5 rounded-r-full', tone.accent)} />
+                  <div className="relative flex items-start justify-between gap-3">
                     <span className={clsx('grid h-10 w-10 shrink-0 place-items-center rounded-lg border', tone.icon)}>
                       {tool.icon}
                     </span>
@@ -497,9 +512,9 @@ export function StudyMenuPage() {
                       {tool.meta}
                     </span>
                   </div>
-                  <h3 className="mt-3 text-lg font-black text-white">{tool.title}</h3>
-                  <p className="mt-1 min-h-[2.5rem] text-sm leading-5 text-sky-100/68">{tool.description}</p>
-                  <span className={clsx('mt-3 inline-flex items-center gap-2 text-sm font-bold', tone.text)}>
+                  <h3 className="relative mt-3 text-lg font-black text-white">{tool.title}</h3>
+                  <p className="relative mt-1 min-h-[2.5rem] text-sm leading-5 text-sky-50/74">{tool.description}</p>
+                  <span className={clsx('relative mt-3 inline-flex items-center gap-2 text-sm font-bold', tone.text)}>
                     {tool.action}
                     <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
                   </span>
@@ -510,10 +525,12 @@ export function StudyMenuPage() {
 
           <section className="grid gap-3 lg:grid-cols-3">
             {secondaryGroups.map((group) => (
-              <section key={group.title} className={clsx('min-w-0 rounded-xl border bg-[#061b31]/58 p-4', launchToneClasses[group.tone].border)}>
-                <h2 className="text-base font-black text-white">{group.title}</h2>
-                <p className="mt-1 text-sm leading-6 text-sky-100/62">{group.description}</p>
-                <div className="mt-4 grid min-w-0 gap-2">
+              <section key={group.title} className={clsx('relative min-w-0 overflow-hidden rounded-xl border p-4', launchToneClasses[group.tone].border, launchToneClasses[group.tone].surface)}>
+                <span className={clsx('pointer-events-none absolute inset-x-0 top-0 h-1', launchToneClasses[group.tone].accent)} />
+                <span className={clsx('pointer-events-none absolute -right-12 -top-14 h-28 w-28 rounded-full blur-2xl', launchToneClasses[group.tone].glow)} />
+                <h2 className="relative text-base font-black text-white">{group.title}</h2>
+                <p className="relative mt-1 text-sm leading-6 text-sky-50/70">{group.description}</p>
+                <div className="relative mt-4 grid min-w-0 gap-2">
                   {group.tools.map((tool) => (
                     <button
                       key={tool.route}
@@ -531,7 +548,7 @@ export function StudyMenuPage() {
                       </span>
                       <span className="min-w-0 flex-1 overflow-hidden">
                         <span className="block text-sm font-bold text-white">{tool.title}</span>
-                        <span className="block truncate text-xs text-sky-100/58">{tool.description}</span>
+                        <span className="block truncate text-xs text-sky-50/64">{tool.description}</span>
                       </span>
                       <ArrowRight className={clsx('h-4 w-4 shrink-0', launchToneClasses[tool.tone].text)} />
                     </button>
@@ -542,21 +559,24 @@ export function StudyMenuPage() {
           </section>
 
           <section className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-            <section className="rounded-xl border border-sky-300/18 bg-[#061b31]/58 p-4">
+            <section className="relative overflow-hidden rounded-xl border border-violet-200/34 bg-gradient-to-br from-violet-400/[0.16] via-[#111c3a]/82 to-[#061426]/92 p-4">
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-300 via-cyan-300 to-emerald-300" />
+              <div className="pointer-events-none absolute -right-12 -top-14 h-32 w-32 rounded-full bg-violet-300/20 blur-3xl" />
+              <div className="relative">
               <h2 className="text-base font-black text-white">Materials and imports</h2>
-              <p className="mt-1 text-sm leading-6 text-sky-100/62">
+              <p className="mt-1 text-sm leading-6 text-sky-50/70">
                 Add class notes only when you need them. The main launcher stays focused on what to do next.
               </p>
               <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs font-semibold text-sky-100/64">
-                <div className="rounded-lg border border-sky-300/14 bg-white/[0.035] px-2 py-3">
+                <div className="rounded-lg border border-violet-200/30 bg-violet-300/[0.12] px-2 py-3">
                   <p className="text-lg font-black text-white">{materials.length}</p>
                   <p>Materials</p>
                 </div>
-                <div className="rounded-lg border border-sky-300/14 bg-white/[0.035] px-2 py-3">
+                <div className="rounded-lg border border-cyan-200/30 bg-cyan-300/[0.12] px-2 py-3">
                   <p className="text-lg font-black text-white">{materialFlashcards.length}</p>
                   <p>Cards</p>
                 </div>
-                <div className="rounded-lg border border-sky-300/14 bg-white/[0.035] px-2 py-3">
+                <div className="rounded-lg border border-emerald-200/30 bg-emerald-300/[0.12] px-2 py-3">
                   <p className="text-lg font-black text-white">{materialQuestions.length}</p>
                   <p>Items</p>
                 </div>
@@ -566,9 +586,12 @@ export function StudyMenuPage() {
                   {extractingMaterials.length} material import in progress.
                 </p>
               ) : null}
+              </div>
             </section>
 
-            <section className="rounded-xl border border-sky-300/18 bg-[#061b31]/58 p-4">
+            <section className="relative overflow-hidden rounded-xl border border-cyan-200/34 bg-gradient-to-br from-cyan-400/[0.15] via-[#08243b]/82 to-[#061426]/92 p-4">
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-300 via-sky-300 to-amber-300" />
+              <div className="pointer-events-none absolute -left-12 bottom-[-4rem] h-32 w-32 rounded-full bg-cyan-300/18 blur-3xl" />
               <input
                 ref={fileInputRef}
                 type="file"
@@ -580,7 +603,7 @@ export function StudyMenuPage() {
                   event.currentTarget.value = ''
                 }}
               />
-              <div className="grid gap-3 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+              <div className="relative grid gap-3 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
                 <div
                   onDragEnter={(event) => {
                     event.preventDefault()
@@ -614,13 +637,13 @@ export function StudyMenuPage() {
                       value={materialUrl}
                       onChange={(event) => setMaterialUrl(event.target.value)}
                       placeholder="Paste a study link"
-                      className="h-12 w-full rounded-lg border border-sky-300/25 bg-[#03101f]/70 pl-10 pr-3 text-sm text-white outline-none transition placeholder:text-sky-200/35 focus:border-sky-200 focus:ring-4 focus:ring-sky-400/15"
+                      className="h-12 w-full rounded-lg border border-cyan-200/35 bg-[#03101f]/78 pl-10 pr-3 text-sm text-white outline-none transition placeholder:text-sky-200/38 focus:border-cyan-100 focus:ring-4 focus:ring-cyan-300/18"
                     />
                   </div>
                   <button
                     type="submit"
                     disabled={isImporting || !materialUrl.trim()}
-                    className="inline-flex min-h-11 items-center justify-center rounded-lg border border-sky-300/25 bg-sky-500/85 px-4 py-3 text-sm font-bold text-white transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex min-h-11 items-center justify-center rounded-lg border border-cyan-100/45 bg-gradient-to-r from-cyan-500 to-sky-500 px-4 py-3 text-sm font-bold text-white shadow-[0_0_22px_rgba(14,165,233,0.22)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {isImporting ? 'Importing...' : 'Import link'}
                   </button>
@@ -631,7 +654,7 @@ export function StudyMenuPage() {
           </section>
         </main>
 
-        <nav className="sticky bottom-0 z-20 mt-4 grid grid-cols-2 gap-2 border-t border-cyan-300/20 bg-[#020812]/85 px-2 py-3 backdrop-blur md:grid-cols-5">
+        <nav className="sticky bottom-0 z-20 mt-4 grid grid-cols-2 gap-2 border-t border-cyan-200/30 bg-[#020812]/88 px-2 py-3 shadow-[0_-16px_34px_rgba(34,211,238,0.08)] backdrop-blur md:grid-cols-5">
           <BottomCommandButton label="Home" icon={<Goal className="h-5 w-5" />} active onClick={() => navigate('/')} />
           <BottomCommandButton label="Study Plan" icon={<CalendarClock className="h-5 w-5" />} onClick={() => navigate('/study-plan')} />
           <BottomCommandButton label="Performance" icon={<BarChart3 className="h-5 w-5" />} onClick={() => navigate('/performance-analytics')} />
