@@ -126,6 +126,67 @@ interface LaunchTool {
   onSelect?: () => void
 }
 
+type LaunchTone = 'cyan' | 'emerald' | 'amber' | 'rose' | 'violet'
+
+const launchToneClasses: Record<
+  LaunchTone,
+  {
+    accent: string
+    border: string
+    surface: string
+    icon: string
+    text: string
+    meta: string
+    hover: string
+  }
+> = {
+  cyan: {
+    accent: 'bg-cyan-300',
+    border: 'border-cyan-300/36',
+    surface: 'bg-cyan-400/[0.085]',
+    icon: 'border-cyan-300/35 bg-cyan-300/12 text-cyan-200',
+    text: 'text-cyan-200',
+    meta: 'border-cyan-300/24 bg-cyan-300/10 text-cyan-100',
+    hover: 'hover:border-cyan-200/72 hover:bg-cyan-400/[0.13]',
+  },
+  emerald: {
+    accent: 'bg-emerald-300',
+    border: 'border-emerald-300/32',
+    surface: 'bg-emerald-400/[0.075]',
+    icon: 'border-emerald-300/35 bg-emerald-300/12 text-emerald-200',
+    text: 'text-emerald-200',
+    meta: 'border-emerald-300/24 bg-emerald-300/10 text-emerald-100',
+    hover: 'hover:border-emerald-200/68 hover:bg-emerald-400/[0.12]',
+  },
+  amber: {
+    accent: 'bg-amber-300',
+    border: 'border-amber-300/32',
+    surface: 'bg-amber-300/[0.075]',
+    icon: 'border-amber-300/35 bg-amber-300/12 text-amber-200',
+    text: 'text-amber-200',
+    meta: 'border-amber-300/24 bg-amber-300/10 text-amber-100',
+    hover: 'hover:border-amber-200/68 hover:bg-amber-300/[0.12]',
+  },
+  rose: {
+    accent: 'bg-rose-300',
+    border: 'border-rose-300/32',
+    surface: 'bg-rose-400/[0.07]',
+    icon: 'border-rose-300/35 bg-rose-300/12 text-rose-200',
+    text: 'text-rose-200',
+    meta: 'border-rose-300/24 bg-rose-300/10 text-rose-100',
+    hover: 'hover:border-rose-200/68 hover:bg-rose-400/[0.11]',
+  },
+  violet: {
+    accent: 'bg-violet-300',
+    border: 'border-violet-300/34',
+    surface: 'bg-violet-400/[0.08]',
+    icon: 'border-violet-300/35 bg-violet-300/12 text-violet-200',
+    text: 'text-violet-200',
+    meta: 'border-violet-300/24 bg-violet-300/10 text-violet-100',
+    hover: 'hover:border-violet-200/70 hover:bg-violet-400/[0.12]',
+  },
+}
+
 export function StudyMenuPage() {
   const navigate = useNavigate()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
@@ -158,7 +219,7 @@ export function StudyMenuPage() {
     ? 'Train ' + shortCategoryLabel(weakestCategory)
     : dashboard.recommendation.title
 
-  const coreTools: Array<LaunchTool & { meta: string }> = [
+  const coreTools: Array<LaunchTool & { meta: string; tone: LaunchTone }> = [
     {
       title: 'Continue My Plan',
       description: "Open today's priority, streak, weak areas, and next assignments.",
@@ -167,6 +228,7 @@ export function StudyMenuPage() {
       featured: true,
       icon: <Goal className="h-5 w-5" />,
       meta: planProgress + '% today',
+      tone: 'cyan',
     },
     {
       title: 'Quick Study',
@@ -175,6 +237,7 @@ export function StudyMenuPage() {
       route: '/quick-study',
       icon: <Zap className="h-5 w-5" />,
       meta: shortCategoryLabel(weakestCategory),
+      tone: 'amber',
     },
     {
       title: 'Study Plan',
@@ -183,6 +246,7 @@ export function StudyMenuPage() {
       route: '/study-plan',
       icon: <CalendarClock className="h-5 w-5" />,
       meta: dashboard.todayCompleted + '/' + dashboard.dailyGoal + ' done',
+      tone: 'cyan',
     },
     {
       title: 'Question Bank',
@@ -191,6 +255,7 @@ export function StudyMenuPage() {
       route: '/practice-questions',
       icon: <ClipboardList className="h-5 w-5" />,
       meta: Math.max(attempts.length, 1245).toLocaleString() + ' answered',
+      tone: 'emerald',
     },
     {
       title: 'Performance',
@@ -199,6 +264,7 @@ export function StudyMenuPage() {
       route: '/performance-analytics',
       icon: <BarChart3 className="h-5 w-5" />,
       meta: Math.max(1, accuracyPct) + '% accuracy',
+      tone: 'emerald',
     },
     {
       title: 'My Materials',
@@ -207,13 +273,15 @@ export function StudyMenuPage() {
       route: '/my-materials',
       icon: <UploadCloud className="h-5 w-5" />,
       meta: materialCount + ' materials',
+      tone: 'violet',
     },
   ]
 
-  const secondaryGroups: Array<{ title: string; description: string; tools: LaunchTool[] }> = [
+  const secondaryGroups: Array<{ title: string; description: string; tone: LaunchTone; tools: Array<LaunchTool & { tone: LaunchTone }> }> = [
     {
       title: 'Practice and exams',
       description: 'Deeper test prep when you want a longer session.',
+      tone: 'amber',
       tools: [
         {
           title: 'Exam Prep',
@@ -221,6 +289,7 @@ export function StudyMenuPage() {
           action: 'Open',
           route: '/exam-prep',
           icon: <BrainCircuit className="h-4 w-4" />,
+          tone: 'amber',
         },
         {
           title: 'Take an Exam',
@@ -228,6 +297,7 @@ export function StudyMenuPage() {
           action: 'Open',
           route: '/test-mode',
           icon: <Clock3 className="h-4 w-4" />,
+          tone: 'amber',
         },
         {
           title: 'Train Weak Areas',
@@ -235,12 +305,14 @@ export function StudyMenuPage() {
           action: 'Open',
           route: '/weak-areas',
           icon: <TrendingUp className="h-4 w-4" />,
+          tone: 'rose',
         },
       ],
     },
     {
       title: 'Review and reference',
       description: 'Keep recall and notes close without crowding the launcher.',
+      tone: 'emerald',
       tools: [
         {
           title: 'Flashcards',
@@ -248,6 +320,7 @@ export function StudyMenuPage() {
           action: 'Open',
           route: '/flashcards',
           icon: <SquareStack className="h-4 w-4" />,
+          tone: 'emerald',
         },
         {
           title: 'Notes',
@@ -255,6 +328,7 @@ export function StudyMenuPage() {
           action: 'Open',
           route: '/notes',
           icon: <NotebookPen className="h-4 w-4" />,
+          tone: 'cyan',
         },
         {
           title: 'Resources',
@@ -262,12 +336,14 @@ export function StudyMenuPage() {
           action: 'Open',
           route: '/strategy-training',
           icon: <BookOpen className="h-4 w-4" />,
+          tone: 'emerald',
         },
       ],
     },
     {
       title: 'Clinical tools',
       description: 'Simulation surfaces stay available without leading the page.',
+      tone: 'violet',
       tools: [
         {
           title: 'Shift Game',
@@ -275,6 +351,7 @@ export function StudyMenuPage() {
           action: 'Open',
           route: '/shift-command',
           icon: <HeartPulse className="h-4 w-4" />,
+          tone: 'violet',
         },
         {
           title: 'Simulator',
@@ -282,6 +359,7 @@ export function StudyMenuPage() {
           action: 'Open',
           route: '/clinical-simulator',
           icon: <Sparkles className="h-4 w-4" />,
+          tone: 'violet',
         },
         {
           title: 'Settings',
@@ -289,6 +367,7 @@ export function StudyMenuPage() {
           action: 'Open',
           route: '/settings',
           icon: <Target className="h-4 w-4" />,
+          tone: 'cyan',
         },
       ],
     },
@@ -341,7 +420,8 @@ export function StudyMenuPage() {
 
         <main className="relative z-10 flex flex-1 flex-col gap-5 pb-4 pt-5">
           <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-stretch">
-            <div className="rounded-xl border border-cyan-300/20 bg-[#061b31]/70 p-5 shadow-[0_14px_34px_rgba(0,0,0,0.2)] md:p-6">
+            <div className="relative overflow-hidden rounded-xl border border-cyan-300/28 bg-[#061b31]/70 p-5 shadow-[0_14px_34px_rgba(0,0,0,0.2)] md:p-6">
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,#22d3ee,#34d399,#fbbf24,#fb7185,#a78bfa)]" />
               <div className="max-w-3xl">
                 <h1 className="text-4xl font-black leading-tight tracking-normal text-white sm:text-5xl lg:text-6xl">
                   Nurse Command
@@ -354,7 +434,7 @@ export function StudyMenuPage() {
                 <button
                   type="button"
                   onClick={() => navigate('/dashboard')}
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-sky-400 px-4 py-3 text-sm font-black text-[#03101f] shadow-[0_10px_26px_rgba(56,189,248,0.24)] transition hover:bg-sky-300 focus:outline-none focus:ring-4 focus:ring-sky-300/30"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-cyan-100/65 bg-gradient-to-r from-cyan-300 via-sky-300 to-emerald-300 px-4 py-3 text-sm font-black text-[#03101f] shadow-[0_0_24px_rgba(34,211,238,0.28),0_12px_26px_rgba(0,0,0,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-cyan-300/30"
                 >
                   Continue My Plan
                   <ArrowRight className="h-4 w-4" />
@@ -365,23 +445,24 @@ export function StudyMenuPage() {
               </div>
             </div>
 
-            <aside className="rounded-xl border border-cyan-300/20 bg-[#071d34]/78 p-5 shadow-[0_14px_34px_rgba(0,0,0,0.18)]">
+            <aside className="relative overflow-hidden rounded-xl border border-emerald-300/24 bg-[#071d34]/78 p-5 shadow-[0_14px_34px_rgba(0,0,0,0.18)]">
+              <div className="pointer-events-none absolute inset-y-4 left-0 w-1 rounded-r-full bg-emerald-300/80" />
               <p className="text-sm font-semibold text-sky-100/72">Today's focus</p>
               <h2 className="mt-2 text-2xl font-black leading-tight text-white">{todayPriority}</h2>
               <p className="mt-2 text-sm leading-6 text-sky-100/68">
                 {dashboard.todayCompleted} of {dashboard.dailyGoal} planned activities complete. Keep the next action obvious and the rest secondary.
               </p>
-              <CommandProgress value={planProgress} className="mt-4" />
+              <CommandProgress value={planProgress} tone="green" className="mt-4" />
               <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs font-semibold text-sky-100/70">
-                <div className="rounded-lg border border-sky-300/15 bg-white/[0.04] px-2 py-2">
+                <div className="rounded-lg border border-emerald-300/20 bg-emerald-300/[0.06] px-2 py-2">
                   <p className="text-base font-black text-white">{Math.max(1, accuracyPct)}%</p>
                   <p>Accuracy</p>
                 </div>
-                <div className="rounded-lg border border-sky-300/15 bg-white/[0.04] px-2 py-2">
+                <div className="rounded-lg border border-amber-300/20 bg-amber-300/[0.06] px-2 py-2">
                   <p className="text-base font-black text-white">{Math.max(dueCards, 0)}</p>
                   <p>Cards</p>
                 </div>
-                <div className="rounded-lg border border-sky-300/15 bg-white/[0.04] px-2 py-2">
+                <div className="rounded-lg border border-violet-300/20 bg-violet-300/[0.06] px-2 py-2">
                   <p className="text-base font-black text-white">{materialCount}</p>
                   <p>Files</p>
                 </div>
@@ -390,57 +471,69 @@ export function StudyMenuPage() {
           </section>
 
           <section aria-label="Core actions" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {coreTools.map((tool) => (
-              <button
-                key={tool.title}
-                type="button"
-                onClick={() => navigate(tool.route)}
-                className={clsx(
-                  'group min-h-[8rem] rounded-xl border p-4 text-left transition focus:outline-none focus:ring-4 focus:ring-sky-300/20',
-                  tool.featured
-                    ? 'border-sky-300/45 bg-sky-400/14 shadow-[0_14px_34px_rgba(56,189,248,0.16)] hover:bg-sky-400/20'
-                    : 'border-sky-300/18 bg-[#071d34]/62 hover:border-sky-300/38 hover:bg-[#0a2744]/72',
-                )}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-sky-300/24 bg-white/[0.06] text-sky-200">
-                    {tool.icon}
+            {coreTools.map((tool) => {
+              const tone = launchToneClasses[tool.tone]
+              return (
+                <button
+                  key={tool.title}
+                  type="button"
+                  onClick={() => navigate(tool.route)}
+                  className={clsx(
+                    'group relative min-h-[8rem] overflow-hidden rounded-xl border p-4 text-left transition focus:outline-none focus:ring-4 focus:ring-sky-300/20',
+                    tone.border,
+                    tone.surface,
+                    tone.hover,
+                    tool.featured
+                      ? 'shadow-[0_14px_34px_rgba(56,189,248,0.18)]'
+                      : 'shadow-[0_12px_28px_rgba(0,0,0,0.16)]',
+                  )}
+                >
+                  <span className={clsx('pointer-events-none absolute inset-y-3 left-0 w-1 rounded-r-full', tone.accent)} />
+                  <div className="flex items-start justify-between gap-3">
+                    <span className={clsx('grid h-10 w-10 shrink-0 place-items-center rounded-lg border', tone.icon)}>
+                      {tool.icon}
+                    </span>
+                    <span className={clsx('max-w-[10rem] truncate rounded-md border px-2 py-1 text-xs font-bold', tone.meta)}>
+                      {tool.meta}
+                    </span>
+                  </div>
+                  <h3 className="mt-3 text-lg font-black text-white">{tool.title}</h3>
+                  <p className="mt-1 min-h-[2.5rem] text-sm leading-5 text-sky-100/68">{tool.description}</p>
+                  <span className={clsx('mt-3 inline-flex items-center gap-2 text-sm font-bold', tone.text)}>
+                    {tool.action}
+                    <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
                   </span>
-                  <span className="rounded-md border border-sky-300/16 bg-[#03101f]/60 px-2 py-1 text-xs font-bold text-sky-100/68">
-                    {tool.meta}
-                  </span>
-                </div>
-                <h3 className="mt-3 text-lg font-black text-white">{tool.title}</h3>
-                <p className="mt-1 min-h-[2.5rem] text-sm leading-5 text-sky-100/68">{tool.description}</p>
-                <span className="mt-3 inline-flex items-center gap-2 text-sm font-bold text-sky-200">
-                  {tool.action}
-                  <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
-                </span>
-              </button>
-            ))}
+                </button>
+              )
+            })}
           </section>
 
           <section className="grid gap-3 lg:grid-cols-3">
             {secondaryGroups.map((group) => (
-              <section key={group.title} className="rounded-xl border border-sky-300/18 bg-[#061b31]/58 p-4">
+              <section key={group.title} className={clsx('min-w-0 rounded-xl border bg-[#061b31]/58 p-4', launchToneClasses[group.tone].border)}>
                 <h2 className="text-base font-black text-white">{group.title}</h2>
                 <p className="mt-1 text-sm leading-6 text-sky-100/62">{group.description}</p>
-                <div className="mt-4 grid gap-2">
+                <div className="mt-4 grid min-w-0 gap-2">
                   {group.tools.map((tool) => (
                     <button
                       key={tool.route}
                       type="button"
                       onClick={() => navigate(tool.route)}
-                      className="flex min-h-12 items-center gap-3 rounded-lg border border-sky-300/14 bg-white/[0.035] px-3 py-2 text-left transition hover:border-sky-300/32 hover:bg-white/[0.06] focus:outline-none focus:ring-4 focus:ring-sky-300/16"
+                      className={clsx(
+                        'flex min-h-12 w-full min-w-0 items-center gap-3 overflow-hidden rounded-lg border px-3 py-2 text-left transition focus:outline-none focus:ring-4 focus:ring-sky-300/16',
+                        launchToneClasses[tool.tone].border,
+                        launchToneClasses[tool.tone].surface,
+                        launchToneClasses[tool.tone].hover,
+                      )}
                     >
-                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-sky-300/10 text-sky-200">
+                      <span className={clsx('grid h-8 w-8 shrink-0 place-items-center rounded-md border', launchToneClasses[tool.tone].icon)}>
                         {tool.icon}
                       </span>
-                      <span className="min-w-0 flex-1">
+                      <span className="min-w-0 flex-1 overflow-hidden">
                         <span className="block text-sm font-bold text-white">{tool.title}</span>
-                        <span className="block truncate text-xs text-sky-100/56">{tool.description}</span>
+                        <span className="block truncate text-xs text-sky-100/58">{tool.description}</span>
                       </span>
-                      <ArrowRight className="h-4 w-4 shrink-0 text-sky-200/70" />
+                      <ArrowRight className={clsx('h-4 w-4 shrink-0', launchToneClasses[tool.tone].text)} />
                     </button>
                   ))}
                 </div>
