@@ -14,10 +14,14 @@ import type {
   Note,
   QuestionAttempt,
   QuestionCategory,
+  SimulatorLevelAttempt,
+  SimulatorLevelId,
+  SimulatorProgressState,
   StudyIntensity,
   StudyMaterial,
   SyncEvent,
   SyncStatus,
+  TycoonGameState,
   UserProfile,
 } from './types'
 import { initialProfile, seededAttempts, seededFlashcardProgress, seededNotes } from '../data/seed'
@@ -31,26 +35,15 @@ import {
   updateStudyMaterialMeta as persistMaterialMeta,
 } from '../services/material-db'
 import {
-  createErroredMaterial,
-  createPendingStudyMaterial,
-  createPendingStudyMaterialFromUrl,
-  createStudyMaterialRecord,
-  createStudyMaterialRecordFromUrl,
-  extractMaterialText,
-  extractMaterialTextFromUrl,
-  generateCleanFlashcardsFromMaterial,
-  generateCleanQuestionsFromMaterial,
-  materialNeedsRepair,
-  repairStudyMaterialContent,
-} from '../services/material-pipeline'
-import {
   generateClinicalThinkingSession,
   generatePracticeSet,
   generateQuickStudySession,
   generateTestSession,
   getQuestionResult,
+  questionLookup,
   updateNote,
 } from '../services/study-system'
+import { createAttemptEngineEvidence } from '../services/question-engine'
 import {
   getCurrentAuthSnapshot,
   onAuthSnapshotChange,
@@ -71,6 +64,15 @@ import {
   uploadMaterialFile,
 } from '../services/cloud-repositories'
 import { isSupabaseConfigured } from '../services/supabase'
+import {
+  advanceTycoonShiftTime,
+  completeTycoonTaskWithAction,
+  createInitialTycoonState,
+  finishTycoonShiftNow,
+  purchaseTycoonUpgradeById,
+  selectTycoonTaskById,
+  startTycoonShiftForUnit,
+} from '../services/tycoon-engine'
 
 interface StudySystemState {
   authUser: AuthUser | null
@@ -95,6 +97,8 @@ interface StudySystemState {
   preferredMaterialFlashcardsId: null | string
   activeSession: ActiveSession | null
   activeMaterialQuizSession: MaterialQuizSession | null
+  tycoon: TycoonGameState
+  simulatorProgress: SimulatorProgressState
   initializeAuth: () => Promise<void>
   signIn: (email: string, password: string) => Promise<void>
   signUp: (email: string, password: string) => Promise<void>
@@ -115,6 +119,7 @@ interface StudySystemState {
     questionStatus?: 'unused' | 'incorrect' | 'all'
     format?: 'multiple-choice' | 'select-all-that-apply' | 'mixed'
     difficulty?: 'foundation' | 'developing' | 'advanced' | 'adaptive' | 'mixed'
+    difficultyProfile?: 'standard' | 'hard-mode' | 'trap-heavy' | 'case-based' | 'mixed'
     questionCount?: number
   }) => void
   startTestSession: (config: {
@@ -162,8 +167,37 @@ interface StudySystemState {
   updateProfile: (updates: Partial<UserProfile>) => void
   setExamDate: (examDate: string) => void
   setStudyIntensity: (studyIntensity: StudyIntensity) => void
+  startTycoonShift: (unitId: string) => void
+  selectTycoonTask: (taskId: string) => void
+  completeTycoonTask: (taskId: string, actionId: string) => void
+  advanceTycoonTime: (minutes: number) => void
+  purchaseTycoonUpgrade: (upgradeId: string) => void
+  finishTycoonShift: () => void
+  resetTycoonProgress: () => void
+  selectSimulatorLevel: (levelId: SimulatorLevelId) => void
+  recordSimulatorLevelAttempt: (attempt: SimulatorLevelAttempt, completedObjectiveIds: string[]) => void
+  resetSimulatorProgress: () => void
   resetProgress: () => Promise<void>
 }
+
+const simulatorLevelOrder: SimulatorLevelId[] = [
+  'level-1',
+  'level-2',
+  'level-3',
+  'level-4',
+  'level-5',
+  'level-6',
+]
+
+const loadMaterialPipeline = () => import('../services/material-pipeline')
+
+const createInitialSimulatorProgress = (): SimulatorProgressState => ({
+  currentSimulatorLevel: 'level-1',
+  unlockedSimulatorLevels: ['level-1'],
+  levelAttempts: [],
+  bestLevelScores: {},
+  completedLevelObjectives: {},
+})
 
 const baseState = {
   authUser: null as AuthUser | null,
@@ -188,6 +222,8 @@ const baseState = {
   preferredMaterialFlashcardsId: null as null | string,
   activeSession: null as ActiveSession | null,
   activeMaterialQuizSession: null as MaterialQuizSession | null,
+  tycoon: createInitialTycoonState(),
+  simulatorProgress: createInitialSimulatorProgress(),
 }
 
 const getNextReviewState = (
@@ -267,7 +303,7 @@ export const useStudySystemStore = create<StudySystemState>()(
             authSession: snapshot.session,
             authConfigured: true,
             authInitialized: true,
-            isDemoMode: !snapshot.user,
+            isDemoMode: snapshot.user ? false : get().isDemoMode,
             authError: null,
           })
 
@@ -275,7 +311,7 @@ export const useStudySystemStore = create<StudySystemState>()(
             set({
               authUser: nextSnapshot.user,
               authSession: nextSnapshot.session,
-              isDemoMode: !nextSnapshot.user,
+              isDemoMode: nextSnapshot.user ? false : get().isDemoMode,
             })
             if (nextSnapshot.user) {
               void get().hydrateCloudState()
@@ -459,6 +495,12 @@ export const useStudySystemStore = create<StudySystemState>()(
         let nextMaterials = materials
         let nextFlashcards = materialFlashcards
         let nextQuestions = materialQuestions
+        const {
+          generateCleanFlashcardsFromMaterial,
+          generateCleanQuestionsFromMaterial,
+          materialNeedsRepair,
+          repairStudyMaterialContent,
+        } = await loadMaterialPipeline()
         const repairs = materials.filter((material) => materialNeedsRepair(material, materialFlashcards))
 
         for (const material of repairs) {
@@ -553,10 +595,25 @@ export const useStudySystemStore = create<StudySystemState>()(
             completedAt: response.submittedAt,
             sessionType: state.activeSession.mode,
           }
+          const question = questionLookup[questionId]
+          const engineEvidence = question
+            ? createAttemptEngineEvidence(question, attempt)
+            : null
+          const attemptWithEngine: QuestionAttempt = engineEvidence
+            ? {
+                ...attempt,
+                isCorrect: engineEvidence.diagnosis.scoreResult.isCorrect,
+                engineDiagnosis: engineEvidence.diagnosis,
+                engineRemediationEvents: engineEvidence.remediationEvents,
+              }
+            : attempt
 
           return {
-            attempts: [...state.attempts, attempt],
-            syncEvents: [...state.syncEvents, makeSyncEvent('attempt', attempt.id, 'upsert', attempt)],
+            attempts: [...state.attempts, attemptWithEngine],
+            syncEvents: [
+              ...state.syncEvents,
+              makeSyncEvent('attempt', attemptWithEngine.id, 'upsert', attemptWithEngine),
+            ],
             activeSession: {
               ...state.activeSession,
               responses: [...state.activeSession.responses, response],
@@ -635,6 +692,14 @@ export const useStudySystemStore = create<StudySystemState>()(
         void get().syncNow()
       },
       importStudyMaterial: async (file) => {
+        const {
+          createErroredMaterial,
+          createPendingStudyMaterial,
+          createStudyMaterialRecord,
+          extractMaterialText,
+          generateCleanFlashcardsFromMaterial,
+          generateCleanQuestionsFromMaterial,
+        } = await loadMaterialPipeline()
         const pending = createPendingStudyMaterial(file)
         set((state) => ({
           materials: [pending, ...state.materials.filter((item) => item.id !== pending.id)],
@@ -692,6 +757,14 @@ export const useStudySystemStore = create<StudySystemState>()(
         }
       },
       importStudyMaterialFromUrl: async (url) => {
+        const {
+          createErroredMaterial,
+          createPendingStudyMaterialFromUrl,
+          createStudyMaterialRecordFromUrl,
+          extractMaterialTextFromUrl,
+          generateCleanFlashcardsFromMaterial,
+          generateCleanQuestionsFromMaterial,
+        } = await loadMaterialPipeline()
         const pending = createPendingStudyMaterialFromUrl(url)
         set((state) => ({
           materials: [pending, ...state.materials.filter((item) => item.id !== pending.id)],
@@ -769,6 +842,11 @@ export const useStudySystemStore = create<StudySystemState>()(
         void get().syncNow()
       },
       regenerateMaterialStudyTools: async (id) => {
+        const {
+          generateCleanFlashcardsFromMaterial,
+          generateCleanQuestionsFromMaterial,
+          repairStudyMaterialContent,
+        } = await loadMaterialPipeline()
         const material = get().materials.find((item) => item.id === id)
         if (!material || material.extractionStatus !== 'ready') return
 
@@ -995,6 +1073,71 @@ export const useStudySystemStore = create<StudySystemState>()(
         }))
         void get().syncNow()
       },
+      startTycoonShift: (unitId) =>
+        set((state) => ({
+          tycoon: startTycoonShiftForUnit(state.tycoon, unitId),
+        })),
+      selectTycoonTask: (taskId) =>
+        set((state) => ({
+          tycoon: selectTycoonTaskById(state.tycoon, taskId),
+        })),
+      completeTycoonTask: (taskId, actionId) =>
+        set((state) => ({
+          tycoon: completeTycoonTaskWithAction(state.tycoon, taskId, actionId),
+        })),
+      advanceTycoonTime: (minutes) =>
+        set((state) => ({
+          tycoon: advanceTycoonShiftTime(state.tycoon, minutes),
+        })),
+      purchaseTycoonUpgrade: (upgradeId) =>
+        set((state) => ({
+          tycoon: purchaseTycoonUpgradeById(state.tycoon, upgradeId),
+        })),
+      finishTycoonShift: () =>
+        set((state) => ({
+          tycoon: finishTycoonShiftNow(state.tycoon),
+        })),
+      resetTycoonProgress: () => set({ tycoon: createInitialTycoonState() }),
+      selectSimulatorLevel: (levelId) =>
+        set((state) => {
+          if (!state.simulatorProgress.unlockedSimulatorLevels.includes(levelId)) return state
+          return {
+            simulatorProgress: {
+              ...state.simulatorProgress,
+              currentSimulatorLevel: levelId,
+            },
+          }
+        }),
+      recordSimulatorLevelAttempt: (attempt, completedObjectiveIds) =>
+        set((state) => {
+          const currentProgress = state.simulatorProgress
+          const currentIndex = simulatorLevelOrder.indexOf(attempt.levelId)
+          const nextLevel = simulatorLevelOrder[currentIndex + 1]
+          const unlockedSimulatorLevels =
+            attempt.passed && nextLevel
+              ? Array.from(new Set([...currentProgress.unlockedSimulatorLevels, nextLevel]))
+              : currentProgress.unlockedSimulatorLevels
+
+          return {
+            simulatorProgress: {
+              ...currentProgress,
+              unlockedSimulatorLevels,
+              currentSimulatorLevel: attempt.levelId,
+              levelAttempts: [attempt, ...currentProgress.levelAttempts].slice(0, 50),
+              bestLevelScores: {
+                ...currentProgress.bestLevelScores,
+                [attempt.levelId]: Math.max(currentProgress.bestLevelScores[attempt.levelId] ?? 0, attempt.totalScore),
+              },
+              completedLevelObjectives: {
+                ...currentProgress.completedLevelObjectives,
+                [attempt.levelId]: Array.from(
+                  new Set([...(currentProgress.completedLevelObjectives[attempt.levelId] ?? []), ...completedObjectiveIds]),
+                ),
+              },
+            },
+          }
+        }),
+      resetSimulatorProgress: () => set({ simulatorProgress: createInitialSimulatorProgress() }),
       resetProgress: async () => {
         const materials = await getMaterialLibrary()
         await Promise.all(materials.map((item) => deleteMaterialBundle(item.id)))
@@ -1014,6 +1157,8 @@ export const useStudySystemStore = create<StudySystemState>()(
         activeSession: state.activeSession,
         preferredMaterialFlashcardsId: state.preferredMaterialFlashcardsId,
         activeMaterialQuizSession: state.activeMaterialQuizSession,
+        tycoon: state.tycoon,
+        simulatorProgress: state.simulatorProgress,
       }),
     },
   ),

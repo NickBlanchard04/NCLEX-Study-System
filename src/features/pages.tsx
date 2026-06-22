@@ -1558,6 +1558,10 @@ export function PerformanceAnalyticsPage() {
   const updateProfile = useStudySystemStore((state) => state.updateProfile)
   const analytics = useMemo(() => getAnalyticsSnapshot(attempts, profile), [attempts, profile])
   const activeTrack = getExamTrack(profile.examTrack ?? 'nclex-rn')
+  const readiness = analytics.readinessSnapshot
+  const repairQueueCount = analytics.engineRemediationEvents.filter(
+    (event) => event.repairRequired && !event.repairSuccess,
+  ).length
 
   return (
     <div className="space-y-6">
@@ -1596,10 +1600,29 @@ export function PerformanceAnalyticsPage() {
         }
       />
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Overall accuracy" value={`${Math.round(analytics.overallAccuracy * 100)}%`} detail="Real performance across all sessions and categories." tone={analytics.overallAccuracy >= 0.75 ? 'success' : 'warning'} />
+        <StatCard
+          label="Practice accuracy"
+          value={`${Math.round(readiness.practiceAccuracy * 100)}%`}
+          detail="Useful practice signal, separate from official readiness."
+          tone={readiness.practiceAccuracy >= 0.75 ? 'success' : 'warning'}
+        />
+        <StatCard
+          label="Readiness evidence"
+          value={`${readiness.trustedAttemptCount} trusted attempts counted`}
+          detail={
+            readiness.status === 'insufficient_evidence'
+              ? 'Evidence needed'
+              : `${Math.round(readiness.readinessScore * 100)}% readiness score`
+          }
+          tone={readiness.status === 'ready' ? 'success' : readiness.status === 'approaching' ? 'neutral' : 'warning'}
+        />
+        <StatCard
+          label="Repair queue"
+          value={`${repairQueueCount}`}
+          detail="High-confidence or safety-sensitive misses needing transfer proof."
+          tone={repairQueueCount ? 'warning' : 'success'}
+        />
         <StatCard label="Questions completed" value={`${analytics.questionsCompleted}`} detail="Enough reps to show real patterns, not just a lucky day." />
-        <StatCard label="Time studied" value={`${analytics.timeStudiedMinutes} min`} detail="Focused time, not passive time." />
-        <StatCard label="Current streak" value={`${analytics.streak} days`} detail="Retention grows faster when sessions stay frequent." tone="success" />
       </div>
       <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
         <Surface>
@@ -3095,6 +3118,77 @@ const clinicalScenarios = [
     ],
   },
 ]
+
+const nurseCommandLabTools = [
+  {
+    title: 'Command Center',
+    description: 'Open the retro hospital dashboard for a quick operational readout.',
+    to: '/medical-command-center',
+    icon: BrainCircuit,
+    action: 'Open command center',
+  },
+  {
+    title: 'Shift Game',
+    description: 'Practice prioritization under time pressure in a hospital shift loop.',
+    to: '/shift-command',
+    icon: HeartPulse,
+    action: 'Start shift',
+  },
+  {
+    title: 'Hospitalvania',
+    description: 'Run the side-scrolling clinical judgment prototype.',
+    to: '/hospitalvania',
+    icon: Zap,
+    action: 'Enter Hospitalvania',
+  },
+  {
+    title: 'Nurse Tycoon',
+    description: 'Balance staffing, quality, and patient flow in the management sim.',
+    to: '/nurse-tycoon',
+    icon: BarChart3,
+    action: 'Open tycoon',
+  },
+  {
+    title: 'Clinical Simulator',
+    description: 'Step through patient scenarios using the nursing judgment loop.',
+    to: '/clinical-simulator',
+    icon: Target,
+    action: 'Train first actions',
+  },
+]
+
+export function NurseCommandLabPage() {
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Nurse Command Lab"
+        title="Choose a clinical practice mode."
+        description="Use the lab for simulation, prioritization, patient-flow strategy, and game-based repetition separate from the core question bank."
+      />
+
+      <div className="grid gap-4 xl:grid-cols-5 md:grid-cols-2">
+        {nurseCommandLabTools.map(({ title, description, to, icon: Icon, action }) => (
+          <Surface key={to} className="flex min-h-[260px] flex-col justify-between">
+            <div>
+              <div className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-[var(--nclex-blue-soft)] text-[var(--nclex-blue)]">
+                <Icon className="h-5 w-5" />
+              </div>
+              <h2 className="mt-5 font-serif text-2xl text-[var(--nclex-text)]">{title}</h2>
+              <p className="mt-3 text-sm leading-6 text-[var(--nclex-text-muted)]">{description}</p>
+            </div>
+            <Link
+              to={to}
+              className="nclex-btn-secondary mt-6 inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold"
+            >
+              {action}
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </Surface>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export function ClinicalSimulatorPage() {
   const activeSession = useStudySystemStore((state) => state.activeSession)

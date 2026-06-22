@@ -1,4 +1,4 @@
-import type { AnswerChoice, ExamTrackId, Question } from '../app/types'
+import type { AnswerChoice, ExamTrackId, Question, QuestionDifficultyProfile } from '../app/types'
 
 const makeChoices = (...choices: string[]): AnswerChoice[] =>
   choices.map((text, index) => ({
@@ -9,15 +9,41 @@ const makeChoices = (...choices: string[]): AnswerChoice[] =>
 type QualityQuestion = Question & {
   contentQuality: 'sme-review-ready'
   authorType: 'clinical-editor-draft'
+  sourceTopic: string
+  testTakingTrap: string
+  blueprintMapped: true
+  sourceBacked: true
+  updatedAt: string
+}
+
+const qualityQuestion = (
+  question: Omit<QualityQuestion, 'blueprintMapped' | 'sourceBacked' | 'updatedAt' | 'sourceTopic' | 'testTakingTrap'> &
+    Partial<Pick<QualityQuestion, 'sourceTopic' | 'testTakingTrap'>>,
+): QualityQuestion => ({
+  blueprintMapped: true,
+  sourceBacked: true,
+  sourceTopic: `${question.category} / ${question.subcategory}`,
+  testTakingTrap: question.rationale.whyOthers,
+  updatedAt: '2026-06-18',
+  difficultyProfile: inferQualityDifficultyProfile(question),
+  ...question,
+})
+
+const inferQualityDifficultyProfile = (
+  question: Pick<Question, 'difficulty' | 'format'> & { scenario?: string },
+): QuestionDifficultyProfile => {
+  if (question.scenario) return 'case-based'
+  if (question.format === 'select-all-that-apply') return 'trap-heavy'
+  if (question.difficulty === 'advanced') return 'hard-mode'
+  return 'standard'
 }
 
 const refs = {
   nclex: ['NCSBN 2026 NCLEX test plan'],
+  teas: ['ATI TEAS 7 public exam details and content areas'],
   fnp: ['AANPCB FNP blueprint', 'ANCC FNP test content outline'],
   ccma: ['NHA CCMA test plan'],
 }
-
-const qualityQuestion = (question: QualityQuestion): QualityQuestion => question
 
 const nclexRnQuestions: QualityQuestion[] = [
   qualityQuestion({
@@ -232,6 +258,143 @@ const fnpQuestions: QualityQuestion[] = [
   }),
 ]
 
+const teasQuestions: QualityQuestion[] = [
+  qualityQuestion({
+    id: 'teas-quality-001',
+    examTrack: 'teas',
+    category: 'Science',
+    domain: 'Science',
+    system: 'Human Anatomy and Physiology',
+    board: 'ATI TEAS 7 public exam blueprint',
+    contentQuality: 'sme-review-ready',
+    authorType: 'clinical-editor-draft',
+    sourceRefs: refs.teas,
+    subcategory: 'Cellular respiration',
+    difficulty: 'developing',
+    format: 'multiple-choice',
+    scenario:
+      'A pre-nursing student is reviewing cell organelles before a timed TEAS science section.',
+    prompt: 'Which organelle is most directly responsible for producing most of the cell\'s ATP?',
+    choices: makeChoices(
+      'Mitochondrion',
+      'Golgi apparatus',
+      'Ribosome',
+      'Lysosome',
+    ),
+    correctAnswer: ['A'],
+    rationale: {
+      whyCorrect:
+        'The mitochondrion is the primary site of aerobic cellular respiration, which produces most ATP used for cellular energy.',
+      whyOthers:
+        'The Golgi apparatus modifies and packages products, ribosomes synthesize proteins, and lysosomes contain digestive enzymes.',
+    },
+    nclexTip: 'TEAS science rewards matching structure to function, not just recognizing vocabulary.',
+    clinicalRelevance:
+      'Cell energy concepts support later understanding of oxygenation, perfusion, and tissue injury in nursing coursework.',
+    tags: ['TEAS', 'science', 'A&P', 'cell organelles', 'ATP'],
+  }),
+  qualityQuestion({
+    id: 'teas-quality-002',
+    examTrack: 'teas',
+    category: 'Mathematics',
+    domain: 'Mathematics',
+    system: 'Measurement and Data',
+    board: 'ATI TEAS 7 public exam blueprint',
+    contentQuality: 'sme-review-ready',
+    authorType: 'clinical-editor-draft',
+    sourceRefs: refs.teas,
+    subcategory: 'Unit conversion',
+    difficulty: 'developing',
+    format: 'multiple-choice',
+    scenario:
+      'A student is checking a dosage-calculation style conversion during TEAS math practice.',
+    prompt: 'A medication label lists 0.75 grams. How many milligrams is this?',
+    choices: makeChoices(
+      '750 mg',
+      '75 mg',
+      '7.5 mg',
+      '7,500 mg',
+    ),
+    correctAnswer: ['A'],
+    rationale: {
+      whyCorrect:
+        'One gram equals 1,000 milligrams, so 0.75 g x 1,000 = 750 mg.',
+      whyOthers:
+        '75 mg and 7.5 mg move the decimal too far left; 7,500 mg moves it too far right.',
+    },
+    nclexTip: 'Estimate before calculating: less than 1 gram should be less than 1,000 mg but more than 100 mg when it is 0.75 g.',
+    clinicalRelevance:
+      'Accurate metric conversion is foundational for safe dosage calculations in nursing school.',
+    tags: ['TEAS', 'math', 'measurement', 'metric conversion'],
+  }),
+  qualityQuestion({
+    id: 'teas-quality-003',
+    examTrack: 'teas',
+    category: 'Reading',
+    domain: 'Reading',
+    system: 'Key Ideas and Details',
+    board: 'ATI TEAS 7 public exam blueprint',
+    contentQuality: 'sme-review-ready',
+    authorType: 'clinical-editor-draft',
+    sourceRefs: refs.teas,
+    subcategory: 'Main idea',
+    difficulty: 'foundation',
+    format: 'multiple-choice',
+    scenario:
+      'A passage explains that sleep supports memory consolidation, immune function, and emotional regulation. It also notes that chronic sleep restriction can impair attention and decision-making.',
+    prompt: 'Which statement best captures the main idea of the passage?',
+    choices: makeChoices(
+      'Sleep contributes to several body and brain functions that affect daily performance.',
+      'Memory consolidation is the only proven benefit of sleep.',
+      'Sleep restriction improves decision-making when stress is high.',
+      'Immune function is unrelated to sleep habits.',
+    ),
+    correctAnswer: ['A'],
+    rationale: {
+      whyCorrect:
+        'The passage describes multiple benefits of sleep and connects poor sleep with impaired performance.',
+      whyOthers:
+        'The other options are too narrow or directly contradict the passage.',
+    },
+    nclexTip: 'For reading main-idea items, choose the answer broad enough to cover the whole passage but specific enough to match its focus.',
+    clinicalRelevance:
+      'Nursing students use main-idea reading skills to interpret textbooks, patient education, and policy information accurately.',
+    tags: ['TEAS', 'reading', 'main idea', 'evidence'],
+  }),
+  qualityQuestion({
+    id: 'teas-quality-004',
+    examTrack: 'teas',
+    category: 'English and Language Usage',
+    domain: 'English and Language Usage',
+    system: 'Conventions of Standard English',
+    board: 'ATI TEAS 7 public exam blueprint',
+    contentQuality: 'sme-review-ready',
+    authorType: 'clinical-editor-draft',
+    sourceRefs: refs.teas,
+    subcategory: 'Subject-verb agreement',
+    difficulty: 'foundation',
+    format: 'multiple-choice',
+    prompt: 'Which sentence uses correct subject-verb agreement?',
+    choices: makeChoices(
+      'The list of symptoms includes fever, cough, and fatigue.',
+      'The list of symptoms include fever, cough, and fatigue.',
+      'The symptoms in the list includes fever, cough, and fatigue.',
+      'The nurse and the patient discusses the symptoms.',
+    ),
+    correctAnswer: ['A'],
+    rationale: {
+      whyCorrect:
+        'The subject is singular, "list," so the singular verb "includes" is correct.',
+      whyOthers:
+        'The other options mismatch singular and plural subjects with the wrong verb form.',
+    },
+    nclexTip: 'Ignore prepositional phrases between the subject and verb; identify the true subject first.',
+    clinicalRelevance:
+      'Clear grammar supports safe documentation, patient instructions, and professional communication.',
+    tags: ['TEAS', 'English', 'grammar', 'subject-verb agreement'],
+  }),
+]
+
 const ccmaQuestions: QualityQuestion[] = [
   qualityQuestion({
     id: 'ccma-quality-001',
@@ -306,6 +469,7 @@ const ccmaQuestions: QualityQuestion[] = [
 export const qualityQuestionPacks: Record<ExamTrackId, QualityQuestion[]> = {
   'nclex-rn': nclexRnQuestions,
   'nclex-pn': nclexPnQuestions,
+  teas: teasQuestions,
   fnp: fnpQuestions,
   ccma: ccmaQuestions,
 }

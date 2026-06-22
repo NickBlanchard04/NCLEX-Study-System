@@ -25,6 +25,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { clsx } from 'clsx'
 import type React from 'react'
+import type { SimulatorLevelId } from '../app/types'
+import { useStudySystemStore } from '../app/store'
 import { Shift3DEngine } from '../game/shift3d-engine'
 
 type PatientStatus = 'stable' | 'watch' | 'urgent' | 'critical'
@@ -89,6 +91,32 @@ interface MissionCard {
   description: string
   reward: string
   complete: boolean
+  required?: boolean
+}
+
+interface SimulatorLevelConfig {
+  id: SimulatorLevelId
+  number: number
+  title: string
+  skill: string
+  story: string
+  newMechanic: string
+  carryoverSkills: string[]
+  patientIds: string[]
+  eventIds: string[]
+  initialPatientId: string
+  startingScore: {
+    safety: number
+    prioritization: number
+    delegation: number
+    documentation: number
+  }
+  passCriteria: {
+    totalScore: number
+    safetyScore: number
+  }
+  handoff: string
+  hintLevel: 'guided' | 'balanced' | 'light'
 }
 
 interface DelegationAssignment {
@@ -122,7 +150,7 @@ interface CurrentPriority {
 const shiftStart = 7 * 60
 const shiftEnd = 19 * 60
 
-const patients: ShiftPatient[] = [
+const patientBank: ShiftPatient[] = [
   {
     id: 'p1',
     room: '402A',
@@ -343,7 +371,7 @@ const actions: ShiftAction[] = [
   },
 ]
 
-const shiftEvents: ShiftEvent[] = [
+const eventBank: ShiftEvent[] = [
   {
     id: 'hypoglycemia',
     patientId: 'p2',
@@ -383,6 +411,105 @@ const shiftEvents: ShiftEvent[] = [
     message: 'Mara tries to get up alone after reporting dizziness.',
     requiredActions: ['focused-assessment', 'fall-precautions'],
     impact: 'Post-op hypotension plus weakness creates immediate injury risk.',
+  },
+]
+
+const simulatorLevels: SimulatorLevelConfig[] = [
+  {
+    id: 'level-1',
+    number: 1,
+    title: 'First Day on Fundamentals',
+    skill: 'Identify the safest first action',
+    story: 'Your preceptor gives you three low-acuity patients and watches how you start care. The win is simple: spot the priority cue, complete basic vitals or assessment, then document.',
+    newMechanic: 'Movement, patient selection, basic vitals, and simple “what do you do first?” prompts.',
+    carryoverSkills: ['Priority assessment'],
+    patientIds: ['p1', 'p5', 'p2'],
+    eventIds: [],
+    initialPatientId: 'p1',
+    startingScore: { safety: 82, prioritization: 72, delegation: 60, documentation: 58 },
+    passCriteria: { totalScore: 75, safetyScore: 80 },
+    handoff: 'Level 1 handoff: three fundamentals patients. Start with the safest first action and complete three care loops.',
+    hintLevel: 'guided',
+  },
+  {
+    id: 'level-2',
+    number: 2,
+    title: 'Medication Safety Check',
+    skill: 'Prevent medication errors',
+    story: 'Med pass begins. One patient has abnormal labs and another has unstable glucose. You need to assess first, verify risk, hold unsafe choices, and close the loop.',
+    newMechanic: 'Medication verification, allergies/hold parameters, and wrong-action penalties.',
+    carryoverSkills: ['Priority assessment', 'Vitals before meds'],
+    patientIds: ['p5', 'p2', 'p1'],
+    eventIds: ['hypoglycemia'],
+    initialPatientId: 'p2',
+    startingScore: { safety: 78, prioritization: 68, delegation: 56, documentation: 58 },
+    passCriteria: { totalScore: 75, safetyScore: 80 },
+    handoff: 'Level 2 handoff: med pass is starting. Assess before medication decisions and catch contraindications.',
+    hintLevel: 'guided',
+  },
+  {
+    id: 'level-3',
+    number: 3,
+    title: 'Delegation Under Pressure',
+    skill: 'Decide what can safely be delegated',
+    story: 'The unit is short-staffed. A UAP can help, but assessments and clinical judgment remain RN-only. Use the team without dumping responsibility.',
+    newMechanic: 'NPC delegation, staff energy, and RN-only vs UAP-safe labels.',
+    carryoverSkills: ['Priority assessment', 'Medication safety'],
+    patientIds: ['p1', 'p5', 'p2', 'p4'],
+    eventIds: ['hypoglycemia'],
+    initialPatientId: 'p2',
+    startingScore: { safety: 76, prioritization: 68, delegation: 46, documentation: 54 },
+    passCriteria: { totalScore: 75, safetyScore: 80 },
+    handoff: 'Level 3 handoff: routine tasks are stacking up. Delegate safely, but keep RN judgment with you.',
+    hintLevel: 'balanced',
+  },
+  {
+    id: 'level-4',
+    number: 4,
+    title: 'Patient Deterioration',
+    skill: 'Recognize and respond to worsening status',
+    story: 'A patient becomes unstable mid-shift. You must notice the red alert, intervene, escalate, reassess, and document before the window closes.',
+    newMechanic: 'Deterioration timers, red alert states, reassessment, and provider notification.',
+    carryoverSkills: ['Priority assessment', 'Medication safety', 'Safe delegation'],
+    patientIds: ['p4', 'p2', 'p1', 'p5'],
+    eventIds: ['respiratory-distress', 'hypoglycemia'],
+    initialPatientId: 'p4',
+    startingScore: { safety: 74, prioritization: 66, delegation: 54, documentation: 48 },
+    passCriteria: { totalScore: 75, safetyScore: 80 },
+    handoff: 'Level 4 handoff: watch for deterioration. If a patient turns red, rescue first and chart the response.',
+    hintLevel: 'balanced',
+  },
+  {
+    id: 'level-5',
+    number: 5,
+    title: 'Multi-Patient Shift Command',
+    skill: 'Manage competing priorities across five patients',
+    story: 'This is a realistic med-surg shift with labs, meds, family questions, changing vitals, and simultaneous tasks. Keep the whole floor safe.',
+    newMechanic: 'Active mission queue, time pressure, simultaneous tasks, and end-of-shift grade.',
+    carryoverSkills: ['Priority assessment', 'Medication safety', 'Safe delegation', 'Deterioration response'],
+    patientIds: ['p1', 'p2', 'p3', 'p4', 'p5'],
+    eventIds: ['hypoglycemia', 'respiratory-distress', 'postpartum-bleeding', 'fall-risk'],
+    initialPatientId: 'p4',
+    startingScore: { safety: 72, prioritization: 64, delegation: 50, documentation: 35 },
+    passCriteria: { totalScore: 75, safetyScore: 80 },
+    handoff: 'Level 5 handoff: five patients assigned. You are running the floor now: prioritize, delegate, rescue, and document.',
+    hintLevel: 'balanced',
+  },
+  {
+    id: 'level-6',
+    number: 6,
+    title: 'Capstone Rescue Shift',
+    skill: 'Run the floor safely without hand-holding',
+    story: 'Final readiness shift. Respiratory distress, hypoglycemia, hemorrhage risk, fall prevention, and documentation deadlines collide. Hints are lighter and scoring is stricter.',
+    newMechanic: 'Fewer hints, stricter scoring, final readiness badge, and replay recommendations.',
+    carryoverSkills: ['Priority assessment', 'Medication safety', 'Safe delegation', 'Deterioration response', 'Multi-patient command'],
+    patientIds: ['p4', 'p2', 'p3', 'p1', 'p5'],
+    eventIds: ['respiratory-distress', 'hypoglycemia', 'postpartum-bleeding', 'fall-risk'],
+    initialPatientId: 'p4',
+    startingScore: { safety: 70, prioritization: 62, delegation: 48, documentation: 34 },
+    passCriteria: { totalScore: 80, safetyScore: 84 },
+    handoff: 'Level 6 handoff: capstone rescue shift. Minimal hand-holding. Keep patient safety high and close every loop.',
+    hintLevel: 'light',
   },
 ]
 
@@ -488,6 +615,7 @@ function getActionWhy(action: ShiftAction, patient: ShiftPatient) {
 }
 
 function getCurrentPriority({
+  patients,
   clock,
   activeEvents,
   deterioratedEvents,
@@ -495,6 +623,7 @@ function getCurrentPriority({
   completedPatientIds,
   deterioratingPatientIds,
 }: {
+  patients: ShiftPatient[]
   clock: number
   activeEvents: ShiftEvent[]
   deterioratedEvents: ShiftEvent[]
@@ -623,31 +752,50 @@ function getLatestTeachingFeedback(log: LogEntry[]) {
 
 export function ShiftSimulatorGame() {
   const gameRootRef = useRef<HTMLElement | null>(null)
-  const [phase, setPhase] = useState<'briefing' | 'running' | 'ended'>('briefing')
+  const simulatorProgress = useStudySystemStore((state) => state.simulatorProgress)
+  const selectSimulatorLevel = useStudySystemStore((state) => state.selectSimulatorLevel)
+  const recordSimulatorLevelAttempt = useStudySystemStore((state) => state.recordSimulatorLevelAttempt)
+  const [phase, setPhase] = useState<'level-select' | 'briefing' | 'running' | 'ended'>('level-select')
+  const activeLevel =
+    simulatorLevels.find((level) => level.id === simulatorProgress.currentSimulatorLevel) ?? simulatorLevels[0]
+  const patients = useMemo(
+    () =>
+      activeLevel.patientIds
+        .map((patientId) => patientBank.find((patient) => patient.id === patientId))
+        .filter((patient): patient is ShiftPatient => Boolean(patient)),
+    [activeLevel],
+  )
+  const shiftEvents = useMemo(
+    () =>
+      activeLevel.eventIds
+        .map((eventId) => eventBank.find((event) => event.id === eventId))
+        .filter((event): event is ShiftEvent => Boolean(event)),
+    [activeLevel],
+  )
   const [clock, setClock] = useState(shiftStart)
-  const [selectedPatientId, setSelectedPatientId] = useState(patients[3].id)
+  const [selectedPatientId, setSelectedPatientId] = useState(activeLevel.initialPatientId)
   const [completedActions, setCompletedActions] = useState<Set<string>>(new Set())
   const [penalizedEvents, setPenalizedEvents] = useState<Set<string>>(new Set())
   const [delegationAssignments, setDelegationAssignments] = useState<DelegationAssignment[]>([])
   const [nearbyPatientId, setNearbyPatientId] = useState<string | null>(null)
+  const [openChartPatientId, setOpenChartPatientId] = useState<string | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [fullscreenMessage, setFullscreenMessage] = useState('')
+  const attemptRecordedRef = useRef(false)
   const [log, setLog] = useState<LogEntry[]>([
     {
       id: 'handoff',
       time: shiftStart,
       tone: 'info',
-      text: 'Handoff received. Five patients assigned. Highest opening risk: pediatric respiratory distress.',
+      text: activeLevel.handoff,
     },
   ])
-  const [score, setScore] = useState({
-    safety: 72,
-    prioritization: 64,
-    delegation: 50,
-    documentation: 35,
-  })
+  const [score, setScore] = useState(activeLevel.startingScore)
 
   const selectedPatient = patients.find((patient) => patient.id === selectedPatientId) ?? patients[0]
+  const openChartPatient = openChartPatientId
+    ? patients.find((patient) => patient.id === openChartPatientId) ?? null
+    : null
   const fullscreenSupported = typeof document !== 'undefined' && document.fullscreenEnabled
 
   const resolvedEvents = useMemo(
@@ -655,7 +803,7 @@ export function ShiftSimulatorGame() {
       shiftEvents.filter((event) =>
         event.requiredActions.every((actionId) => completedActions.has(`${event.patientId}:${actionId}`)),
       ),
-    [completedActions],
+    [completedActions, shiftEvents],
   )
 
   const activeEvents = useMemo(
@@ -666,12 +814,12 @@ export function ShiftSimulatorGame() {
           !resolvedEvents.some((resolved) => resolved.id === event.id) &&
           !penalizedEvents.has(event.id),
       ),
-    [clock, penalizedEvents, resolvedEvents],
+    [clock, penalizedEvents, resolvedEvents, shiftEvents],
   )
 
   const deterioratedEvents = useMemo(
     () => shiftEvents.filter((event) => penalizedEvents.has(event.id)),
-    [penalizedEvents],
+    [penalizedEvents, shiftEvents],
   )
 
   const deterioratingPatientIds = useMemo(
@@ -700,60 +848,115 @@ export function ShiftSimulatorGame() {
     const safeDelegations = delegationAssignments.filter((item) => item.safe).length
     const unsafeDelegations = delegationAssignments.filter((item) => !item.safe).length
 
-    return [
+    const baseMissions: MissionCard[] = [
       {
-        id: 'rescue-airway',
-        title: 'Airway Rescue',
-        description: 'Stabilize Evan with oxygen, respiratory therapy, provider escalation, and reassessment.',
-        reward: '+ safety command',
+        id: 'complete-care-loops',
+        title: activeLevel.number === 1 ? 'Three Care Loops' : 'Complete Care Loops',
+        description: `Finish assessment/intervention/documentation loops on ${Math.min(3, patients.length)} assigned patients.`,
+        reward: '+ fundamentals confidence',
+        required: true,
+        complete: completedPatientIds.length >= Math.min(3, patients.length),
+      },
+      {
+        id: 'first-safe-action',
+        title: 'Safest First Action',
+        description: 'Start with focused assessment or objective vitals before routine tasks.',
+        reward: '+ priority judgment',
+        required: true,
         complete:
-          has('p4', 'oxygen') &&
-          has('p4', 'respiratory-therapy') &&
-          has('p4', 'notify-provider') &&
-          has('p4', 'reassess') &&
-          noPenalty('respiratory-distress'),
+          patients.some((patient) => has(patient.id, 'focused-assessment')) ||
+          patients.some((patient) => has(patient.id, 'vitals')),
       },
-      {
-        id: 'reverse-glucose',
-        title: 'Reverse Hypoglycemia',
-        description: 'Treat Theo before neuro changes escalate, then reassess the response.',
-        reward: '+ priority timing',
-        complete: resolved('hypoglycemia') && noPenalty('hypoglycemia'),
-      },
-      {
-        id: 'stop-hemorrhage',
-        title: 'Stop the Bleed',
-        description: 'Recognize postpartum hemorrhage cues and activate the care pathway.',
-        reward: '+ OB judgment',
-        complete: resolved('postpartum-bleeding') && noPenalty('postpartum-bleeding'),
-      },
-      {
-        id: 'prevent-fall',
-        title: 'Prevent a Fall',
-        description: 'Protect Mara before dizziness turns into an injury event.',
-        reward: '+ safety prevention',
-        complete: has('p1', 'fall-precautions') && noPenalty('fall-risk'),
-      },
-      {
+    ]
+
+    if (activeLevel.number >= 2) {
+      baseMissions.push({
+        id: 'med-safety',
+        title: 'Medication Safety Check',
+        description: 'Assess abnormal cues before medication decisions and avoid ignoring labs.',
+        reward: '+ med safety',
+        required: true,
+        complete: (has('p5', 'focused-assessment') || has('p2', 'focused-assessment')) && !patients.some((patient) => has(patient.id, 'ignore-labs')),
+      })
+    }
+
+    if (activeLevel.number >= 3) {
+      baseMissions.push({
         id: 'delegate-smart',
         title: 'Delegate Without Dumping',
         description: 'Use the team for tasks within scope without assigning RN judgment away.',
         reward: '+ team leadership',
-        complete: safeDelegations >= 2 && unsafeDelegations === 0,
-      },
-      {
+        required: true,
+        complete: safeDelegations >= (activeLevel.number >= 5 ? 2 : 1) && unsafeDelegations === 0,
+      })
+    }
+
+    if (activeLevel.number >= 4) {
+      baseMissions.push({
+        id: 'rescue-airway',
+        title: 'Deterioration Rescue',
+        description: 'Stabilize the highest-risk deterioration before the deadline.',
+        reward: '+ rescue command',
+        required: true,
+        complete:
+          (resolved('respiratory-distress') && noPenalty('respiratory-distress')) ||
+          (resolved('hypoglycemia') && noPenalty('hypoglycemia')),
+      })
+    }
+
+    if (activeLevel.number >= 5) {
+      baseMissions.push(
+        {
+          id: 'stop-hemorrhage',
+          title: 'Stop the Bleed',
+          description: 'Recognize postpartum hemorrhage cues and activate the care pathway.',
+          reward: '+ OB judgment',
+          required: activeLevel.number >= 6,
+          complete: resolved('postpartum-bleeding') && noPenalty('postpartum-bleeding'),
+        },
+        {
+          id: 'prevent-fall',
+          title: 'Prevent a Fall',
+          description: 'Protect Mara before dizziness turns into an injury event.',
+          reward: '+ safety prevention',
+          required: true,
+          complete: has('p1', 'fall-precautions') && noPenalty('fall-risk'),
+        },
+        {
+          id: 'close-loop',
+          title: 'Close the Charting Loop',
+          description: `Document outcomes on at least ${activeLevel.number >= 6 ? 5 : 4} patients before handoff.`,
+          reward: '+ continuity of care',
+          required: true,
+          complete: documentsCompleted >= (activeLevel.number >= 6 ? 5 : 4),
+        },
+      )
+    } else {
+      baseMissions.push({
         id: 'close-loop',
-        title: 'Close the Charting Loop',
-        description: 'Document outcomes on at least four patients before end-of-shift handoff.',
+        title: 'Document the Outcome',
+        description: 'Chart at least one completed patient response before handoff.',
         reward: '+ continuity of care',
-        complete: documentsCompleted >= 4,
-      },
-    ]
-  }, [completedActions, delegationAssignments, penalizedEvents, resolvedEvents])
+        required: true,
+        complete: documentsCompleted >= 1,
+      })
+    }
+
+    return baseMissions
+  }, [activeLevel.number, completedActions, completedPatientIds.length, delegationAssignments, patients, penalizedEvents, resolvedEvents])
   const completedMissions = missionCards.filter((mission) => mission.complete).length
+  const requiredMissions = missionCards.filter((mission) => mission.required !== false)
+  const requiredMissionsComplete = requiredMissions.every((mission) => mission.complete)
+  const criticalMisses = penalizedEvents.size + delegationAssignments.filter((assignment) => !assignment.safe).length
+  const levelPassed =
+    totalScore >= activeLevel.passCriteria.totalScore &&
+    score.safety >= activeLevel.passCriteria.safetyScore &&
+    requiredMissionsComplete
+  const perfectShift = levelPassed && totalScore >= 90 && criticalMisses === 0 && completedMissions === missionCards.length
   const currentPriority = useMemo(
     () =>
       getCurrentPriority({
+        patients,
         clock,
         activeEvents,
         deterioratedEvents,
@@ -761,7 +964,7 @@ export function ShiftSimulatorGame() {
         completedPatientIds,
         deterioratingPatientIds,
       }),
-    [activeEvents, clock, completedActions, completedPatientIds, deterioratedEvents, deterioratingPatientIds],
+    [activeEvents, clock, completedActions, completedPatientIds, deterioratedEvents, deterioratingPatientIds, patients],
   )
   const activeMission = missionCards.find((mission) => !mission.complete) ?? missionCards[missionCards.length - 1]
   const latestFeedback = useMemo(() => getLatestTeachingFeedback(log), [log])
@@ -775,6 +978,36 @@ export function ShiftSimulatorGame() {
     document.addEventListener('fullscreenchange', syncFullscreenState)
     return () => document.removeEventListener('fullscreenchange', syncFullscreenState)
   }, [])
+
+  useEffect(() => {
+    if (phase !== 'ended' || attemptRecordedRef.current) return
+
+    recordSimulatorLevelAttempt(
+      {
+        id: crypto.randomUUID(),
+        levelId: activeLevel.id,
+        totalScore,
+        safetyScore: score.safety,
+        completedObjectives: completedMissions,
+        totalObjectives: missionCards.length,
+        passed: levelPassed,
+        perfect: perfectShift,
+        completedAt: new Date().toISOString(),
+      },
+      missionCards.filter((mission) => mission.complete).map((mission) => mission.id),
+    )
+    attemptRecordedRef.current = true
+  }, [
+    activeLevel.id,
+    completedMissions,
+    levelPassed,
+    missionCards,
+    perfectShift,
+    phase,
+    recordSimulatorLevelAttempt,
+    score.safety,
+    totalScore,
+  ])
 
   const toggleFullscreen = async () => {
     if (!gameRootRef.current) return
@@ -812,6 +1045,49 @@ export function ShiftSimulatorGame() {
       delegation: Math.max(0, Math.min(100, current.delegation + (delta.delegation ?? 0))),
       documentation: Math.max(0, Math.min(100, current.documentation + (delta.documentation ?? 0))),
     }))
+  }
+
+  const resetLevelRun = (level = activeLevel) => {
+    setClock(shiftStart)
+    setSelectedPatientId(level.initialPatientId)
+    setNearbyPatientId(null)
+    setOpenChartPatientId(null)
+    setCompletedActions(new Set())
+    setPenalizedEvents(new Set())
+    setDelegationAssignments([])
+    attemptRecordedRef.current = false
+    setScore(level.startingScore)
+    setLog([
+      {
+        id: 'handoff',
+        time: shiftStart,
+        tone: 'info',
+        text: level.handoff,
+      },
+    ])
+  }
+
+  const openLevel = (level: SimulatorLevelConfig) => {
+    if (!simulatorProgress.unlockedSimulatorLevels.includes(level.id)) return
+    selectSimulatorLevel(level.id)
+    resetLevelRun(level)
+    setPhase('briefing')
+  }
+
+  const returnToLevelSelect = () => {
+    resetLevelRun()
+    setPhase('level-select')
+  }
+
+  const endCurrentLevel = () => {
+    if (phase !== 'running') return
+    setPhase('ended')
+    addLog({ tone: 'info', text: 'Level ended. Clinical judgment report generated.' }, clock)
+  }
+
+  const openPatientChart = (patientId: string) => {
+    setSelectedPatientId(patientId)
+    setOpenChartPatientId(patientId)
   }
 
   const advanceClock = (minutes: number) => {
@@ -976,21 +1252,7 @@ export function ShiftSimulatorGame() {
 
   const resetGame = () => {
     setPhase('briefing')
-    setClock(shiftStart)
-    setSelectedPatientId(patients[3].id)
-    setNearbyPatientId(null)
-    setCompletedActions(new Set())
-    setPenalizedEvents(new Set())
-    setDelegationAssignments([])
-    setScore({ safety: 72, prioritization: 64, delegation: 50, documentation: 35 })
-    setLog([
-      {
-        id: 'handoff',
-        time: shiftStart,
-        tone: 'info',
-        text: 'Handoff received. Five patients assigned. Highest opening risk: pediatric respiratory distress.',
-      },
-    ])
+    resetLevelRun()
   }
 
   return (
@@ -1012,7 +1274,12 @@ export function ShiftSimulatorGame() {
           isFullscreen ? 'max-w-[1760px]' : 'max-w-[1500px]',
         )}
       >
-        <header className="sticky top-4 z-30 flex flex-col gap-4 rounded-[28px] border border-white/10 bg-[#071624]/82 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.28)] backdrop-blur-xl md:flex-row md:items-center md:justify-between">
+        <header
+          className={clsx(
+            'sticky z-30 flex flex-col border border-white/10 bg-[#071624]/82 shadow-[0_24px_80px_rgba(0,0,0,0.28)] backdrop-blur-xl md:flex-row md:items-center md:justify-between',
+            isFullscreen ? 'top-2 gap-3 rounded-[22px] p-3' : 'top-4 gap-4 rounded-[28px] p-4',
+          )}
+        >
           <div className="flex items-center gap-4">
             <Link
               to="/"
@@ -1022,17 +1289,18 @@ export function ShiftSimulatorGame() {
               <ArrowLeft className="h-5 w-5" />
             </Link>
             <div>
-              <h1 className="text-2xl font-black tracking-[-0.04em] text-white md:text-4xl">
+              <h1 className={clsx('font-black tracking-[-0.04em] text-white', isFullscreen ? 'text-xl md:text-2xl' : 'text-2xl md:text-4xl')}>
                 Nurse Shift Command
               </h1>
-              <p className="mt-1 text-sm text-slate-300">
-                Who needs you first? Prioritize, delegate, rescue, then close the loop.
+              <p className={clsx('mt-1 text-sm text-slate-300', isFullscreen && 'hidden lg:block')}>
+                Level {activeLevel.number}: {activeLevel.title} - {activeLevel.skill}
               </p>
             </div>
           </div>
 
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+              <HudStat icon={<Sparkles className="h-4 w-4" />} label="Level" value={`${activeLevel.number}/6`} />
               <HudStat icon={<Clock3 className="h-4 w-4" />} label="Clock" value={formatTime(clock)} />
               <HudStat icon={<Activity className="h-4 w-4" />} label="Readiness" value={`${totalScore}%`} />
               <HudStat icon={<ShieldAlert className="h-4 w-4" />} label="Alerts" value={`${activeEvents.length}`} />
@@ -1051,7 +1319,87 @@ export function ShiftSimulatorGame() {
           </p>
         ) : null}
 
-        {phase === 'briefing' ? (
+        {phase === 'level-select' ? (
+          <section className="flex-1 py-8">
+            <div className="mb-7 grid gap-5 lg:grid-cols-[1fr_380px]">
+              <div className="rounded-[32px] border border-sky-300/20 bg-white/8 p-7 shadow-[0_30px_90px_rgba(0,0,0,0.28)] backdrop-blur-xl">
+                <p className="text-xs font-black uppercase tracking-[0.22em] text-sky-300">Simulator progression</p>
+                <h2 className="mt-4 text-4xl font-black leading-none tracking-[-0.06em] text-white md:text-6xl">
+                  Build floor command one shift at a time.
+                </h2>
+                <p className="mt-5 max-w-3xl text-base leading-8 text-slate-300">
+                  Each level teaches one new nursing mechanic, then keeps it active. Start with safe first actions and
+                  grow into full multi-patient rescue command.
+                </p>
+              </div>
+              <Panel title="Progress Rules" icon={<ShieldAlert className="h-4 w-4" />}>
+                <div className="space-y-3 text-sm leading-6 text-slate-300">
+                  <p><strong className="text-white">Pass:</strong> 75% total, 80% safety, and required objectives complete.</p>
+                  <p><strong className="text-white">Perfect:</strong> 90% total, no critical misses, all missions complete.</p>
+                  <p><strong className="text-white">Replay:</strong> Failed levels give feedback with no penalty.</p>
+                </div>
+              </Panel>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {simulatorLevels.map((level) => {
+                const unlocked = simulatorProgress.unlockedSimulatorLevels.includes(level.id)
+                const bestScore = simulatorProgress.bestLevelScores[level.id]
+                const latestAttempt = simulatorProgress.levelAttempts.find((attempt) => attempt.levelId === level.id)
+                return (
+                  <button
+                    key={level.id}
+                    type="button"
+                    disabled={!unlocked}
+                    onClick={() => openLevel(level)}
+                    className={clsx(
+                      'group rounded-[28px] border p-5 text-left transition',
+                      unlocked
+                        ? 'border-sky-300/25 bg-white/8 shadow-[0_20px_55px_rgba(0,0,0,0.24)] hover:-translate-y-1 hover:border-sky-300/50 hover:shadow-[0_0_42px_rgba(22,183,255,0.18)]'
+                        : 'border-white/8 bg-white/[0.03] opacity-55',
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="grid h-14 w-14 place-items-center rounded-2xl border border-sky-300/25 bg-sky-400/12 text-2xl font-black text-white">
+                        {level.number}
+                      </div>
+                      <span
+                        className={clsx(
+                          'rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em]',
+                          unlocked ? 'bg-emerald-400/14 text-emerald-200' : 'bg-white/8 text-slate-500',
+                        )}
+                      >
+                        {unlocked ? 'Unlocked' : 'Locked'}
+                      </span>
+                    </div>
+                    <h3 className="mt-5 text-2xl font-black tracking-[-0.04em] text-white">{level.title}</h3>
+                    <p className="mt-2 text-sm font-black uppercase tracking-[0.16em] text-sky-300">
+                      New building block
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-slate-300">{level.newMechanic}</p>
+                    <div className="mt-5 rounded-2xl border border-white/8 bg-white/6 p-4">
+                      <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Skill learned</p>
+                      <p className="mt-1 text-sm font-bold text-white">{level.skill}</p>
+                    </div>
+                    <div className="mt-5 flex flex-wrap gap-2">
+                      <span className="rounded-full border border-sky-300/25 bg-sky-400/10 px-3 py-1 text-xs font-bold text-sky-100">
+                        Best: {bestScore ? `${bestScore}%` : 'not attempted'}
+                      </span>
+                      {latestAttempt ? (
+                        <span className={clsx('rounded-full px-3 py-1 text-xs font-bold', latestAttempt.passed ? 'bg-emerald-400/14 text-emerald-200' : 'bg-amber-400/14 text-amber-200')}>
+                          {latestAttempt.passed ? 'Passed' : 'Replay recommended'}
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="mt-5 text-sm font-black text-sky-200">
+                      {unlocked ? (latestAttempt ? 'Replay level' : 'Continue') : 'Pass the previous level to unlock'}
+                    </p>
+                  </button>
+                )
+              })}
+            </div>
+          </section>
+        ) : phase === 'briefing' ? (
           <section className="grid flex-1 items-center gap-6 py-8 lg:grid-cols-[1.05fr_0.95fr]">
             <motion.div
               initial={{ opacity: 0, y: 16 }}
@@ -1062,12 +1410,15 @@ export function ShiftSimulatorGame() {
                 <Sparkles className="h-7 w-7" />
               </div>
               <h2 className="mt-7 max-w-3xl text-4xl font-black leading-[0.95] tracking-[-0.06em] text-white md:text-6xl">
-                Who needs you first?
+                Level {activeLevel.number}: {activeLevel.title}
               </h2>
               <p className="mt-5 max-w-2xl text-base leading-8 text-slate-300">
-                You are the RN for five patients. The screen will show the sickest cue, the safest next move, and who
-                can help. Move through the unit, choose care actions, delegate safely, then reassess and document.
+                {activeLevel.story}
               </p>
+              <div className="mt-5 rounded-2xl border border-sky-300/25 bg-sky-400/10 p-4">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-200">Building block</p>
+                <p className="mt-2 text-sm font-bold text-white">{activeLevel.newMechanic}</p>
+              </div>
               <div className="mt-6 grid gap-3 sm:grid-cols-2">
                 {[
                   ['1', 'Spot the priority', 'Look for red or amber cues first.'],
@@ -1089,14 +1440,14 @@ export function ShiftSimulatorGame() {
                   className="inline-flex items-center gap-2 rounded-2xl bg-[#2a7de1] px-5 py-3 text-sm font-black text-white shadow-[0_18px_38px_rgba(42,125,225,0.32)] transition hover:-translate-y-0.5"
                 >
                   <Play className="h-4 w-4" />
-                  Start 12-hour shift
+                  Start Level {activeLevel.number}
                 </button>
                 <button
                   type="button"
-                  onClick={resetGame}
+                  onClick={returnToLevelSelect}
                   className="rounded-2xl border border-white/12 bg-white/8 px-5 py-3 text-sm font-bold text-slate-100 transition hover:bg-white/12"
                 >
-                  Reset briefing
+                  Choose level
                 </button>
                 <FullscreenButton
                   isFullscreen={isFullscreen}
@@ -1132,11 +1483,11 @@ export function ShiftSimulatorGame() {
             className={clsx(
               'grid flex-1 gap-5 py-5',
               isFullscreen
-                ? 'xl:grid-cols-[270px_minmax(0,1fr)_320px]'
+                ? 'xl:grid-cols-[minmax(0,1fr)]'
                 : 'xl:grid-cols-[300px_minmax(0,1fr)_360px]',
             )}
           >
-            <aside className="space-y-4">
+            <aside className={clsx('space-y-4', isFullscreen && 'hidden')}>
               <Panel title="Patient Census" icon={<Users className="h-4 w-4" />}>
                 <div className="space-y-3">
                   {patients.map((patient) => (
@@ -1173,6 +1524,17 @@ export function ShiftSimulatorGame() {
                 icon={<ListChecks className="h-4 w-4" />}
                 right={<span className="text-xs font-black text-emerald-200">{completedMissions}/{missionCards.length}</span>}
               >
+                <div className="mb-4 rounded-2xl border border-sky-300/20 bg-sky-400/10 p-3">
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-200">Active building block</p>
+                  <p className="mt-1 text-sm font-bold text-white">{activeLevel.skill}</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {activeLevel.carryoverSkills.map((skill) => (
+                      <span key={skill} className="rounded-full border border-white/10 bg-white/8 px-2 py-1 text-[11px] font-bold text-slate-300">
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
                 <MissionRow mission={activeMission} featured />
                 <div className="mt-4 grid grid-cols-6 gap-2">
                   {missionCards.map((mission) => (
@@ -1193,16 +1555,27 @@ export function ShiftSimulatorGame() {
               </Panel>
             </aside>
 
-            <section className="space-y-5">
-              <CurrentPriorityPanel
-                priority={currentPriority}
-                canPerformActions={selectedPatient.id === currentPriority.patient.id}
-                onSelectPatient={(patientId) => setSelectedPatientId(patientId)}
-                onPerformAction={(actionId) => {
-                  const action = actions.find((item) => item.id === actionId)
-                  if (action) performAction(action)
-                }}
-              />
+            <section className={clsx('space-y-5', isFullscreen && 'space-y-3')}>
+              {isFullscreen ? (
+                <FullscreenPriorityBar
+                  priority={currentPriority}
+                  mission={activeMission}
+                  selectedPatient={selectedPatient}
+                  completedMissions={completedMissions}
+                  totalMissions={missionCards.length}
+                  onSelectPatient={setSelectedPatientId}
+                />
+              ) : (
+                <CurrentPriorityPanel
+                  priority={currentPriority}
+                  canPerformActions={selectedPatient.id === currentPriority.patient.id}
+                  onSelectPatient={(patientId) => setSelectedPatientId(patientId)}
+                  onPerformAction={(actionId) => {
+                    const action = actions.find((item) => item.id === actionId)
+                    if (action) performAction(action)
+                  }}
+                />
+              )}
 
               <Shift3DViewport
                 patients={patients}
@@ -1213,96 +1586,112 @@ export function ShiftSimulatorGame() {
                 delegatedPatientIds={delegationAssignments.slice(0, 6).map((assignment) => assignment.patientId)}
                 nearbyPatientId={nearbyPatientId}
                 onSelectPatient={setSelectedPatientId}
+                onInteractPatient={openPatientChart}
                 onProximityChange={setNearbyPatientId}
                 immersive={isFullscreen}
               />
 
-              <Panel
-                title={`${selectedPatient.room} - ${selectedPatient.name}`}
-                icon={<HeartPulse className="h-4 w-4" />}
-                right={
-                  <PatientUrgencyBadge
-                    status={getPatientDisplayStatus(selectedPatient, completedPatientIds, deterioratingPatientIds)}
-                  />
-                }
-              >
-                <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
-                  <div>
-                    <h2 className="text-3xl font-black tracking-[-0.04em] text-white">
-                      {selectedPatient.age} y/o - {selectedPatient.diagnosis}
-                    </h2>
-                    <p className="mt-3 text-sm leading-7 text-slate-300">{selectedPatient.chiefConcern}</p>
-                    <div className="mt-5 rounded-2xl border border-sky-400/20 bg-sky-400/10 p-4">
-                      <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-200">Priority Frame</p>
-                      <p className="mt-2 text-sm leading-6 text-slate-200">{selectedPatient.priorityFrame}</p>
+              {isFullscreen ? (
+                <CompactCareDeck
+                  patient={selectedPatient}
+                  actions={actions}
+                  completedActions={completedActions}
+                  recommendedActionIds={currentPriority.recommendedSteps
+                    .map((step) => step.actionId)
+                    .filter((actionId): actionId is string => Boolean(actionId))}
+                  disabled={phase !== 'running'}
+                  onPerformAction={performAction}
+                />
+              ) : (
+                <>
+                  <Panel
+                    title={`${selectedPatient.room} - ${selectedPatient.name}`}
+                    icon={<HeartPulse className="h-4 w-4" />}
+                    right={
+                      <PatientUrgencyBadge
+                        status={getPatientDisplayStatus(selectedPatient, completedPatientIds, deterioratingPatientIds)}
+                      />
+                    }
+                  >
+                    <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
+                      <div>
+                        <h2 className="text-3xl font-black tracking-[-0.04em] text-white">
+                          {selectedPatient.age} y/o - {selectedPatient.diagnosis}
+                        </h2>
+                        <p className="mt-3 text-sm leading-7 text-slate-300">{selectedPatient.chiefConcern}</p>
+                        <div className="mt-5 rounded-2xl border border-sky-400/20 bg-sky-400/10 p-4">
+                          <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-200">Priority Frame</p>
+                          <p className="mt-2 text-sm leading-6 text-slate-200">{selectedPatient.priorityFrame}</p>
+                        </div>
+                        {deterioratingPatientIds.includes(selectedPatient.id) ? (
+                          <div className="mt-4 rounded-2xl border border-rose-300/30 bg-rose-500/12 p-4">
+                            <p className="text-xs font-black uppercase tracking-[0.16em] text-rose-200">
+                              Patient deterioration
+                            </p>
+                            <p className="mt-2 text-sm leading-6 text-rose-100">
+                              This patient is trending unsafe. Prioritize assessment, rescue intervention, escalation, then reassessment.
+                            </p>
+                          </div>
+                        ) : null}
+                      </div>
+                      <VitalsCard patient={selectedPatient} />
                     </div>
-                    {deterioratingPatientIds.includes(selectedPatient.id) ? (
-                      <div className="mt-4 rounded-2xl border border-rose-300/30 bg-rose-500/12 p-4">
-                        <p className="text-xs font-black uppercase tracking-[0.16em] text-rose-200">
-                          Patient deterioration
-                        </p>
-                        <p className="mt-2 text-sm leading-6 text-rose-100">
-                          This patient is trending unsafe. Prioritize assessment, rescue intervention, escalation, then reassessment.
-                        </p>
-                      </div>
-                    ) : null}
-                  </div>
-                  <VitalsCard patient={selectedPatient} />
-                </div>
-              </Panel>
+                  </Panel>
 
-              <div className="grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
-                <Panel title="Labs & Orders" icon={<ClipboardCheck className="h-4 w-4" />}>
-                  <div className="grid gap-3">
-                    {selectedPatient.labs.map((lab) => (
-                      <div key={lab.label} className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/6 px-4 py-3">
-                        <span className="text-sm font-bold text-slate-200">{lab.label}</span>
-                        <span
-                          className={clsx(
-                            'text-sm font-black',
-                            lab.flag === 'critical'
-                              ? 'text-rose-300'
-                              : lab.flag === 'abnormal'
-                                ? 'text-amber-300'
-                                : 'text-emerald-300',
-                          )}
-                        >
-                          {lab.value}
-                        </span>
+                  <div className="grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
+                    <Panel title="Labs & Orders" icon={<ClipboardCheck className="h-4 w-4" />}>
+                      <div className="grid gap-3">
+                        {selectedPatient.labs.map((lab) => (
+                          <div key={lab.label} className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/6 px-4 py-3">
+                            <span className="text-sm font-bold text-slate-200">{lab.label}</span>
+                            <span
+                              className={clsx(
+                                'text-sm font-black',
+                                lab.flag === 'critical'
+                                  ? 'text-rose-300'
+                                  : lab.flag === 'abnormal'
+                                    ? 'text-amber-300'
+                                    : 'text-emerald-300',
+                              )}
+                            >
+                              {lab.value}
+                            </span>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                  <div className="mt-4 space-y-2">
-                    {selectedPatient.orders.map((order) => (
-                      <p key={order} className="rounded-xl bg-white/6 px-3 py-2 text-sm text-slate-300">
-                        {order}
-                      </p>
-                    ))}
-                  </div>
-                </Panel>
+                      <div className="mt-4 space-y-2">
+                        {selectedPatient.orders.map((order) => (
+                          <p key={order} className="rounded-xl bg-white/6 px-3 py-2 text-sm text-slate-300">
+                            {order}
+                          </p>
+                        ))}
+                      </div>
+                    </Panel>
 
-                <Panel title="Choose Care Action" icon={<Stethoscope className="h-4 w-4" />}>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {actions.map((action) => {
-                      const completed = completedActions.has(`${selectedPatient.id}:${action.id}`)
-                      return (
-                        <ActionCard
-                          key={action.id}
-                          action={action}
-                          patient={selectedPatient}
-                          completed={completed}
-                          disabled={phase !== 'running'}
-                          recommended={currentPriority.patient.id === selectedPatient.id && currentPriority.recommendedSteps.some((step) => step.actionId === action.id)}
-                          onClick={() => performAction(action)}
-                        />
-                      )
-                    })}
+                    <Panel title="Choose Care Action" icon={<Stethoscope className="h-4 w-4" />}>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {actions.map((action) => {
+                          const completed = completedActions.has(`${selectedPatient.id}:${action.id}`)
+                          return (
+                            <ActionCard
+                              key={action.id}
+                              action={action}
+                              patient={selectedPatient}
+                              completed={completed}
+                              disabled={phase !== 'running'}
+                              recommended={currentPriority.patient.id === selectedPatient.id && currentPriority.recommendedSteps.some((step) => step.actionId === action.id)}
+                              onClick={() => performAction(action)}
+                            />
+                          )
+                        })}
+                      </div>
+                    </Panel>
                   </div>
-                </Panel>
-              </div>
+                </>
+              )}
             </section>
 
-            <aside className="space-y-4">
+            <aside className={clsx('space-y-4', isFullscreen && 'hidden')}>
               <Panel title="Delegate Or Do It Yourself?" icon={<Radio className="h-4 w-4" />}>
                 <div className="mb-4 rounded-2xl border border-white/8 bg-white/6 p-3">
                   <p className="text-sm font-black text-white">Selected: {selectedPatient.room}</p>
@@ -1424,7 +1813,7 @@ export function ShiftSimulatorGame() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setPhase('ended')}
+                  onClick={endCurrentLevel}
                   disabled={phase !== 'running'}
                   className="rounded-2xl bg-[#2a7de1] px-4 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 disabled:opacity-50"
                 >
@@ -1436,10 +1825,183 @@ export function ShiftSimulatorGame() {
         )}
 
         {phase === 'ended' ? (
-          <EndShiftModal totalScore={totalScore} score={score} log={log} missions={missionCards} onRestart={resetGame} />
+          <EndShiftModal
+            level={activeLevel}
+            totalScore={totalScore}
+            score={score}
+            log={log}
+            missions={missionCards}
+            passed={levelPassed}
+            perfect={perfectShift}
+            criticalMisses={criticalMisses}
+            onRestart={resetGame}
+            onLevelSelect={returnToLevelSelect}
+          />
+        ) : null}
+
+        {openChartPatient ? (
+          <PatientChartDrawer
+            patient={openChartPatient}
+            displayStatus={getPatientDisplayStatus(openChartPatient, completedPatientIds, deterioratingPatientIds)}
+            actions={actions}
+            completedActions={completedActions}
+            recommendedActionIds={currentPriority.recommendedSteps
+              .map((step) => step.actionId)
+              .filter((actionId): actionId is string => Boolean(actionId))}
+            disabled={phase !== 'running'}
+            onClose={() => setOpenChartPatientId(null)}
+            onPerformAction={(action) => {
+              setSelectedPatientId(openChartPatient.id)
+              performAction(action)
+            }}
+          />
         ) : null}
       </div>
     </main>
+  )
+}
+
+function PatientChartDrawer({
+  patient,
+  displayStatus,
+  actions,
+  completedActions,
+  recommendedActionIds,
+  disabled,
+  onClose,
+  onPerformAction,
+}: {
+  patient: ShiftPatient
+  displayStatus: DisplayStatus
+  actions: ShiftAction[]
+  completedActions: Set<string>
+  recommendedActionIds: string[]
+  disabled: boolean
+  onClose: () => void
+  onPerformAction: (action: ShiftAction) => void
+}) {
+  const chartActions = actions
+    .filter((action) => patient.correctActions.includes(action.id) || recommendedActionIds.includes(action.id))
+    .slice(0, 6)
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/55 p-3 backdrop-blur-sm md:items-center md:justify-end md:p-6">
+      <motion.section
+        initial={{ opacity: 0, x: 28, y: 18 }}
+        animate={{ opacity: 1, x: 0, y: 0 }}
+        exit={{ opacity: 0, x: 28, y: 18 }}
+        className="max-h-[88vh] w-full overflow-y-auto rounded-[30px] border border-sky-300/25 bg-[#071624]/96 p-5 shadow-[0_30px_120px_rgba(0,0,0,0.58),0_0_60px_rgba(22,183,255,0.16)] md:max-w-[560px]"
+        role="dialog"
+        aria-label={`${patient.name} chart`}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-sky-300">Patient chart opened</p>
+            <h2 className="mt-2 text-3xl font-black tracking-[-0.05em] text-white">
+              {patient.room} - {patient.name}
+            </h2>
+            <p className="mt-1 text-sm text-slate-300">
+              {patient.age} y/o - {patient.diagnosis}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="grid h-10 w-10 place-items-center rounded-2xl border border-white/10 bg-white/8 text-xl font-black text-white transition hover:bg-white/14"
+            aria-label="Close patient chart"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          <PatientUrgencyBadge status={displayStatus} />
+          <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-xs font-black uppercase tracking-[0.12em] text-slate-200">
+            EHR chart
+          </span>
+        </div>
+
+        <div className="mt-5 rounded-2xl border border-sky-300/20 bg-sky-400/10 p-4">
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-200">Chief concern</p>
+          <p className="mt-2 text-sm leading-6 text-slate-100">{patient.chiefConcern}</p>
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <VitalsCard patient={patient} />
+          <div className="rounded-[22px] border border-white/10 bg-[#071624]/70 p-4">
+            <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-slate-400">
+              <ClipboardCheck className="h-4 w-4" />
+              Labs
+            </p>
+            <div className="mt-4 space-y-2">
+              {patient.labs.map((lab) => (
+                <div key={lab.label} className="flex items-center justify-between rounded-xl border border-white/8 bg-white/6 px-3 py-2">
+                  <span className="text-xs font-bold text-slate-300">{lab.label}</span>
+                  <span
+                    className={clsx(
+                      'text-xs font-black',
+                      lab.flag === 'critical'
+                        ? 'text-rose-300'
+                        : lab.flag === 'abnormal'
+                          ? 'text-amber-300'
+                          : 'text-emerald-300',
+                    )}
+                  >
+                    {lab.value}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-white/10 bg-white/6 p-4">
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-200">Priority frame</p>
+          <p className="mt-2 text-sm leading-6 text-slate-200">{patient.priorityFrame}</p>
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-white/10 bg-white/6 p-4">
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Orders</p>
+          <div className="mt-3 space-y-2">
+            {patient.orders.map((order) => (
+              <p key={order} className="rounded-xl bg-white/7 px-3 py-2 text-sm text-slate-200">
+                {order}
+              </p>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-5">
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-300">Available care actions</p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            {chartActions.map((action) => {
+              const completed = completedActions.has(`${patient.id}:${action.id}`)
+              return (
+                <button
+                  key={action.id}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => onPerformAction(action)}
+                  className={clsx(
+                    'rounded-2xl border px-4 py-3 text-left transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50',
+                    completed
+                      ? 'border-emerald-300/25 bg-emerald-400/12 text-emerald-100'
+                      : recommendedActionIds.includes(action.id)
+                        ? 'border-sky-300/35 bg-sky-400/14 text-white shadow-[0_0_22px_rgba(22,183,255,0.14)]'
+                        : 'border-white/10 bg-white/7 text-slate-100',
+                  )}
+                >
+                  <span className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">
+                    {getActionScopeLabel(action)}
+                  </span>
+                  <span className="mt-1 block text-sm font-black">{completed ? 'Done: ' : ''}{action.label}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      </motion.section>
+    </div>
   )
 }
 
@@ -1466,6 +2028,143 @@ function FullscreenButton({
       {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
       {isFullscreen ? 'Exit Full Screen' : 'Enter Full Screen'}
     </button>
+  )
+}
+
+function FullscreenPriorityBar({
+  priority,
+  mission,
+  selectedPatient,
+  completedMissions,
+  totalMissions,
+  onSelectPatient,
+}: {
+  priority: CurrentPriority
+  mission: MissionCard
+  selectedPatient: ShiftPatient
+  completedMissions: number
+  totalMissions: number
+  onSelectPatient: (patientId: string) => void
+}) {
+  return (
+    <section className="rounded-[24px] border border-sky-300/20 bg-[#071624]/84 p-3 shadow-[0_18px_60px_rgba(0,0,0,0.24)] backdrop-blur-xl">
+      <div className="grid gap-3 lg:grid-cols-[1fr_auto_auto] lg:items-center">
+        <button
+          type="button"
+          onClick={() => onSelectPatient(priority.patient.id)}
+          className="rounded-2xl border border-sky-300/20 bg-sky-400/10 px-4 py-3 text-left transition hover:bg-sky-400/16"
+        >
+          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-sky-300">Current priority</p>
+          <p className="mt-1 text-lg font-black text-white">
+            {priority.patient.room} - {priority.patient.name}
+          </p>
+          <p className="mt-1 line-clamp-1 text-sm text-slate-300">{priority.reason}</p>
+        </button>
+        <div className="rounded-2xl border border-white/10 bg-white/8 px-4 py-3">
+          <p className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">Active mission</p>
+          <p className="mt-1 text-sm font-black text-white">{mission.title}</p>
+        </div>
+        <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/8 px-4 py-3">
+          <PatientUrgencyBadge status={priority.status} />
+          <span className="text-sm font-black text-emerald-200">
+            {completedMissions}/{totalMissions}
+          </span>
+          <span className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">missions</span>
+        </div>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <span className="rounded-full border border-white/10 bg-white/8 px-3 py-1 text-xs font-bold text-slate-300">
+          Selected: {selectedPatient.room} - {selectedPatient.name}
+        </span>
+        {priority.recommendedSteps.slice(0, 3).map((step) => (
+          <button
+            key={step.id}
+            type="button"
+            onClick={() => onSelectPatient(priority.patient.id)}
+            className="rounded-full border border-sky-300/25 bg-sky-400/10 px-3 py-1 text-xs font-black text-sky-100 transition hover:bg-sky-400/16"
+          >
+            {step.label}
+          </button>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function CompactCareDeck({
+  patient,
+  actions,
+  completedActions,
+  recommendedActionIds,
+  disabled,
+  onPerformAction,
+}: {
+  patient: ShiftPatient
+  actions: ShiftAction[]
+  completedActions: Set<string>
+  recommendedActionIds: string[]
+  disabled: boolean
+  onPerformAction: (action: ShiftAction) => void
+}) {
+  const visibleActions = actions
+    .filter((action) => patient.correctActions.includes(action.id) || recommendedActionIds.includes(action.id))
+    .slice(0, 6)
+
+  return (
+    <section className="rounded-[24px] border border-white/10 bg-[#071624]/84 p-4 shadow-[0_18px_60px_rgba(0,0,0,0.2)] backdrop-blur-xl">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-300">Care deck</p>
+          <h2 className="mt-1 text-2xl font-black tracking-[-0.04em] text-white">
+            {patient.room} - {patient.name}
+          </h2>
+          <p className="mt-1 max-w-3xl text-sm text-slate-300">{patient.chiefConcern}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {patient.labs.slice(0, 3).map((lab) => (
+            <span
+              key={lab.label}
+              className={clsx(
+                'rounded-full border px-3 py-1 text-xs font-black',
+                lab.flag === 'critical'
+                  ? 'border-rose-300/30 bg-rose-400/12 text-rose-100'
+                  : lab.flag === 'abnormal'
+                    ? 'border-amber-300/30 bg-amber-400/12 text-amber-100'
+                    : 'border-emerald-300/25 bg-emerald-400/10 text-emerald-100',
+              )}
+            >
+              {lab.label}: {lab.value}
+            </span>
+          ))}
+        </div>
+      </div>
+      <div className="mt-4 grid gap-2 md:grid-cols-3">
+        {visibleActions.map((action) => {
+          const completed = completedActions.has(`${patient.id}:${action.id}`)
+          return (
+            <button
+              key={action.id}
+              type="button"
+              disabled={disabled}
+              onClick={() => onPerformAction(action)}
+              className={clsx(
+                'rounded-2xl border px-4 py-3 text-left transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50',
+                completed
+                  ? 'border-emerald-300/25 bg-emerald-400/12 text-emerald-100'
+                  : recommendedActionIds.includes(action.id)
+                    ? 'border-sky-300/35 bg-sky-400/14 text-white shadow-[0_0_22px_rgba(22,183,255,0.14)]'
+                    : 'border-white/10 bg-white/7 text-slate-100',
+              )}
+            >
+              <span className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">
+                {getActionScopeLabel(action)}
+              </span>
+              <span className="mt-1 block text-sm font-black">{completed ? 'Done: ' : ''}{action.label}</span>
+            </button>
+          )
+        })}
+      </div>
+    </section>
   )
 }
 
@@ -1590,6 +2289,7 @@ function Shift3DViewport({
   delegatedPatientIds,
   nearbyPatientId,
   onSelectPatient,
+  onInteractPatient,
   onProximityChange,
   immersive,
 }: {
@@ -1601,6 +2301,7 @@ function Shift3DViewport({
   delegatedPatientIds: string[]
   nearbyPatientId: string | null
   onSelectPatient: (patientId: string) => void
+  onInteractPatient: (patientId: string) => void
   onProximityChange: (patientId: string | null) => void
   immersive: boolean
 }) {
@@ -1631,6 +2332,7 @@ function Shift3DViewport({
       completedPatientIds,
       delegatedPatientIds,
       onSelectPatient,
+      onInteractPatient,
       onProximityChange,
     })
 
@@ -1650,6 +2352,7 @@ function Shift3DViewport({
       completedPatientIds,
       delegatedPatientIds,
       onSelectPatient,
+      onInteractPatient,
       onProximityChange,
     })
   }, [
@@ -1659,6 +2362,7 @@ function Shift3DViewport({
     deterioratingPatientIds,
     onProximityChange,
     onSelectPatient,
+    onInteractPatient,
     selectedPatientId,
   ])
 
@@ -1670,7 +2374,7 @@ function Shift3DViewport({
     <section
       className={clsx(
         'relative overflow-hidden rounded-[30px] border border-white/10 bg-[#071624] shadow-[0_30px_90px_rgba(0,0,0,0.32)]',
-        immersive ? 'min-h-[68vh]' : 'min-h-[520px]',
+        immersive ? 'min-h-[72vh]' : 'min-h-[520px]',
       )}
     >
       <div ref={mountRef} className="absolute inset-0" />
@@ -1678,18 +2382,25 @@ function Shift3DViewport({
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">3D Shift Engine</p>
-            <h2 className="mt-1 text-2xl font-black tracking-[-0.04em] text-white">Move through the unit</h2>
-            <p className="mt-1 max-w-2xl text-sm text-slate-300">
-              Use WASD or arrows. Click a patient room to select. Press E near a bedside to open that chart.
-            </p>
+            <h2 className="mt-1 text-xl font-black tracking-[-0.04em] text-white md:text-2xl">Move through the unit</h2>
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-300">
+              <span>Move with WASD or arrows.</span>
+              <span className="inline-flex items-center gap-2 rounded-full border border-sky-300/30 bg-sky-400/12 px-3 py-1 font-black text-sky-50 shadow-[0_0_20px_rgba(22,183,255,0.16)]">
+                <kbd className="grid h-7 min-w-7 place-items-center rounded-lg border border-white/20 bg-white/16 px-2 text-sm font-black text-white">
+                  E
+                </kbd>
+                Interact
+              </span>
+              <span>near a bedside to open that chart.</span>
+            </div>
           </div>
-          <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-slate-200 backdrop-blur">
+          <div className="rounded-2xl border border-white/10 bg-[#071624]/70 px-4 py-3 text-sm text-slate-200 backdrop-blur">
             {nearbyPatient ? (
               <>
-                <span className="font-black text-emerald-200">Nearby:</span> {nearbyPatient.room} - {nearbyPatient.name}
+                <span className="font-black text-emerald-200">Ready:</span> Press <kbd className="rounded-md border border-white/20 bg-white/12 px-2 py-1 text-xs font-black text-white">E</kbd> for {nearbyPatient.room} - {nearbyPatient.name}
               </>
             ) : (
-              'Walk near a patient to interact'
+              'Walk near a bedside until the interact prompt lights up'
             )}
           </div>
         </div>
@@ -1707,10 +2418,18 @@ function Shift3DViewport({
       <div className="absolute bottom-4 right-4 flex flex-col gap-2">
         <button
           type="button"
-          onClick={() => nearbyPatientId && onSelectPatient(nearbyPatientId)}
+          onClick={() => nearbyPatientId && onInteractPatient(nearbyPatientId)}
           disabled={!nearbyPatientId}
-          className="rounded-2xl border border-white/10 bg-white/12 px-4 py-3 text-sm font-black text-white backdrop-blur transition hover:bg-white/18 disabled:cursor-not-allowed disabled:opacity-45"
+          className={clsx(
+            'inline-flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-black text-white backdrop-blur transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45',
+            nearbyPatientId
+              ? 'border-sky-300/40 bg-sky-400/20 shadow-[0_0_30px_rgba(22,183,255,0.24)]'
+              : 'border-white/10 bg-white/12',
+          )}
         >
+          <kbd className="grid h-8 min-w-8 place-items-center rounded-lg border border-white/25 bg-white/18 px-2 text-base font-black">
+            E
+          </kbd>
           Interact
         </button>
       </div>
@@ -2021,21 +2740,32 @@ function ScoreBar({
 }
 
 function EndShiftModal({
+  level,
   totalScore,
   score,
   log,
   missions,
+  passed,
+  perfect,
+  criticalMisses,
   onRestart,
+  onLevelSelect,
 }: {
+  level: SimulatorLevelConfig
   totalScore: number
   score: { safety: number; prioritization: number; delegation: number; documentation: number }
   log: LogEntry[]
   missions: MissionCard[]
+  passed: boolean
+  perfect: boolean
+  criticalMisses: number
   onRestart: () => void
+  onLevelSelect: () => void
 }) {
   const dangerCount = log.filter((entry) => entry.tone === 'danger').length
   const safeCount = log.filter((entry) => entry.tone === 'safe').length
   const completedMissions = missions.filter((mission) => mission.complete).length
+  const missedRequired = missions.filter((mission) => mission.required !== false && !mission.complete)
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/70 p-4 backdrop-blur-md">
@@ -2046,20 +2776,25 @@ function EndShiftModal({
       >
         <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-sm font-black uppercase tracking-[0.18em] text-sky-300">End-of-shift report</p>
+            <p className="text-sm font-black uppercase tracking-[0.18em] text-sky-300">
+              Level {level.number} end-of-shift report
+            </p>
             <h2 className="mt-2 text-5xl font-black tracking-[-0.06em] text-white">{totalScore}%</h2>
             <p className="mt-3 max-w-xl text-sm leading-7 text-slate-300">
-              {totalScore >= 85
-                ? 'Strong clinical command. You prioritized unstable patients, escalated danger cues, and closed the loop.'
-                : totalScore >= 70
-                  ? 'Safe developing shift. A few time-management or documentation gaps are worth replaying.'
-                  : 'High-yield replay. The misses show exactly where priority recognition and escalation need practice.'}
+              {perfect
+                ? `Perfect shift. You earned the ${level.skill} badge and showed floor-ready command.`
+                : passed
+                  ? `Level passed. You learned: ${level.skill}. This building block now carries into the next shift.`
+                  : 'Replay recommended. The misses show exactly where priority recognition, safety, or documentation need practice.'}
             </p>
           </div>
           <div className="rounded-[24px] border border-white/10 bg-white/8 p-5">
-            <CheckCircle2 className="h-10 w-10 text-emerald-300" />
+            <CheckCircle2 className={clsx('h-10 w-10', passed ? 'text-emerald-300' : 'text-amber-300')} />
+            <p className={clsx('mt-3 text-lg font-black', passed ? 'text-emerald-200' : 'text-amber-200')}>
+              {perfect ? 'Perfect Shift' : passed ? 'Level Passed' : 'Replay Focus'}
+            </p>
             <p className="mt-3 text-sm font-bold text-slate-300">{safeCount} safe decisions</p>
-            <p className="mt-1 text-sm font-bold text-rose-300">{dangerCount} critical misses</p>
+            <p className="mt-1 text-sm font-bold text-rose-300">{Math.max(dangerCount, criticalMisses)} critical misses</p>
             <p className="mt-1 text-sm font-bold text-sky-200">
               {completedMissions}/{missions.length} missions complete
             </p>
@@ -2071,13 +2806,39 @@ function EndShiftModal({
           <ScoreSummary label="Delegation" value={score.delegation} />
           <ScoreSummary label="Charting" value={score.documentation} />
         </div>
+        <div className="mt-6 grid gap-3 md:grid-cols-2">
+          <div className="rounded-2xl border border-white/10 bg-white/8 p-4">
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-sky-300">Skill learned</p>
+            <p className="mt-2 text-sm font-bold text-white">{level.skill}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              Carries forward: {level.carryoverSkills.join(', ')}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-white/8 p-4">
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-amber-300">Replay focus</p>
+            <p className="mt-2 text-sm leading-6 text-slate-300">
+              {missedRequired.length
+                ? missedRequired.map((mission) => mission.title).join(', ')
+                : passed
+                  ? 'Next level unlocked. Increase speed while keeping safety high.'
+                  : 'Raise safety above 80% and complete every required objective.'}
+            </p>
+          </div>
+        </div>
         <div className="mt-6 flex flex-wrap gap-3">
           <button
             type="button"
             onClick={onRestart}
             className="rounded-2xl bg-[#2a7de1] px-5 py-3 text-sm font-black text-white"
           >
-            Replay shift
+            Replay level
+          </button>
+          <button
+            type="button"
+            onClick={onLevelSelect}
+            className="rounded-2xl border border-white/10 bg-white/8 px-5 py-3 text-sm font-black text-white"
+          >
+            Level select
           </button>
           <Link
             to="/dashboard"

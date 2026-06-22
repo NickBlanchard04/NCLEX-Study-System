@@ -1,11 +1,19 @@
+import type {
+  AttemptDiagnosis,
+  LearnerMasteryVector,
+  ReadinessSnapshot,
+  RemediationEvent,
+} from '../services/question-engine/types'
+
 export type QuestionCategory = string
 export type QuestionDifficulty = 'foundation' | 'developing' | 'advanced'
+export type QuestionDifficultyProfile = 'standard' | 'hard-mode' | 'trap-heavy' | 'case-based'
 export type QuestionFormat = 'multiple-choice' | 'select-all-that-apply'
 export type ConfidenceLevel = 'low' | 'medium' | 'high'
 export type StudyIntensity = 'steady' | 'focused' | 'accelerated'
-export type ExamTrackId = 'nclex-rn' | 'nclex-pn' | 'fnp' | 'ccma'
+export type ExamTrackId = 'nclex-rn' | 'nclex-pn' | 'teas' | 'fnp' | 'ccma'
 export type AnalyticsScope = 'selected-track' | 'all-tracks'
-export type ContentQualityStatus = 'generated-starter' | 'authored-draft' | 'sme-review-ready' | 'sme-reviewed'
+export type ContentQualityStatus = 'generated-starter' | 'authored-draft' | 'editor-reviewed' | 'sme-review-ready' | 'sme-reviewed' | 'published'
 export type ContentAuthorType = 'system-generated' | 'clinical-editor-draft' | 'sme-authored'
 export type SessionMode = 'practice' | 'quick-study' | 'test' | 'clinical-thinking'
 export type MasteryLevel = 'fragile' | 'developing' | 'strong'
@@ -14,6 +22,18 @@ export type StudyMaterialFileType = 'pdf' | 'docx' | 'txt' | 'md' | 'link'
 export type MaterialExtractionStatus = 'extracting' | 'ready' | 'error'
 export type MaterialReviewStatus = 'pending-review' | 'approved'
 export type SyncStatus = 'idle' | 'syncing' | 'error' | 'offline'
+export type TycoonTaskUrgency = 'stable' | 'watch' | 'urgent' | 'critical'
+export type TycoonTaskStatus = 'available' | 'completed' | 'deteriorating' | 'failed'
+export type TycoonShiftStatus = 'idle' | 'running' | 'finished'
+export type TycoonActionScope = 'RN-only' | 'UAP-safe' | 'Provider' | 'Charge RN' | 'System'
+export type TycoonUpgradeEffect =
+  | 'bed-capacity'
+  | 'monitoring'
+  | 'med-safety'
+  | 'lab-speed'
+  | 'staff-energy'
+  | 'ehr-speed'
+  | 'simulation-bonus'
 export type SyncEventType =
   | 'profile'
   | 'attempt'
@@ -67,8 +87,15 @@ export interface Question {
   contentQuality?: ContentQualityStatus
   authorType?: ContentAuthorType
   sourceRefs?: string[]
+  sourceTopic?: string
+  testTakingTrap?: string
+  blueprintMapped?: boolean
+  sourceBacked?: boolean
+  reviewedAt?: string
+  updatedAt?: string
   subcategory: string
   difficulty: QuestionDifficulty
+  difficultyProfile?: QuestionDifficultyProfile
   format: QuestionFormat
   scenario?: string
   prompt: string
@@ -94,6 +121,8 @@ export interface QuestionAttempt extends CloudOwnedEntity {
   flagged: boolean
   completedAt: string
   sessionType: SessionMode
+  engineDiagnosis?: AttemptDiagnosis
+  engineRemediationEvents?: RemediationEvent[]
 }
 
 export interface CategoryStats {
@@ -136,6 +165,7 @@ export interface ActiveSession extends StudySession {
     questionStatus?: 'unused' | 'incorrect' | 'all'
     format?: QuestionFormat | 'mixed'
     difficulty?: QuestionDifficulty | 'adaptive' | 'mixed'
+    difficultyProfile?: QuestionDifficultyProfile | 'mixed'
     timed?: boolean
     noBacktracking?: boolean
     timeLimitMinutes?: number
@@ -157,6 +187,10 @@ export interface SessionResponse {
 export interface Flashcard {
   id: string
   category: QuestionCategory | 'Strategy'
+  examTrack?: ExamTrackId
+  sourceTopic?: string
+  sourceRefs?: string[]
+  contentQuality?: ContentQualityStatus
   front: string
   back: string
   status: FlashcardStatus
@@ -246,6 +280,146 @@ export interface MaterialQuizSession extends CloudOwnedEntity {
   score?: number
 }
 
+export interface TycoonActionChoice {
+  id: string
+  label: string
+  description: string
+  scope: TycoonActionScope
+  feedback: string
+  clinicalReason: string
+  energyCost?: number
+}
+
+export interface TycoonTask {
+  id: string
+  patientId: string
+  patientName: string
+  room: string
+  title: string
+  category:
+    | 'vitals'
+    | 'medication-check'
+    | 'patient-education'
+    | 'prioritization'
+    | 'documentation'
+    | 'infection-control'
+    | 'delegation'
+  safetyRisk: TycoonTaskUrgency
+  status: TycoonTaskStatus
+  rewardMoney: number
+  rewardXp: number
+  rewardReputation: number
+  rewardSafety: number
+  timeCost: number
+  deadlineMinute: number
+  correctActionId: string
+  unsafePenalty: {
+    money: number
+    reputation: number
+    patientSafety: number
+    staffEnergy?: number
+  }
+  actions: TycoonActionChoice[]
+  mapPosition: {
+    x: number
+    y: number
+  }
+}
+
+export interface TycoonUpgrade {
+  id: string
+  name: string
+  description: string
+  cost: number
+  effectType: TycoonUpgradeEffect
+  effectValue: number
+  maxLevel: number
+}
+
+export interface TycoonUnit {
+  id: string
+  name: string
+  description: string
+  unlockRequirement: string
+  basePatients: number
+  availableTaskIds: string[]
+  availableUpgradeIds: string[]
+}
+
+export interface TycoonShiftEvent {
+  id: string
+  minute: number
+  type: 'reward' | 'penalty' | 'deterioration' | 'upgrade' | 'shift'
+  title: string
+  message: string
+  taskId?: string
+}
+
+export interface TycoonPayoutSummary {
+  completedTasks: number
+  mistakes: number
+  safetyScore: number
+  moneyEarned: number
+  xpEarned: number
+  reputationChange: number
+  recommendation: string
+}
+
+export interface TycoonShift {
+  id: string
+  unitId: string
+  startedAt: string
+  endedAt?: string
+  shiftMinute: number
+  tasks: TycoonTask[]
+  events: TycoonShiftEvent[]
+  status: TycoonShiftStatus
+  payoutSummary?: TycoonPayoutSummary
+}
+
+export interface TycoonGameState {
+  money: number
+  xp: number
+  level: number
+  reputation: number
+  patientSafety: number
+  staffEnergy: number
+  currentUnitId: string
+  unlockedUnitIds: string[]
+  upgrades: Record<string, number>
+  activeShift: TycoonShift | null
+  completedShifts: TycoonShift[]
+  selectedTaskId: string | null
+}
+
+export type SimulatorLevelId =
+  | 'level-1'
+  | 'level-2'
+  | 'level-3'
+  | 'level-4'
+  | 'level-5'
+  | 'level-6'
+
+export interface SimulatorLevelAttempt {
+  id: string
+  levelId: SimulatorLevelId
+  totalScore: number
+  safetyScore: number
+  completedObjectives: number
+  totalObjectives: number
+  passed: boolean
+  perfect: boolean
+  completedAt: string
+}
+
+export interface SimulatorProgressState {
+  currentSimulatorLevel: SimulatorLevelId
+  unlockedSimulatorLevels: SimulatorLevelId[]
+  levelAttempts: SimulatorLevelAttempt[]
+  bestLevelScores: Record<string, number>
+  completedLevelObjectives: Record<string, string[]>
+}
+
 export interface StrategyLesson {
   id: string
   title: string
@@ -268,6 +442,7 @@ export interface StudyPlan {
 
 export interface UserProfile extends CloudOwnedEntity {
   name: string
+  nursingSchool?: string
   examTrack: ExamTrackId
   examDate: string
   studyIntensity: StudyIntensity
@@ -315,4 +490,8 @@ export interface AnalyticsSnapshot {
   timeStudiedMinutes: number
   streak: number
   highConfidenceMisses: number
+  engineDiagnoses: AttemptDiagnosis[]
+  engineRemediationEvents: RemediationEvent[]
+  learnerMasteryVector: LearnerMasteryVector
+  readinessSnapshot: ReadinessSnapshot
 }

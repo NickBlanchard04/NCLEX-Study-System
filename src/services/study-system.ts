@@ -11,12 +11,22 @@ import type {
   QuestionAttempt,
   QuestionCategory,
   QuestionDifficulty,
+  QuestionDifficultyProfile,
   QuestionFormat,
   Recommendation,
   StudyPlan,
   UserProfile,
   WeakAreaInsight,
 } from '../app/types'
+import {
+  buildEngineLearningSnapshot,
+  createAttemptEngineEvidence,
+  selectAdaptiveEngineItem,
+} from './question-engine'
+import type {
+  AttemptDiagnosis,
+  RemediationEvent,
+} from './question-engine/types'
 import {
   getExamCategories,
   getExamQuestionBank,
@@ -127,6 +137,30 @@ const getConceptsForCategory = (category: QuestionCategory) =>
     'safe decision-making',
     'exam-specific prioritization',
   ]
+
+const getEngineEvidenceFromAttempts = (
+  attempts: QuestionAttempt[],
+): { diagnoses: AttemptDiagnosis[]; remediationEvents: RemediationEvent[] } => {
+  const diagnoses: AttemptDiagnosis[] = []
+  const remediationEvents: RemediationEvent[] = []
+
+  for (const attempt of attempts) {
+    if (attempt.engineDiagnosis) {
+      diagnoses.push(attempt.engineDiagnosis)
+      remediationEvents.push(...(attempt.engineRemediationEvents ?? []))
+      continue
+    }
+
+    const question = questionLookup[attempt.questionId]
+    if (!question) continue
+
+    const evidence = createAttemptEngineEvidence(question, attempt)
+    diagnoses.push(evidence.diagnosis)
+    remediationEvents.push(...evidence.remediationEvents)
+  }
+
+  return { diagnoses, remediationEvents }
+}
 
 export const getCategoryStats = (
   attempts: QuestionAttempt[],
@@ -305,6 +339,11 @@ export const getDashboardState = (
 
 const shuffle = <T,>(items: T[]) => [...items].sort(() => Math.random() - 0.5)
 
+const getEngineRankScores = (questions: typeof questionBank, attempts: QuestionAttempt[]) => {
+  const { diagnoses, remediationEvents } = getEngineEvidenceFromAttempts(attempts)
+  return selectAdaptiveEngineItem(questions, diagnoses, remediationEvents).scoreByItemId
+}
+
 const questionQualityRank = (questionId: string) => {
   const quality = questionLookup[questionId]?.contentQuality
   if (quality === 'sme-reviewed') return 0
@@ -366,7 +405,10 @@ export const generateQuickStudySession = (
     ...available.filter((question) => recentIds.has(question.id)),
   ]
   const difficulty = getAdaptiveDifficulty(attempts, category)
-  const sorted = unseenFirst.sort((left, right) => {
+  const engineScores = getEngineRankScores(unseenFirst, attempts)
+  const sorted = unseenFirst.toSorted((left, right) => {
+    const engineDelta = (engineScores[right.id] ?? 0) - (engineScores[left.id] ?? 0)
+    if (Math.abs(engineDelta) > 0.05) return engineDelta
     const leftMatch = left.difficulty === difficulty ? 0 : 1
     const rightMatch = right.difficulty === difficulty ? 0 : 1
     return leftMatch - rightMatch
@@ -393,6 +435,7 @@ interface PracticeFilters {
   questionStatus?: 'unused' | 'incorrect' | 'all'
   format?: QuestionFormat | 'mixed'
   difficulty?: QuestionDifficulty | 'adaptive' | 'mixed'
+  difficultyProfile?: QuestionDifficultyProfile | 'mixed'
   questionCount?: number
 }
 
@@ -405,13 +448,14 @@ export const generatePracticeSet = (
   const scopedAttempts = getScopedAttempts(attempts, examTrack)
   const attemptedIds = new Set(scopedAttempts.map((attempt) => attempt.questionId))
   const incorrectIds = new Set(scopedAttempts.filter((attempt) => !attempt.isCorrect).map((attempt) => attempt.questionId))
-  const adaptiveDifficulty =
-    filters.difficulty === 'adaptive' || !filters.difficulty
-      ? getAdaptiveDifficulty(
-          scopedAttempts,
-          filters.category && filters.category !== 'All' ? filters.category : undefined,
-        )
-      : filters.difficulty
+  const adaptiveDifficulty = getAdaptiveDifficulty(
+    scopedAttempts,
+    filters.category && filters.category !== 'All' ? filters.category : undefined,
+  )
+  const targetDifficulty =
+    filters.difficulty && filters.difficulty !== 'adaptive' && filters.difficulty !== 'mixed'
+      ? filters.difficulty
+      : adaptiveDifficulty
 
   const filtered = bank.filter((question) => {
     const matchesCategory =
@@ -433,15 +477,25 @@ export const generatePracticeSet = (
       !filters.difficulty ||
       filters.difficulty === 'adaptive' ||
       filters.difficulty === 'mixed' ||
-      question.difficulty === adaptiveDifficulty
-    return matchesCategory && matchesDomain && matchesSystem && matchesBoard && matchesStatus && matchesFormat && matchesDifficulty
+      question.difficulty === filters.difficulty
+    const matchesDifficultyProfile =
+      !filters.difficultyProfile ||
+      filters.difficultyProfile === 'mixed' ||
+      question.difficultyProfile === filters.difficultyProfile
+    return matchesCategory && matchesDomain && matchesSystem && matchesBoard && matchesStatus && matchesFormat && matchesDifficulty && matchesDifficultyProfile
   })
 
+  const engineScores = getEngineRankScores(filtered, scopedAttempts)
   const ranked = shuffle(filtered).sort((left, right) => {
     const leftAttempts = scopedAttempts.filter((attempt) => attempt.questionId === left.id)
     const rightAttempts = scopedAttempts.filter((attempt) => attempt.questionId === right.id)
+    const engineDelta = (engineScores[right.id] ?? 0) - (engineScores[left.id] ?? 0)
+    if (Math.abs(engineDelta) > 0.05) return engineDelta
     const qualityDelta = questionQualityRank(left.id) - questionQualityRank(right.id)
     if (qualityDelta !== 0) return qualityDelta
+    const leftDifficultyMatch = left.difficulty === targetDifficulty ? 0 : 1
+    const rightDifficultyMatch = right.difficulty === targetDifficulty ? 0 : 1
+    if (leftDifficultyMatch !== rightDifficultyMatch) return leftDifficultyMatch - rightDifficultyMatch
     return leftAttempts.length - rightAttempts.length
   })
 
@@ -462,6 +516,7 @@ export const generatePracticeSet = (
       questionStatus: filters.questionStatus ?? 'all',
       format: filters.format ?? 'mixed',
       difficulty: filters.difficulty ?? 'adaptive',
+      difficultyProfile: filters.difficultyProfile ?? 'mixed',
     },
   )
 }
@@ -479,7 +534,10 @@ export const generateTestSession = (
 ) => {
   const bank = getExamQuestionBank(examTrack)
   const weaknessByCategory = getWeakAreas(attempts, examTrack)
+  const engineScores = getEngineRankScores(bank, getScopedAttempts(attempts, examTrack))
   const prioritized = shuffle(bank).sort((left, right) => {
+    const engineDelta = (engineScores[right.id] ?? 0) - (engineScores[left.id] ?? 0)
+    if (Math.abs(engineDelta) > 0.05) return engineDelta
     const leftWeight = weaknessByCategory.findIndex((item) => item.category === left.category) + 1
     const rightWeight =
       weaknessByCategory.findIndex((item) => item.category === right.category) + 1
@@ -599,6 +657,10 @@ export const getAnalyticsSnapshot = (
   const examTrack = getProfileExamTrack(profile)
   const analyticsScope = getProfileAnalyticsScope(profile)
   const scopedAttempts = getScopedAttempts(attempts, examTrack, analyticsScope)
+  const { diagnoses: engineDiagnoses, remediationEvents: engineRemediationEvents } =
+    getEngineEvidenceFromAttempts(scopedAttempts)
+  const { masteryVector: learnerMasteryVector, readinessSnapshot } =
+    buildEngineLearningSnapshot(engineDiagnoses, engineRemediationEvents)
   const dailyBuckets = Array.from({ length: 7 }, (_, index) => {
     const date = new Date()
     date.setDate(date.getDate() - (6 - index))
@@ -653,6 +715,10 @@ export const getAnalyticsSnapshot = (
     highConfidenceMisses: scopedAttempts.filter(
       (attempt) => !attempt.isCorrect && attempt.confidence === 'high',
     ).length,
+    engineDiagnoses,
+    engineRemediationEvents,
+    learnerMasteryVector,
+    readinessSnapshot,
   }
 }
 
@@ -663,6 +729,15 @@ export const getQuestionResult = (questionId: string, selectedAnswer: string[]) 
 
 export const getMissReason = (questionId: string, selectedAnswer: string[]) => {
   const question = questionLookup[questionId]
+  const sourceTopic = question.sourceTopic ?? `${question.category} / ${question.subcategory}`
+  const selectedLabels = question.choices
+    .filter((choice) => selectedAnswer.includes(choice.id))
+    .map((choice) => `${choice.id}. ${choice.text}`)
+
+  if (question.testTakingTrap) {
+    return `You missed this because the distractor pattern points to: ${question.testTakingTrap} Review ${sourceTopic} and re-answer one similar item before moving on.`
+  }
+
   const selectedText = question.choices
     .filter((choice) => selectedAnswer.includes(choice.id))
     .map((choice) => choice.text.toLowerCase())
@@ -671,26 +746,44 @@ export const getMissReason = (questionId: string, selectedAnswer: string[]) => {
   const haystack = `${selectedText} ${tags} ${question.prompt.toLowerCase()}`
 
   if (haystack.includes('hypogly') || haystack.includes('hypergly')) {
-    return 'You missed this because the symptoms of hypoglycemia and hyperglycemia got blended together. Anchor hypoglycemia to rapid onset, sweating, shakiness, and neuro changes.'
+    return `You missed this because the symptoms of hypoglycemia and hyperglycemia got blended together. Anchor hypoglycemia to rapid onset, sweating, shakiness, and neuro changes. Review ${sourceTopic}.`
   }
 
   if (haystack.includes('priority') || haystack.includes('who first') || haystack.includes('first')) {
-    return 'You missed this because the answer choice felt urgent, but the NCLEX wanted the patient with the most immediate safety or ABC threat.'
+    return `You missed this because the answer choice felt urgent, but the exam wanted the patient or action with the most immediate safety threat. Review ${sourceTopic}.`
   }
 
   if (haystack.includes('delegation') || haystack.includes('uap') || haystack.includes('lpn')) {
-    return 'You missed this because role scope got fuzzy. Delegate stable, predictable tasks, but keep assessment, teaching, evaluation, and unstable patients with the RN.'
+    return `You missed this because role scope got fuzzy. Delegate stable, predictable tasks, but protect assessment, teaching, evaluation, and unstable decisions. Review ${sourceTopic}.`
   }
 
   if (haystack.includes('med') || haystack.includes('toxicity') || haystack.includes('dose')) {
-    return 'You missed this because the medication clue mattered more than the diagnosis label. Recheck side effects, toxicity signs, and hold parameters before choosing.'
+    return `You missed this because the medication clue mattered more than the diagnosis label. Recheck side effects, toxicity signs, conversions, and hold parameters. Review ${sourceTopic}.`
   }
 
   if (haystack.includes('fluid') || haystack.includes('electrolyte') || haystack.includes('potassium')) {
-    return 'You missed this because the trend or lab danger sign was the priority. For fluids and electrolytes, ask what can cause dysrhythmia, shock, seizure, or respiratory compromise first.'
+    return `You missed this because the trend or lab danger sign was the priority. Ask what can cause dysrhythmia, shock, seizure, or respiratory compromise first. Review ${sourceTopic}.`
   }
 
-  return 'You missed this because the stem was testing clinical judgment, not recall. Re-read for the safety threat, unstable finding, or assessment clue that changes what the nurse should do first.'
+  return `You missed this because the stem was testing reasoning, not recall. Re-read for the clue that changes the best answer${selectedLabels.length ? `; your selected answer was ${selectedLabels.join(', ')}` : ''}. Review ${sourceTopic}.`
+}
+
+export const getQuestionTutorInsight = (questionId: string) => {
+  const question = questionLookup[questionId]
+  const sourceTopic = question.sourceTopic ?? `${question.category} / ${question.subcategory}`
+  const trustFlags = [
+    question.blueprintMapped ? 'Blueprint mapped' : null,
+    question.sourceBacked ? 'Source-backed' : null,
+    question.contentQuality ? `Status: ${question.contentQuality.replaceAll('-', ' ')}` : null,
+    question.updatedAt ? `Updated: ${question.updatedAt}` : null,
+  ].filter(Boolean) as string[]
+
+  return {
+    sourceTopic,
+    trap: question.testTakingTrap ?? 'Look for the distractor that skips the key assessment, safety, or rule-based clue.',
+    reviewTarget: `Review ${sourceTopic}`,
+    trustFlags,
+  }
 }
 
 export const getQuestionCategoryBreakdown = (

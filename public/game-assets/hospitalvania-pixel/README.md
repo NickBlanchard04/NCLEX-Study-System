@@ -1,0 +1,1 @@
+Original nurse/hospital pixel assets generated locally for the NCLEX Study System Hospitalvania prototype. Frame maps intentionally match the Gothicvania demo socket sizes for animation compatibility.

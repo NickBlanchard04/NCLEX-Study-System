@@ -283,6 +283,16 @@ textarea {
   backdrop-filter: blur(18px);
 }
 
+.nurse-command-app .nclex-topbar::after {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  inset-inline: 0;
+  bottom: -1px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.45), transparent);
+}
+
 .nurse-command-app .nclex-surface,
 .nurse-command-app .nclex-soft-panel,
 .nurse-command-app .nclex-surface-muted {
@@ -297,6 +307,27 @@ textarea {
     0 18px 38px rgba(0, 0, 0, 0.22);
   color: var(--nclex-text);
   backdrop-filter: blur(12px);
+}
+
+.nurse-command-app .nclex-surface::before,
+.nurse-command-app .nclex-soft-panel::before,
+.nurse-command-app .nclex-surface-muted::before {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(125, 211, 252, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(125, 211, 252, 0.05) 1px, transparent 1px);
+  background-size: 28px 28px;
+  opacity: 0.28;
+}
+
+.nurse-command-app .nclex-surface > *,
+.nurse-command-app .nclex-soft-panel > *,
+.nurse-command-app .nclex-surface-muted > * {
+  position: relative;
+  z-index: 1;
 }
 
 .nurse-command-app .nclex-dark-panel {
@@ -418,7 +449,6 @@ textarea {
 .nurse-command-app [class*="bg-[#eff6ff"],
 .nurse-command-app [class*="bg-[#f9fbff"],
 .nurse-command-app [class*="bg-[#f8fbff"],
-.nurse-command-app [class*="bg-[#f7fbfd"],
 .nurse-command-app [class*="bg-[#edfdf6"],
 .nurse-command-app [class*="bg-[#fff1f3"] {
   background: rgba(7, 29, 52, 0.82) !important;
@@ -432,6 +462,36 @@ textarea {
   background-color: rgba(255, 255, 255, 0.05) !important;
 }
 
+.nurse-command-app [class*='bg-slate-50'],
+.nurse-command-app [class*='bg-slate-100'],
+.nurse-command-app [class*='bg-blue-50'],
+.nurse-command-app [class*='bg-sky-50'],
+.nurse-command-app [class*='bg-emerald-50'],
+.nurse-command-app [class*='bg-amber-50'],
+.nurse-command-app [class*='bg-rose-50'] {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.nurse-command-app [class*='bg-[#f7fbfd]'],
+.nurse-command-app [class*='bg-[#eef5ff]'],
+.nurse-command-app [class*='bg-[#eff6ff]'],
+.nurse-command-app [class*='bg-[#f8fbff]'],
+.nurse-command-app [class*='bg-[#f9fbff]'],
+.nurse-command-app [class*='bg-[#edfdf6]'],
+.nurse-command-app [class*='bg-[#fff1f3]'] {
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+.nurse-command-app [class*='f7fbfd'],
+.nurse-command-app [class*='eef5ff'],
+.nurse-command-app [class*='eff6ff'],
+.nurse-command-app [class*='f8fbff'],
+.nurse-command-app [class*='f9fbff'],
+.nurse-command-app [class*='edfdf6'],
+.nurse-command-app [class*='fff1f3'] {
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
 .nurse-command-app .border-\[var\(--nclex-border\)\],
 .nurse-command-app .border-\[var\(--nclex-border-strong\)\] {
   border-color: rgba(125, 211, 252, 0.24) !important;
@@ -439,19 +499,23 @@ textarea {
 
 .nurse-command-app .text-\[var\(--nclex-text\)\],
 .nurse-command-app .text-slate-950,
-.nurse-command-app .text-slate-900 {
+.nurse-command-app .text-slate-900,
+.nurse-command-app [class*='text-[#163042]'],
+.nurse-command-app [class*='text-[#0f253d]'] {
   color: #ffffff !important;
 }
 
 .nurse-command-app .text-\[var\(--nclex-text-secondary\)\],
 .nurse-command-app .text-slate-700,
-.nurse-command-app .text-slate-600 {
+.nurse-command-app .text-slate-600,
+.nurse-command-app [class*='text-[#4f687a]'] {
   color: rgba(216, 236, 255, 0.84) !important;
 }
 
 .nurse-command-app .text-\[var\(--nclex-text-muted\)\],
 .nurse-command-app .text-slate-500,
-.nurse-command-app .text-slate-400 {
+.nurse-command-app .text-slate-400,
+.nurse-command-app [class*='text-[#7e97aa]'] {
   color: rgba(186, 210, 232, 0.68) !important;
 }
 
@@ -460,6 +524,50 @@ textarea {
 .nurse-command-app tbody,
 .nurse-command-app tr {
   border-color: rgba(125, 211, 252, 0.18);
+}
+
+.nurse-command-app table {
+  color: rgba(216, 236, 255, 0.86);
+}
+
+.nurse-command-app th {
+  color: rgba(186, 230, 253, 0.72);
+}
+
+.nurse-command-app td {
+  color: rgba(216, 236, 255, 0.82);
+}
+
+.nurse-command-app hr {
+  border-color: rgba(125, 211, 252, 0.18);
+}
+
+.nurse-command-app input[type='range'] {
+  accent-color: #38bdf8;
+}
+
+.nurse-command-app input[type='checkbox'],
+.nurse-command-app input[type='radio'] {
+  accent-color: #38bdf8;
+}
+
+.nurse-command-app ::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.nurse-command-app ::-webkit-scrollbar-track {
+  background: rgba(2, 8, 18, 0.72);
+}
+
+.nurse-command-app ::-webkit-scrollbar-thumb {
+  background: rgba(56, 189, 248, 0.32);
+  border: 3px solid rgba(2, 8, 18, 0.72);
+  border-radius: 999px;
+}
+
+.nurse-command-app ::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.52);
 }
 
 .nurse-command-app ::selection {

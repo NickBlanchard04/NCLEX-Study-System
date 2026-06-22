@@ -4,9 +4,10 @@ import type {
   Flashcard,
   Question,
   QuestionCategory,
+  QuestionDifficultyProfile,
   StrategyLesson,
 } from '../app/types'
-import { getExamTrack } from './exam-tracks'
+import { examTracks, getExamTrack } from './exam-tracks'
 import { qualityQuestionPacks } from './quality-question-packs'
 
 const makeChoices = (...choices: string[]): AnswerChoice[] =>
@@ -17,6 +18,13 @@ const makeChoices = (...choices: string[]): AnswerChoice[] =>
 
 type QuestionDraft = Omit<Question, 'examTrack'> & Partial<Pick<Question, 'examTrack' | 'domain' | 'system' | 'board'>>
 
+const inferDifficultyProfile = (question: Pick<Question, 'difficulty' | 'format'> & { scenario?: string }): QuestionDifficultyProfile => {
+  if (question.scenario) return 'case-based'
+  if (question.format === 'select-all-that-apply') return 'trap-heavy'
+  if (question.difficulty === 'advanced') return 'hard-mode'
+  return 'standard'
+}
+
 const q = (question: QuestionDraft): Question => ({
   examTrack: 'nclex-rn',
   domain: question.category,
@@ -25,6 +33,12 @@ const q = (question: QuestionDraft): Question => ({
   contentQuality: 'authored-draft',
   authorType: 'clinical-editor-draft',
   sourceRefs: ['NCSBN 2026 NCLEX test plan'],
+  sourceTopic: `${question.category} / ${question.subcategory}`,
+  testTakingTrap: 'Choosing a routine task before stabilizing or assessing the immediate safety issue.',
+  blueprintMapped: true,
+  sourceBacked: true,
+  updatedAt: '2026-06-18',
+  difficultyProfile: inferDifficultyProfile(question),
   ...question,
 })
 
@@ -1118,7 +1132,7 @@ interface TrackQuestionBlueprint {
 
 const trackQuestionBlueprints: Record<ExamTrackId, TrackQuestionBlueprint> = {
   'nclex-rn': {
-    categories,
+    categories: ['Management of Care', 'Safety and Infection Control', 'Health Promotion', 'Psychosocial Integrity', 'Physiological Integrity'],
     systems: ['Fundamentals', 'Pharmacology', 'Med-Surg', 'Pediatrics', 'OB', 'Mental Health', 'Leadership', 'Lab Values'],
     boards: ['NCSBN NCLEX-RN'],
     scenarioLeads: [
@@ -1171,6 +1185,47 @@ const trackQuestionBlueprints: Record<ExamTrackId, TrackQuestionBlueprint> = {
       'NCLEX-PN questions often test scope, safe reporting, and predictable care.',
       'PNs reinforce and monitor; initial assessment and major care-plan changes are protected.',
       'Medication questions hinge on the right client, drug, dose, route, time, and reason.',
+    ],
+  },
+  teas: {
+    categories: ['Reading', 'Mathematics', 'Science', 'English and Language Usage'],
+    systems: [
+      'Key Ideas and Details',
+      'Craft and Structure',
+      'Integration of Knowledge and Ideas',
+      'Numbers and Algebra',
+      'Measurement and Data',
+      'Human Anatomy and Physiology',
+      'Biology',
+      'Chemistry',
+      'Scientific Reasoning',
+      'Conventions of Standard English',
+      'Knowledge of Language',
+      'Vocabulary and Writing',
+    ],
+    boards: ['ATI TEAS 7 public exam blueprint'],
+    scenarioLeads: [
+      'A nursing program applicant is working through a timed TEAS readiness item.',
+      'A student reviews a short academic passage, data display, or science concept before answering.',
+      'A pre-nursing student is practicing under exam-like pacing and must avoid a common distractor.',
+      'A learner compares answer choices that test entry-level academic readiness for health science coursework.',
+    ],
+    interventions: [
+      'identify the central idea, evidence, or conclusion before choosing an answer',
+      'apply the rule or formula, then check units, labels, and reasonableness',
+      'connect the science concept to the body system, experiment, or data trend being tested',
+      'choose the grammatically correct and clearest expression for the sentence context',
+    ],
+    distractors: [
+      'choose an answer that sounds familiar but is not supported by the passage or data',
+      'skip unit conversion and solve with the wrong scale',
+      'confuse a related biology term with the process actually described',
+      'select a grammatically awkward option because it uses more advanced vocabulary',
+    ],
+    tips: [
+      'TEAS questions often punish rushing; prove the answer from the passage, data, rule, or concept.',
+      'For math and science, estimate first so unreasonable choices stand out.',
+      'For English, prefer the clearest correct sentence over the fanciest wording.',
     ],
   },
   fnp: {
@@ -1241,7 +1296,7 @@ const makeGeneratedQuestion = (
   const blueprint = trackQuestionBlueprints[examTrack]
   const track = getExamTrack(examTrack)
   const category = blueprint.categories[index % blueprint.categories.length]
-  const system = blueprint.systems[(index + Math.floor(index / 3)) % blueprint.systems.length]
+  const system = blueprint.systems[index % blueprint.systems.length]
   const board = blueprint.boards[index % blueprint.boards.length]
   const scenario = blueprint.scenarioLeads[index % blueprint.scenarioLeads.length]
   const intervention = blueprint.interventions[index % blueprint.interventions.length]
@@ -1249,6 +1304,14 @@ const makeGeneratedQuestion = (
   const isSata = index % 5 === 0
   const isPriority = index % 7 === 0
   const isCase = index % 6 === 0
+  const difficulty = difficultyCycle[index % difficultyCycle.length]
+  const difficultyProfile: QuestionDifficultyProfile = isCase
+    ? 'case-based'
+    : isSata || isPriority
+      ? 'trap-heavy'
+      : difficulty === 'advanced'
+        ? 'hard-mode'
+        : 'standard'
   const stemFocus = isPriority
     ? 'Which action has the highest priority?'
     : isCase
@@ -1267,11 +1330,19 @@ const makeGeneratedQuestion = (
     sourceRefs:
       examTrack === 'fnp'
         ? ['AANPCB FNP blueprint', 'ANCC FNP test content outline']
-        : examTrack === 'ccma'
+        : examTrack === 'teas'
+          ? ['ATI TEAS 7 public exam details and content areas']
+          : examTrack === 'ccma'
           ? ['NHA CCMA test plan']
           : ['NCSBN 2026 NCLEX test plan'],
+    sourceTopic: `${category} / ${system}`,
+    testTakingTrap: wrong[index % wrong.length],
+    blueprintMapped: true,
+    sourceBacked: true,
+    updatedAt: '2026-06-18',
     subcategory: system,
-    difficulty: difficultyCycle[index % difficultyCycle.length],
+    difficulty,
+    difficultyProfile,
     format: isSata ? 'select-all-that-apply' : 'multiple-choice',
     scenario: `${scenario} Focus area: ${system}. Blueprint: ${board}.`,
     prompt: isSata
@@ -1336,6 +1407,7 @@ const buildTrackBank = (examTrack: ExamTrackId): Question[] => {
 export const examQuestionBanks: Record<ExamTrackId, Question[]> = {
   'nclex-rn': buildTrackBank('nclex-rn'),
   'nclex-pn': buildTrackBank('nclex-pn'),
+  teas: buildTrackBank('teas'),
   fnp: buildTrackBank('fnp'),
   ccma: buildTrackBank('ccma'),
 }
@@ -1350,8 +1422,45 @@ export const getExamContentQualitySummary = (examTrack: ExamTrackId) => {
     total: bank.length,
     generatedStarter: bank.filter((question) => question.contentQuality === 'generated-starter').length,
     authoredDraft: bank.filter((question) => question.contentQuality === 'authored-draft').length,
+    editorReviewed: bank.filter((question) => question.contentQuality === 'editor-reviewed').length,
     reviewReady: bank.filter((question) => question.contentQuality === 'sme-review-ready').length,
     smeReviewed: bank.filter((question) => question.contentQuality === 'sme-reviewed').length,
+    published: bank.filter((question) => question.contentQuality === 'published').length,
+    sourceBacked: bank.filter((question) => question.sourceBacked).length,
+    blueprintMapped: bank.filter((question) => question.blueprintMapped).length,
+  }
+}
+
+export const getExamBlueprintCoverageSummary = (examTrack: ExamTrackId) => {
+  const bank = getExamQuestionBank(examTrack)
+  const track = getExamTrack(examTrack)
+  const coveredDomains = track.domains.filter((domain) =>
+    bank.some((question) => question.domain === domain || question.category === domain),
+  )
+  const coveredSystems = track.systems.filter((system) =>
+    bank.some((question) => question.system === system || question.subcategory === system),
+  )
+  const profileCounts = {
+    standard: bank.filter((question) => question.difficultyProfile === 'standard').length,
+    hardMode: bank.filter((question) => question.difficultyProfile === 'hard-mode').length,
+    trapHeavy: bank.filter((question) => question.difficultyProfile === 'trap-heavy').length,
+    caseBased: bank.filter((question) => question.difficultyProfile === 'case-based').length,
+  }
+  const formatCounts = {
+    multipleChoice: bank.filter((question) => question.format === 'multiple-choice').length,
+    sata: bank.filter((question) => question.format === 'select-all-that-apply').length,
+    scenario: bank.filter((question) => question.scenario).length,
+  }
+
+  return {
+    domainCoverage: coveredDomains.length,
+    domainTotal: track.domains.length,
+    systemCoverage: coveredSystems.length,
+    systemTotal: track.systems.length,
+    uncoveredDomains: track.domains.filter((domain) => !coveredDomains.includes(domain)),
+    uncoveredSystems: track.systems.filter((system) => !coveredSystems.includes(system)),
+    profileCounts,
+    formatCounts,
   }
 }
 
@@ -1372,6 +1481,11 @@ export const getExamDashboardCopy = (examTrack: ExamTrackId) => {
       greeting: 'Welcome back, Future PN',
       examLabel: 'NCLEX-PN readiness check',
       priorityPrefix: 'Tighten PN-scope safety',
+    },
+    teas: {
+      greeting: 'Welcome back, Future Nursing Student',
+      examLabel: 'TEAS readiness check',
+      priorityPrefix: 'Build entrance-exam confidence',
     },
     fnp: {
       greeting: 'Welcome back, Future FNP',
@@ -1400,7 +1514,7 @@ export const getExamStudyPlanTopics = (examTrack: ExamTrackId) => {
   }
 }
 
-export const flashcards: Flashcard[] = [
+const authoredFlashcards: Flashcard[] = [
   { id: 'fc-1', category: 'Pharmacology', front: 'Digoxin hold parameter', back: 'Hold and assess if apical pulse is below the ordered threshold, commonly <60/min in adults.', status: 'new' },
   { id: 'fc-2', category: 'Lab Values / Clinical Judgment', front: 'Critical potassium concern', back: 'Low or high potassium can trigger dysrhythmias, so pair the lab with symptoms and ECG risk.', status: 'new' },
   { id: 'fc-3', category: 'Fundamentals & Safety', front: 'RACE sequence', back: 'Rescue, Alarm, Contain, Extinguish/Evacuate.', status: 'new' },
@@ -1429,6 +1543,86 @@ export const flashcards: Flashcard[] = [
   { id: 'fc-26', category: 'Pharmacology', front: 'ACE inhibitor caution', back: 'Watch for cough, dizziness, hyperkalemia risk, and angioedema.', status: 'new' },
   { id: 'fc-27', category: 'Lab Values / Clinical Judgment', front: 'Troponin trend', back: 'A rising troponin suggests ongoing myocardial injury even if symptoms fluctuate.', status: 'new' },
   { id: 'fc-28', category: 'Leadership / Prioritization / Delegation', front: 'Who do you see first?', back: 'The client with active deterioration, especially airway, breathing, circulation, or sudden neuro change.', status: 'new' },
+  { id: 'teas-fc-1', examTrack: 'teas', category: 'Science', sourceTopic: 'Human Anatomy and Physiology / Cell organelles', sourceRefs: ['ATI TEAS 7 public exam details and content areas'], contentQuality: 'authored-draft', front: 'Mitochondria function', back: 'Mitochondria produce most cellular ATP through aerobic cellular respiration.', status: 'new' },
+  { id: 'teas-fc-2', examTrack: 'teas', category: 'Science', sourceTopic: 'Human Anatomy and Physiology / Respiratory system', sourceRefs: ['ATI TEAS 7 public exam details and content areas'], contentQuality: 'authored-draft', front: 'Alveoli purpose', back: 'Alveoli are tiny air sacs where oxygen and carbon dioxide exchange with blood capillaries.', status: 'new' },
+  { id: 'teas-fc-3', examTrack: 'teas', category: 'Science', sourceTopic: 'Biology / DNA and RNA', sourceRefs: ['ATI TEAS 7 public exam details and content areas'], contentQuality: 'authored-draft', front: 'DNA vs RNA sugar', back: 'DNA contains deoxyribose; RNA contains ribose.', status: 'new' },
+  { id: 'teas-fc-4', examTrack: 'teas', category: 'Science', sourceTopic: 'Chemistry / pH', sourceRefs: ['ATI TEAS 7 public exam details and content areas'], contentQuality: 'authored-draft', front: 'pH below 7 means', back: 'A pH below 7 is acidic; a pH above 7 is basic or alkaline.', status: 'new' },
+  { id: 'teas-fc-5', examTrack: 'teas', category: 'Mathematics', sourceTopic: 'Measurement and Data / Metric conversion', sourceRefs: ['ATI TEAS 7 public exam details and content areas'], contentQuality: 'authored-draft', front: '1 gram equals how many milligrams?', back: '1 gram equals 1,000 milligrams.', status: 'new' },
+  { id: 'teas-fc-6', examTrack: 'teas', category: 'Mathematics', sourceTopic: 'Numbers and Algebra / Percent change', sourceRefs: ['ATI TEAS 7 public exam details and content areas'], contentQuality: 'authored-draft', front: 'Percent change formula', back: 'Percent change = (new value - original value) / original value x 100.', status: 'new' },
+  { id: 'teas-fc-7', examTrack: 'teas', category: 'Reading', sourceTopic: 'Key Ideas and Details / Main idea', sourceRefs: ['ATI TEAS 7 public exam details and content areas'], contentQuality: 'authored-draft', front: 'Main idea strategy', back: 'Choose the answer that covers the whole passage, not one detail or an unsupported conclusion.', status: 'new' },
+  { id: 'teas-fc-8', examTrack: 'teas', category: 'Reading', sourceTopic: 'Craft and Structure / Author purpose', sourceRefs: ['ATI TEAS 7 public exam details and content areas'], contentQuality: 'authored-draft', front: 'Author purpose clues', back: 'Look for whether the passage mainly informs, persuades, explains, compares, or entertains.', status: 'new' },
+  { id: 'teas-fc-9', examTrack: 'teas', category: 'English and Language Usage', sourceTopic: 'Conventions of Standard English / Subject-verb agreement', sourceRefs: ['ATI TEAS 7 public exam details and content areas'], contentQuality: 'authored-draft', front: 'Subject-verb agreement shortcut', back: 'Ignore interrupting phrases and match the verb to the true subject.', status: 'new' },
+  { id: 'teas-fc-10', examTrack: 'teas', category: 'English and Language Usage', sourceTopic: 'Knowledge of Language / Clear wording', sourceRefs: ['ATI TEAS 7 public exam details and content areas'], contentQuality: 'authored-draft', front: 'Best sentence choice', back: 'Prefer clear, concise, grammatically correct wording over unnecessarily complicated phrasing.', status: 'new' },
+  { id: 'teas-fc-11', examTrack: 'teas', category: 'Science', sourceTopic: 'Scientific Reasoning / Variables', sourceRefs: ['ATI TEAS 7 public exam details and content areas'], contentQuality: 'authored-draft', front: 'Independent variable', back: 'The independent variable is what the experimenter changes on purpose.', status: 'new' },
+  { id: 'teas-fc-12', examTrack: 'teas', category: 'Science', sourceTopic: 'Scientific Reasoning / Controls', sourceRefs: ['ATI TEAS 7 public exam details and content areas'], contentQuality: 'authored-draft', front: 'Control group purpose', back: 'A control group gives a comparison point so the effect of the independent variable can be judged.', status: 'new' },
+]
+
+const sourceRefsForTrack = (examTrack: ExamTrackId) =>
+  examTrack === 'fnp'
+    ? ['AANPCB FNP blueprint', 'ANCC FNP test content outline']
+    : examTrack === 'teas'
+      ? ['ATI TEAS 7 public exam details and content areas']
+      : examTrack === 'ccma'
+        ? ['NHA CCMA test plan']
+        : examTrack === 'nclex-pn'
+          ? ['NCSBN 2026 NCLEX-PN test plan']
+          : ['NCSBN 2026 NCLEX-RN test plan']
+
+const makeTrackStarterFlashcards = (examTrack: ExamTrackId): Flashcard[] => {
+  const track = getExamTrack(examTrack)
+  const blueprint = trackQuestionBlueprints[examTrack]
+  return blueprint.systems.flatMap((system, index) => {
+    const category = blueprint.categories[index % blueprint.categories.length]
+    const sourceTopic = `${category} / ${system}`
+    return [
+      {
+        id: `${examTrack}-system-fc-${String(index + 1).padStart(2, '0')}-priority`,
+        examTrack,
+        category,
+        sourceTopic,
+        sourceRefs: sourceRefsForTrack(examTrack),
+        contentQuality: 'generated-starter',
+        front: `${track.shortName}: ${system} priority question`,
+        back: `Ask what finding, rule, or patient-safety risk changes the next best action for ${system}.`,
+        status: 'new',
+      },
+      {
+        id: `${examTrack}-system-fc-${String(index + 1).padStart(2, '0')}-trap`,
+        examTrack,
+        category,
+        sourceTopic,
+        sourceRefs: sourceRefsForTrack(examTrack),
+        contentQuality: 'generated-starter',
+        front: `${system}: common trap`,
+        back: `Do not choose the familiar-sounding option until it fits the ${track.shortName} blueprint cue and the safest role-appropriate action.`,
+        status: 'new',
+      },
+      {
+        id: `${examTrack}-system-fc-${String(index + 1).padStart(2, '0')}-review`,
+        examTrack,
+        category,
+        sourceTopic,
+        sourceRefs: sourceRefsForTrack(examTrack),
+        contentQuality: 'generated-starter',
+        front: `${system}: review target`,
+        back: `Review the key definitions, warning signs, calculations, or workflow sequence tied to ${sourceTopic}.`,
+        status: 'new',
+      },
+    ]
+  })
+}
+
+const normalizedAuthoredFlashcards = authoredFlashcards.map((card): Flashcard => ({
+  examTrack: 'nclex-rn',
+  sourceTopic: `${card.category}`,
+  sourceRefs: sourceRefsForTrack('nclex-rn'),
+  contentQuality: 'authored-draft',
+  ...card,
+}))
+
+export const flashcards: Flashcard[] = [
+  ...normalizedAuthoredFlashcards,
+  ...examTracks.flatMap((track) => makeTrackStarterFlashcards(track.id)),
 ]
 
 export const strategyLessons: StrategyLesson[] = [

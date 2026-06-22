@@ -1,0 +1,12 @@
+{
+  "style": "Nurse Command Hospitalvania",
+  "version": 1,
+  "assets": {
+    "nurse": "/game-assets/hospitalvania/nurse.svg",
+    "patientBed": "/game-assets/hospitalvania/patient-bed.svg",
+    "supply": "/game-assets/hospitalvania/supply-kit.svg",
+    "hazard": "/game-assets/hospitalvania/infection-hazard.svg",
+    "platform": "/game-assets/hospitalvania/platform-tile.svg",
+    "exit": "/game-assets/hospitalvania/handoff-exit.svg"
+  }
+}

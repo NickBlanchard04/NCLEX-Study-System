@@ -89,6 +89,7 @@ export async function loadCloudState(userId: string): Promise<CloudStateBundle> 
     profile: profileResult.data
       ? {
           name: profileResult.data.name,
+          nursingSchool: profileResult.data.nursing_school ?? undefined,
           examTrack: profileResult.data.exam_track,
           examDate: profileResult.data.exam_date,
           studyIntensity: profileResult.data.study_intensity,
@@ -111,6 +112,8 @@ export async function loadCloudState(userId: string): Promise<CloudStateBundle> 
       flagged: row.flagged,
       completedAt: row.completed_at,
       sessionType: row.session_type,
+      engineDiagnosis: row.engine_diagnosis ?? undefined,
+      engineRemediationEvents: row.engine_remediation_events ?? undefined,
       userId,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
@@ -158,6 +161,7 @@ export async function saveProfile(userId: string, profile: UserProfile) {
   const { error } = await client.from('profiles').upsert({
     id: userId,
     name: owned.name,
+    nursing_school: owned.nursingSchool ?? null,
     exam_track: owned.examTrack,
     exam_date: owned.examDate,
     study_intensity: owned.studyIntensity,
@@ -186,6 +190,8 @@ export async function saveAttempts(userId: string, attempts: QuestionAttempt[]) 
       flagged: owned.flagged,
       completed_at: owned.completedAt,
       session_type: owned.sessionType,
+      engine_diagnosis: owned.engineDiagnosis ?? null,
+      engine_remediation_events: owned.engineRemediationEvents ?? [],
       created_at: owned.createdAt,
       updated_at: owned.updatedAt,
     }

@@ -45,6 +45,33 @@ export const examTracks: ExamTrack[] = [
     diagnosticDimensions: ['PN scope accuracy', 'Medication safety', 'Care coordination', 'Stable vs unstable decisions'],
   },
   {
+    id: 'teas',
+    shortName: 'TEAS',
+    title: 'ATI TEAS 7 Nursing Entrance Prep',
+    subtitle: 'Reading, math, science, and English readiness for nursing and allied-health program admissions.',
+    status: 'content-expansion',
+    questionTarget: '4,000 original TEAS-style questions target',
+    boards: ['ATI TEAS 7 public exam blueprint'],
+    domains: ['Reading', 'Mathematics', 'Science', 'English and Language Usage'],
+    systems: [
+      'Key Ideas and Details',
+      'Craft and Structure',
+      'Integration of Knowledge and Ideas',
+      'Numbers and Algebra',
+      'Measurement and Data',
+      'Human Anatomy and Physiology',
+      'Biology',
+      'Chemistry',
+      'Scientific Reasoning',
+      'Conventions of Standard English',
+      'Knowledge of Language',
+      'Vocabulary and Writing',
+    ],
+    testingFormats: ['Multiple choice', 'Multiple select', 'Fill-in numeric', 'Ordered response', 'Hot spot-style reasoning', 'Timed section practice'],
+    resources: ['TEAS blueprint map', 'Hard-mode practice', 'Spaced flashcards', 'Math drills', 'A&P visuals', 'Grammar rules', 'Reading strategy'],
+    diagnosticDimensions: ['Section score', 'Subcontent area', 'Pacing', 'Careless errors', 'Trap recognition', 'Retention'],
+  },
+  {
     id: 'fnp',
     shortName: 'FNP',
     title: 'Family Nurse Practitioner Board Prep',
@@ -85,4 +112,3 @@ export const examTracks: ExamTrack[] = [
 
 export const getExamTrack = (id: ExamTrackId) =>
   examTracks.find((track) => track.id === id) ?? examTracks[0]
-

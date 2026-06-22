@@ -60,6 +60,7 @@ export async function signUpWithPassword(
     options: {
       data: {
         name: profile.name,
+        nursing_school: profile.nursingSchool,
         exam_track: profile.examTrack,
       },
     },

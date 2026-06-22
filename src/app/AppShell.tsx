@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   Bell,
+  BadgeDollarSign,
   BookOpen,
   Brain,
   ChevronDown,
@@ -11,6 +12,7 @@ import {
   FileText,
   Flashlight,
   FolderOpen,
+  Gamepad2,
   Headphones,
   HelpCircle,
   HeartPulse,
@@ -24,18 +26,17 @@ import {
   Trophy,
   X,
 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { clsx } from 'clsx'
-import { RetroMedicalDashboard } from '../features/RetroMedicalDashboard'
 import { PwaInstallPrompt } from '../features/PwaInstallPrompt'
-import { ShiftSimulatorGame } from '../features/ShiftSimulatorGame'
 import {
   DashboardPage,
   ClinicalSimulatorPage,
   ExamPrepPage,
   FlashcardsPage,
   MyMaterialsPage,
+  NurseCommandLabPage,
   NotesPage,
   PerformanceAnalyticsPage,
   PracticeQuestionsPage,
@@ -59,7 +60,10 @@ const mainNavigation = [
   { label: 'Question Bank', icon: ClipboardList, to: '/practice-questions' },
   { label: 'Quizzes', icon: Flashlight, to: '/quick-study' },
   { label: 'Exams', icon: Target, to: '/test-mode' },
+  { label: 'Nurse Command Lab', icon: Gamepad2, to: '/nurse-command-lab' },
   { label: 'Shift Game', icon: HeartPulse, to: '/shift-command' },
+  { label: 'Hospitalvania', icon: Gamepad2, to: '/hospitalvania' },
+  { label: 'Tycoon', icon: BadgeDollarSign, to: '/nurse-tycoon' },
   { label: 'Simulator', icon: Brain, to: '/clinical-simulator' },
   { label: 'Performance', icon: Trophy, to: '/performance-analytics' },
   { label: 'Notes', icon: NotebookPen, to: '/notes' },
@@ -80,15 +84,85 @@ const mobilePrimaryNavigation = [
 
 const allNavigation = [...mainNavigation, ...secondaryNavigation]
 
+const RetroMedicalDashboard = lazy(() =>
+  import('../features/RetroMedicalDashboard').then((module) => ({
+    default: module.RetroMedicalDashboard,
+  })),
+)
+const ShiftSimulatorGame = lazy(() =>
+  import('../features/ShiftSimulatorGame').then((module) => ({
+    default: module.ShiftSimulatorGame,
+  })),
+)
+const NurseHospitalvaniaGame = lazy(() =>
+  import('../features/NurseHospitalvaniaGame').then((module) => ({
+    default: module.NurseHospitalvaniaGame,
+  })),
+)
+const NurseTycoonGame = lazy(() =>
+  import('../features/NurseTycoonGame').then((module) => ({
+    default: module.NurseTycoonGame,
+  })),
+)
+
+function RouteLoadingScreen({ label = 'Loading module' }: { label?: string }) {
+  return (
+    <div className="grid min-h-screen place-items-center bg-[#04101f] px-6 text-center text-white">
+      <div>
+        <div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-2xl border border-cyan-300/30 bg-cyan-400/10 text-cyan-200">
+          <RefreshCw className="h-5 w-5 animate-spin" />
+        </div>
+        <p className="text-sm font-black uppercase tracking-[0.18em] text-sky-200/72">
+          {label}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+function LazyRoute({
+  children,
+  label,
+}: {
+  children: ReactNode
+  label?: string
+}) {
+  return <Suspense fallback={<RouteLoadingScreen label={label} />}>{children}</Suspense>
+}
+
 export function AppShell() {
   const location = useLocation()
 
   if (location.pathname.startsWith('/medical-command-center')) {
-    return <RetroMedicalDashboard />
+    return (
+      <LazyRoute label="Loading command center">
+        <RetroMedicalDashboard />
+      </LazyRoute>
+    )
   }
 
   if (location.pathname.startsWith('/shift-command')) {
-    return <ShiftSimulatorGame />
+    return (
+      <LazyRoute label="Loading shift game">
+        <ShiftSimulatorGame />
+      </LazyRoute>
+    )
+  }
+
+  if (location.pathname.startsWith('/hospitalvania')) {
+    return (
+      <LazyRoute label="Loading Hospitalvania">
+        <NurseHospitalvaniaGame />
+      </LazyRoute>
+    )
+  }
+
+  if (location.pathname.startsWith('/nurse-tycoon')) {
+    return (
+      <LazyRoute label="Loading tycoon">
+        <NurseTycoonGame />
+      </LazyRoute>
+    )
   }
 
   return <NclexAppShell />
@@ -145,7 +219,9 @@ function NclexAppShell() {
       <AuthGate>
         <div className="nurse-command-app min-h-screen bg-[#04101f] text-white">
           <div className="w-full">
-            <PwaInstallPrompt />
+            <div className="lg:hidden">
+              <PwaInstallPrompt />
+            </div>
             {migrationPromptVisible ? (
               <div className="mb-5 rounded-[20px] border border-[#cfe1f7] bg-[linear-gradient(135deg,#ffffff_0%,#eef5ff_100%)] p-4 shadow-sm">
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -191,8 +267,8 @@ function NclexAppShell() {
   return (
     <AuthGate>
     <div className="nurse-command-app nclex-shell-bg min-h-screen text-[var(--nclex-text)]">
-      <div className="mx-auto flex min-h-screen max-w-[1760px]">
-        <aside className="nclex-sidebar hidden w-[262px] shrink-0 px-5 py-5 text-white lg:flex lg:flex-col">
+      <div className="flex min-h-screen w-full">
+        <aside className="nclex-sidebar hidden w-[282px] shrink-0 px-5 py-5 text-white lg:flex lg:flex-col">
           <BrandLockup />
           <nav className="mt-8 flex-1 space-y-1.5">
             {mainNavigation.map(({ label, icon: Icon, to }) => (
@@ -216,12 +292,12 @@ function NclexAppShell() {
 
         <div className="flex min-h-screen min-w-0 flex-1 flex-col">
           <header className="nclex-topbar safe-top sticky top-0 z-20 px-4 py-4 md:px-6 lg:px-8">
-            <div className="mx-auto flex w-full max-w-[1420px] items-center justify-between gap-3">
+            <div className="flex w-full items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
                 <button
                   type="button"
                   onClick={() => navigate(-1)}
-                  className="hidden h-10 w-10 items-center justify-center rounded-xl border border-[var(--nclex-border)] bg-white text-[var(--nclex-text-secondary)] shadow-sm transition hover:text-[var(--nclex-blue)] md:inline-flex"
+                  className="hidden h-10 w-10 items-center justify-center rounded-xl border border-sky-300/24 bg-white/5 text-sky-100/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition hover:border-sky-200/60 hover:text-sky-200 md:inline-flex"
                   aria-label="Go back"
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -229,16 +305,16 @@ function NclexAppShell() {
                 <button
                   type="button"
                   onClick={() => setMobileMenuOpen(true)}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--nclex-border)] bg-white text-[var(--nclex-text-secondary)] shadow-sm lg:hidden"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-sky-300/24 bg-white/5 text-sky-100/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] lg:hidden"
                   aria-label="Open navigation"
                 >
                   <Menu className="h-4 w-4" />
                 </button>
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-text-muted)]">
+                  <p className="text-xs font-black uppercase tracking-[0.2em] text-sky-200/60">
                     Nurse Command
                   </p>
-                  <h1 className="truncate text-lg font-black text-[var(--nclex-text)] md:text-xl">
+                  <h1 className="truncate text-lg font-black text-white md:text-xl">
                     {pageMeta.label}
                   </h1>
                 </div>
@@ -249,14 +325,14 @@ function NclexAppShell() {
                   type="button"
                   onClick={() => void syncNow()}
                   className={clsx(
-                    'hidden items-center gap-2 rounded-xl border px-3 py-2 text-xs font-bold uppercase tracking-[0.12em] shadow-sm transition md:inline-flex',
+                    'hidden items-center gap-2 rounded-xl border px-3 py-2 text-xs font-bold uppercase tracking-[0.12em] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition md:inline-flex',
                     syncStatus === 'error'
-                      ? 'border-[#ffd1d1] bg-[var(--nclex-danger-soft)] text-[var(--nclex-danger)]'
+                      ? 'border-rose-300/35 bg-rose-400/12 text-rose-300'
                       : syncStatus === 'offline'
-                        ? 'border-[#ffe0b0] bg-[var(--nclex-warning-soft)] text-[var(--nclex-warning)]'
+                        ? 'border-amber-300/35 bg-amber-400/12 text-amber-300'
                         : isDemoMode
-                          ? 'border-[var(--nclex-border)] bg-white text-[var(--nclex-text-muted)]'
-                          : 'border-[#c8eddc] bg-[var(--nclex-success-soft)] text-[var(--nclex-success)]',
+                          ? 'border-sky-300/24 bg-white/5 text-sky-100/64'
+                          : 'border-emerald-300/35 bg-emerald-300/12 text-emerald-300',
                   )}
                   title={syncError ?? (isDemoMode ? 'Local demo mode' : 'Cloud sync is active')}
                 >
@@ -266,41 +342,41 @@ function NclexAppShell() {
                 <button
                   type="button"
                   onClick={() => setSupportOpen(true)}
-                  className="hidden rounded-xl border border-[var(--nclex-border)] bg-white px-3 py-2 text-sm font-semibold text-[var(--nclex-blue)] shadow-sm transition hover:border-[#c9dbef] md:inline-flex"
+                  className="hidden rounded-xl border border-sky-300/24 bg-white/5 px-3 py-2 text-sm font-semibold text-sky-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition hover:border-sky-200/60 md:inline-flex"
                 >
                   Help
                 </button>
                 <button
                   type="button"
-                  className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--nclex-border)] bg-white text-[var(--nclex-text-secondary)] shadow-sm transition hover:text-[var(--nclex-blue)]"
+                  className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-sky-300/24 bg-white/5 text-sky-100/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition hover:text-sky-200"
                   aria-label="Notifications"
                 >
                   <Bell className="h-4 w-4" />
-                  <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-[var(--nclex-danger)] ring-2 ring-white" />
+                  <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-rose-400 ring-2 ring-[#04101f]" />
                 </button>
                 <button
                   type="button"
                   onClick={() => setAccountOpen((current) => !current)}
-                  className="flex items-center gap-2 rounded-xl border border-[var(--nclex-border)] bg-white px-2 py-1.5 shadow-sm transition hover:border-[#c9dbef]"
+                  className="flex items-center gap-2 rounded-xl border border-sky-300/24 bg-white/5 px-2 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition hover:border-sky-200/60"
                 >
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[linear-gradient(180deg,#ddecff_0%,#bfd9ff_100%)] text-sm font-semibold text-[var(--nclex-navy)]">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full border border-cyan-300/30 bg-[linear-gradient(180deg,#0f7aff_0%,#062d63_100%)] text-sm font-black text-white shadow-[0_0_20px_rgba(43,148,255,0.28)]">
                     {initials}
                   </div>
                   <div className="hidden text-left md:block">
-                    <p className="text-sm font-semibold text-[var(--nclex-text)]">{profile.name}</p>
-                    <p className="text-xs text-[var(--nclex-text-muted)]">{activeExamTrack.shortName} learner</p>
+                    <p className="text-sm font-semibold text-white">{profile.name}</p>
+                    <p className="text-xs text-sky-200/62">{activeExamTrack.shortName} learner</p>
                   </div>
-                  <ChevronDown className="hidden h-4 w-4 text-[var(--nclex-text-muted)] md:block" />
+                  <ChevronDown className="hidden h-4 w-4 text-sky-200/60 md:block" />
                 </button>
               </div>
             </div>
             {accountOpen ? (
-              <div className="absolute right-4 top-[4.5rem] z-30 w-[290px] rounded-[20px] border border-[var(--nclex-border)] bg-white p-4 shadow-[0_24px_60px_rgba(15,37,61,0.14)] md:right-8">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-text-muted)]">
+              <div className="absolute right-4 top-[4.5rem] z-30 w-[290px] rounded-[20px] border border-sky-300/24 bg-[#071d34]/95 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.34)] backdrop-blur md:right-8">
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-200/62">
                   Account
                 </p>
-                <p className="mt-2 font-semibold text-[var(--nclex-text)]">{authUser?.email ?? profile.name}</p>
-                <p className="mt-1 text-sm text-[var(--nclex-text-muted)]">
+                <p className="mt-2 font-semibold text-white">{authUser?.email ?? profile.name}</p>
+                <p className="mt-1 text-sm text-sky-100/64">
                   {isDemoMode ? 'Local demo mode. Sign in to sync across devices.' : `${activeExamTrack.shortName} cloud sync active.`}
                 </p>
                 <div className="mt-4 grid gap-2">
@@ -327,19 +403,21 @@ function NclexAppShell() {
           </header>
 
           <main className="page-mobile-pad flex-1 px-4 py-5 md:px-6 lg:px-8 lg:py-8">
-            <div className="mx-auto w-full max-w-[1420px]">
-              <PwaInstallPrompt />
+            <div className="w-full max-w-none">
+              <div className="lg:hidden">
+                <PwaInstallPrompt />
+              </div>
               {migrationPromptVisible ? (
-                <div className="mb-5 rounded-[20px] border border-[#cfe1f7] bg-[linear-gradient(135deg,#ffffff_0%,#eef5ff_100%)] p-4 shadow-sm">
+                <div className="mb-5 rounded-[20px] border border-sky-300/24 bg-[#071d34]/78 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_16px_34px_rgba(0,0,0,0.18)] backdrop-blur">
                   <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-blue)]">
+                      <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-300">
                         Cloud migration ready
                       </p>
-                      <h2 className="mt-1 font-serif text-2xl text-[var(--nclex-text)]">
+                      <h2 className="mt-1 text-2xl font-black text-white">
                         Move this device's study progress into your account.
                       </h2>
-                      <p className="mt-1 text-sm text-[var(--nclex-text-muted)]">
+                      <p className="mt-1 text-sm text-sky-100/64">
                         We found local attempts, notes, flashcards, or materials that can be synced now.
                       </p>
                     </div>
@@ -376,6 +454,7 @@ function NclexAppShell() {
                     <Route path="/exam-prep" element={<ExamPrepPage />} />
                     <Route path="/practice-questions" element={<PracticeQuestionsPage />} />
                     <Route path="/test-mode" element={<TestModePage />} />
+                    <Route path="/nurse-command-lab" element={<NurseCommandLabPage />} />
                     <Route path="/clinical-simulator" element={<ClinicalSimulatorPage />} />
                     <Route path="/quick-study" element={<QuickStudyPage />} />
                     <Route path="/weak-areas" element={<WeakAreasPage />} />
@@ -484,21 +563,21 @@ function NclexAppShell() {
               initial={{ y: 24, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 24, opacity: 0 }}
-              className="safe-bottom fixed inset-x-0 bottom-0 flex max-h-[calc(100vh-1rem)] flex-col rounded-t-[28px] bg-white px-4 pb-6 pt-4 shadow-[0_-18px_44px_rgba(15,37,61,0.12)]"
+              className="safe-bottom fixed inset-x-0 bottom-0 flex max-h-[calc(100vh-1rem)] flex-col rounded-t-[28px] border border-sky-300/20 bg-[#04101f]/95 px-4 pb-6 pt-4 shadow-[0_-18px_44px_rgba(0,0,0,0.34)] backdrop-blur-xl"
               onClick={(event) => event.stopPropagation()}
             >
-              <div className="mx-auto mb-4 h-1.5 w-14 rounded-full bg-[var(--nclex-border)]" />
+              <div className="mx-auto mb-4 h-1.5 w-14 rounded-full bg-sky-300/24" />
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-text-muted)]">
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-200/62">
                     More
                   </p>
-                  <h2 className="font-serif text-xl text-[var(--nclex-text)]">Study tools</h2>
+                  <h2 className="text-xl font-black text-white">Study tools</h2>
                 </div>
                 <button
                   type="button"
                   onClick={() => setMobileMoreOpen(false)}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--nclex-border)] bg-white"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-sky-300/24 bg-white/5 text-sky-100/72"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -515,8 +594,8 @@ function NclexAppShell() {
                     className={clsx(
                       'flex items-center justify-between rounded-2xl border px-4 py-3.5 text-left',
                       location.pathname.startsWith(to)
-                        ? 'border-[#c9dbef] bg-[var(--nclex-blue-soft)] text-[var(--nclex-text)]'
-                        : 'border-[var(--nclex-border)] bg-white text-[var(--nclex-text-secondary)]',
+                        ? 'border-sky-200/60 bg-sky-400/12 text-white shadow-[0_0_24px_rgba(56,189,248,0.16)]'
+                        : 'border-sky-300/20 bg-white/[0.04] text-sky-100/76',
                     )}
                   >
                     <span className="flex items-center gap-3 text-sm font-semibold">
@@ -534,7 +613,7 @@ function NclexAppShell() {
                     setMobileMoreOpen(false)
                     setSupportOpen(true)
                   }}
-                  className="flex items-center justify-between rounded-2xl border border-[var(--nclex-border)] bg-white px-4 py-3.5 text-left text-[var(--nclex-text-secondary)]"
+                  className="flex items-center justify-between rounded-2xl border border-sky-300/20 bg-white/[0.04] px-4 py-3.5 text-left text-sky-100/76"
                 >
                   <span className="flex items-center gap-3 text-sm font-semibold">
                     <Headphones className="h-4 w-4" />
@@ -596,7 +675,7 @@ function MobileTabBar({
   const navigate = useNavigate()
 
   return (
-    <div className="mobile-bottom-bar safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-[var(--nclex-border)] bg-white/96 px-3 py-2 backdrop-blur-xl lg:hidden">
+    <div className="mobile-bottom-bar safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-sky-300/20 bg-[#020812]/92 px-3 py-2 backdrop-blur-xl lg:hidden">
       <div className="mx-auto flex max-w-[560px] items-end justify-between gap-1">
         {mobilePrimaryNavigation.map(({ label, icon: Icon, to, emphasis }) => {
           const active = to === '/' ? pathname === '/' : pathname.startsWith(to)
@@ -616,8 +695,8 @@ function MobileTabBar({
                 emphasis
                   ? 'nclex-btn-primary -mt-5 px-3 py-3 text-white'
                   : active
-                    ? 'bg-[var(--nclex-blue-soft)] text-[var(--nclex-blue)]'
-                    : 'text-[var(--nclex-text-muted)]',
+                    ? 'bg-sky-400/12 text-sky-200 shadow-[inset_0_-2px_0_#1d9bff]'
+                    : 'text-sky-100/56',
               )}
             >
               <Icon className={clsx('h-4 w-4', emphasis && 'h-5 w-5')} />
@@ -628,7 +707,7 @@ function MobileTabBar({
         <button
           type="button"
           onClick={onOpenMore}
-          className="flex flex-1 flex-col items-center gap-1 rounded-[18px] px-2 py-2.5 text-[11px] font-semibold text-[var(--nclex-text-muted)] active:scale-[0.98]"
+          className="flex flex-1 flex-col items-center gap-1 rounded-[18px] px-2 py-2.5 text-[11px] font-semibold text-sky-100/56 active:scale-[0.98]"
         >
           <Menu className="h-4 w-4" />
           <span>More</span>
@@ -678,25 +757,25 @@ function SupportSheet({ open, onClose }: { open: boolean; onClose: () => void })
             initial={{ opacity: 0, y: 18, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.98 }}
-            className="absolute inset-x-4 top-20 mx-auto max-w-[460px] rounded-[24px] border border-[var(--nclex-border)] bg-white p-6 shadow-[0_24px_60px_rgba(15,37,61,0.14)]"
+            className="absolute inset-x-4 top-20 mx-auto max-w-[460px] rounded-[24px] border border-sky-300/24 bg-[#071d34]/95 p-6 shadow-[0_24px_60px_rgba(0,0,0,0.34)] backdrop-blur"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--nclex-blue)]">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">
                   Help & Support
                 </p>
-                <h3 className="mt-2 font-serif text-2xl text-[var(--nclex-text)]">
+                <h3 className="mt-2 text-2xl font-black text-white">
                   Need a quick reset?
                 </h3>
-                <p className="mt-2 text-sm leading-6 text-[var(--nclex-text-muted)]">
+                <p className="mt-2 text-sm leading-6 text-sky-100/64">
                   Start with Quick Study if you feel stuck, use Remediation for weak areas, and check Notes if you want to reinforce your own anchors.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={onClose}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--nclex-border)] bg-white"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-sky-300/24 bg-white/5 text-sky-100/72"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -709,7 +788,7 @@ function SupportSheet({ open, onClose }: { open: boolean; onClose: () => void })
               ].map((item) => (
                 <div
                   key={item}
-                  className="rounded-2xl border border-[var(--nclex-border)] bg-[var(--nclex-card-muted)] px-4 py-3 text-sm text-[var(--nclex-text-secondary)]"
+                  className="rounded-2xl border border-sky-300/20 bg-white/[0.04] px-4 py-3 text-sm text-sky-100/76"
                 >
                   {item}
                 </div>

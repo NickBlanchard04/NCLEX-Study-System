@@ -18,6 +18,7 @@ import { useStudySystemStore } from '../app/store'
 import {
   getQuestionCategoryBreakdown,
   getMissReason,
+  getQuestionTutorInsight,
   getQuestionResult,
   getSessionAccuracy,
   questionLookup,
@@ -35,19 +36,19 @@ export function PageHeader({
   action?: React.ReactNode
 }) {
   return (
-    <div className="mb-7 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+    <div className="mb-7 overflow-hidden rounded-[1.35rem] border border-cyan-300/20 bg-[#061b31]/55 px-5 py-5 shadow-[0_0_48px_rgba(0,98,180,0.14)] backdrop-blur md:px-7 lg:flex lg:items-start lg:justify-between lg:gap-6">
       <div className="max-w-3xl">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-blue)]">
+        <p className="text-xs font-black uppercase tracking-[0.2em] text-sky-300">
           {eyebrow}
         </p>
-        <h2 className="mt-2 font-serif text-[2rem] leading-tight text-[var(--nclex-text)] md:text-[2.4rem]">
+        <h2 className="mt-2 text-[clamp(2.1rem,3.2vw,4.6rem)] font-black leading-[0.95] tracking-[-0.05em] text-white drop-shadow-[0_0_16px_rgba(148,207,255,0.42)]">
           {title}
         </h2>
-        <p className="mt-2 max-w-2xl text-sm leading-7 text-[var(--nclex-text-muted)] md:text-[15px]">
+        <p className="mt-3 max-w-3xl text-sm leading-7 text-sky-100/72 md:text-base">
           {description}
         </p>
       </div>
-      {action ? <div className="shrink-0">{action}</div> : null}
+      {action ? <div className="mt-5 shrink-0 lg:mt-0">{action}</div> : null}
     </div>
   )
 }
@@ -64,9 +65,9 @@ export function SectionHeading({
   return (
     <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
       <div>
-        <h3 className="font-serif text-xl text-[var(--nclex-text)] md:text-2xl">{title}</h3>
+        <h3 className="text-xl font-black tracking-[-0.03em] text-white md:text-2xl">{title}</h3>
         {description ? (
-          <p className="mt-1 text-sm text-[var(--nclex-text-muted)]">{description}</p>
+          <p className="mt-1 text-sm leading-6 text-sky-100/64">{description}</p>
         ) : null}
       </div>
       {action}
@@ -82,7 +83,7 @@ export function Surface({
   children: React.ReactNode
 }) {
   return (
-    <section className={clsx('nclex-surface rounded-[18px] p-5 md:p-6', className)}>
+    <section className={clsx('nclex-surface rounded-[1.15rem] p-5 md:p-6', className)}>
       {children}
     </section>
   )
@@ -204,17 +205,17 @@ export function StatCard({
             </div>
           ) : null}
           <div>
-            <p className="text-sm font-semibold text-[var(--nclex-text)]">{label}</p>
-            <p className="mt-1 text-xs text-[var(--nclex-text-muted)]">{detail}</p>
+            <p className="text-sm font-black text-white">{label}</p>
+            <p className="mt-1 text-xs leading-5 text-sky-100/60">{detail}</p>
           </div>
         </div>
         <span className={theme.chip}>{tone === 'neutral' ? 'Track' : tone}</span>
       </div>
       <div className="mt-5 flex items-end justify-between gap-3">
         <div>
-          <p className="font-serif text-3xl text-[var(--nclex-text)] md:text-[2rem]">{value}</p>
+          <p className="text-3xl font-black text-white md:text-[2rem]">{value}</p>
           {trend ? (
-            <p className="mt-1 text-xs font-semibold text-[var(--nclex-text-muted)]">{trend}</p>
+            <p className="mt-1 text-xs font-semibold text-sky-100/60">{trend}</p>
           ) : null}
         </div>
         <MiniSparkline points={sparkline} color={theme.line} />
@@ -238,19 +239,19 @@ export function ProgressBar({
   tone?: 'blue' | 'green' | 'amber' | 'red'
 }) {
   const fillClass = {
-    blue: 'bg-[linear-gradient(90deg,#2a7de1_0%,#5ca2f6_100%)]',
-    green: 'bg-[linear-gradient(90deg,#10b981_0%,#49d3a2_100%)]',
-    amber: 'bg-[linear-gradient(90deg,#f59e0b_0%,#f7ba4f_100%)]',
-    red: 'bg-[linear-gradient(90deg,#ef4444_0%,#fb7a7a_100%)]',
+    blue: 'bg-[linear-gradient(90deg,#16b7ff_0%,#55c6ff_100%)]',
+    green: 'bg-[linear-gradient(90deg,#34d399_0%,#55c6ff_100%)]',
+    amber: 'bg-[linear-gradient(90deg,#fbbf24_0%,#55c6ff_100%)]',
+    red: 'bg-[linear-gradient(90deg,#fb7185_0%,#fca5a5_100%)]',
   }[tone]
 
   return (
-    <div className={clsx('h-2.5 overflow-hidden rounded-full bg-[#e8eff7]', className)}>
+    <div className={clsx('h-2.5 overflow-hidden rounded-full bg-sky-300/14', className)}>
       <motion.div
         initial={{ width: 0 }}
         animate={{ width: `${Math.max(4, value * 100)}%` }}
         transition={{ duration: 0.5, ease: 'easeOut' }}
-        className={clsx('h-full rounded-full', fillClass)}
+        className={clsx('h-full rounded-full shadow-[0_0_14px_currentColor]', fillClass)}
       />
     </div>
   )
@@ -283,7 +284,7 @@ export function CircularProgress({
             cx={size / 2}
             cy={size / 2}
             r={radius}
-            stroke="#e6eef7"
+            stroke="rgba(125,211,252,0.14)"
             strokeWidth={stroke}
             fill="none"
           />
@@ -302,13 +303,13 @@ export function CircularProgress({
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <p className="font-serif text-3xl text-[var(--nclex-text)]">{Math.round(value * 100)}%</p>
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]">
+          <p className="text-3xl font-black text-white">{Math.round(value * 100)}%</p>
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-sky-200/64">
             {label}
           </p>
         </div>
       </div>
-      {detail ? <p className="mt-3 text-sm font-semibold text-[var(--nclex-success)]">{detail}</p> : null}
+      {detail ? <p className="mt-3 text-sm font-semibold text-emerald-300">{detail}</p> : null}
     </div>
   )
 }
@@ -329,15 +330,15 @@ export function ChecklistItem({
           className={clsx(
             'inline-flex h-5 w-5 items-center justify-center rounded-full border',
             completed
-              ? 'border-[var(--nclex-success)] bg-[var(--nclex-success-soft)] text-[var(--nclex-success)]'
-              : 'border-[var(--nclex-border-strong)] bg-white text-transparent',
+              ? 'border-emerald-300/60 bg-emerald-300/14 text-emerald-300'
+              : 'border-sky-300/30 bg-white/5 text-transparent',
           )}
         >
           <Check className="h-3.5 w-3.5" />
         </span>
-        <span className="text-sm text-[var(--nclex-text-secondary)]">{label}</span>
+        <span className="text-sm text-sky-100/76">{label}</span>
       </div>
-      {meta ? <span className="text-xs font-medium text-[var(--nclex-text-muted)]">{meta}</span> : null}
+      {meta ? <span className="text-xs font-medium text-sky-200/56">{meta}</span> : null}
     </div>
   )
 }
@@ -367,14 +368,14 @@ export function EmptyState({
   action?: React.ReactNode
 }) {
   return (
-    <Surface className="border-dashed bg-[var(--nclex-card-muted)]">
+    <Surface className="border-dashed border-sky-300/30 bg-[#03101f]/60">
       <div className="flex flex-col items-start gap-4">
-        <div className="inline-flex rounded-2xl bg-[var(--nclex-blue-soft)] p-3 text-[var(--nclex-blue)]">
+        <div className="inline-flex rounded-2xl border border-sky-300/30 bg-sky-400/12 p-3 text-sky-300 shadow-[0_0_24px_rgba(56,189,248,0.18)]">
           <Lightbulb className="h-5 w-5" />
         </div>
         <div>
-          <h3 className="font-serif text-2xl text-[var(--nclex-text)]">{title}</h3>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--nclex-text-muted)]">{description}</p>
+          <h3 className="text-2xl font-black text-white">{title}</h3>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-sky-100/64">{description}</p>
         </div>
         {action}
       </div>
@@ -433,6 +434,12 @@ export function QuestionSessionRunner({
     const sessionAttempts = attempts.filter((attempt) => session.questionIds.includes(attempt.questionId))
     return getQuestionCategoryBreakdown(session.questionIds, sessionAttempts)
   }, [attempts, session.questionIds])
+  const getAttemptForResponse = (response: { questionId: string; submittedAt: string }) =>
+    attempts.find(
+      (attempt) =>
+        attempt.questionId === response.questionId &&
+        attempt.completedAt === response.submittedAt,
+    ) ?? attempts.toReversed().find((attempt) => attempt.questionId === response.questionId)
 
   if (session.endedAt) {
     const missedQuestions = session.responses.filter((response) => !response.isCorrect)
@@ -529,6 +536,9 @@ export function QuestionSessionRunner({
               {missedQuestions.length ? (
                 missedQuestions.map((response) => {
                   const missed = questionLookup[response.questionId]
+                  const missedAttempt = getAttemptForResponse(response)
+                  const diagnosis = missedAttempt?.engineDiagnosis
+                  const remediation = missedAttempt?.engineRemediationEvents?.[0]
                   return (
                     <div
                       key={response.questionId}
@@ -546,6 +556,17 @@ export function QuestionSessionRunner({
                       <div className="mt-3 rounded-xl border border-[#ffe0b0] bg-white px-3 py-2 text-xs font-semibold leading-5 text-[var(--nclex-warning)]">
                         {getMissReason(response.questionId, response.selectedAnswer)}
                       </div>
+                      {diagnosis ? (
+                        <div className="mt-3 rounded-xl border border-[#bfdbfe] bg-white px-3 py-2 text-xs font-semibold leading-5 text-[var(--nclex-blue)]">
+                          Pattern: {diagnosis.likelyMisconceptionId.replaceAll('_', ' ')}.
+                          {diagnosis.confidenceEscalated ? ' High confidence makes this a priority repair.' : ''}
+                        </div>
+                      ) : null}
+                      {remediation ? (
+                        <div className="mt-3 rounded-xl border border-[#c8eddc] bg-white px-3 py-2 text-xs font-semibold leading-5 text-[var(--nclex-success)]">
+                          Next repair: {remediation.nextActionCopy}
+                        </div>
+                      ) : null}
                     </div>
                   )
                 })
@@ -589,6 +610,10 @@ export function QuestionSessionRunner({
 
   const finalResponse = existingResponse ?? null
   const confidenceChosen = Boolean(finalResponse)
+  const finalAttempt = finalResponse ? getAttemptForResponse(finalResponse) : null
+  const finalDiagnosis = finalAttempt?.engineDiagnosis
+  const finalRemediation = finalAttempt?.engineRemediationEvents?.[0]
+  const tutorInsight = getQuestionTutorInsight(questionId)
 
   return (
     <div className="space-y-6">
@@ -811,12 +836,44 @@ export function QuestionSessionRunner({
 
                 {showRationale ? (
                   <div className="mt-5 grid gap-4 md:grid-cols-2">
+                    <div className="md:col-span-2">
+                      <RationaleCard
+                        title="Tutor target"
+                        tone="blue"
+                        body={`${tutorInsight.reviewTarget}. Trap to watch: ${tutorInsight.trap}`}
+                        footer={tutorInsight.trustFlags.join(' | ')}
+                      />
+                    </div>
                     {!currentIsCorrect ? (
                       <div className="md:col-span-2">
                         <RationaleCard
                           title="Why you may have missed it"
                           tone="amber"
                           body={getMissReason(questionId, selectedAnswers)}
+                        />
+                      </div>
+                    ) : null}
+                    {finalDiagnosis && !finalDiagnosis.scoreResult.isCorrect ? (
+                      <div className="md:col-span-2">
+                        <RationaleCard
+                          title="Engine diagnosis"
+                          tone="amber"
+                          body={`This response suggests ${finalDiagnosis.likelyMisconceptionId.replaceAll('_', ' ')}. ${finalDiagnosis.confidenceEscalated ? 'Because confidence was high, repair this pattern before adding more random volume.' : 'Use the rationale, then answer a nearby repair item.'}`}
+                          footer={
+                            finalDiagnosis.countsTowardReadiness
+                              ? 'Counts toward trusted readiness evidence'
+                              : `Practice signal only: ${finalDiagnosis.readinessExclusionReasons.join(', ') || 'insufficient item trust'}`
+                          }
+                        />
+                      </div>
+                    ) : null}
+                    {finalRemediation ? (
+                      <div className="md:col-span-2">
+                        <RationaleCard
+                          title="Repair route"
+                          tone="blue"
+                          body={finalRemediation.nextActionCopy}
+                          footer={finalRemediation.routeLabel}
                         />
                       </div>
                     ) : null}
@@ -1033,10 +1090,12 @@ function RationaleCard({
   title,
   body,
   tone,
+  footer,
 }: {
   title: string
   body: string
   tone: 'blue' | 'green' | 'amber'
+  footer?: string
 }) {
   const styles = {
     blue: 'border-[#cfe1f7] bg-[#eef5ff] text-[var(--nclex-blue)]',
@@ -1048,6 +1107,11 @@ function RationaleCard({
     <div className={clsx('rounded-[16px] border p-4', styles)}>
       <p className="text-xs font-semibold uppercase tracking-[0.16em]">{title}</p>
       <p className="mt-2 text-sm leading-6 text-[var(--nclex-text-secondary)]">{body}</p>
+      {footer ? (
+        <p className="mt-3 rounded-full border border-sky-300/25 bg-sky-300/10 px-3 py-1.5 text-xs font-semibold text-sky-900/70">
+          {footer}
+        </p>
+      ) : null}
     </div>
   )
 }
