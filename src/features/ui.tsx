@@ -88,6 +88,36 @@ export function Surface({
   )
 }
 
+export function PageStack({
+  className,
+  children,
+}: {
+  className?: string
+  children: React.ReactNode
+}) {
+  return <div className={clsx('space-y-5 md:space-y-6', className)}>{children}</div>
+}
+
+export function FocusPanel({
+  className,
+  children,
+}: {
+  className?: string
+  children: React.ReactNode
+}) {
+  return <Surface className={clsx('overflow-hidden p-0', className)}>{children}</Surface>
+}
+
+export function DetailGrid({
+  className,
+  children,
+}: {
+  className?: string
+  children: React.ReactNode
+}) {
+  return <div className={clsx('grid gap-5 lg:grid-cols-2', className)}>{children}</div>
+}
+
 export function MiniSparkline({
   points,
   color = 'var(--nclex-blue)',

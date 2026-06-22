@@ -77,11 +77,13 @@ import {
 } from '../services/study-system'
 import {
   ChecklistItem,
-  CircularProgress,
+  DetailGrid,
   EmptyState,
   FlipCard,
+  FocusPanel,
   MasteryPill,
   PageHeader,
+  PageStack,
   ProgressBar,
   QuestionSessionRunner,
   SectionHeading,
@@ -103,7 +105,6 @@ import {
   MasteryDial,
   MaterialUploadAsset,
   MiniActivityChart,
-  NurseCommandAssetStrip,
   NurseCommandBackdrop,
 } from './nurse-command-assets'
 
@@ -555,20 +556,11 @@ export function DashboardPage() {
   const profile = useStudySystemStore((state) => state.profile)
   const attempts = useStudySystemStore((state) => state.attempts)
   const materials = useStudySystemStore((state) => state.materials)
-  const updateProfile = useStudySystemStore((state) => state.updateProfile)
   const startQuickStudy = useStudySystemStore((state) => state.startQuickStudy)
-  const startPracticeSession = useStudySystemStore((state) => state.startPracticeSession)
   const [dashboardNowMs] = useState(() => new Date().getTime())
   const dashboard = useMemo(() => getDashboardState(profile, attempts), [attempts, profile])
   const analytics = useMemo(() => getAnalyticsSnapshot(attempts, profile), [attempts, profile])
   const weakestArea = dashboard.weakestCategories[0]
-  const strongestArea = useMemo(
-    () =>
-      [...analytics.categoryStats]
-        .filter((item) => item.attemptCount > 0)
-        .sort((left, right) => right.accuracy - left.accuracy)[0],
-    [analytics.categoryStats],
-  )
   const todayMinutes = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10)
     return Math.round(
@@ -604,25 +596,15 @@ export function DashboardPage() {
       (item.extractionStatus === 'ready' &&
         (!item.generatedFlashcardIds.length || !item.generatedQuestionIds.length)),
   ).length
-  const recommendationTitle = weakestArea
-    ? `Focus on ${shortCategoryLabel(weakestArea.category)}`
-    : dashboard.recommendation.title
   const recommendationBody = weakestArea
     ? `You missed ${Math.max(1, weakestArea.flaggedCount || 2)} high-value questions in this area. Strengthen this topic to boost your score and reduce second-guessing.`
     : dashboard.recommendation.description
   const activeExamTrack = getExamTrack(profile.examTrack ?? 'nclex-rn')
   const dashboardCopy = getExamDashboardCopy(activeExamTrack.id)
-  const trackCategories = getExamCategories(activeExamTrack.id)
   const daysUntilExam = Math.max(
     0,
     Math.ceil((new Date(profile.examDate).getTime() - dashboardNowMs) / (1000 * 60 * 60 * 24)),
   )
-  const currentTopics = trackCategories.map((category) => ({
-    label: shortCategoryLabel(category),
-    active:
-      dashboard.weakestCategories.some((area) => area.category === category) ||
-      (weakestArea?.category ?? '') === category,
-  }))
   const todayPriority = weakestArea
     ? `${dashboardCopy.priorityPrefix}: ${shortCategoryLabel(weakestArea.category)}`
     : materialsReadyCount
@@ -630,170 +612,55 @@ export function DashboardPage() {
       : 'Complete one Quick Study session to generate fresh signal'
 
   return (
-    <div className="space-y-6">
+    <PageStack>
       <PageHeader
         eyebrow="Command Center"
-        title={dashboardCopy.greeting}
-        description={`Your personalized ${activeExamTrack.shortName} roadmap to success.`}
+        title="Today, do the next useful thing."
+        description={`A simpler ${activeExamTrack.shortName} command view: priority first, then progress and context.`}
         action={
-          <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                startQuickStudy()
-                navigate('/quick-study')
-              }}
-              className="nclex-btn-primary inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold"
-            >
-              <Sparkles className="h-4 w-4" />
-              Start Quick Study
-            </button>
-            <button
-              type="button"
-              className="nclex-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold"
-            >
-              <CalendarClock className="h-4 w-4" />
-              Today's Plan
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => {
+              startQuickStudy(weakestArea?.category)
+              navigate('/quick-study')
+            }}
+            className="nclex-btn-primary inline-flex min-h-11 items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold"
+          >
+            <Sparkles className="h-4 w-4" />
+            Start priority session
+          </button>
         }
       />
 
-      <NurseCommandAssetStrip
-        accuracy={Math.round(analytics.overallAccuracy * 100)}
-        streak={dashboard.streak}
-        focusTime={formatMinutes(todayMinutes)}
-      />
-
-      <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
-        <Surface className="overflow-hidden p-0">
-          <div className="bg-[linear-gradient(135deg,#003b66_0%,#12375a_100%)] px-5 py-5 text-white md:px-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-100">
-              Today's Study Priority
-            </p>
-            <h3 className="mt-3 font-serif text-3xl leading-tight">
+      <FocusPanel>
+        <div className="grid gap-5 bg-[linear-gradient(135deg,#003b66_0%,#12375a_100%)] px-5 py-5 text-white md:px-6 lg:grid-cols-[minmax(0,1fr)_260px]">
+          <div>
+            <p className="text-sm font-semibold text-sky-100/85">Today's next action</p>
+            <h3 className="mt-3 font-serif text-3xl leading-tight md:text-[2.15rem]">
               {todayPriority}
             </h3>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-sky-100/85">
-              This priority combines your current weak areas, quiz performance, uploaded materials, and daily goal so you know exactly what to do next.
+              {recommendationBody}
             </p>
-            <div className="mt-5 flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  startQuickStudy(weakestArea?.category)
-                  navigate('/quick-study')
-                }}
-                className="rounded-xl bg-white px-4 py-3 text-sm font-semibold text-[var(--nclex-navy)] shadow-sm transition hover:bg-sky-50"
-              >
-                Start priority session
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate('/clinical-simulator')}
-                className="rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/15"
-              >
-                Practice clinical scenario
-              </button>
-            </div>
           </div>
-        </Surface>
-
-        <Surface>
-          <div className="flex items-start justify-between gap-4">
+          <div className="grid content-start gap-3 rounded-2xl border border-white/15 bg-white/10 p-4">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-blue)]">
-                Upcoming exam
-              </p>
-              <h3 className="mt-2 font-serif text-3xl text-[var(--nclex-text)]">
-                {dashboardCopy.examLabel}
-              </h3>
-              <p className="mt-2 text-sm leading-6 text-[var(--nclex-text-muted)]">
-                {daysUntilExam} day{daysUntilExam === 1 ? '' : 's'} until your target exam date.
-              </p>
+              <p className="text-xs font-semibold text-sky-100/70">Exam</p>
+              <p className="mt-1 font-semibold">{dashboardCopy.examLabel}</p>
             </div>
-            <span className="nclex-chip nclex-chip-info">{profile.examDate}</span>
-          </div>
-          <div className="mt-5">
-            <ProgressBar value={Math.min(1, Math.max(0.08, 1 - daysUntilExam / 90))} />
-          </div>
-        </Surface>
-      </div>
-
-      <Surface className="overflow-hidden p-0">
-        <div className="grid gap-5 bg-[linear-gradient(135deg,#ffffff_0%,#eef5ff_100%)] px-5 py-5 md:grid-cols-[1fr_auto] md:items-center md:px-6">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-blue)]">
-              Active Exam Track
-            </p>
-            <h3 className="mt-2 font-serif text-2xl text-[var(--nclex-text)]">
-              {activeExamTrack.title}
-            </h3>
-            <p className="mt-2 max-w-3xl text-sm leading-7 text-[var(--nclex-text-muted)]">
-              {activeExamTrack.subtitle}
-            </p>
-            <div className="mt-4 inline-flex rounded-xl border border-[var(--nclex-border)] bg-white p-1 shadow-sm">
-              {[
-                { label: 'Selected exam', value: 'selected-track' as const },
-                { label: 'All exams', value: 'all-tracks' as const },
-              ].map((item) => (
-                <button
-                  key={item.value}
-                  type="button"
-                  onClick={() =>
-                    updateProfile({
-                      preferences: {
-                        ...profile.preferences,
-                        analyticsScope: item.value,
-                      },
-                    })
-                  }
-                  className={clsx(
-                    'rounded-lg px-3 py-2 text-xs font-semibold transition',
-                    (profile.preferences.analyticsScope ?? 'selected-track') === item.value
-                      ? 'bg-[var(--nclex-blue)] text-white'
-                      : 'text-[var(--nclex-text-muted)] hover:text-[var(--nclex-blue)]',
-                  )}
-                >
-                  {item.label}
-                </button>
-              ))}
+            <div>
+              <p className="text-xs font-semibold text-sky-100/70">Time today</p>
+              <p className="mt-1 font-semibold">{formatMinutes(todayMinutes)}</p>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-sky-100/70">Target date</p>
+              <p className="mt-1 font-semibold">{profile.examDate}</p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => navigate('/exam-prep')}
-            className="nclex-btn-primary inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold"
-          >
-            Manage exam prep
-            <ArrowRight className="h-4 w-4" />
-          </button>
         </div>
-      </Surface>
+      </FocusPanel>
 
-      <Surface>
-        <SectionHeading
-          title="Current courses and topics"
-          description="The app keeps every major nursing-school area visible, then highlights where your study signal says to focus."
-        />
-        <div className="mt-5 flex flex-wrap gap-2">
-          {currentTopics.map((topic) => (
-            <span
-              key={topic.label}
-              className={clsx(
-                'rounded-full border px-3 py-2 text-sm font-semibold',
-                topic.active
-                  ? 'border-[#bfdbfe] bg-[var(--nclex-blue-soft)] text-[var(--nclex-blue)]'
-                  : 'border-[var(--nclex-border)] bg-white text-[var(--nclex-text-secondary)]',
-              )}
-            >
-              {topic.label}
-            </span>
-          ))}
-        </div>
-      </Surface>
-
-      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-5 md:grid-cols-3">
         <StatCard
           label="Current Streak"
           value={`${dashboard.streak} days`}
@@ -820,64 +687,32 @@ export function DashboardPage() {
           icon={<CheckCircle2 className="h-5 w-5" />}
           sparkline={accuracyTrend}
         />
-        <StatCard
-          label="Study Time"
-          value={formatMinutes(todayMinutes)}
-          detail="Focused time today"
-          trend={todayMinutes > 0 ? 'On pace' : 'Start your first session'}
-          tone={todayMinutes >= 60 ? 'success' : 'neutral'}
-          icon={<Clock3 className="h-5 w-5" />}
-          sparkline={analytics.confidenceTrend.map((item) => Math.round(item.confidence * 100))}
-        />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.12fr_0.88fr]">
-        <Surface className="overflow-hidden p-0">
-          <div className="grid gap-6 bg-[linear-gradient(135deg,#ffffff_0%,#eef5ff_100%)] px-5 py-5 md:grid-cols-[1fr_180px] md:items-center md:px-6">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-blue)]">
-                Recommended Next Step
-              </p>
-              <h3 className="mt-3 font-serif text-[1.8rem] leading-tight text-[var(--nclex-text)] md:text-[2.1rem]">
-                {recommendationTitle}
-              </h3>
-              <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--nclex-text-muted)]">
-                {recommendationBody}
-              </p>
-              <div className="mt-5 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    startPracticeSession({
-                      category: weakestArea?.category ?? 'Pharmacology',
-                      difficulty: 'adaptive',
-                      questionCount: 15,
-                      format: 'mixed',
-                    })
-                    navigate('/practice-questions')
-                  }}
-                  className="nclex-btn-primary inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold"
-                >
-                  Start 15-Question Quiz
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigate('/weak-areas')}
-                  className="nclex-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold"
-                >
-                  Review Topic
-                </button>
-              </div>
-            </div>
-            <CircularProgress
-              value={weakestArea?.accuracy ?? dashboard.recentAccuracy}
-              label="Mastery"
-              detail="+12% improvement"
-              tone="green"
-            />
+      <DetailGrid className="xl:grid-cols-[1.12fr_0.88fr]">
+        <Surface>
+          <SectionHeading
+            title="Recent performance"
+            description="One trend is enough here: accuracy over the last seven days."
+          />
+          <div className="mt-5 h-[280px] min-h-[280px] min-w-0">
+            <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 1, height: 1 }} minWidth={0}>
+              <AreaChart data={analytics.dailyAccuracy}>
+                <defs>
+                  <linearGradient id="accuracyFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#2A7DE1" stopOpacity={0.22} />
+                    <stop offset="100%" stopColor="#2A7DE1" stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid vertical={false} stroke="#e5edf5" />
+                <XAxis dataKey="day" tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
+                <YAxis tickFormatter={(value) => `${Math.round(value * 100)}%`} tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
+                <Tooltip formatter={percentTooltip} />
+                <Area type="monotone" dataKey="accuracy" stroke="#2A7DE1" fill="url(#accuracyFill)" strokeWidth={3} />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </Surface>
-
         <Surface>
           <div className="flex items-center justify-between gap-4">
             <div>
@@ -904,130 +739,24 @@ export function DashboardPage() {
             className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[var(--nclex-blue)]"
           >
             View Full Plan
-            <ArrowRight className="h-4 w-4" />
-          </button>
-        </Surface>
-      </div>
-
-      {materials.length ? (
-        <Surface className="overflow-hidden p-0">
-          <div className="grid gap-5 bg-[linear-gradient(135deg,#ffffff_0%,#f4f8ff_100%)] px-5 py-5 md:grid-cols-[1fr_auto] md:items-center md:px-6">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-blue)]">
-                Your Materials
-              </p>
-              <h3 className="mt-2 font-serif text-2xl text-[var(--nclex-text)]">
-                Turn your own study guides into active review.
-              </h3>
-              <p className="mt-2 max-w-3xl text-sm leading-7 text-[var(--nclex-text-muted)]">
-                {materialsNeedingAttention
-                  ? `${materialsNeedingAttention} upload${materialsNeedingAttention === 1 ? '' : 's'} still need attention before they become usable study tools.`
-                  : `${materialsReadyCount} imported material${materialsReadyCount === 1 ? '' : 's'} are ready or waiting for generated-tool review.`}
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={() => navigate('/my-materials')}
-                className="nclex-btn-primary inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold"
-              >
-                <FolderOpen className="h-4 w-4" />
-                Open My Materials
-              </button>
-              {materialsReadyCount ? (
-                <button
-                  type="button"
-                  onClick={() => navigate('/flashcards')}
-                  className="nclex-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold"
-                >
-                  Review imported cards
-                </button>
-              ) : null}
-            </div>
-          </div>
-        </Surface>
-      ) : null}
-
-      <Surface>
-        <SectionHeading
-          title="Your Progress"
-          description="A quick view of readiness, weak spots, strengths, and total reps."
-        />
-        <div className="mt-5 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-          <Surface className="nclex-surface-muted p-4">
-            <div className="flex items-center gap-3">
-              <div className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--nclex-blue-soft)] text-[var(--nclex-blue)]">
-                <Sparkles className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]">Overall Readiness</p>
-                <p className="mt-1 text-lg font-semibold text-[var(--nclex-text)]">{readiness}</p>
-              </div>
-            </div>
-            <p className="mt-4 text-sm text-[var(--nclex-text-muted)]">
-              {readiness === 'Good' ? "You're on track!" : readiness === 'Building' ? 'Momentum is building.' : 'This is the right place to tighten up.'}
-            </p>
-            <div className="mt-4">
-              <ProgressBar
-                value={analytics.overallAccuracy}
-                tone={readinessTone === 'amber' ? 'amber' : readinessTone === 'green' ? 'green' : 'blue'}
-              />
-            </div>
+              <ArrowRight className="h-4 w-4" />
+            </button>
           </Surface>
+      </DetailGrid>
 
-          <Surface className="nclex-surface-muted p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]">Weakest Area</p>
-            <p className="mt-3 text-lg font-semibold text-[var(--nclex-text)]">
-              {shortCategoryLabel(weakestArea?.category ?? 'Maternal-Newborn')}
-            </p>
-            <p className="mt-1 text-sm text-[var(--nclex-text-muted)]">Focus here to improve</p>
-            <div className="mt-4">
-              <ProgressBar value={weakestArea?.accuracy ?? 0.54} tone="amber" />
-            </div>
-          </Surface>
-
-          <Surface className="nclex-surface-muted p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]">Strongest Area</p>
-            <p className="mt-3 text-lg font-semibold text-[var(--nclex-text)]">
-              {shortCategoryLabel(strongestArea?.category ?? 'Fundamentals & Safety')}
-            </p>
-            <p className="mt-1 text-sm text-[var(--nclex-text-muted)]">Keep it up!</p>
-            <div className="mt-4">
-              <ProgressBar value={strongestArea?.accuracy ?? 0.85} tone="green" />
-            </div>
-          </Surface>
-
-          <Surface className="nclex-surface-muted p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]">Questions Answered</p>
-            <p className="mt-3 font-serif text-4xl text-[var(--nclex-text)]">
-              {analytics.questionsCompleted.toLocaleString()}
-            </p>
-            <p className="mt-1 text-sm text-[var(--nclex-text-muted)]">Total practice questions</p>
-            <div className="mt-4 flex h-12 items-end gap-1.5">
-              {completionTrend.map((value, index) => (
-                <div
-                  key={`${value}-${index}`}
-                  className="flex-1 rounded-t-[6px] bg-[linear-gradient(180deg,#90c2ff_0%,#2a7de1_100%)]"
-                  style={{ height: `${Math.max(20, value * 7)}%` }}
-                />
-              ))}
-            </div>
-          </Surface>
-        </div>
-      </Surface>
-
-      <div className="grid gap-6 xl:grid-cols-[0.94fr_1.06fr]">
+      <DetailGrid>
         <Surface>
           <SectionHeading
-            title="Weak areas summary"
+            title="Weak areas"
+            description="Keep the remediation list short enough to act on."
             action={
               <Link to="/weak-areas" className="text-sm font-semibold text-[var(--nclex-blue)]">
-                See action plan
+                See all
               </Link>
             }
           />
           <div className="mt-5 space-y-5">
-            {dashboard.weakestCategories.map((area) => (
+            {dashboard.weakestCategories.slice(0, 3).map((area) => (
               <div key={area.category}>
                 <div className="mb-2 flex items-center justify-between gap-4">
                   <div>
@@ -1046,30 +775,41 @@ export function DashboardPage() {
         </Surface>
 
         <Surface>
-          <SectionHeading
-            title="Recent performance"
-            action={<span className="nclex-chip nclex-chip-info">Last 7 days</span>}
-          />
-          <div className="mt-5 h-[280px] min-h-[280px] min-w-0">
-            <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 1, height: 1 }} minWidth={0}>
-              <AreaChart data={analytics.dailyAccuracy}>
-                <defs>
-                  <linearGradient id="accuracyFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#2A7DE1" stopOpacity={0.22} />
-                    <stop offset="100%" stopColor="#2A7DE1" stopOpacity={0.02} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid vertical={false} stroke="#e5edf5" />
-                <XAxis dataKey="day" tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis tickFormatter={(value) => `${Math.round(value * 100)}%`} tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
-                <Tooltip formatter={percentTooltip} />
-                <Area type="monotone" dataKey="accuracy" stroke="#2A7DE1" fill="url(#accuracyFill)" strokeWidth={3} />
-              </AreaChart>
-            </ResponsiveContainer>
+          <SectionHeading title="Plan context" description="Exam timing, readiness, and material status in one place." />
+          <div className="mt-5 grid gap-4">
+            <div>
+              <div className="flex items-center justify-between gap-4">
+                <p className="font-semibold text-[var(--nclex-text)]">{activeExamTrack.title}</p>
+                <span className="nclex-chip nclex-chip-info">{daysUntilExam} days</span>
+              </div>
+              <p className="mt-1 text-sm text-[var(--nclex-text-muted)]">{activeExamTrack.subtitle}</p>
+              <div className="mt-4">
+                <ProgressBar value={Math.min(1, Math.max(0.08, 1 - daysUntilExam / 90))} />
+              </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl bg-[#f7fbfd] p-4">
+                <p className="text-sm font-semibold text-[var(--nclex-text)]">Readiness</p>
+                <p className="mt-1 text-2xl font-semibold text-[var(--nclex-text)]">{readiness}</p>
+                <div className="mt-3">
+                  <ProgressBar
+                    value={analytics.overallAccuracy}
+                    tone={readinessTone === 'amber' ? 'amber' : readinessTone === 'green' ? 'green' : 'blue'}
+                  />
+                </div>
+              </div>
+              <div className="rounded-2xl bg-[#f7fbfd] p-4">
+                <p className="text-sm font-semibold text-[var(--nclex-text)]">Materials</p>
+                <p className="mt-1 text-2xl font-semibold text-[var(--nclex-text)]">{materialsReadyCount}</p>
+                <p className="mt-1 text-sm text-[var(--nclex-text-muted)]">
+                  {materialsNeedingAttention ? `${materialsNeedingAttention} need attention` : 'Ready to review'}
+                </p>
+              </div>
+            </div>
           </div>
         </Surface>
-      </div>
-    </div>
+      </DetailGrid>
+    </PageStack>
   )
 }
 
@@ -2980,82 +2720,132 @@ function MaterialReviewPanel({
 }
 
 export function StudyPlanPage() {
+  const navigate = useNavigate()
   const profile = useStudySystemStore((state) => state.profile)
   const attempts = useStudySystemStore((state) => state.attempts)
   const updateProfile = useStudySystemStore((state) => state.updateProfile)
+  const startQuickStudy = useStudySystemStore((state) => state.startQuickStudy)
   const weakAreas = useMemo(
     () => getWeakAreas(attempts, profile.examTrack ?? 'nclex-rn', profile.preferences.analyticsScope ?? 'selected-track'),
     [attempts, profile.examTrack, profile.preferences.analyticsScope],
   )
   const plan = useMemo(() => buildStudyPlan(profile, weakAreas), [profile, weakAreas])
   const activeTrack = getExamTrack(profile.examTrack ?? 'nclex-rn')
+  const priorityArea = weakAreas[0]?.category ?? 'prioritization'
+  const todayTasks = [
+    `Start with ${shortCategoryLabel(priorityArea)}`,
+    ...plan.dailyFocus.slice(0, 2),
+  ]
+  const thisWeekTasks = plan.weeklyGoals.slice(0, 4)
+  const laterTasks = plan.recommendedSessions.slice(0, 4)
 
   return (
-    <div className="space-y-6">
+    <PageStack>
       <PageHeader
         eyebrow="Study Plan"
-        title={`A ${activeTrack.shortName} plan that tells you what to hit each week.`}
-        description="Set your exam date and intensity, then let the selected exam blueprint translate weak areas into a realistic study rhythm."
+        title="One plan, three time horizons."
+        description={`A simpler ${activeTrack.shortName} plan: finish today, glance at the week, park the rest for later.`}
+        action={
+          <button
+            type="button"
+            onClick={() => {
+              startQuickStudy(priorityArea)
+              navigate('/quick-study')
+            }}
+            className="nclex-btn-primary inline-flex min-h-11 items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold"
+          >
+            <Sparkles className="h-4 w-4" />
+            Start today's session
+          </button>
+        }
       />
-      <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-        <Surface>
-          <h3 className="font-serif text-3xl text-[#163042]">Plan inputs</h3>
-          <div className="mt-6 grid gap-4">
-            <Field label="Exam date">
-              <input type="date" value={profile.examDate} onChange={(event) => updateProfile({ examDate: event.target.value })} className={inputClass} />
-            </Field>
-            <Field label="Study intensity">
-              <select value={profile.studyIntensity} onChange={(event) => updateProfile({ studyIntensity: event.target.value as typeof profile.studyIntensity })} className={selectClass}>
-                <option value="steady">Steady</option>
-                <option value="focused">Focused</option>
-                <option value="accelerated">Accelerated</option>
-              </select>
-            </Field>
-            <Field label="Daily question goal">
-              <input type="number" min={5} max={40} value={profile.dailyGoal} onChange={(event) => updateProfile({ dailyGoal: Number(event.target.value) })} className={inputClass} />
-            </Field>
-          </div>
-          <div className="mt-6 rounded-[28px] bg-[#f7fbfd] p-5">
-            <p className="text-sm leading-6 text-[#4f687a]">
-              Your current plan is biased toward {weakAreas[0]?.category ?? 'prioritization'} because that is where the most score lift is available.
-            </p>
-          </div>
-        </Surface>
 
-        <Surface>
-          <div className="flex items-center justify-between">
-          <h3 className="font-serif text-3xl text-[#163042]">Generated plan</h3>
-            <CalendarClock className="h-5 w-5 text-[#2d77bf]" />
-          </div>
-          <div className="mt-6 grid gap-5 md:grid-cols-2">
-            <div className="rounded-[28px] bg-[#f7fbfd] p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7e97aa]">Weekly goals</p>
-              <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-700">
-                {plan.weeklyGoals.map((goal) => (
-                  <li key={goal}>{goal}</li>
-                ))}
-              </ul>
-            </div>
-            <div className="rounded-[28px] bg-[#f7fbfd] p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#7e97aa]">Daily focus</p>
-              <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-700">
-                {plan.dailyFocus.map((focus) => (
-                  <li key={focus}>{focus}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
-          <div className="mt-5 rounded-[28px] border border-sky-100 bg-sky-50 p-5">
-            <p className="nclex-label text-xs font-semibold uppercase">Recommended sessions</p>
-            <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-700">
-              {plan.recommendedSessions.map((item) => (
-                <li key={item}>{item}</li>
+      <FocusPanel>
+        <div className="grid gap-5 bg-[linear-gradient(135deg,#003b66_0%,#12375a_100%)] px-5 py-5 text-white md:px-6 lg:grid-cols-[minmax(0,1fr)_240px]">
+          <div>
+            <p className="text-sm font-semibold text-sky-100/85">Today</p>
+            <h3 className="mt-3 font-serif text-3xl leading-tight md:text-[2.15rem]">
+              {todayTasks[0]}
+            </h3>
+            <ul className="mt-5 grid gap-3">
+              {todayTasks.map((task, index) => (
+                <li key={`${task}-${index}`} className="flex items-start gap-3 text-sm leading-6 text-sky-100/88">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
+                  <span>{task}</span>
+                </li>
               ))}
             </ul>
           </div>
+          <div className="grid content-start gap-3 rounded-2xl border border-white/15 bg-white/10 p-4">
+            <div>
+              <p className="text-xs font-semibold text-sky-100/70">Daily goal</p>
+              <p className="mt-1 font-semibold">{profile.dailyGoal} questions</p>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-sky-100/70">Intensity</p>
+              <p className="mt-1 font-semibold capitalize">{profile.studyIntensity}</p>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-sky-100/70">Target date</p>
+              <p className="mt-1 font-semibold">{profile.examDate}</p>
+            </div>
+          </div>
+        </div>
+      </FocusPanel>
+
+      <DetailGrid>
+        <Surface>
+          <SectionHeading
+            title="This Week"
+            description="Enough structure to keep momentum without turning the page into a planner."
+          />
+          <ul className="mt-5 space-y-3 text-sm leading-6 text-slate-700">
+            {thisWeekTasks.map((goal) => (
+              <li key={goal} className="rounded-2xl bg-[#f7fbfd] px-4 py-3">
+                {goal}
+              </li>
+            ))}
+          </ul>
         </Surface>
-      </div>
-    </div>
+
+        <Surface>
+          <SectionHeading
+            title="Later"
+            description="Sessions to pull forward after today's focus is done."
+            action={<CalendarClock className="h-5 w-5 text-[#2d77bf]" />}
+          />
+          <ul className="mt-5 space-y-3 text-sm leading-6 text-slate-700">
+            {laterTasks.map((item) => (
+              <li key={item} className="rounded-2xl bg-[#f7fbfd] px-4 py-3">
+                {item}
+              </li>
+            ))}
+          </ul>
+        </Surface>
+      </DetailGrid>
+
+      <Surface>
+        <SectionHeading
+          title="Plan settings"
+          description={`This plan is currently biased toward ${priorityArea} because that is where the most score lift is available.`}
+        />
+        <div className="mt-5 grid gap-4 md:grid-cols-3">
+          <Field label="Exam date">
+            <input type="date" value={profile.examDate} onChange={(event) => updateProfile({ examDate: event.target.value })} className={inputClass} />
+          </Field>
+          <Field label="Study intensity">
+            <select value={profile.studyIntensity} onChange={(event) => updateProfile({ studyIntensity: event.target.value as typeof profile.studyIntensity })} className={selectClass}>
+              <option value="steady">Steady</option>
+              <option value="focused">Focused</option>
+              <option value="accelerated">Accelerated</option>
+            </select>
+          </Field>
+          <Field label="Daily question goal">
+            <input type="number" min={5} max={40} value={profile.dailyGoal} onChange={(event) => updateProfile({ dailyGoal: Number(event.target.value) })} className={inputClass} />
+          </Field>
+        </div>
+      </Surface>
+    </PageStack>
   )
 }
 
