@@ -1018,6 +1018,18 @@ export function PracticeQuestionsPage() {
   const activeTrack = getExamTrack(profile.examTrack ?? 'nclex-rn')
   const trackCategories = getExamCategories(activeTrack.id)
   const trackSystems = getExamSystems(activeTrack.id)
+  const launchPracticeSession = () =>
+    startTransition(() =>
+      startPracticeSession({
+        category,
+        system,
+        board,
+        questionStatus,
+        format,
+        difficulty,
+        questionCount,
+      }),
+    )
 
   if (activeSession?.mode === 'practice') {
     return (
@@ -1031,16 +1043,66 @@ export function PracticeQuestionsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <PageStack>
       <PageHeader
-        eyebrow="Adaptive Practice"
-        title={`Train for ${activeTrack.shortName}, not a generic exam.`}
-        description="Choose exactly what to drill. The content pool, filters, weak-area bias, and analytics all follow the active exam track."
+        eyebrow="Question Bank"
+        title="Start practice, then tune only if needed."
+        description={`A clean ${activeTrack.shortName} practice entry: one session start first, filters lower, rationales ready when the answer is submitted.`}
+        action={
+          <button
+            type="button"
+            onClick={launchPracticeSession}
+            className="nclex-btn-primary inline-flex min-h-[48px] items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold"
+          >
+            {isPending ? 'Building set...' : 'Start focused set'}
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        }
       />
-      <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+      <FocusPanel className="nclex-dark-panel text-white">
+        <div className="grid gap-5 p-5 md:p-6 xl:grid-cols-[1fr_0.78fr] xl:items-stretch">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-200">Next practice set</p>
+            <h3 className="mt-3 text-3xl font-black tracking-[-0.04em] text-white md:text-5xl">
+              {category === 'All' ? 'Mixed adaptive set' : category}
+            </h3>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-sky-100/72">
+              {questionCount} questions, {difficulty === 'adaptive' ? 'adaptive difficulty' : `${difficulty} difficulty`}, {format === 'mixed' ? 'mixed formats' : format.replaceAll('-', ' ')}.
+              Use this as the default rep, then adjust only when you need a specific drill.
+            </p>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <button
+                type="button"
+                onClick={launchPracticeSession}
+                className="nclex-btn-primary inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black"
+              >
+                {isPending ? 'Building set...' : 'Start focused set'}
+                <ArrowRight className="h-4 w-4" />
+              </button>
+              <Link
+                to="/weak-areas"
+                className="nclex-btn-secondary inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black"
+              >
+                Review weak areas
+                <Target className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+            <QuickMetric label="Questions" value={`${questionCount}`} detail="Touch-friendly set length." />
+            <QuickMetric label="Track" value={activeTrack.shortName} detail="Blueprint-aligned bank." />
+            <QuickMetric label="Review" value="Instant" detail="Rationale after every answer." />
+          </div>
+        </div>
+      </FocusPanel>
+
+      <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
         <Surface>
-          <h3 className="font-serif text-3xl text-[#163042]">Build your next set</h3>
-          <div className="mt-6 grid gap-4 md:grid-cols-2">
+          <SectionHeading
+            title="Adjust the set"
+            description="Keep the defaults unless you need a category, system, or missed-question repair."
+          />
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
             <Field label="Category">
               <select value={category} onChange={(event) => setCategory(event.target.value as QuestionCategory | 'All')} className={selectClass}>
                 <option value="All">All categories</option>
@@ -1103,48 +1165,28 @@ export function PracticeQuestionsPage() {
           </div>
           <button
             type="button"
-            onClick={() =>
-              startTransition(() =>
-                startPracticeSession({
-                  category,
-                  system,
-                  board,
-                  questionStatus,
-                  format,
-                  difficulty,
-                  questionCount,
-                }),
-              )
-            }
-            className="nclex-btn-primary mt-6 inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold"
+            onClick={launchPracticeSession}
+            className="nclex-btn-secondary mt-6 inline-flex min-h-[48px] items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold"
           >
-            {isPending ? 'Building set...' : 'Start adaptive practice'}
+            {isPending ? 'Building set...' : 'Start with these settings'}
             <ArrowRight className="h-4 w-4" />
           </button>
         </Surface>
 
-        <Surface className="bg-[linear-gradient(180deg,_#f9fcff_0%,_#f3fbf8_100%)]">
-          <div className="grid gap-4 md:grid-cols-2">
-            <FeatureCallout
-              title="Confidence-based review"
-              description="Every question asks how sure you were so your analytics catch hidden weak spots."
-            />
-            <FeatureCallout
-              title="Rationale-rich feedback"
-              description="See why the best answer is right, why the others fail, and what NCLEX pattern you missed."
-            />
-            <FeatureCallout
-              title="SATA and scenario support"
-              description="Mix standard questions with realistic patient scenarios and select-all decision points."
-            />
-            <FeatureCallout
-              title="Flag difficult items"
-              description="Turn confusion into a review list instead of losing it after the session ends."
-            />
+        <Surface>
+          <SectionHeading
+            title="Practice flow"
+            description="The question screen now keeps action buttons close to the answer flow."
+          />
+          <div className="mt-5 grid gap-3">
+            <ChecklistItem label="Answer first, then reveal rationale" completed meta="Reduces peeking" />
+            <ChecklistItem label="Confidence locks in the learning signal" completed meta="Required" />
+            <ChecklistItem label="Next, review, and finish actions stay touch-sized" completed meta="Mobile ready" />
+            <ChecklistItem label="Flag confusing items without leaving the set" completed={false} meta="Optional" />
           </div>
         </Surface>
       </div>
-    </div>
+    </PageStack>
   )
 }
 
@@ -1431,48 +1473,72 @@ export function QuickStudyPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <PageStack>
       <PageHeader
         eyebrow="Quick Study"
-        title="Only have 10 minutes?"
-        description="Let's focus on your weakest area and turn this into a quick, confidence-building win."
+        title="Five questions. One repair."
+        description="Quick Study should feel like a clean clinical rep: start fast, answer deliberately, review the rationale, move on."
         action={
           <button
             type="button"
             onClick={() => startQuickStudy()}
-            className="nclex-btn-primary inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold"
+            className="nclex-btn-primary inline-flex min-h-[48px] items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold"
           >
             <Sparkles className="h-4 w-4" />
-            Start 5 Questions
+            Start 5 questions
           </button>
         }
       />
-      <div className="grid gap-6 xl:grid-cols-[1fr_0.9fr]">
-        <Surface className="nclex-dark-panel text-white">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200">Auto-selected focus</p>
-          <h3 className="mt-4 font-serif text-4xl">{weakArea?.category ?? getExamCategories(activeTrack.id)[0]}</h3>
-          <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-200">
-            {weakArea
-              ? `${Math.round(weakArea.accuracy * 100)}% accuracy with ${weakArea.commonMistakes.join(', ')} coming up most often.`
-              : 'No attempt history yet. We will start with high-yield safety and prioritization questions.'}
-          </p>
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            <QuickMetric label="Questions" value="5" detail="Short enough to fit in a break." />
-            <QuickMetric label="Feedback" value="Instant" detail="Learn while the reasoning is fresh." />
-            <QuickMetric label="Goal" value="Clarity" detail="One focused improvement, not random volume." />
+      <FocusPanel className="nclex-dark-panel text-white">
+        <div className="grid gap-5 p-5 md:p-6 xl:grid-cols-[1fr_0.72fr] xl:items-center">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-200">Auto-selected focus</p>
+            <h3 className="mt-3 text-3xl font-black tracking-[-0.04em] text-white md:text-5xl">
+              {weakArea?.category ?? getExamCategories(activeTrack.id)[0]}
+            </h3>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-sky-100/72">
+              {weakArea
+                ? `${Math.round(weakArea.accuracy * 100)}% accuracy, with ${weakArea.commonMistakes.join(', ')} showing up most often.`
+                : 'No attempt history yet. Start with high-yield safety and prioritization questions.'}
+            </p>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <button
+                type="button"
+                onClick={() => startQuickStudy()}
+                className="nclex-btn-primary inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black"
+              >
+                Start 5 questions
+                <ArrowRight className="h-4 w-4" />
+              </button>
+              <Link
+                to="/study-plan"
+                className="nclex-btn-secondary inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black"
+              >
+                View plan
+                <CalendarClock className="h-4 w-4" />
+              </Link>
+            </div>
           </div>
+          <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+            <QuickMetric label="Questions" value="5" detail="Short enough for a break." />
+            <QuickMetric label="Feedback" value="Instant" detail="Review while it is fresh." />
+            <QuickMetric label="Goal" value="One fix" detail="No random volume." />
+          </div>
+        </div>
+      </FocusPanel>
+
+      <div className="grid gap-5 lg:grid-cols-3">
+        <Surface>
+          <SectionHeading title="Question flow" description="Answer, submit, choose confidence, then move forward." />
         </Surface>
         <Surface>
-          <h3 className="font-serif text-2xl text-[#163042]">Why this gets used daily</h3>
-          <ul className="mt-5 space-y-4 text-sm leading-6 text-[#4f687a]">
-            <li>No setup friction. One tap starts the set.</li>
-            <li>Weak-area targeting keeps every question valuable.</li>
-            <li>Confidence tracking catches the answers you only "sort of" know.</li>
-            <li>End-of-set summaries tell you exactly what to reinforce next.</li>
-          </ul>
+          <SectionHeading title="Rationale review" description="The explanation appears after the answer, not before the decision." />
+        </Surface>
+        <Surface>
+          <SectionHeading title="Finish cleanly" description="The final screen turns missed items into the next repair route." />
         </Surface>
       </div>
-    </div>
+    </PageStack>
   )
 }
 
@@ -3256,20 +3322,15 @@ const clinicalScenarios = [
   },
 ]
 
-const nurseCommandLabTools = [
-  {
-    title: 'Command Center',
-    description: 'Open the retro hospital dashboard for a quick operational readout.',
-    to: '/medical-command-center',
-    icon: BrainCircuit,
-    action: 'Open command center',
-  },
+const nurseCommandLabModules = [
   {
     title: 'Shift Game',
     description: 'Practice prioritization under time pressure in a hospital shift loop.',
     to: '/shift-command',
     icon: HeartPulse,
     action: 'Start shift',
+    meta: 'Prioritization',
+    accent: 'from-rose-400/28 to-cyan-400/10',
   },
   {
     title: 'Hospitalvania',
@@ -3277,6 +3338,8 @@ const nurseCommandLabTools = [
     to: '/hospitalvania',
     icon: Zap,
     action: 'Enter Hospitalvania',
+    meta: 'Arcade drill',
+    accent: 'from-violet-400/28 to-cyan-400/10',
   },
   {
     title: 'Nurse Tycoon',
@@ -3284,6 +3347,8 @@ const nurseCommandLabTools = [
     to: '/nurse-tycoon',
     icon: BarChart3,
     action: 'Open tycoon',
+    meta: 'Systems thinking',
+    accent: 'from-amber-300/28 to-emerald-400/10',
   },
   {
     title: 'Clinical Simulator',
@@ -3291,31 +3356,81 @@ const nurseCommandLabTools = [
     to: '/clinical-simulator',
     icon: Target,
     action: 'Train first actions',
+    meta: 'Patient scenarios',
+    accent: 'from-emerald-300/28 to-cyan-400/10',
+  },
+]
+
+const nurseCommandLabUtilities = [
+  {
+    title: 'Command Center',
+    description: 'Open the retro hospital dashboard for a quick operational readout.',
+    to: '/medical-command-center',
+    icon: BrainCircuit,
+    action: 'Open command center',
   },
 ]
 
 export function NurseCommandLabPage() {
   return (
-    <div className="space-y-6">
+    <PageStack>
       <PageHeader
         eyebrow="Nurse Command Lab"
-        title="Choose a clinical practice mode."
-        description="Use the lab for simulation, prioritization, patient-flow strategy, and game-based repetition separate from the core question bank."
+        title="Simulation, games, and clinical reps in one lab."
+        description="The lab keeps experimental practice modes grouped together so the core study app stays focused and the game surfaces still feel intentional."
       />
 
-      <div className="grid gap-4 xl:grid-cols-5 md:grid-cols-2">
-        {nurseCommandLabTools.map(({ title, description, to, icon: Icon, action }) => (
-          <Surface key={to} className="flex min-h-[260px] flex-col justify-between">
+      <FocusPanel className="nclex-dark-panel text-white">
+        <div className="grid gap-5 p-5 md:p-6 xl:grid-cols-[1fr_0.72fr] xl:items-end">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-200">Nurse Lab</p>
+            <h3 className="mt-3 max-w-3xl text-3xl font-black tracking-[-0.04em] text-white md:text-5xl">
+              Pick the rep that matches the skill.
+            </h3>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-sky-100/72">
+              Use questions for exam accuracy. Use the lab when you need repetition around priority, flow, escalation, or patient-state decisions.
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+            <Link
+              to="/clinical-simulator"
+              className="nclex-btn-primary inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black"
+            >
+              Start simulator
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link
+              to="/shift-command"
+              className="nclex-btn-secondary inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black"
+            >
+              Play Shift Game
+              <HeartPulse className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
+      </FocusPanel>
+
+      <div className="grid gap-5 md:grid-cols-2">
+        {nurseCommandLabModules.map(({ title, description, to, icon: Icon, action, meta, accent }) => (
+          <Surface key={to} className="group flex min-h-[260px] flex-col justify-between p-0">
+            <div className={clsx('h-1.5 bg-gradient-to-r', accent)} />
             <div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-[var(--nclex-blue-soft)] text-[var(--nclex-blue)]">
-                <Icon className="h-5 w-5" />
+              <div className="p-5 md:p-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-[16px] border border-cyan-300/25 bg-cyan-300/12 text-cyan-100 shadow-[0_0_24px_rgba(56,189,248,0.16)]">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <span className="rounded-full border border-cyan-300/25 bg-white/[0.04] px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-sky-100/64">
+                    {meta}
+                  </span>
+                </div>
+                <h2 className="mt-5 text-2xl font-black tracking-[-0.03em] text-white">{title}</h2>
+                <p className="mt-3 text-sm leading-6 text-sky-100/66">{description}</p>
               </div>
-              <h2 className="mt-5 font-serif text-2xl text-[var(--nclex-text)]">{title}</h2>
-              <p className="mt-3 text-sm leading-6 text-[var(--nclex-text-muted)]">{description}</p>
             </div>
             <Link
               to={to}
-              className="nclex-btn-secondary mt-6 inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold"
+              className="mx-5 mb-5 inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl border border-cyan-300/24 bg-white/[0.04] px-4 py-3 text-sm font-black text-cyan-100 transition group-hover:border-cyan-200/60 group-hover:bg-cyan-300/12 md:mx-6 md:mb-6"
             >
               {action}
               <ArrowRight className="h-4 w-4" />
@@ -3323,7 +3438,37 @@ export function NurseCommandLabPage() {
           </Surface>
         ))}
       </div>
-    </div>
+
+      <Surface>
+        <SectionHeading
+          title="Lab utility"
+          description="Operational dashboards stay available without crowding the simulation choices."
+        />
+        <div className="mt-5 grid gap-3 md:grid-cols-2">
+          {nurseCommandLabUtilities.map(({ title, description, to, icon: Icon, action }) => (
+            <Link
+              key={to}
+              to={to}
+              className="rounded-[18px] border border-cyan-300/20 bg-white/[0.035] p-4 transition hover:border-cyan-200/60 hover:bg-cyan-300/10"
+            >
+              <div className="flex items-start gap-4">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] border border-cyan-300/20 bg-cyan-300/10 text-cyan-100">
+                  <Icon className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="font-black text-white">{title}</p>
+                  <p className="mt-1 text-sm leading-6 text-sky-100/64">{description}</p>
+                  <p className="mt-3 inline-flex items-center gap-2 text-sm font-black text-cyan-200">
+                    {action}
+                    <ArrowRight className="h-4 w-4" />
+                  </p>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </Surface>
+    </PageStack>
   )
 }
 

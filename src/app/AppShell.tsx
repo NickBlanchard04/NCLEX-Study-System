@@ -240,6 +240,7 @@ function NclexAppShell() {
     location.pathname !== '/study-plan' &&
     location.pathname !== '/performance-analytics' &&
     location.pathname !== '/quick-study' &&
+    location.pathname !== '/practice-questions' &&
     !location.pathname.startsWith('/nurse-command-lab')
 
   if (location.pathname === '/') {

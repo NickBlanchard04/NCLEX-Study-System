@@ -3,7 +3,6 @@ import {
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
-  Bookmark,
   Check,
   CheckCircle2,
   Clock3,
@@ -613,7 +612,6 @@ export function QuestionSessionRunner({
   const finalResponse = existingResponse ?? null
   const confidenceChosen = Boolean(finalResponse)
   const finalAttempt = finalResponse ? getAttemptForResponse(finalResponse) : null
-  const finalDiagnosis = finalAttempt?.engineDiagnosis
   const finalRemediation = finalAttempt?.engineRemediationEvents?.[0]
   const tutorInsight = getQuestionTutorInsight(questionId)
 
@@ -759,15 +757,41 @@ export function QuestionSessionRunner({
               >
                 Submit answer
               </button>
+            ) : confidenceChosen ? (
+              !isLastQuestion ? (
+                <button
+                  type="button"
+                  onClick={nextQuestion}
+                  className="nclex-btn-primary inline-flex min-h-[48px] flex-[1.2] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold md:flex-none"
+                >
+                  Next question
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={finishSession}
+                  className="nclex-btn-primary inline-flex min-h-[48px] flex-[1.2] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold md:flex-none"
+                >
+                  Finish session
+                  <CheckCircle2 className="h-4 w-4" />
+                </button>
+              )
+            ) : (
+              <div className="flex min-h-[48px] flex-1 items-center rounded-xl border border-[var(--nclex-border)] bg-[var(--nclex-card-muted)] px-4 py-3 text-sm font-semibold text-[var(--nclex-text-muted)]">
+                Choose confidence to continue
+              </div>
+            )}
+            {submitted ? (
+              <button
+                type="button"
+                onClick={() => setShowRationale((current) => !current)}
+                className="nclex-btn-secondary inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold md:flex-none"
+              >
+                <Eye className="h-4 w-4" />
+                {showRationale ? 'Hide review' : 'Review rationale'}
+              </button>
             ) : null}
-            <button
-              type="button"
-              onClick={() => setShowRationale((current) => !current)}
-              className="nclex-btn-secondary inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold md:flex-none"
-            >
-              <Eye className="h-4 w-4" />
-              {showRationale ? 'Hide explanation' : 'Show explanation'}
-            </button>
           </div>
 
           <AnimatePresence>
@@ -840,39 +864,24 @@ export function QuestionSessionRunner({
                   <div className="mt-5 grid gap-4 md:grid-cols-2">
                     <div className="md:col-span-2">
                       <RationaleCard
-                        title="Tutor target"
-                        tone="blue"
-                        body={`${tutorInsight.reviewTarget}. Trap to watch: ${tutorInsight.trap}`}
-                        footer={tutorInsight.trustFlags.join(' | ')}
+                        title="Best answer"
+                        tone="green"
+                        body={question.rationale.whyCorrect}
                       />
                     </div>
                     {!currentIsCorrect ? (
                       <div className="md:col-span-2">
                         <RationaleCard
-                          title="Why you may have missed it"
+                          title="Miss pattern"
                           tone="amber"
                           body={getMissReason(questionId, selectedAnswers)}
-                        />
-                      </div>
-                    ) : null}
-                    {finalDiagnosis && !finalDiagnosis.scoreResult.isCorrect ? (
-                      <div className="md:col-span-2">
-                        <RationaleCard
-                          title="Engine diagnosis"
-                          tone="amber"
-                          body={`This response suggests ${finalDiagnosis.likelyMisconceptionId.replaceAll('_', ' ')}. ${finalDiagnosis.confidenceEscalated ? 'Because confidence was high, repair this pattern before adding more random volume.' : 'Use the rationale, then answer a nearby repair item.'}`}
-                          footer={
-                            finalDiagnosis.countsTowardReadiness
-                              ? 'Counts toward trusted readiness evidence'
-                              : `Practice signal only: ${finalDiagnosis.readinessExclusionReasons.join(', ') || 'insufficient item trust'}`
-                          }
                         />
                       </div>
                     ) : null}
                     {finalRemediation ? (
                       <div className="md:col-span-2">
                         <RationaleCard
-                          title="Repair route"
+                          title="Next repair"
                           tone="blue"
                           body={finalRemediation.nextActionCopy}
                           footer={finalRemediation.routeLabel}
@@ -880,20 +889,15 @@ export function QuestionSessionRunner({
                       </div>
                     ) : null}
                     <RationaleCard
-                      title="Why the best answer is right"
-                      tone="green"
-                      body={question.rationale.whyCorrect}
-                    />
-                    <RationaleCard
-                      title="Why the other choices are wrong"
+                      title="Why others fall away"
                       tone="amber"
                       body={question.rationale.whyOthers}
                     />
-                    <RationaleCard title="NCLEX tip" tone="blue" body={question.nclexTip} />
                     <RationaleCard
-                      title="Clinical relevance"
+                      title="Test-taking cue"
                       tone="blue"
-                      body={question.clinicalRelevance}
+                      body={`${question.nclexTip} ${tutorInsight.reviewTarget}. Watch for: ${tutorInsight.trap}`}
+                      footer={tutorInsight.trustFlags.join(' | ')}
                     />
                   </div>
                 ) : null}
@@ -904,7 +908,7 @@ export function QuestionSessionRunner({
 
         <div className="space-y-6">
           <Surface className="hidden xl:block">
-            <SectionHeading title="Session momentum" />
+            <SectionHeading title="Session" description="Progress stays visible while the question stays primary." />
             <div className="mt-5 space-y-4">
               <div>
                 <div className="mb-2 flex items-center justify-between text-sm text-[var(--nclex-text-muted)]">
@@ -923,68 +927,25 @@ export function QuestionSessionRunner({
                   value={`${session.responses.filter((response) => response.flagged).length + (flagged && !existingResponse ? 1 : 0)}`}
                 />
               </div>
-            </div>
-          </Surface>
-
-          <Surface className="hidden xl:block">
-            <div className="flex items-center gap-3">
-              <Bookmark className="h-5 w-5 text-[var(--nclex-blue)]" />
-              <h4 className="font-serif text-xl text-[var(--nclex-text)]">Next move</h4>
-            </div>
-            <p className="mt-3 text-sm leading-6 text-[var(--nclex-text-muted)]">
-              Stay deliberate. Immediate feedback matters more than rushing volume.
-            </p>
-            <div className="mt-5 flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={previousQuestion}
-                disabled={session.currentIndex === 0 || Boolean(session.config.noBacktracking)}
-                className="nclex-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Previous
-              </button>
-              {!isLastQuestion ? (
+              <div className="flex flex-wrap gap-3">
                 <button
                   type="button"
-                  onClick={nextQuestion}
-                  disabled={!confidenceChosen}
-                  className="nclex-btn-primary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:bg-slate-300"
+                  onClick={previousQuestion}
+                  disabled={session.currentIndex === 0 || Boolean(session.config.noBacktracking)}
+                  className="nclex-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  Next question
-                  <ArrowRight className="h-4 w-4" />
+                  <ArrowLeft className="h-4 w-4" />
+                  Back
                 </button>
-              ) : (
                 <button
                   type="button"
-                  onClick={finishSession}
-                  disabled={!confidenceChosen}
-                  className="nclex-btn-primary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:bg-slate-300"
+                  onClick={onExit}
+                  className="nclex-btn-secondary rounded-xl px-4 py-2.5 text-sm font-semibold"
                 >
-                  Finish session
-                  <CheckCircle2 className="h-4 w-4" />
+                  Exit
                 </button>
-              )}
-              <button
-                type="button"
-                onClick={onExit}
-                className="nclex-btn-secondary rounded-xl px-4 py-2.5 text-sm font-semibold"
-              >
-                Exit
-              </button>
+              </div>
             </div>
-          </Surface>
-
-          <Surface className="hidden xl:block">
-            <div className="flex items-center gap-3">
-              <Lightbulb className="h-5 w-5 text-[var(--nclex-warning)]" />
-              <h4 className="font-serif text-xl text-[var(--nclex-text)]">Micro-coaching</h4>
-            </div>
-            <ul className="mt-4 space-y-3 text-sm leading-6 text-[var(--nclex-text-muted)]">
-              <li>Ask what makes the client unsafe right now, not which task simply feels urgent.</li>
-              <li>Read the whole stem before scanning for familiar answer words.</li>
-              <li>High-confidence misses deserve the slowest review because they expose habits.</li>
-            </ul>
           </Surface>
         </div>
       </div>
@@ -1110,7 +1071,7 @@ function RationaleCard({
       <p className="text-xs font-semibold uppercase tracking-[0.16em]">{title}</p>
       <p className="mt-2 text-sm leading-6 text-[var(--nclex-text-secondary)]">{body}</p>
       {footer ? (
-        <p className="mt-3 rounded-full border border-sky-300/25 bg-sky-300/10 px-3 py-1.5 text-xs font-semibold text-sky-900/70">
+        <p className="mt-3 rounded-full border border-sky-300/25 bg-sky-300/10 px-3 py-1.5 text-xs font-semibold text-sky-100/72">
           {footer}
         </p>
       ) : null}

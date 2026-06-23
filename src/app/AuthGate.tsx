@@ -86,7 +86,7 @@ function AuthLanding() {
               <ShieldCheck className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-sm font-bold text-[var(--nclex-text)]">NCLEX Study System</p>
+              <p className="text-sm font-bold text-[var(--nclex-text)]">Nurse Command</p>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--nclex-blue)]">Cloud Sync</p>
             </div>
           </div>
@@ -94,7 +94,7 @@ function AuthLanding() {
             Your progress follows you now.
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-8 text-[var(--nclex-text-muted)]">
-            Create an account to sync exam prep, notes, flashcards, uploaded materials, and performance history across devices.
+            Create an account to sync Nurse Command exam prep, notes, flashcards, uploaded materials, and performance history across devices.
           </p>
           <div className="mt-8 grid gap-4 md:grid-cols-3">
             {[
