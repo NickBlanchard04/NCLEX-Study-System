@@ -115,10 +115,14 @@ export function withConfidenceEscalation(
   scoreResult: ScoreResult,
   confidence: 'low' | 'medium' | 'high',
 ): ScoreResult {
+  const isBinaryOrAllOrNothing = scoreResult.maxScore <= 1
+  const isWeakPartial = scoreResult.maxScore > 1 && scoreResult.partialCreditScore < 0.5
+
   return {
     ...scoreResult,
     confidenceEscalated:
       confidence === 'high' &&
-      (!scoreResult.isCorrect || scoreResult.partialCreditScore < 0.5),
+      !scoreResult.isCorrect &&
+      (isBinaryOrAllOrNothing || isWeakPartial),
   }
 }

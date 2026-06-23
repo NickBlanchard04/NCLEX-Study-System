@@ -3,6 +3,7 @@ export const questionEngineVersions = {
   itemMetadata: '2026-06-22-engine-item-v1',
   diagnosis: '2026-06-22-diagnosis-v1',
   readiness: '2026-06-22-readiness-v1',
+  selection: '2026-06-23-adaptive-selection-v1',
   misconceptionVocabulary: '2026-06-22-priority-delegation-v1',
   remediationTransfer: '2026-06-22-remediation-transfer-v1',
 } as const
@@ -40,6 +41,10 @@ export type ReadinessExclusionReason =
   | 'unknown_scoring'
 
 export type EngineWarningCode =
+  | 'source_status_defaulted'
+  | 'review_status_defaulted'
+  | 'unknown_source_status'
+  | 'unknown_review_status'
   | 'missing_clinical_judgment_step'
   | 'clinical_judgment_step_inferred'
   | 'missing_nursing_process_step'
@@ -143,27 +148,226 @@ export type DiagnosisSource =
   | 'unknown'
 
 export type DiagnosisEvidenceLevel =
+  | 'insufficient_evidence'
   | 'attempt_signal'
   | 'practice_hypothesis'
+  | 'practice_confirmed'
   | 'confirmed_practice_weak_area'
   | 'readiness_supported'
 
+export type PerformanceBand =
+  | 'full'
+  | 'strong_partial'
+  | 'mixed_partial'
+  | 'weak_partial'
+  | 'incorrect'
+  | 'unscored'
+
+export type ConfidenceSignal =
+  | 'calibrated'
+  | 'fragile_correct'
+  | 'ordinary_miss'
+  | 'overconfident_miss'
+  | 'overconfident_partial'
+  | 'unscored'
+
+export type LearnerCopyCertainty =
+  | 'possible'
+  | 'likely'
+  | 'practice_confirmed'
+  | 'trusted_evidence'
+  | 'insufficient'
+
+export type WeakAreaDimensionType =
+  | 'client_need'
+  | 'subcategory'
+  | 'clinical_judgment_step'
+  | 'body_system'
+  | 'safety_flag'
+  | 'priority_framework'
+  | 'misconception_family'
+  | 'misconception_id'
+  | 'item_type'
+  | 'confidence_calibration'
+
+export type EvidenceScope = 'practice_only' | 'readiness_eligible' | 'mixed_separated'
+export type CalibrationTrend = 'improving' | 'stable' | 'declining' | 'insufficient_data'
+export type ExposureLevel = 'low' | 'moderate' | 'sufficient'
+
+export type RemediationStatus =
+  | 'assigned'
+  | 'viewed'
+  | 'completed_teaching'
+  | 'repair_attempted'
+  | 'same_item_repeated'
+  | 'same_case_practice_repaired'
+  | 'parallel_practice_repaired'
+  | 'trusted_repair_supported'
+  | 'officially_repaired'
+  | 'unresolved'
+  | 'blocked_official_repair'
+
+export type RemediationTeachingStatus = 'not_started' | 'viewed' | 'completed' | 'skipped'
+
+export type RemediationTransferDistance =
+  | 'same_item'
+  | 'same_case'
+  | 'parallel_item_same_family'
+  | 'trusted_parallel_item'
+  | 'delayed_recheck'
+
+export type RepairOutcome =
+  | 'not_attempted'
+  | 'view_only'
+  | 'teaching_completed_no_transfer'
+  | 'same_item_repeat'
+  | 'practice_repair_supported'
+  | 'trusted_repair_supported'
+  | 'official_repair'
+  | 'repair_failed'
+  | 'repair_blocked'
+
+export type RemediationTransferEvidenceLevel =
+  | 'none'
+  | 'engagement_only'
+  | 'same_item_recall'
+  | 'practice_transfer'
+  | 'trusted_transfer_supported'
+  | 'official_transfer'
+
+export type RepairBlockedReason =
+  | 'no_repair_item'
+  | 'repair_item_not_trusted'
+  | 'repair_item_source_needed'
+  | 'repair_item_not_reviewed'
+  | 'repair_item_revision_active'
+  | 'misconception_mismatch'
+  | 'confidence_not_improved'
+  | 'score_not_improved'
+  | 'same_item_repeat'
+  | 'coverage_not_readiness_eligible'
+  | 'insufficient_metadata'
+
+export type ReadinessSnapshotScope =
+  | 'practice_progress'
+  | 'official_readiness'
+  | 'mixed_separated'
+  | 'internal_qa_only'
+
+export type ReadinessReconstructionStatus =
+  | 'not_required'
+  | 'pending'
+  | 'passed'
+  | 'failed'
+  | 'blocked'
+
+export type ReadinessBlockedReason =
+  | 'insufficient_trusted_volume'
+  | 'untrusted_content'
+  | 'source_needed'
+  | 'not_reviewed'
+  | 'revision_active'
+  | 'missing_metadata'
+  | 'coverage_gap'
+  | 'client_need_spread'
+  | 'item_type_gap'
+  | 'safety_coverage_gap'
+  | 'confidence_mismatch'
+  | 'unresolved_safety_miss'
+  | 'repair_not_proven'
+  | 'claim_evidence_missing'
+  | 'reconstruction_failed'
+  | 'raw_accuracy_not_allowed'
+
+export interface WeakAreaDimension {
+  dimensionType: WeakAreaDimensionType
+  dimensionId: string
+}
+
 export type SelectionIntent =
+  | 'diagnose'
+  | 'repair'
+  | 'reinforce'
   | 'repair_misconception'
   | 'fill_coverage_gap'
+  | 'build_readiness_evidence'
   | 'build_exposure'
   | 'stabilize_confidence'
+  | 'reduce_fatigue'
+  | 'internal_qa_probe'
   | 'maintain_momentum'
   | 'no_candidate'
 
 export type SelectionReasonCode =
   | 'active_misconception_repair'
+  | 'active_safety_misconception'
+  | 'active_high_confidence_miss'
+  | 'mapped_misconception_repair_available'
+  | 'repair_required_not_proven'
   | 'weak_clinical_judgment_step'
+  | 'clinical_judgment_gap'
+  | 'client_need_gap'
+  | 'item_type_gap'
+  | 'safety_flag_gap'
   | 'low_exposure'
   | 'confidence_mismatch'
+  | 'overconfidence_recalibration'
+  | 'fragile_correct_reinforcement'
+  | 'calibration_recheck_due'
   | 'trusted_readiness_evidence'
+  | 'trusted_readiness_candidate'
+  | 'practice_only_candidate'
+  | 'internal_qa_candidate'
+  | 'insufficient_trusted_candidates'
+  | 'trust_gate_exclusion'
   | 'recent_repeat_penalty'
+  | 'recent_exact_repeat'
+  | 'dimension_overuse_penalty'
+  | 'high_load_fatigue_guardrail'
+  | 'difficulty_fit_pacing'
+  | 'unknown_misconception_probe'
+  | 'maintain_momentum'
   | 'no_safe_candidate'
+
+export type SelectionExclusionReason =
+  | ReadinessExclusionReason
+  | 'trust_gate_exclusion'
+  | 'recent_exact_repeat'
+  | 'fatigue_load_blocked'
+
+export interface SelectionTargetDimensions {
+  clientNeed: string | null
+  subcategory: string | null
+  clinicalJudgmentStep: string | null
+  nursingProcessStep: string | null
+  bodySystem: string | null
+  safetyFlag: string | null
+  misconceptionId: string | null
+  misconceptionFamily: string | null
+  itemType: string | null
+}
+
+export interface SelectionScoreComponents {
+  weaknessScore: number
+  confidenceMismatchScore: number
+  safetySeverityWeight: number
+  misconceptionRepairWeight: number
+  coverageGapWeight: number
+  lowExposureWeight: number
+  recencyGapWeight: number
+  readinessGateWeight: number
+  difficultyFitWeight: number
+  overusePenalty: number
+  fatiguePenalty: number
+  total: number
+}
+
+export interface CandidatePoolSummary {
+  candidateCount: number
+  eligibleCount: number
+  excludedCount: number
+  topExclusionReasons: SelectionExclusionReason[]
+}
 
 export interface EngineAnswerChoice {
   id: string
@@ -261,14 +465,25 @@ export interface AttemptDiagnosis {
   id: string
   attemptId: string
   itemId: string
+  selectedAnswer: string[]
+  confidence: 'low' | 'medium' | 'high'
   rawBinaryCorrect: boolean
   scoreResult: ScoreResult
+  performanceBand: PerformanceBand
+  isPartialCredit: boolean
   calibrationScore: number
+  confidenceSignal: ConfidenceSignal
+  confidenceMismatch: boolean
   likelyMisconceptionId: MisconceptionId
   misconceptionFamily: MisconceptionFamily
   misconceptionConfidence: number
   diagnosisSource: DiagnosisSource
   evidenceLevel: DiagnosisEvidenceLevel
+  learnerCopyCertainty: LearnerCopyCertainty
+  canShowAsDurableWeakArea: boolean
+  canCountTowardOfficialReadiness: boolean
+  weakAreaDimensions: WeakAreaDimension[]
+  weakAreaTags: string[]
   clinicalJudgmentStep: ClinicalJudgmentStep
   nursingProcessStep: NursingProcessStep
   clientNeed: string
@@ -292,45 +507,128 @@ export interface RemediationEvent {
   diagnosisId: string
   attemptId: string
   itemId: string
+  status: RemediationStatus
+  teachingStatus: RemediationTeachingStatus
   misconceptionId: MisconceptionId
   misconceptionFamily: MisconceptionFamily
   routeId: string
   routeLabel: string
   actionType: 'none' | 'reinforcement' | 'micro_lesson' | 'targeted_repair'
+  assignedAssetIds: string[]
+  assignedRepairItemIds: string[]
+  repairAvailable: boolean
   repairRequired: boolean
   repairCompleted: boolean
   repairSuccess: boolean
   officialRepairEligible: boolean
+  readinessRepairEligible: boolean
   blockedOfficialRepairReason?: ReadinessExclusionReason
+  blockedReasons: RepairBlockedReason[]
+  repairOutcome: RepairOutcome
+  transferDistance: RemediationTransferDistance | null
+  transferEvidenceLevel: RemediationTransferEvidenceLevel
+  repairItemId: string | null
+  repairAttemptId: string | null
+  repairItemTrustSnapshot: ItemTrustSnapshot | null
+  repairMisconceptionId: MisconceptionId | null
+  repairMisconceptionFamily: MisconceptionFamily | null
+  repairScore: number | null
+  repairConfidence: 'low' | 'medium' | 'high' | null
+  repairCalibrationScore: number | null
+  triggerConfidence: 'low' | 'medium' | 'high'
+  triggerCalibrationScore: number
+  triggerSafetySeverity: SafetySeverity
   nextActionCopy: string
   createdAt: string
+  updatedAt: string
+  remediationVersion: typeof questionEngineVersions.remediationTransfer
+}
+
+export interface RemediationTransferEvidence {
+  remediationEventId: string
+  triggerAttemptId: string
+  triggerDiagnosisId: string
+  triggerItemId: string
+  triggerMisconceptionId: MisconceptionId
+  triggerMisconceptionFamily: MisconceptionFamily
+  triggerSafetySeverity: SafetySeverity
+  triggerConfidence: 'low' | 'medium' | 'high'
+  triggerCalibrationScore: number
+  assignedRoute: string
+  assignedAssetIds: string[]
+  teachingStatus: RemediationTeachingStatus
+  repairItemId: string | null
+  repairAttemptId: string | null
+  repairItemTrustSnapshot: ItemTrustSnapshot | null
+  repairMisconceptionId: MisconceptionId | null
+  repairMisconceptionFamily: MisconceptionFamily | null
+  repairScore: number | null
+  repairConfidence: 'low' | 'medium' | 'high' | null
+  repairCalibrationScore: number | null
+  transferDistance: RemediationTransferDistance | null
+  readinessRepairEligible: boolean
+  repairSuccess: boolean
+  repairOutcome: RepairOutcome
+  blockedReasons: RepairBlockedReason[]
+  evidenceLevel: RemediationTransferEvidenceLevel
+  createdAt: string
+  updatedAt: string
+  remediationVersion: typeof questionEngineVersions.remediationTransfer
 }
 
 export interface MasteryDimensionStats {
   dimensionType: string
   dimensionId: string
+  evidenceScope: EvidenceScope
   attemptCount: number
+  practiceAttemptCount: number
+  trustedAttemptCount: number
   readinessAttemptCount: number
+  scoreTotal: number
+  maxScoreTotal: number
+  avgScore: number
   accuracy: number
   readinessAccuracy: number
   avgCalibrationScore: number
+  calibrationTrend: CalibrationTrend
   highConfidenceMissCount: number
   lowConfidenceCorrectCount: number
   confidenceMismatchScore: number
   remediationAssignedCount: number
   remediationRepairedCount: number
+  activeRepairCount: number
+  unresolvedHighSeverityCount: number
+  practiceSignalCount: number
+  trustedSignalCount: number
+  untrustedSignalCount: number
+  recurrenceCount: number
+  exposureLevel: ExposureLevel
+  evidenceLevel: DiagnosisEvidenceLevel
+  selectionWeight: number
+  readinessWeight: number
+  activeExclusionReasons: ReadinessExclusionReason[]
   masteryScore: number
   weaknessScore: number
   masteryLevel: 'fragile' | 'developing' | 'strong'
+  firstAttemptAt: string | null
   latestAttemptAt: string | null
+  latestTrustedAttemptAt: string | null
 }
 
 export interface LearnerMasteryVector {
   dimensions: Record<string, MasteryDimensionStats>
   summary: {
     attemptCount: number
+    practiceAttemptCount: number
+    trustedAttemptCount: number
     readinessAttemptCount: number
     highConfidenceMissCount: number
+    lowConfidenceCorrectCount: number
+    confidenceMismatchCount: number
+    activeReadinessBlockerCount: number
+    activeExclusionReasons: ReadinessExclusionReason[]
+    recurringWeakAreaDimensionIds: string[]
+    lowExposureDimensionIds: string[]
     strongestDimensionId?: string
     weakestDimensionId?: string
   }
@@ -341,17 +639,30 @@ export interface SelectionDecision {
   selectedItemId: string | null
   selectionIntent: SelectionIntent
   primaryReasonCode: SelectionReasonCode
+  secondaryReasonCodes: SelectionReasonCode[]
   trustMode: 'practice' | 'readiness'
   learnerExplanationKey: string
+  targetDimensions: SelectionTargetDimensions
+  candidatePoolSummary: CandidatePoolSummary
   candidateCount: number
+  eligibleCandidateCount: number
   excludedCandidateCount: number
+  exclusionCounts: Partial<Record<SelectionExclusionReason, number>>
   scoreByItemId: Record<string, number>
+  scoreComponentsByItemId: Record<string, SelectionScoreComponents>
+  selectionVersion: typeof questionEngineVersions.selection
 }
 
 export interface CoverageGap {
   dimensionType: string
   dimensionId: string
-  gapType: 'low_exposure' | 'weak_mastery' | 'confidence_mismatch' | 'unrepaired_safety_miss' | 'untrusted_evidence_only'
+  gapType:
+    | 'low_exposure'
+    | 'weak_mastery'
+    | 'confidence_mismatch'
+    | 'unrepaired_safety_miss'
+    | 'untrusted_evidence_only'
+    | 'stale_evidence'
   severity: SafetySeverity
   trustedAttemptCount: number
   practiceAttemptCount: number
@@ -361,18 +672,98 @@ export interface CoverageGap {
   candidateRepairItemIds: string[]
 }
 
+export interface ReadinessContentTrustSummary {
+  trustedAttemptCount: number
+  practiceAttemptCount: number
+  excludedAttemptCount: number
+  trustedItemCount: number
+  practiceItemCount: number
+  sourceCheckedAttemptCount: number
+  reviewedAttemptCount: number
+  readinessTrustedAttemptCount: number
+}
+
+export interface ReadinessCoverageSummary {
+  trustedAttemptCount: number
+  practiceAttemptCount: number
+  clientNeedCoverage: Record<string, number>
+  clinicalJudgmentCoverage: Record<string, number>
+  safetyFlagCoverage: Record<string, number>
+  itemTypeCoverage: Record<string, number>
+  misconceptionRepairCoverage: {
+    officialRepairCount: number
+    practiceRepairCount: number
+    trustedRepairSupportedCount: number
+    unresolvedRepairCount: number
+  }
+}
+
+export interface ReadinessConfidenceCalibrationSummary {
+  avgTrustedCalibrationScore: number
+  normalizedTrustedCalibration: number
+  highConfidenceMissCount: number
+  lowConfidenceCorrectCount: number
+  confidenceMismatchCount: number
+  highRiskDimensionIds: string[]
+}
+
+export interface ReadinessSafetyRecoverySummary {
+  unrepairedSafetyMissCount: number
+  officialRepairCount: number
+  practiceRepairCount: number
+  safetyRecoveryScore: number
+}
+
+export interface ReadinessRemediationSummary {
+  assignedCount: number
+  engagementOnlyCount: number
+  practiceRepairCount: number
+  trustedRepairSupportedCount: number
+  officialRepairCount: number
+  unresolvedRepairCount: number
+}
+
+export interface ReadinessDimensionRisk {
+  dimensionType: string
+  dimensionId: string
+  score: number
+  reason: string
+}
+
 export interface ReadinessSnapshot {
   status: 'insufficient_evidence' | 'building' | 'approaching' | 'ready'
   readinessScore: number
+  readinessScoreAvailable: boolean
+  evidenceRequirementsMet: boolean
+  snapshotScope: ReadinessSnapshotScope
   practiceAccuracy: number
   readinessAccuracy: number
   trustedAttemptCount: number
   practiceAttemptCount: number
+  excludedAttemptCount: number
+  trustedItemCount: number
+  practiceItemCount: number
   highConfidenceMissCount: number
   coverageRequirementsMet: boolean
   clinicalJudgmentBalance: number
   coverageGaps: CoverageGap[]
   exclusionCounts: Partial<Record<ReadinessExclusionReason, number>>
+  contentTrustSummary: ReadinessContentTrustSummary
+  coverageSummary: ReadinessCoverageSummary
+  confidenceCalibrationSummary: ReadinessConfidenceCalibrationSummary
+  safetyRecoverySummary: ReadinessSafetyRecoverySummary
+  remediationSummary: ReadinessRemediationSummary
+  topWeakDimensions: ReadinessDimensionRisk[]
+  topConfidenceRisks: ReadinessDimensionRisk[]
+  claimEvidenceRecordIds: string[]
+  requiredClaimsPresent: boolean
+  reconstructionStatus: ReadinessReconstructionStatus
+  blockedReasons: ReadinessBlockedReason[]
+  learnerCopyKeys: string[]
+  schoolReportingAllowed: false
+  fallbackToOverallAccuracy: false
+  showPracticeProgressSeparately: boolean
+  calculationVersions: Record<string, string>
   nextBestAction: string
   generatedAt: string
   readinessVersion: typeof questionEngineVersions.readiness

@@ -6,7 +6,7 @@ import {
   normalizeQuestionToEngineItem,
   type QuestionEngineNormalizeOverrides,
 } from './normalize'
-import { buildReadinessSnapshot } from './readiness-snapshot'
+import { buildReadinessSnapshot, type ReadinessSnapshotOptions } from './readiness-snapshot'
 import { routeRemediation } from './remediation'
 import {
   calculateCalibrationScore,
@@ -23,12 +23,14 @@ import type {
 export * from './diagnosis'
 export * from './mastery'
 export * from './normalize'
+export * from './persistence'
 export * from './readiness-gate'
 export * from './readiness-snapshot'
 export * from './remediation'
 export * from './scoring'
 export * from './selection'
 export * from './types'
+export * from './validation'
 
 export function createAttemptEngineEvidence(
   question: Question,
@@ -74,9 +76,15 @@ export function createMaterialAttemptEngineEvidence(
 export function buildEngineLearningSnapshot(
   diagnoses: AttemptDiagnosis[],
   remediationEvents: RemediationEvent[] = [],
+  readinessOptions: ReadinessSnapshotOptions = {},
 ) {
   const masteryVector = buildLearnerMasteryVector(diagnoses, remediationEvents)
-  const readinessSnapshot = buildReadinessSnapshot(diagnoses, masteryVector, remediationEvents)
+  const readinessSnapshot = buildReadinessSnapshot(
+    diagnoses,
+    masteryVector,
+    remediationEvents,
+    readinessOptions,
+  )
 
   return {
     masteryVector,

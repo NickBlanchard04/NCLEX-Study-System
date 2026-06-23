@@ -23,7 +23,7 @@ export function getReadinessDecision(item: QuestionEngineItem): ReadinessDecisio
   if (item.sourceStatus === 'source_needed') reasons.push('source_needed')
   if (item.reviewStatus === 'not_reviewed') reasons.push('not_reviewed')
   if (item.generatedOnly) reasons.push('generated_only')
-  if (item.contentOrigin === 'user_uploaded_material' || item.contentOrigin === 'generated_material') {
+  if (item.contentOrigin === 'user_uploaded_material') {
     reasons.push('user_uploaded_material')
   }
   if (!item.hasExplicitClinicalJudgmentStep || !item.hasExplicitNursingProcessStep) {
