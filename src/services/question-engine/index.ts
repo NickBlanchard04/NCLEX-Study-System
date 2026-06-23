@@ -29,6 +29,7 @@ export * from './readiness-snapshot'
 export * from './remediation'
 export * from './scoring'
 export * from './selection'
+export * from './simulation-qa'
 export * from './types'
 export * from './validation'
 
