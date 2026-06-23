@@ -154,6 +154,7 @@ export function StatCard({
   tone = 'neutral',
   icon,
   trend,
+  statusLabel,
   progressValue,
   sparkline,
 }: {
@@ -163,6 +164,7 @@ export function StatCard({
   tone?: 'neutral' | 'success' | 'warning' | 'critical'
   icon?: React.ReactNode
   trend?: string
+  statusLabel?: string
   progressValue?: number
   sparkline?: number[]
 }) {
@@ -209,7 +211,7 @@ export function StatCard({
             <p className="mt-1 text-xs leading-5 text-sky-100/60">{detail}</p>
           </div>
         </div>
-        <span className={theme.chip}>{tone === 'neutral' ? 'Track' : tone}</span>
+        <span className={theme.chip}>{statusLabel ?? (tone === 'neutral' ? 'Track' : tone)}</span>
       </div>
       <div className="mt-5 flex items-end justify-between gap-3">
         <div>

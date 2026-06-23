@@ -213,6 +213,10 @@ function NclexAppShell() {
         .join(''),
     [profile.name],
   )
+  const showMobileQuickStudyCta =
+    location.pathname !== '/dashboard' &&
+    location.pathname !== '/quick-study' &&
+    !location.pathname.startsWith('/nurse-command-lab')
 
   if (location.pathname === '/') {
     return (
@@ -479,7 +483,7 @@ function NclexAppShell() {
         onOpenQuickStudy={() => navigate('/quick-study')}
       />
 
-      {location.pathname !== '/quick-study' && !location.pathname.startsWith('/nurse-command-lab') ? (
+      {showMobileQuickStudyCta ? (
         <button
           type="button"
           onClick={() => navigate('/quick-study')}

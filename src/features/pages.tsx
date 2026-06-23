@@ -690,16 +690,35 @@ export function DashboardPage() {
   const readinessTone = analytics.overallAccuracy >= 0.75 ? 'blue' : analytics.overallAccuracy >= 0.62 ? 'green' : 'amber'
   const planItems = [
     {
+      id: 'priority-drill',
       label: `15 Questions - ${shortCategoryLabel(weakestArea?.category ?? 'Pharmacology')}`,
       meta: '25 min',
     },
     {
+      id: 'secondary-drill',
       label: `10 Questions - ${shortCategoryLabel(dashboard.weakestCategories[1]?.category ?? 'Adult Health / Med-Surg')}`,
       meta: '15 min',
     },
-    { label: 'Review Incorrect', meta: '20 min' },
-    { label: 'Read: Fluid & Electrolytes', meta: '15 min' },
-    { label: 'Mini Exam (25 Qs)', meta: '25 min' },
+    { id: 'review-incorrect', label: 'Review Incorrect', meta: '20 min' },
+    { id: 'reading', label: 'Read: Fluid & Electrolytes', meta: '15 min' },
+    { id: 'mini-exam', label: 'Mini Exam (25 Qs)', meta: '25 min' },
+  ]
+  const planSections = [
+    {
+      title: 'Next',
+      description: 'Do this first.',
+      items: planItems.slice(0, 1),
+    },
+    {
+      title: 'Later Today',
+      description: 'Keep momentum after the priority drill.',
+      items: planItems.slice(1, 3),
+    },
+    {
+      title: 'If You Have Extra Time',
+      description: 'Helpful, but not required to win the day.',
+      items: planItems.slice(3),
+    },
   ]
   const completionTrend = analytics.dailyAccuracy.map((item) => item.completed || 0)
   const accuracyTrend = analytics.dailyAccuracy.map((item) => Math.round(item.accuracy * 100) || 0)
@@ -725,6 +744,28 @@ export function DashboardPage() {
     : materialsReadyCount
       ? 'Convert your uploaded material into active recall'
       : 'Complete one Quick Study session to generate fresh signal'
+  const secondaryWeakArea = dashboard.weakestCategories[1]?.category
+  const performanceTakeaway = weakestArea
+    ? `Accuracy dipped after ${shortCategoryLabel(secondaryWeakArea ?? weakestArea.category)} questions. ${shortCategoryLabel(weakestArea.category)} is still the priority.`
+    : 'Accuracy is steady. Complete one focused session today so the trend has fresh signal.'
+  const readinessStatTone = readinessTone === 'amber' ? 'warning' : 'success'
+  const planContextMetrics = [
+    {
+      label: 'Exam window',
+      value: `${daysUntilExam} days`,
+      detail: dashboardCopy.examLabel,
+    },
+    {
+      label: 'Readiness',
+      value: readiness,
+      detail: `${Math.round(analytics.overallAccuracy * 100)}% overall accuracy`,
+    },
+    {
+      label: 'Materials',
+      value: `${materialsReadyCount}`,
+      detail: materialsNeedingAttention ? `${materialsNeedingAttention} need attention` : 'Ready to review',
+    },
+  ]
 
   return (
     <PageStack>
@@ -748,7 +789,7 @@ export function DashboardPage() {
       />
 
       <FocusPanel>
-        <div className="grid gap-5 bg-[linear-gradient(135deg,#003b66_0%,#12375a_100%)] px-5 py-5 text-white md:px-6 lg:grid-cols-[minmax(0,1fr)_260px]">
+        <div className="grid gap-5 bg-[linear-gradient(135deg,#003b66_0%,#12375a_100%)] px-5 py-5 text-white md:px-6 lg:grid-cols-[minmax(0,1fr)_240px]">
           <div>
             <p className="text-sm font-semibold text-sky-100/85">Today's next action</p>
             <h3 className="mt-3 font-serif text-3xl leading-tight md:text-[2.15rem]">
@@ -758,76 +799,61 @@ export function DashboardPage() {
               {recommendationBody}
             </p>
           </div>
-          <div className="grid content-start gap-3 rounded-2xl border border-white/15 bg-white/10 p-4">
-            <div>
-              <p className="text-xs font-semibold text-sky-100/70">Exam</p>
-              <p className="mt-1 font-semibold">{dashboardCopy.examLabel}</p>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-sky-100/70">Time today</p>
-              <p className="mt-1 font-semibold">{formatMinutes(todayMinutes)}</p>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-sky-100/70">Target date</p>
-              <p className="mt-1 font-semibold">{profile.examDate}</p>
-            </div>
+          <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-100/70">Priority session</p>
+            <p className="mt-2 text-2xl font-black">{Math.max(0, dashboard.dailyGoal - dashboard.todayCompleted)}</p>
+            <p className="text-sm font-semibold text-sky-100/75">questions left for today's goal</p>
+            <button
+              type="button"
+              onClick={() => {
+                startQuickStudy(weakestArea?.category)
+                navigate('/quick-study')
+              }}
+              className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-black text-[#063257] shadow-[0_18px_34px_rgba(0,0,0,0.22)] transition hover:-translate-y-0.5"
+            >
+              Start drill
+              <ArrowRight className="h-4 w-4" />
+            </button>
           </div>
         </div>
       </FocusPanel>
 
       <div className="grid gap-5 md:grid-cols-3">
         <StatCard
-          label="Current Streak"
-          value={`${dashboard.streak} days`}
-          detail="Keep the habit alive."
-          trend="+2 days"
+          label="Today's Progress"
+          value={`${dashboard.todayCompleted}/${dashboard.dailyGoal}`}
+          detail="questions completed"
+          trend={`${Math.round(todayGoalProgress * 100)}% complete · ${formatMinutes(todayMinutes)} today`}
           tone="success"
-          icon={<Flame className="h-5 w-5" />}
-          sparkline={completionTrend}
-        />
-        <StatCard
-          label="Study Goal"
-          value={`${dashboard.todayCompleted} questions`}
-          detail={`of ${dashboard.dailyGoal} today`}
-          trend={`${Math.round(todayGoalProgress * 100)}% complete`}
-          progressValue={todayGoalProgress}
+          statusLabel="Today"
           icon={<Goal className="h-5 w-5" />}
+          progressValue={todayGoalProgress}
+          sparkline={completionTrend}
         />
         <StatCard
           label="Accuracy"
           value={`${Math.round(dashboard.recentAccuracy * 100)}%`}
-          detail="Across your most recent set."
+          detail="most recent set"
           trend={dashboard.recentAccuracy >= 0.75 ? '+6% this week' : 'Focus on stability'}
           tone={dashboard.recentAccuracy >= 0.75 ? 'success' : 'warning'}
+          statusLabel={dashboard.recentAccuracy >= 0.75 ? 'On track' : 'Focus'}
           icon={<CheckCircle2 className="h-5 w-5" />}
           sparkline={accuracyTrend}
+        />
+        <StatCard
+          label="Streak / Readiness"
+          value={`${dashboard.streak} days`}
+          detail={`${readiness} readiness`}
+          trend={`Exam in ${daysUntilExam} days`}
+          tone={readinessStatTone}
+          statusLabel={readiness}
+          icon={<Flame className="h-5 w-5" />}
+          progressValue={analytics.overallAccuracy}
+          sparkline={completionTrend}
         />
       </div>
 
       <DetailGrid className="xl:grid-cols-[1.12fr_0.88fr]">
-        <Surface>
-          <SectionHeading
-            title="Recent performance"
-            description="One trend is enough here: accuracy over the last seven days."
-          />
-          <div className="mt-5 h-[280px] min-h-[280px] min-w-0">
-            <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 1, height: 1 }} minWidth={0}>
-              <AreaChart data={analytics.dailyAccuracy}>
-                <defs>
-                  <linearGradient id="accuracyFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#2A7DE1" stopOpacity={0.22} />
-                    <stop offset="100%" stopColor="#2A7DE1" stopOpacity={0.02} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid vertical={false} stroke="#e5edf5" />
-                <XAxis dataKey="day" tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis tickFormatter={(value) => `${Math.round(value * 100)}%`} tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
-                <Tooltip formatter={percentTooltip} />
-                <Area type="monotone" dataKey="accuracy" stroke="#2A7DE1" fill="url(#accuracyFill)" strokeWidth={3} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </Surface>
         <Surface>
           <div className="flex items-center justify-between gap-4">
             <div>
@@ -838,15 +864,46 @@ export function DashboardPage() {
             </div>
             <span className="nclex-chip nclex-chip-success">{completedPlanCount} / {planItems.length}</span>
           </div>
-          <div className="mt-5 space-y-1">
-            {planItems.map((item, index) => (
-              <ChecklistItem
-                key={item.label}
-                label={item.label}
-                meta={item.meta}
-                completed={index < completedPlanCount}
-              />
+          <div className="mt-5 grid gap-4">
+            {planSections.map((section) => (
+              <div key={section.title} className="rounded-2xl border border-cyan-200/15 bg-sky-300/[0.055] p-4">
+                <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                  <p className="text-sm font-black text-white">{section.title}</p>
+                  <p className="text-xs font-semibold text-sky-100/55">{section.description}</p>
+                </div>
+                <div className="space-y-1">
+                  {section.items.map((item) => {
+                    const planIndex = planItems.findIndex((planItem) => planItem.id === item.id)
+                    return (
+                      <ChecklistItem
+                        key={item.id}
+                        label={item.label}
+                        meta={item.meta}
+                        completed={planIndex > -1 && planIndex < completedPlanCount}
+                      />
+                    )
+                  })}
+                </div>
+              </div>
             ))}
+          </div>
+          <div className="mt-5 rounded-2xl border border-cyan-200/15 bg-[#03101f]/55 p-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-black text-white">Plan context</p>
+                <p className="text-xs font-semibold text-sky-100/55">{activeExamTrack.title}</p>
+              </div>
+              <p className="text-xs font-semibold text-sky-100/55">Target date: {profile.examDate}</p>
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              {planContextMetrics.map((metric) => (
+                <div key={metric.label} className="rounded-xl border border-cyan-200/12 bg-sky-300/[0.06] p-3">
+                  <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-sky-100/50">{metric.label}</p>
+                  <p className="mt-2 text-lg font-black text-white">{metric.value}</p>
+                  <p className="mt-1 text-xs font-semibold text-sky-100/55">{metric.detail}</p>
+                </div>
+              ))}
+            </div>
           </div>
           <button
             type="button"
@@ -857,13 +914,10 @@ export function DashboardPage() {
               <ArrowRight className="h-4 w-4" />
             </button>
           </Surface>
-      </DetailGrid>
-
-      <DetailGrid>
         <Surface>
           <SectionHeading
             title="Weak areas"
-            description="Keep the remediation list short enough to act on."
+            description="Each weak area has a direct action, not just a warning."
             action={
               <Link to="/weak-areas" className="text-sm font-semibold text-[var(--nclex-blue)]">
                 See all
@@ -871,59 +925,82 @@ export function DashboardPage() {
             }
           />
           <div className="mt-5 space-y-5">
-            {dashboard.weakestCategories.slice(0, 3).map((area) => (
-              <div key={area.category}>
-                <div className="mb-2 flex items-center justify-between gap-4">
-                  <div>
-                    <p className="font-semibold text-[var(--nclex-text)]">{shortCategoryLabel(area.category)}</p>
-                    <p className="text-sm text-[var(--nclex-text-muted)]">{area.suggestedAction}</p>
+            {dashboard.weakestCategories.slice(0, 3).map((area, index) => {
+              const actionVerb = index === 0 ? 'Train' : index === 1 ? 'Review' : 'Practice'
+              return (
+                <div key={area.category} className="rounded-2xl border border-cyan-200/15 bg-sky-300/[0.055] p-4">
+                  <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-[var(--nclex-text)]">{shortCategoryLabel(area.category)}</p>
+                      <p className="text-sm text-[var(--nclex-text-muted)]">{area.suggestedAction}</p>
+                    </div>
+                    <MasteryPill mastery={area.masteryLevel} />
                   </div>
-                  <MasteryPill mastery={area.masteryLevel} />
-                </div>
-                <ProgressBar
-                  value={area.accuracy}
-                  tone={area.masteryLevel === 'strong' ? 'green' : area.masteryLevel === 'developing' ? 'amber' : 'red'}
-                />
-              </div>
-            ))}
-          </div>
-        </Surface>
-
-        <Surface>
-          <SectionHeading title="Plan context" description="Exam timing, readiness, and material status in one place." />
-          <div className="mt-5 grid gap-4">
-            <div>
-              <div className="flex items-center justify-between gap-4">
-                <p className="font-semibold text-[var(--nclex-text)]">{activeExamTrack.title}</p>
-                <span className="nclex-chip nclex-chip-info">{daysUntilExam} days</span>
-              </div>
-              <p className="mt-1 text-sm text-[var(--nclex-text-muted)]">{activeExamTrack.subtitle}</p>
-              <div className="mt-4">
-                <ProgressBar value={Math.min(1, Math.max(0.08, 1 - daysUntilExam / 90))} />
-              </div>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl bg-[#f7fbfd] p-4">
-                <p className="text-sm font-semibold text-[var(--nclex-text)]">Readiness</p>
-                <p className="mt-1 text-2xl font-semibold text-[var(--nclex-text)]">{readiness}</p>
-                <div className="mt-3">
                   <ProgressBar
-                    value={analytics.overallAccuracy}
-                    tone={readinessTone === 'amber' ? 'amber' : readinessTone === 'green' ? 'green' : 'blue'}
+                    value={area.accuracy}
+                    tone={area.masteryLevel === 'strong' ? 'green' : area.masteryLevel === 'developing' ? 'amber' : 'red'}
                   />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      startQuickStudy(area.category)
+                      navigate('/quick-study')
+                    }}
+                    className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-cyan-200/25 bg-cyan-300/10 px-4 py-2.5 text-sm font-black text-cyan-100 transition hover:border-cyan-200/50 hover:bg-cyan-300/16"
+                  >
+                    {actionVerb} {shortCategoryLabel(area.category)}
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
                 </div>
-              </div>
-              <div className="rounded-2xl bg-[#f7fbfd] p-4">
-                <p className="text-sm font-semibold text-[var(--nclex-text)]">Materials</p>
-                <p className="mt-1 text-2xl font-semibold text-[var(--nclex-text)]">{materialsReadyCount}</p>
-                <p className="mt-1 text-sm text-[var(--nclex-text-muted)]">
-                  {materialsNeedingAttention ? `${materialsNeedingAttention} need attention` : 'Ready to review'}
-                </p>
-              </div>
-            </div>
+              )
+            })}
           </div>
         </Surface>
       </DetailGrid>
+
+      <Surface>
+        <SectionHeading
+          title="Performance trend"
+          description="One clean chart, with the takeaway written before the graph."
+        />
+        <div className="mt-5 rounded-2xl border border-cyan-200/15 bg-cyan-300/10 p-4">
+          <div className="flex items-start gap-3">
+            <TrendingDown className="mt-0.5 h-5 w-5 shrink-0 text-cyan-200" />
+            <p className="text-sm font-semibold leading-6 text-sky-100/78">{performanceTakeaway}</p>
+          </div>
+        </div>
+        <div className="mt-5 h-[280px] min-h-[280px] min-w-0">
+          <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 1, height: 1 }} minWidth={0}>
+            <AreaChart data={analytics.dailyAccuracy}>
+              <defs>
+                <linearGradient id="accuracyFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#38bdf8" stopOpacity={0.28} />
+                  <stop offset="100%" stopColor="#38bdf8" stopOpacity={0.03} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid vertical={false} stroke="rgba(125,211,252,0.2)" />
+              <XAxis dataKey="day" tick={{ fill: '#bae6fd', fontSize: 12 }} axisLine={false} tickLine={false} />
+              <YAxis tickFormatter={(value) => `${Math.round(value * 100)}%`} tick={{ fill: '#bae6fd', fontSize: 12 }} axisLine={false} tickLine={false} />
+              <Tooltip formatter={percentTooltip} />
+              <Area type="monotone" dataKey="accuracy" stroke="#38bdf8" fill="url(#accuracyFill)" strokeWidth={3} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-2xl border border-cyan-200/15 bg-sky-300/[0.055] p-4">
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-sky-100/50">Time today</p>
+            <p className="mt-2 text-xl font-black text-white">{formatMinutes(todayMinutes)}</p>
+          </div>
+          <div className="rounded-2xl border border-cyan-200/15 bg-sky-300/[0.055] p-4">
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-sky-100/50">Track</p>
+            <p className="mt-2 text-xl font-black text-white">{activeExamTrack.shortName}</p>
+          </div>
+          <div className="rounded-2xl border border-cyan-200/15 bg-sky-300/[0.055] p-4">
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-sky-100/50">Focus</p>
+            <p className="mt-2 text-xl font-black text-white">{shortCategoryLabel(weakestArea?.category ?? 'Pharmacology')}</p>
+          </div>
+        </div>
+      </Surface>
     </PageStack>
   )
 }
