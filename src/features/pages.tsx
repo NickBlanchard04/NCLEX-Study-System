@@ -3169,17 +3169,17 @@ export function StudyPlanPage() {
     {
       title: `Priority drill: ${shortCategoryLabel(priorityArea)}`,
       detail: `${Math.max(5, Math.min(profile.dailyGoal, 15))} focused questions before anything else.`,
-      meta: 'Next',
+      meta: 'Next Action',
     },
     {
       title: 'Review the misses',
       detail: plan.dailyFocus[1] ?? 'Use rationales and notes to repair the decision pattern.',
-      meta: 'Later today',
+      meta: 'Later Today',
     },
     {
       title: 'Lock one recall set',
       detail: plan.dailyFocus[2] ?? 'Run a short flashcard pass for the next weak category.',
-      meta: 'Extra',
+      meta: 'Extra Time',
     },
   ]
   const thisWeekTasks = plan.weeklyGoals.slice(0, 4)
@@ -3207,51 +3207,59 @@ export function StudyPlanPage() {
       />
 
       <FocusPanel>
-        <div className="grid gap-5 bg-[linear-gradient(135deg,#003b66_0%,#12375a_100%)] px-5 py-5 text-white md:px-6 lg:grid-cols-[minmax(0,1fr)_260px]">
-          <div>
-            <p className="text-sm font-semibold text-sky-100/85">Today</p>
-            <h3 className="mt-3 font-serif text-3xl leading-tight md:text-[2.15rem]">
-              Start with {shortCategoryLabel(priorityArea)}
-            </h3>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-sky-100/82">
-              Keep the day narrow: finish the priority drill, review the misses, then decide whether extra work is worth it.
-            </p>
-            <div className="mt-5 grid gap-3">
-              {todayTasks.map((task) => (
-                <div key={task.title} className="rounded-2xl border border-white/12 bg-white/[0.07] p-4">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0">
-                      <p className="font-black text-white">{task.title}</p>
-                      <p className="mt-1 text-sm leading-6 text-sky-100/68">{task.detail}</p>
-                    </div>
-                    <span className="shrink-0 rounded-full border border-cyan-200/25 bg-cyan-300/10 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-cyan-100">
-                      {task.meta}
-                    </span>
-                  </div>
+        <div className="bg-[linear-gradient(135deg,#003b66_0%,#12375a_100%)] px-5 py-5 text-white md:px-6">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-3xl">
+              <p className="text-sm font-semibold text-sky-100/85">Next Action</p>
+              <h3 className="mt-3 font-serif text-3xl leading-tight md:text-[2.15rem]">
+                Start with {shortCategoryLabel(priorityArea)}
+              </h3>
+              <p className="mt-3 max-w-3xl text-sm leading-7 text-sky-100/82">
+                Run the priority drill first. Everything else on the plan stays secondary until this repair set is complete.
+              </p>
+            </div>
+            <div className="grid grid-cols-3 gap-2 lg:w-[22rem]">
+              {[
+                { label: 'Questions', value: `${Math.max(5, Math.min(profile.dailyGoal, 15))}` },
+                { label: 'Completed', value: `${todayCompleted}` },
+                { label: 'Exam', value: `${daysUntilExam}d` },
+              ].map((item) => (
+                <div key={item.label} className="rounded-2xl border border-white/15 bg-white/10 px-3 py-3 text-center">
+                  <p className="text-lg font-black text-white">{item.value}</p>
+                  <p className="mt-1 text-[0.68rem] font-black uppercase tracking-[0.12em] text-sky-100/62">{item.label}</p>
                 </div>
               ))}
             </div>
           </div>
-          <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
-            <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-100/70">Today progress</p>
-            <p className="mt-2 text-3xl font-black">{todayCompleted}/{profile.dailyGoal}</p>
-            <p className="text-sm font-semibold text-sky-100/75">questions completed</p>
-            <div className="mt-4">
-              <ProgressBar value={todayProgress} tone="green" />
-            </div>
-            <div className="mt-5 grid gap-3 text-sm">
-              <div className="flex items-center justify-between gap-3">
-                <span className="font-semibold text-sky-100/65">Intensity</span>
-                <span className="font-black capitalize">{profile.studyIntensity}</span>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span className="font-semibold text-sky-100/65">Exam window</span>
-                <span className="font-black">{daysUntilExam} days</span>
-              </div>
-            </div>
-          </div>
         </div>
       </FocusPanel>
+
+      <Surface>
+        <SectionHeading
+          title="Today"
+          description="A small sequence: do the repair set, review what broke, then decide whether to keep going."
+        />
+        <div className="mt-5 grid gap-3">
+          {todayTasks.map((task, index) => (
+            <div key={task.title} className="rounded-2xl border border-cyan-200/15 bg-sky-300/[0.055] px-4 py-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex min-w-0 gap-3">
+                  <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-cyan-300/12 text-sm font-black text-cyan-100">
+                    {index + 1}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="font-black text-white">{task.title}</p>
+                    <p className="mt-1 text-sm leading-6 text-sky-100/70">{task.detail}</p>
+                  </div>
+                </div>
+                <span className="w-fit shrink-0 rounded-full border border-cyan-200/25 bg-cyan-300/10 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-cyan-100">
+                  {task.meta}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Surface>
 
       <DetailGrid>
         <Surface>
@@ -3291,6 +3299,40 @@ export function StudyPlanPage() {
           </ul>
         </Surface>
       </DetailGrid>
+
+      <Surface>
+        <SectionHeading
+          title="Progress"
+          description="A quick read on today and the exam window. Settings stay below the main plan."
+        />
+        <div className="mt-5 grid gap-4 md:grid-cols-[minmax(0,1fr)_0.9fr]">
+          <div className="rounded-2xl border border-emerald-300/20 bg-emerald-300/[0.055] p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-100/70">Today progress</p>
+                <p className="mt-2 text-3xl font-black text-white">{todayCompleted}/{profile.dailyGoal}</p>
+                <p className="text-sm font-semibold text-sky-100/70">questions completed</p>
+              </div>
+              <span className="rounded-full border border-emerald-200/25 bg-emerald-300/10 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-emerald-100">
+                {Math.round(todayProgress * 100)}%
+              </span>
+            </div>
+            <div className="mt-4">
+              <ProgressBar value={todayProgress} tone="green" />
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-1">
+            <div className="rounded-2xl border border-cyan-200/15 bg-sky-300/[0.055] p-4">
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-100/58">Intensity</p>
+              <p className="mt-2 text-xl font-black capitalize text-white">{profile.studyIntensity}</p>
+            </div>
+            <div className="rounded-2xl border border-amber-200/20 bg-amber-300/[0.07] p-4">
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-100/62">Exam window</p>
+              <p className="mt-2 text-xl font-black text-white">{daysUntilExam} days</p>
+            </div>
+          </div>
+        </div>
+      </Surface>
 
       <Surface>
         <SectionHeading
