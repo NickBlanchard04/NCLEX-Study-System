@@ -1702,7 +1702,7 @@ export function PerformanceAnalyticsPage() {
               {performanceTakeaway}
             </h3>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-sky-100/82">
-              This page now favors action over dashboard noise: one trend, three signals, and the details that explain where to train next.
+              This page now favors action over dashboard noise. Readiness is practice evidence for study planning, not an official exam prediction.
             </p>
           </div>
           <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
@@ -1728,7 +1728,7 @@ export function PerformanceAnalyticsPage() {
           statusLabel={readiness.practiceAccuracy >= 0.75 ? 'On track' : 'Focus'}
         />
         <StatCard
-          label="Trusted evidence"
+          label="Trusted practice evidence"
           value={`${readiness.trustedAttemptCount}`}
           detail={`${readiness.practiceAttemptCount} practice attempts available`}
           tone={readiness.status === 'ready' ? 'success' : readiness.status === 'approaching' ? 'neutral' : 'warning'}

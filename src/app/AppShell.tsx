@@ -781,6 +781,22 @@ function BrandLockup({ compact = false }: { compact?: boolean }) {
 }
 
 function SupportSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const supportItems = [
+    {
+      title: 'Support',
+      body: 'Report issues, access problems, or content concerns through the project support tracker before inviting a wider user group.',
+      link: 'https://github.com/NickBlanchard04/NCLEX-Study-System/issues',
+    },
+    {
+      title: 'Privacy basics',
+      body: 'Do not upload PHI or real patient identifiers. Demo data stays on this device; signed-in study data syncs to your account-backed Supabase project.',
+    },
+    {
+      title: 'Terms basics',
+      body: 'This is an educational practice tool. It does not provide medical advice, licensure guarantees, or official exam readiness certification.',
+    },
+  ]
+
   return (
     <AnimatePresence>
       {open ? (
@@ -788,14 +804,14 @@ function SupportSheet({ open, onClose }: { open: boolean; onClose: () => void })
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-slate-950/35"
+          className="fixed inset-0 z-50 bg-slate-950/70"
           onClick={onClose}
         >
           <motion.div
             initial={{ opacity: 0, y: 18, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.98 }}
-            className="absolute inset-x-4 top-20 mx-auto max-w-[460px] rounded-[24px] border border-sky-300/24 bg-[#071d34]/95 p-6 shadow-[0_24px_60px_rgba(0,0,0,0.34)] backdrop-blur"
+            className="absolute inset-x-4 top-20 mx-auto max-h-[calc(100vh-6rem)] max-w-[460px] overflow-y-auto rounded-[24px] border border-sky-300/24 bg-[#071d34] p-6 shadow-[0_24px_60px_rgba(0,0,0,0.42)] backdrop-blur"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-4">
@@ -829,6 +845,29 @@ function SupportSheet({ open, onClose }: { open: boolean; onClose: () => void })
                   className="rounded-2xl border border-sky-300/20 bg-white/[0.04] px-4 py-3 text-sm text-sky-100/76"
                 >
                   {item}
+                </div>
+              ))}
+            </div>
+            <div className="mt-5 grid gap-3 border-t border-sky-300/18 pt-5">
+              {supportItems.map((item) => (
+                <div key={item.title} className="rounded-2xl border border-sky-300/20 bg-white/[0.04] px-4 py-3">
+                  <div className="flex items-start gap-3">
+                    <FileText className="mt-0.5 h-4 w-4 shrink-0 text-cyan-200" />
+                    <div>
+                      <p className="text-sm font-black text-white">{item.title}</p>
+                      <p className="mt-1 text-sm leading-6 text-sky-100/72">{item.body}</p>
+                      {item.link ? (
+                        <a
+                          href={item.link}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-2 inline-flex text-sm font-black text-cyan-200"
+                        >
+                          Open support
+                        </a>
+                      ) : null}
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
