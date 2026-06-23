@@ -26,7 +26,7 @@ import {
   Trophy,
   X,
 } from 'lucide-react'
-import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState, type ComponentType, type ReactNode } from 'react'
 import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { clsx } from 'clsx'
 import { PwaInstallPrompt } from '../features/PwaInstallPrompt'
@@ -52,7 +52,23 @@ import { getExamTrack } from '../data/exam-tracks'
 import { useStudySystemStore } from './store'
 import { AuthGate } from './AuthGate'
 
-const mainNavigation = [
+type NavigationItem = {
+  label: string
+  icon: ComponentType<{ className?: string }>
+  to: string
+  emphasis?: boolean
+  activePaths?: string[]
+}
+
+const nurseLabRoutePaths = [
+  '/nurse-command-lab',
+  '/shift-command',
+  '/hospitalvania',
+  '/nurse-tycoon',
+  '/clinical-simulator',
+]
+
+const mainNavigation: NavigationItem[] = [
   { label: 'Home', icon: LayoutGrid, to: '/' },
   { label: 'Dashboard', icon: LayoutGrid, to: '/dashboard' },
   { label: 'Exam Prep', icon: Target, to: '/exam-prep' },
@@ -60,11 +76,7 @@ const mainNavigation = [
   { label: 'Question Bank', icon: ClipboardList, to: '/practice-questions' },
   { label: 'Quizzes', icon: Flashlight, to: '/quick-study' },
   { label: 'Exams', icon: Target, to: '/test-mode' },
-  { label: 'Nurse Lab', icon: Gamepad2, to: '/nurse-command-lab' },
-  { label: 'Shift Game', icon: HeartPulse, to: '/shift-command' },
-  { label: 'Hospitalvania', icon: Gamepad2, to: '/hospitalvania' },
-  { label: 'Tycoon', icon: BadgeDollarSign, to: '/nurse-tycoon' },
-  { label: 'Simulator', icon: Brain, to: '/clinical-simulator' },
+  { label: 'Nurse Lab', icon: Gamepad2, to: '/nurse-command-lab', activePaths: nurseLabRoutePaths },
   { label: 'Performance', icon: Trophy, to: '/performance-analytics' },
   { label: 'Notes', icon: NotebookPen, to: '/notes' },
   { label: 'My Materials', icon: FolderOpen, to: '/my-materials' },
@@ -73,16 +85,28 @@ const mainNavigation = [
   { label: 'Resources', icon: Brain, to: '/strategy-training' },
 ]
 
-const secondaryNavigation = [{ label: 'Settings', icon: Settings, to: '/settings' }]
+const labNavigation: NavigationItem[] = [
+  { label: 'Shift Game', icon: HeartPulse, to: '/shift-command' },
+  { label: 'Hospitalvania', icon: Gamepad2, to: '/hospitalvania' },
+  { label: 'Tycoon', icon: BadgeDollarSign, to: '/nurse-tycoon' },
+  { label: 'Simulator', icon: Brain, to: '/clinical-simulator' },
+]
 
-const mobilePrimaryNavigation = [
+const secondaryNavigation: NavigationItem[] = [{ label: 'Settings', icon: Settings, to: '/settings' }]
+
+const mobilePrimaryNavigation: NavigationItem[] = [
   { label: 'Home', icon: LayoutGrid, to: '/' },
   { label: 'Bank', icon: ClipboardList, to: '/practice-questions' },
   { label: 'Quiz', icon: Flashlight, to: '/quick-study', emphasis: true },
   { label: 'Cards', icon: SquareStack, to: '/flashcards' },
 ]
 
-const allNavigation = [...mainNavigation, ...secondaryNavigation]
+const pageMetaNavigation = [...labNavigation, ...mainNavigation, ...secondaryNavigation]
+
+const isNavigationItemActive = (pathname: string, item: NavigationItem) =>
+  item.to === '/'
+    ? pathname === '/'
+    : pathname.startsWith(item.to) || item.activePaths?.some((path) => pathname.startsWith(path))
 
 const RetroMedicalDashboard = lazy(() =>
   import('../features/RetroMedicalDashboard').then((module) => ({
@@ -198,10 +222,8 @@ function NclexAppShell() {
   }, [initializeMaterials])
 
   const pageMeta = useMemo(() => {
-    const match = allNavigation.find((item) =>
-      item.to === '/' ? location.pathname === '/' : location.pathname.startsWith(item.to),
-    )
-    return match ?? allNavigation[0]
+    const match = pageMetaNavigation.find((item) => isNavigationItemActive(location.pathname, item))
+    return match ?? mainNavigation[0]
   }, [location.pathname])
 
   const initials = useMemo(
@@ -276,8 +298,8 @@ function NclexAppShell() {
         <aside className="nclex-sidebar hidden w-[282px] shrink-0 px-5 py-5 text-white lg:flex lg:flex-col">
           <BrandLockup />
           <nav className="mt-8 flex-1 space-y-1.5">
-            {mainNavigation.map(({ label, icon: Icon, to }) => (
-              <SidebarLink key={to} label={label} icon={<Icon className="h-4 w-4" />} to={to} />
+            {mainNavigation.map(({ label, icon: Icon, to, activePaths }) => (
+              <SidebarLink key={to} label={label} icon={<Icon className="h-4 w-4" />} to={to} activePaths={activePaths} />
             ))}
           </nav>
           <div className="space-y-1.5 border-t border-white/10 pt-5">
@@ -521,12 +543,13 @@ function NclexAppShell() {
                 </button>
               </div>
               <nav className="mt-8 flex-1 space-y-1.5 overflow-y-auto">
-                {mainNavigation.map(({ label, icon: Icon, to }) => (
+                {mainNavigation.map(({ label, icon: Icon, to, activePaths }) => (
                   <SidebarLink
                     key={to}
                     label={label}
                     icon={<Icon className="h-4 w-4" />}
                     to={to}
+                    activePaths={activePaths}
                     onClick={() => setMobileMenuOpen(false)}
                   />
                 ))}
@@ -588,30 +611,34 @@ function NclexAppShell() {
                 </button>
               </div>
               <div className="mt-5 grid min-h-0 gap-3 overflow-y-auto pr-1">
-                {[...mainNavigation.slice(1), ...secondaryNavigation].map(({ label, icon: Icon, to }) => (
-                  <button
-                    key={to}
-                    type="button"
-                    onClick={() => {
-                      navigate(to)
-                      setMobileMoreOpen(false)
-                    }}
-                    className={clsx(
-                      'flex items-center justify-between rounded-2xl border px-4 py-3.5 text-left',
-                      location.pathname.startsWith(to)
-                        ? 'border-sky-200/60 bg-sky-400/12 text-white shadow-[0_0_24px_rgba(56,189,248,0.16)]'
-                        : 'border-sky-300/20 bg-white/[0.04] text-sky-100/76',
-                    )}
-                  >
-                    <span className="flex items-center gap-3 text-sm font-semibold">
-                      <Icon className="h-4 w-4" />
-                      {label}
-                    </span>
-                    {location.pathname.startsWith(to) ? (
-                      <span className="nclex-chip nclex-chip-info">Open</span>
-                    ) : null}
-                  </button>
-                ))}
+                {[...mainNavigation.slice(1), ...secondaryNavigation].map((item) => {
+                  const { label, icon: Icon, to } = item
+                  const active = isNavigationItemActive(location.pathname, item)
+                  return (
+                    <button
+                      key={to}
+                      type="button"
+                      onClick={() => {
+                        navigate(to)
+                        setMobileMoreOpen(false)
+                      }}
+                      className={clsx(
+                        'flex items-center justify-between rounded-2xl border px-4 py-3.5 text-left',
+                        active
+                          ? 'border-sky-200/60 bg-sky-400/12 text-white shadow-[0_0_24px_rgba(56,189,248,0.16)]'
+                          : 'border-sky-300/20 bg-white/[0.04] text-sky-100/76',
+                      )}
+                    >
+                      <span className="flex items-center gap-3 text-sm font-semibold">
+                        <Icon className="h-4 w-4" />
+                        {label}
+                      </span>
+                      {active ? (
+                        <span className="nclex-chip nclex-chip-info">Open</span>
+                      ) : null}
+                    </button>
+                  )
+                })}
                 <button
                   type="button"
                   onClick={() => {
@@ -641,13 +668,18 @@ function SidebarLink({
   label,
   icon,
   to,
+  activePaths,
   onClick,
 }: {
   label: string
   icon: React.ReactNode
   to: string
+  activePaths?: string[]
   onClick?: () => void
 }) {
+  const location = useLocation()
+  const activeByPath = activePaths?.some((path) => location.pathname.startsWith(path)) ?? false
+
   return (
     <NavLink
       to={to}
@@ -656,7 +688,7 @@ function SidebarLink({
       className={({ isActive }) =>
         clsx(
           'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition',
-          isActive
+          isActive || activeByPath
             ? 'bg-[linear-gradient(180deg,#2f87f0_0%,#2a7de1_100%)] text-white shadow-[0_14px_28px_rgba(42,125,225,0.28)]'
             : 'text-slate-200 hover:bg-white/8 hover:text-white',
         )
