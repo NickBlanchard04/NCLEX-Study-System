@@ -31,8 +31,8 @@ export interface QuestionEngineNormalizeOverrides {
   nursingProcessStep?: NursingProcessStep
   itemType?: QuestionItemType
   scoringMethod?: ScoringMethod
-  sourceStatus?: SourceStatus
-  reviewStatus?: ReviewStatus
+  sourceStatus?: SourceStatus | string
+  reviewStatus?: ReviewStatus | string
   rationaleQualityStatus?: RationaleQualityStatus
   contentOrigin?: ContentOrigin
   generatedOnly?: boolean
@@ -49,6 +49,22 @@ const nclexClientNeedHints = new Set([
   'Health Promotion and Maintenance',
   'Psychosocial Integrity',
   'Physiological Integrity',
+])
+
+const sourceStatuses = new Set<SourceStatus>([
+  'source_needed',
+  'source_checked',
+  'sme_verified',
+  'retired',
+])
+
+const reviewStatuses = new Set<ReviewStatus>([
+  'not_reviewed',
+  'item_reviewed',
+  'sme_verified',
+  'analytics_reviewed',
+  'needs_revision',
+  'retired',
 ])
 
 export const normalizeExamTrack = (value?: string): ExamTrackCode => {
@@ -83,6 +99,36 @@ export const getDefaultScoringMethod = (itemType: QuestionItemType): ScoringMeth
     return 'partial_credit'
   }
   return 'not_scored'
+}
+
+export const normalizeSourceStatus = (
+  value: SourceStatus | string | undefined,
+  warnings: EngineWarningCode[] = [],
+): SourceStatus => {
+  if (!value) {
+    warnings.push('source_status_defaulted')
+    return 'source_needed'
+  }
+
+  if (sourceStatuses.has(value as SourceStatus)) return value as SourceStatus
+
+  warnings.push('unknown_source_status')
+  return 'source_needed'
+}
+
+export const normalizeReviewStatus = (
+  value: ReviewStatus | string | undefined,
+  warnings: EngineWarningCode[] = [],
+): ReviewStatus => {
+  if (!value) {
+    warnings.push('review_status_defaulted')
+    return 'not_reviewed'
+  }
+
+  if (reviewStatuses.has(value as ReviewStatus)) return value as ReviewStatus
+
+  warnings.push('unknown_review_status')
+  return 'not_reviewed'
 }
 
 const inferClinicalJudgmentStep = (question: Question): ClinicalJudgmentStep => {
@@ -211,8 +257,8 @@ export function normalizeQuestionToEngineItem(
   const generatedOnly =
     overrides.generatedOnly ?? (contentOrigin === 'generated_material' || question.authorType === 'system-generated')
   const inferredSafety = inferSafety(question)
-  const sourceStatus = overrides.sourceStatus ?? 'source_needed'
-  const reviewStatus = overrides.reviewStatus ?? 'not_reviewed'
+  const sourceStatus = normalizeSourceStatus(overrides.sourceStatus, warnings)
+  const reviewStatus = normalizeReviewStatus(overrides.reviewStatus, warnings)
   const candidateSourceRefs = question.sourceRefs ?? []
   const readinessExclusionReasons: ReadinessExclusionReason[] = []
 
