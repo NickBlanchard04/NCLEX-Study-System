@@ -690,7 +690,28 @@ export function DashboardPage() {
     Math.ceil((new Date(profile.examDate).getTime() - dashboardNowMs) / (1000 * 60 * 60 * 24)),
   )
   const readinessSnapshot = analytics.readinessSnapshot
-  const readinessScore = Math.max(readinessSnapshot.readinessScore, analytics.overallAccuracy)
+  const activeRepairEvents = analytics.engineRemediationEvents.filter(
+    (event) => event.repairRequired && !event.repairSuccess,
+  )
+  const repairQueueCount = Math.max(activeRepairEvents.length, readinessSnapshot.remediationSummary.unresolvedRepairCount)
+  const priorityRepair = activeRepairEvents[0]
+  const primaryCoverageGap = readinessSnapshot.coverageGaps[0]
+  const primaryWeakDimension = readinessSnapshot.topWeakDimensions[0]
+  const primaryConfidenceRisk = readinessSnapshot.topConfidenceRisks[0]
+  const engineWeakPatternLabel = formatEngineDimensionLabel(
+    primaryWeakDimension
+      ? `${primaryWeakDimension.dimensionType}:${primaryWeakDimension.dimensionId}`
+      : analytics.learnerMasteryVector.summary.weakestDimensionId,
+  )
+  const coverageGapLabel = primaryCoverageGap
+    ? formatEngineDimensionLabel(`${primaryCoverageGap.dimensionType}:${primaryCoverageGap.dimensionId}`)
+    : ''
+  const confidenceRiskLabel = primaryConfidenceRisk
+    ? formatEngineDimensionLabel(`${primaryConfidenceRisk.dimensionType}:${primaryConfidenceRisk.dimensionId}`)
+    : ''
+  const readinessScore = readinessSnapshot.readinessScoreAvailable
+    ? readinessSnapshot.readinessScore
+    : Math.max(readinessSnapshot.readinessScore, analytics.overallAccuracy)
   const readinessPercent = Math.round(readinessScore * 100)
   const readinessBadge =
     readinessSnapshot.status === 'ready'
@@ -721,22 +742,30 @@ export function DashboardPage() {
     navigate('/quick-study')
   }
   const primaryCategory = weakestArea?.category ?? getExamCategories(activeExamTrack.id)[0] ?? 'Pharmacology'
-  const missionTitle = weakestArea
-    ? `${dashboardCopy.priorityPrefix}: ${shortCategoryLabel(primaryCategory)}`
-    : materialsReadyCount
-      ? 'Turn one upload into active recall'
-      : 'Complete one Quick Study session'
-  const missionCopy = weakestArea
-    ? `Train this first. It is the clearest practice signal for score lift right now.`
-    : materialsReadyCount
-      ? 'Use your uploaded materials for recall before adding more notes.'
-      : 'One focused set gives the dashboard fresh evidence without overloading the day.'
+  const missionTitle = priorityRepair
+    ? `Repair: ${priorityRepair.routeLabel}`
+    : primaryCoverageGap
+      ? `Build evidence for ${coverageGapLabel}`
+      : weakestArea
+        ? `${dashboardCopy.priorityPrefix}: ${shortCategoryLabel(primaryCategory)}`
+        : materialsReadyCount
+          ? 'Turn one upload into active recall'
+          : 'Complete one Quick Study session'
+  const missionCopy = priorityRepair
+    ? priorityRepair.nextActionCopy
+    : primaryCoverageGap
+      ? `The engine sees a ${formatEngineReasonLabel(primaryCoverageGap.gapType)} gap here. Build trustworthy signal before treating readiness as settled.`
+      : weakestArea
+        ? 'Train this first. It is the clearest practice signal for score lift right now.'
+        : materialsReadyCount
+          ? 'Use your uploaded materials for recall before adding more notes.'
+          : 'One focused set gives the dashboard fresh evidence without overloading the day.'
   const planItems = [
     {
       id: 'priority-drill',
       label: `15 Questions - ${shortCategoryLabel(primaryCategory)}`,
       meta: '25 min',
-      actionLabel: 'Start now',
+      actionLabel: priorityRepair ? 'Start repair' : 'Start now',
       icon: <Sparkles className="h-4 w-4" />,
       onSelect: () => startPlanQuickStudy(weakestArea?.category),
     },
@@ -780,14 +809,14 @@ export function DashboardPage() {
       detail: `${Math.round(todayGoalProgress * 100)}% complete`,
     },
     {
-      label: 'Accuracy',
-      value: `${Math.round(dashboard.recentAccuracy * 100)}%`,
-      detail: 'recent set',
+      label: 'Readiness',
+      value: readinessBadge,
+      detail: `${readinessSnapshot.trustedAttemptCount} trusted attempts`,
     },
     {
-      label: 'Streak',
-      value: `${dashboard.streak}d`,
-      detail: `${formatMinutes(todayMinutes)} today`,
+      label: 'Repairs',
+      value: `${repairQueueCount}`,
+      detail: primaryCoverageGap ? `${readinessSnapshot.coverageGaps.length} coverage gaps` : `${formatMinutes(todayMinutes)} today`,
     },
   ]
   const badgeToneClasses = {
@@ -855,6 +884,9 @@ export function DashboardPage() {
                 <span className="rounded-full border border-white/14 bg-white/8 px-3 py-1 text-xs font-black uppercase text-sky-100/70">
                   Exam in {daysUntilExam}d
                 </span>
+                <span className="rounded-full border border-emerald-200/24 bg-emerald-300/10 px-3 py-1 text-xs font-black uppercase text-emerald-100">
+                  {repairQueueCount} repairs
+                </span>
               </div>
               <p className="mt-5 text-sm font-black uppercase text-cyan-100/72">Today&apos;s mission</p>
               <h2 className="mt-2 max-w-3xl text-3xl font-black leading-tight text-white md:text-4xl">
@@ -862,6 +894,9 @@ export function DashboardPage() {
               </h2>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-sky-100/74">
                 {missionCopy}
+              </p>
+              <p className="mt-3 max-w-2xl text-xs font-semibold uppercase tracking-[0.14em] text-sky-100/52">
+                Engine pattern: {engineWeakPatternLabel}
               </p>
               <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <button
@@ -886,7 +921,7 @@ export function DashboardPage() {
               <div>
                 <p className="text-xs font-black uppercase text-sky-100/62">Readiness badge</p>
                 <p className="mt-2 max-w-36 text-xs leading-5 text-sky-100/60 lg:mt-3">
-                  Practice evidence only, not a licensure prediction.
+                  {readinessSnapshot.trustedAttemptCount} trusted / {readinessSnapshot.practiceAttemptCount} practice attempts.
                 </p>
               </div>
               <div
@@ -910,8 +945,8 @@ export function DashboardPage() {
               <div key={stat.label} className="min-w-0">
                 <p className="truncate text-xs font-black uppercase text-sky-100/54">{stat.label}</p>
                 <div className="mt-1">
-                  <p className="truncate text-xl font-black text-white">{stat.value}</p>
-                  <p className="truncate text-xs font-semibold text-sky-100/55">{stat.detail}</p>
+                  <p className="text-lg font-black leading-tight text-white sm:text-xl">{stat.value}</p>
+                  <p className="mt-1 text-xs font-semibold leading-snug text-sky-100/55">{stat.detail}</p>
                 </div>
               </div>
             ))}
@@ -924,6 +959,13 @@ export function DashboardPage() {
           <div>
             <p className="text-xs font-black uppercase text-sky-100/56">Badge board</p>
             <h3 className="mt-1 text-2xl font-black text-white">Mastery signals</h3>
+            <p className="mt-1 text-sm font-semibold text-sky-100/58">
+              {primaryConfidenceRisk
+                ? `Confidence risk: ${confidenceRiskLabel}`
+                : primaryCoverageGap
+                  ? `Coverage gap: ${coverageGapLabel}`
+                  : `Weakest pattern: ${engineWeakPatternLabel}`}
+            </p>
           </div>
           <Link to="/performance-analytics" className="hidden text-sm font-black text-cyan-100 sm:inline-flex">
             Analytics
@@ -1012,6 +1054,16 @@ export function DashboardPage() {
                     className="mt-4"
                     tone={area.masteryLevel === 'strong' ? 'green' : area.masteryLevel === 'developing' ? 'amber' : 'red'}
                   />
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    <div className="rounded-xl border border-cyan-200/12 bg-[#03101f]/36 p-3">
+                      <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-sky-100/50">Mismatch</p>
+                      <p className="mt-1 text-lg font-black text-white">{Math.round(area.confidenceMismatchScore * 100)}%</p>
+                    </div>
+                    <div className="rounded-xl border border-cyan-200/12 bg-[#03101f]/36 p-3">
+                      <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-sky-100/50">Flags</p>
+                      <p className="mt-1 text-lg font-black text-white">{area.flaggedCount}</p>
+                    </div>
+                  </div>
                   <button
                     type="button"
                     onClick={() => {
@@ -1035,16 +1087,16 @@ export function DashboardPage() {
               </div>
               <p className="text-sm font-black text-white">{dashboardCopy.examLabel}</p>
             </div>
-            <div className="mt-4 grid grid-cols-3 gap-3">
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
               {[
                 { label: 'Readiness', value: readinessBadge, detail: `${readinessPercent}% signal` },
-                { label: 'Track', value: activeExamTrack.shortName, detail: `${daysUntilExam} days left` },
-                { label: 'Questions', value: `${analytics.questionsCompleted}`, detail: 'practice evidence' },
+                { label: 'Repairs', value: `${repairQueueCount}`, detail: `${readinessSnapshot.coverageGaps.length} gaps` },
+                { label: 'Pattern', value: engineWeakPatternLabel, detail: primaryConfidenceRisk ? confidenceRiskLabel : 'engine signal' },
               ].map((metric) => (
-                <div key={metric.label} className="min-w-0 border-l border-cyan-200/16 pl-3 first:border-l-0 first:pl-0">
+                <div key={metric.label} className="min-w-0 border-t border-cyan-200/16 pt-3 first:border-t-0 first:pt-0 sm:border-l sm:border-t-0 sm:pl-3 sm:pt-0 sm:first:border-l-0 sm:first:pl-0">
                   <p className="truncate text-[0.68rem] font-black uppercase text-sky-100/46">{metric.label}</p>
-                  <p className="mt-1 truncate text-sm font-black text-white">{metric.value}</p>
-                  <p className="mt-0.5 truncate text-xs font-semibold text-sky-100/52">{metric.detail}</p>
+                  <p className="mt-1 text-sm font-black leading-tight text-white">{metric.value}</p>
+                  <p className="mt-0.5 text-xs font-semibold leading-snug text-sky-100/52">{metric.detail}</p>
                 </div>
               ))}
             </div>
@@ -4629,6 +4681,23 @@ function shortCategoryLabel(category: string) {
     .replace('Leadership / Prioritization / Delegation', 'Leadership')
     .replace('Adult Health / Med-Surg', 'Med Surg')
     .replace('Lab Values / Clinical Judgment', 'Clinical Judgment')
+}
+
+function formatEngineDimensionLabel(value?: string) {
+  if (!value) return 'Not enough signal yet'
+  const cleanValue = value.includes(':') ? value.split(':').slice(1).join(':') : value
+  return formatEngineReasonLabel(cleanValue)
+}
+
+function formatEngineReasonLabel(value?: string) {
+  if (!value) return 'evidence'
+  return value
+    .replaceAll('_', ' ')
+    .replaceAll('-', ' ')
+    .split(' ')
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
 }
 
 function formatMinutes(minutes: number) {
