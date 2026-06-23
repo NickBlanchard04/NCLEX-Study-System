@@ -71,17 +71,20 @@ const nurseLabRoutePaths = [
 const mainNavigation: NavigationItem[] = [
   { label: 'Home', icon: LayoutGrid, to: '/' },
   { label: 'Dashboard', icon: LayoutGrid, to: '/dashboard' },
-  { label: 'Exam Prep', icon: Target, to: '/exam-prep' },
   { label: 'Study Plan', icon: BookOpen, to: '/study-plan' },
   { label: 'Question Bank', icon: ClipboardList, to: '/practice-questions' },
   { label: 'Quizzes', icon: Flashlight, to: '/quick-study' },
-  { label: 'Exams', icon: Target, to: '/test-mode' },
-  { label: 'Nurse Lab', icon: Gamepad2, to: '/nurse-command-lab', activePaths: nurseLabRoutePaths },
+  { label: 'Remediation', icon: FileText, to: '/weak-areas' },
   { label: 'Performance', icon: Trophy, to: '/performance-analytics' },
+  { label: 'Nurse Lab', icon: Gamepad2, to: '/nurse-command-lab', activePaths: nurseLabRoutePaths },
+]
+
+const studyToolsNavigation: NavigationItem[] = [
+  { label: 'Exam Prep', icon: Target, to: '/exam-prep' },
+  { label: 'Exams', icon: Target, to: '/test-mode' },
+  { label: 'Flashcards', icon: SquareStack, to: '/flashcards' },
   { label: 'Notes', icon: NotebookPen, to: '/notes' },
   { label: 'My Materials', icon: FolderOpen, to: '/my-materials' },
-  { label: 'Remediation', icon: FileText, to: '/weak-areas' },
-  { label: 'Flashcards', icon: SquareStack, to: '/flashcards' },
   { label: 'Resources', icon: Brain, to: '/strategy-training' },
 ]
 
@@ -101,7 +104,22 @@ const mobilePrimaryNavigation: NavigationItem[] = [
   { label: 'Cards', icon: SquareStack, to: '/flashcards' },
 ]
 
-const pageMetaNavigation = [...labNavigation, ...mainNavigation, ...secondaryNavigation]
+const mobileMoreNavigationGroups = [
+  {
+    title: 'Command',
+    items: mainNavigation.filter((item) => !['/', '/practice-questions', '/quick-study'].includes(item.to)),
+  },
+  {
+    title: 'Study Tools',
+    items: studyToolsNavigation.filter((item) => item.to !== '/flashcards'),
+  },
+  {
+    title: 'Account',
+    items: secondaryNavigation,
+  },
+]
+
+const pageMetaNavigation = [...labNavigation, ...mainNavigation, ...studyToolsNavigation, ...secondaryNavigation]
 
 const isNavigationItemActive = (pathname: string, item: NavigationItem) =>
   item.to === '/'
@@ -303,6 +321,16 @@ function NclexAppShell() {
             {mainNavigation.map(({ label, icon: Icon, to, activePaths }) => (
               <SidebarLink key={to} label={label} icon={<Icon className="h-4 w-4" />} to={to} activePaths={activePaths} />
             ))}
+            <div className="pt-5">
+              <p className="px-3 pb-2 text-[10px] font-black uppercase tracking-[0.2em] text-sky-100/42">
+                Study Tools
+              </p>
+              <div className="space-y-1.5">
+                {studyToolsNavigation.map(({ label, icon: Icon, to, activePaths }) => (
+                  <SidebarLink key={to} label={label} icon={<Icon className="h-4 w-4" />} to={to} activePaths={activePaths} />
+                ))}
+              </div>
+            </div>
           </nav>
           <div className="space-y-1.5 border-t border-white/10 pt-5">
             {secondaryNavigation.map(({ label, icon: Icon, to }) => (
@@ -555,6 +583,23 @@ function NclexAppShell() {
                     onClick={() => setMobileMenuOpen(false)}
                   />
                 ))}
+                <div className="pt-5">
+                  <p className="px-3 pb-2 text-[10px] font-black uppercase tracking-[0.2em] text-sky-100/42">
+                    Study Tools
+                  </p>
+                  <div className="space-y-1.5">
+                    {studyToolsNavigation.map(({ label, icon: Icon, to, activePaths }) => (
+                      <SidebarLink
+                        key={to}
+                        label={label}
+                        icon={<Icon className="h-4 w-4" />}
+                        to={to}
+                        activePaths={activePaths}
+                        onClick={() => setMobileMenuOpen(false)}
+                      />
+                    ))}
+                  </div>
+                </div>
               </nav>
               <div className="space-y-1.5 border-t border-white/10 pt-5">
                 <SidebarLink
@@ -612,35 +657,44 @@ function NclexAppShell() {
                   <X className="h-4 w-4" />
                 </button>
               </div>
-              <div className="mt-5 grid min-h-0 gap-3 overflow-y-auto pr-1">
-                {[...mainNavigation.slice(1), ...secondaryNavigation].map((item) => {
-                  const { label, icon: Icon, to } = item
-                  const active = isNavigationItemActive(location.pathname, item)
-                  return (
-                    <button
-                      key={to}
-                      type="button"
-                      onClick={() => {
-                        navigate(to)
-                        setMobileMoreOpen(false)
-                      }}
-                      className={clsx(
-                        'flex items-center justify-between rounded-2xl border px-4 py-3.5 text-left',
-                        active
-                          ? 'border-sky-200/60 bg-sky-400/12 text-white shadow-[0_0_24px_rgba(56,189,248,0.16)]'
-                          : 'border-sky-300/20 bg-white/[0.04] text-sky-100/76',
-                      )}
-                    >
-                      <span className="flex items-center gap-3 text-sm font-semibold">
-                        <Icon className="h-4 w-4" />
-                        {label}
-                      </span>
-                      {active ? (
-                        <span className="nclex-chip nclex-chip-info">Open</span>
-                      ) : null}
-                    </button>
-                  )
-                })}
+              <div className="mt-5 min-h-0 space-y-5 overflow-y-auto pr-1">
+                {mobileMoreNavigationGroups.map((group) => (
+                  <div key={group.title}>
+                    <p className="px-1 pb-2 text-[10px] font-black uppercase tracking-[0.2em] text-sky-100/44">
+                      {group.title}
+                    </p>
+                    <div className="grid gap-3">
+                      {group.items.map((item) => {
+                        const { label, icon: Icon, to } = item
+                        const active = isNavigationItemActive(location.pathname, item)
+                        return (
+                          <button
+                            key={to}
+                            type="button"
+                            onClick={() => {
+                              navigate(to)
+                              setMobileMoreOpen(false)
+                            }}
+                            className={clsx(
+                              'flex items-center justify-between rounded-2xl border px-4 py-3.5 text-left',
+                              active
+                                ? 'border-sky-200/60 bg-sky-400/12 text-white shadow-[0_0_24px_rgba(56,189,248,0.16)]'
+                                : 'border-sky-300/20 bg-white/[0.04] text-sky-100/76',
+                            )}
+                          >
+                            <span className="flex items-center gap-3 text-sm font-semibold">
+                              <Icon className="h-4 w-4" />
+                              {label}
+                            </span>
+                            {active ? (
+                              <span className="nclex-chip nclex-chip-info">Open</span>
+                            ) : null}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))}
                 <button
                   type="button"
                   onClick={() => {
