@@ -119,6 +119,25 @@ export function DetailGrid({
   return <div className={clsx('grid gap-5 lg:grid-cols-2', className)}>{children}</div>
 }
 
+export function QuickMetric({ label, value, detail }: { label: string; value: string; detail: string }) {
+  return (
+    <div className="rounded-[18px] border border-[var(--nclex-border)] bg-white p-4 shadow-sm">
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-blue)]">{label}</p>
+      <p className="mt-2 font-serif text-3xl text-[var(--nclex-text)]">{value}</p>
+      <p className="mt-2 text-sm text-[var(--nclex-text-muted)]">{detail}</p>
+    </div>
+  )
+}
+
+export function MetricChip({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-[18px] border border-[var(--nclex-border)] bg-[var(--nclex-card-muted)] p-4">
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]">{label}</p>
+      <p className="mt-2 font-serif text-3xl text-[var(--nclex-text)]">{value}</p>
+    </div>
+  )
+}
+
 export function MiniSparkline({
   points,
   color = 'var(--nclex-blue)',
