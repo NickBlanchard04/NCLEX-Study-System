@@ -3582,43 +3582,66 @@ const nurseCommandLabUtilities = [
 ]
 
 export function NurseCommandLabPage() {
+  const featuredLabModule = nurseCommandLabModules.find((module) => module.to === '/clinical-simulator') ?? nurseCommandLabModules[0]
+
   return (
     <PageStack>
       <PageHeader
         eyebrow="Nurse Command Lab"
         title="Simulation, games, and clinical reps in one lab."
         description="The lab keeps experimental practice modes grouped together so the core study app stays focused and the game surfaces still feel intentional."
+        action={
+          <Link
+            to={featuredLabModule.to}
+            className="nclex-btn-primary inline-flex min-h-[48px] items-center gap-2 rounded-xl px-5 py-3 text-sm font-black"
+          >
+            Start featured lab
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        }
       />
 
       <FocusPanel className="nclex-dark-panel text-white">
-        <div className="grid gap-5 p-5 md:p-6 xl:grid-cols-[1fr_0.72fr] xl:items-end">
+        <div className="grid gap-5 p-5 md:p-6 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-stretch">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-200">Nurse Lab</p>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-200">Featured lab</p>
             <h3 className="mt-3 max-w-3xl text-3xl font-black tracking-[-0.04em] text-white md:text-5xl">
-              Pick the rep that matches the skill.
+              {featuredLabModule.title}
             </h3>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-sky-100/72">
-              Use questions for exam accuracy. Use the lab when you need repetition around priority, flow, escalation, or patient-state decisions.
+              {featuredLabModule.description} Use this first when you want a clinical judgment loop instead of another question set.
             </p>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <Link
+                to={featuredLabModule.to}
+                className="nclex-btn-primary inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black"
+              >
+                {featuredLabModule.action}
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link
+                to="/quick-study"
+                className="nclex-btn-secondary inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black"
+              >
+                Back to questions
+                <BookOpen className="h-4 w-4" />
+              </Link>
+            </div>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-            <Link
-              to="/clinical-simulator"
-              className="nclex-btn-primary inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black"
-            >
-              Start simulator
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link
-              to="/shift-command"
-              className="nclex-btn-secondary inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black"
-            >
-              Play Shift Game
-              <HeartPulse className="h-4 w-4" />
-            </Link>
+          <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+            <QuickMetric label="Modes" value="4" detail="Games, simulation, and management reps." />
+            <QuickMetric label="Use for" value="Flow" detail="Priority, escalation, and patient-state decisions." />
+            <QuickMetric label="Core app" value="Clean" detail="Lab tools stay grouped away from study nav." />
           </div>
         </div>
       </FocusPanel>
+
+      <div>
+        <SectionHeading
+          title="Lab modes"
+          description="Choose the simulation surface by the kind of thinking you want to practice."
+        />
+      </div>
 
       <div className="grid gap-5 md:grid-cols-2">
         {nurseCommandLabModules.map(({ title, description, to, icon: Icon, action, meta, accent }) => (
