@@ -264,6 +264,29 @@ function NclexAppShell() {
     location.pathname !== '/quick-study' &&
     location.pathname !== '/practice-questions' &&
     !location.pathname.startsWith('/nurse-command-lab')
+  const isLocalDraft =
+    import.meta.env.DEV ||
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1'
+  const syncBadgeLabel =
+    syncStatus === 'syncing'
+      ? 'Syncing'
+      : syncStatus === 'error'
+        ? 'Sync issue'
+        : syncStatus === 'offline'
+          ? 'Saved locally'
+          : isDemoMode
+            ? isLocalDraft
+              ? 'Local draft'
+              : 'Live / saved locally'
+            : 'Synced'
+  const syncBadgeTitle =
+    syncError ??
+    (isDemoMode
+      ? isLocalDraft
+        ? 'Local draft build using this browser only'
+        : 'Live build using local browser storage'
+      : 'Cloud sync is active')
 
   if (location.pathname === '/') {
     return (
@@ -395,10 +418,10 @@ function NclexAppShell() {
                           ? 'border-sky-300/24 bg-white/5 text-sky-100/64'
                           : 'border-emerald-300/35 bg-emerald-300/12 text-emerald-300',
                   )}
-                  title={syncError ?? (isDemoMode ? 'Local demo mode' : 'Cloud sync is active')}
+                  title={syncBadgeTitle}
                 >
                   {isDemoMode ? <CloudOff className="h-4 w-4" /> : <Cloud className="h-4 w-4" />}
-                  {syncStatus === 'syncing' ? 'Syncing' : isDemoMode ? 'Local' : 'Synced'}
+                  {syncBadgeLabel}
                 </button>
                 <button
                   type="button"

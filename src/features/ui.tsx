@@ -4,12 +4,15 @@ import {
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
+  BadgeCheck,
   Check,
   CheckCircle2,
   Clock3,
   Eye,
   Flag,
   Lightbulb,
+  ShieldCheck,
+  Target,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { clsx } from 'clsx'
@@ -726,9 +729,53 @@ export function QuestionSessionRunner({
   const finalAttempt = finalResponse ? getAttemptForResponse(finalResponse) : null
   const finalRemediation = finalAttempt?.engineRemediationEvents?.[0]
   const tutorInsight = getQuestionTutorInsight(questionId)
+  const correctSoFar = session.responses.filter((response) => response.isCorrect).length
+  const flaggedCount = session.responses.filter((response) => response.flagged).length + (flagged && !existingResponse ? 1 : 0)
+  const currentStreak = session.responses
+    .toReversed()
+    .findIndex((response) => !response.isCorrect)
+  const streakCount = currentStreak === -1 ? session.responses.length : currentStreak
+  const hasPartialSignal =
+    submitted &&
+    question.format === 'select-all-that-apply' &&
+    !currentIsCorrect &&
+    selectedAnswers.some((answerId) => question.correctAnswer.includes(answerId))
+  const resultLabel = currentIsCorrect ? 'Correct' : hasPartialSignal ? 'Partial' : 'Incorrect'
+  const resultTone: 'green' | 'amber' | 'red' = currentIsCorrect ? 'green' : hasPartialSignal ? 'amber' : 'red'
+  const evidenceLevel = question.blueprintMapped && question.sourceBacked ? 'Readiness evidence' : 'Practice evidence'
+  const qualityStatus = question.contentQuality?.replaceAll('-', ' ') ?? 'draft item'
+  const reviewState = submitted ? (showRationale ? 'Review open' : 'Review hidden') : 'Answer pending'
+  const confidenceState = confidenceChosen ? `Confidence: ${finalResponse?.confidence}` : submitted ? 'Confidence not chosen' : 'Confidence pending'
+  const nextActionLabel = !submitted
+    ? 'Submit answer'
+    : !confidenceChosen
+      ? 'Choose confidence'
+      : !showRationale
+        ? 'Review rationale'
+        : !currentIsCorrect
+          ? 'Repair later'
+          : isLastQuestion
+            ? 'Finish session'
+            : 'Continue'
+  const headerBadges = [
+    { label: 'Priority', tone: 'blue' as const, icon: <Target className="h-3.5 w-3.5" /> },
+    { label: 'Safety', tone: 'green' as const, icon: <ShieldCheck className="h-3.5 w-3.5" /> },
+    { label: 'Clinical Judgment', tone: 'blue' as const, icon: <BadgeCheck className="h-3.5 w-3.5" /> },
+    {
+      label: question.sourceBacked ? 'Source-backed' : 'Practice item',
+      tone: question.sourceBacked ? 'green' as const : 'amber' as const,
+      icon: <CheckCircle2 className="h-3.5 w-3.5" />,
+    },
+    {
+      label: evidenceLevel,
+      tone: question.blueprintMapped && question.sourceBacked ? 'green' as const : 'amber' as const,
+      icon: <BadgeCheck className="h-3.5 w-3.5" />,
+    },
+  ]
+  const evidenceBadges = [...tutorInsight.trustFlags, `Evidence: ${evidenceLevel}`]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-28 xl:pb-0">
       <Surface className="p-4 md:p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -797,7 +844,12 @@ export function QuestionSessionRunner({
             </div>
           ) : null}
 
-          <div className="mt-5 flex flex-wrap items-center gap-3">
+          <div className="mt-5 flex flex-wrap items-center gap-2">
+            {headerBadges.map((badge) => (
+              <ReviewBadge key={badge.label} tone={badge.tone} icon={badge.icon}>
+                {badge.label}
+              </ReviewBadge>
+            ))}
             <span className="nclex-chip nclex-chip-info">{question.category}</span>
             <span className="nclex-chip nclex-chip-success">
               {question.format === 'select-all-that-apply' ? 'Select all' : 'Single answer'}
@@ -859,7 +911,7 @@ export function QuestionSessionRunner({
             })}
           </div>
 
-          <div className="mobile-quiz-actions sticky bottom-[calc(env(safe-area-inset-bottom,0px)+5.9rem)] z-10 -mx-1 mt-6 flex flex-wrap gap-3 rounded-[18px] border border-cyan-300/24 bg-[#061b31]/95 p-3 shadow-[0_-18px_48px_rgba(3,16,31,0.34)] backdrop-blur-xl md:static md:mx-0 md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none">
+          <div className="mt-5 flex flex-col gap-3 rounded-[14px] border border-cyan-300/18 bg-[#061b31]/72 p-3 sm:flex-row sm:flex-wrap sm:items-center">
             {!submitted ? (
               <button
                 type="button"
@@ -915,49 +967,43 @@ export function QuestionSessionRunner({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 8 }}
-                className="mt-6 rounded-[18px] border border-cyan-300/18 bg-[#071b2f] p-5 text-white shadow-[0_18px_50px_rgba(2,18,34,0.22)]"
+                className="mt-5 rounded-[16px] border border-cyan-300/18 bg-[#071b2f] p-4 text-white shadow-[0_12px_30px_rgba(2,18,34,0.18)] md:p-5"
               >
-                <div className="flex flex-wrap items-center gap-3">
-                  <span
-                    className={clsx(
-                      'inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em]',
-                      finalResponse
-                        ? finalResponse.isCorrect
-                          ? 'bg-[var(--nclex-success-soft)] text-[var(--nclex-success)]'
-                          : 'bg-[var(--nclex-danger-soft)] text-[var(--nclex-danger)]'
-                        : currentIsCorrect
-                          ? 'bg-[var(--nclex-success-soft)] text-[var(--nclex-success)]'
-                          : 'bg-[var(--nclex-danger-soft)] text-[var(--nclex-danger)]',
-                    )}
-                  >
-                    {finalResponse ? (
-                      finalResponse.isCorrect ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />
-                    ) : currentIsCorrect ? (
-                      <CheckCircle2 className="h-4 w-4" />
-                    ) : (
-                      <AlertTriangle className="h-4 w-4" />
-                    )}
-                    {finalResponse ? (finalResponse.isCorrect ? 'Correct' : 'Incorrect') : currentIsCorrect ? 'Correct' : 'Incorrect'}
-                  </span>
-                  {finalResponse ? (
-                    <span
-                      className={clsx(
-                        'rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em]',
-                        confidenceTone[finalResponse.confidence],
-                      )}
+                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-200/70">Answer Review</p>
+                    <p className="mt-1 text-sm leading-6 text-sky-100/70">
+                      Confirm confidence, review the rationale, then move to the next best action.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <ReviewBadge
+                      tone={resultTone}
+                      icon={resultLabel === 'Correct' ? <CheckCircle2 className="h-3.5 w-3.5" /> : <AlertTriangle className="h-3.5 w-3.5" />}
                     >
-                      Confidence: {finalResponse.confidence}
-                    </span>
-                  ) : null}
+                      {resultLabel}
+                    </ReviewBadge>
+                    <ReviewBadge tone="blue" icon={<ArrowRight className="h-3.5 w-3.5" />}>
+                      Next action: {nextActionLabel}
+                    </ReviewBadge>
+                    {finalResponse ? (
+                      <ReviewBadge tone="green">
+                        Confidence: {finalResponse.confidence}
+                      </ReviewBadge>
+                    ) : null}
+                  </div>
                 </div>
 
                 {!confidenceChosen ? (
-                  <div className="mt-5">
-                    <p className="text-sm font-black text-white">Choose confidence</p>
-                    <p className="mt-1 text-sm leading-6 text-sky-100/68">
-                      This unlocks the next question and helps separate lucky guesses from real mastery.
-                    </p>
-                    <div className="mt-4 flex flex-wrap gap-3">
+                  <div className="mt-4 rounded-[14px] border border-cyan-300/14 bg-white/[0.04] p-4">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                      <div>
+                        <p className="text-sm font-black text-white">Choose confidence</p>
+                        <p className="mt-1 text-sm leading-6 text-sky-100/68">
+                          This unlocks the next question and separates a solid answer from a lucky one.
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap gap-3">
                       {(['low', 'medium', 'high'] as ConfidenceLevel[]).map((level) => (
                         <button
                           key={level}
@@ -971,12 +1017,13 @@ export function QuestionSessionRunner({
                           {level}
                         </button>
                       ))}
+                      </div>
                     </div>
                   </div>
                 ) : null}
 
                 {showRationale ? (
-                  <div className="mt-5 grid gap-4 md:grid-cols-2">
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
                     <div className="md:col-span-2">
                       <RationaleCard
                         title="Best answer"
@@ -999,7 +1046,7 @@ export function QuestionSessionRunner({
                           title="Next repair"
                           tone="blue"
                           body={finalRemediation.nextActionCopy}
-                          footer={finalRemediation.routeLabel}
+                          badges={[finalRemediation.routeLabel]}
                         />
                       </div>
                     ) : null}
@@ -1012,7 +1059,7 @@ export function QuestionSessionRunner({
                       title="Test-taking cue"
                       tone="blue"
                       body={`${question.nclexTip} ${tutorInsight.reviewTarget}. Watch for: ${tutorInsight.trap}`}
-                      footer={tutorInsight.trustFlags.join(' | ')}
+                      badges={evidenceBadges}
                     />
                   </div>
                 ) : null}
@@ -1022,8 +1069,8 @@ export function QuestionSessionRunner({
         </Surface>
 
         <div className="space-y-6">
-          <Surface className="hidden xl:block">
-            <SectionHeading title="Session" description="Progress stays visible while the question stays primary." />
+          <Surface className="hidden xl:block xl:sticky xl:top-24">
+            <SectionHeading title="Session" description="Compact status while the question stays primary." />
             <div className="mt-5 space-y-4">
               <div>
                 <div className="mb-2 flex items-center justify-between text-sm text-[var(--nclex-text-muted)]">
@@ -1035,12 +1082,25 @@ export function QuestionSessionRunner({
               <div className="grid grid-cols-2 gap-3">
                 <MetricTile
                   label="Correct so far"
-                  value={`${session.responses.filter((response) => response.isCorrect).length}`}
+                  value={`${correctSoFar}`}
                 />
                 <MetricTile
                   label="Flagged"
-                  value={`${session.responses.filter((response) => response.flagged).length + (flagged && !existingResponse ? 1 : 0)}`}
+                  value={`${flaggedCount}`}
                 />
+              </div>
+              <div className="grid gap-3">
+                <StatusMiniCard label="Current streak" value={`${streakCount} correct`} tone={streakCount > 0 ? 'green' : 'blue'} />
+                <StatusMiniCard label="Confidence" value={confidenceState} tone={confidenceChosen ? 'green' : submitted ? 'amber' : 'blue'} />
+                <StatusMiniCard label="Review" value={reviewState} tone={showRationale ? 'green' : 'blue'} />
+                <StatusMiniCard label="Evidence level" value={`${evidenceLevel} / ${qualityStatus}`} tone={question.sourceBacked ? 'green' : 'amber'} />
+                {submitted ? (
+                  <StatusMiniCard
+                    label="Remediation"
+                    value={!currentIsCorrect ? 'Repair needed' : 'No repair needed'}
+                    tone={!currentIsCorrect ? 'amber' : 'green'}
+                  />
+                ) : null}
               </div>
               <div className="flex flex-wrap gap-3">
                 <button
@@ -1065,7 +1125,7 @@ export function QuestionSessionRunner({
         </div>
       </div>
 
-      <div className="safe-bottom mobile-quiz-actions sticky bottom-[5.15rem] z-20 -mx-1 rounded-[18px] border border-cyan-300/20 bg-[#061b31]/94 p-3 text-white shadow-[0_-18px_44px_rgba(3,16,31,0.28)] backdrop-blur-xl xl:hidden">
+      <div className="safe-bottom mobile-quiz-actions rounded-[16px] border border-cyan-300/20 bg-[#061b31]/80 p-3 text-white xl:hidden">
         <div className="flex items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.14em] text-sky-100/62">
           <span>Progress</span>
           <span>
@@ -1153,16 +1213,63 @@ function MetricTile({ label, value }: { label: string; value: string }) {
   )
 }
 
+function ReviewBadge({
+  children,
+  tone = 'blue',
+  icon,
+}: {
+  children: React.ReactNode
+  tone?: 'blue' | 'green' | 'amber' | 'red'
+  icon?: React.ReactNode
+}) {
+  const styles = {
+    blue: 'border-sky-300/28 bg-sky-300/10 text-sky-200',
+    green: 'border-emerald-300/30 bg-emerald-300/10 text-emerald-200',
+    amber: 'border-amber-300/32 bg-amber-300/10 text-amber-200',
+    red: 'border-rose-300/32 bg-rose-300/10 text-rose-200',
+  }[tone]
+
+  return (
+    <span className={clsx('inline-flex min-h-[30px] items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-bold', styles)}>
+      {icon}
+      {children}
+    </span>
+  )
+}
+
+function StatusMiniCard({
+  label,
+  value,
+  tone,
+}: {
+  label: string
+  value: string
+  tone: 'blue' | 'green' | 'amber'
+}) {
+  const styles = {
+    blue: 'border-sky-300/20 bg-sky-300/8 text-sky-100',
+    green: 'border-emerald-300/24 bg-emerald-300/8 text-emerald-100',
+    amber: 'border-amber-300/24 bg-amber-300/8 text-amber-100',
+  }[tone]
+
+  return (
+    <div className={clsx('rounded-[12px] border px-3 py-3', styles)}>
+      <p className="text-[0.68rem] font-black uppercase tracking-[0.13em] opacity-65">{label}</p>
+      <p className="mt-1 text-sm font-semibold leading-5">{value}</p>
+    </div>
+  )
+}
+
 function RationaleCard({
   title,
   body,
   tone,
-  footer,
+  badges,
 }: {
   title: string
   body: string
   tone: 'blue' | 'green' | 'amber'
-  footer?: string
+  badges?: string[]
 }) {
   const styles = {
     blue: 'border-[#cfe1f7] bg-[#eef5ff] text-[var(--nclex-blue)]',
@@ -1174,10 +1281,17 @@ function RationaleCard({
     <div className={clsx('rounded-[16px] border p-4', styles)}>
       <p className="text-xs font-semibold uppercase tracking-[0.16em]">{title}</p>
       <p className="mt-2 text-sm leading-6 text-[var(--nclex-text-secondary)]">{body}</p>
-      {footer ? (
-        <p className="mt-3 rounded-full border border-sky-300/35 bg-white/70 px-3 py-1.5 text-xs font-semibold text-[var(--nclex-blue)]">
-          {footer}
-        </p>
+      {badges?.length ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {badges.map((badge) => (
+            <span
+              key={badge}
+              className="rounded-lg border border-sky-300/35 bg-white/75 px-2.5 py-1 text-xs font-semibold leading-5 text-[var(--nclex-blue)]"
+            >
+              {badge}
+            </span>
+          ))}
+        </div>
       ) : null}
     </div>
   )
