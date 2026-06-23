@@ -485,8 +485,9 @@ export const generatePracticeSet = (
     return matchesCategory && matchesDomain && matchesSystem && matchesBoard && matchesStatus && matchesFormat && matchesDifficulty && matchesDifficultyProfile
   })
 
-  const engineScores = getEngineRankScores(filtered, scopedAttempts)
-  const ranked = shuffle(filtered).sort((left, right) => {
+  const candidatePool = filtered.length ? filtered : bank
+  const engineScores = getEngineRankScores(candidatePool, scopedAttempts)
+  const ranked = shuffle(candidatePool).sort((left, right) => {
     const leftAttempts = scopedAttempts.filter((attempt) => attempt.questionId === left.id)
     const rightAttempts = scopedAttempts.filter((attempt) => attempt.questionId === right.id)
     const engineDelta = (engineScores[right.id] ?? 0) - (engineScores[left.id] ?? 0)
@@ -724,11 +725,15 @@ export const getAnalyticsSnapshot = (
 
 export const getQuestionResult = (questionId: string, selectedAnswer: string[]) => {
   const question = questionLookup[questionId]
+  if (!question) return false
   return compareAnswers(selectedAnswer, question.correctAnswer)
 }
 
 export const getMissReason = (questionId: string, selectedAnswer: string[]) => {
   const question = questionLookup[questionId]
+  if (!question) {
+    return 'This saved question is no longer available. Rebuild the practice set before using this result for review.'
+  }
   const sourceTopic = question.sourceTopic ?? `${question.category} / ${question.subcategory}`
   const selectedLabels = question.choices
     .filter((choice) => selectedAnswer.includes(choice.id))
