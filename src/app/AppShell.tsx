@@ -443,8 +443,12 @@ function NclexAppShell() {
                   onClick={() => setAccountOpen((current) => !current)}
                   className="flex items-center gap-2 rounded-xl border border-sky-300/24 bg-white/5 px-2 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition hover:border-sky-200/60"
                 >
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full border border-cyan-300/30 bg-[linear-gradient(180deg,#0f7aff_0%,#062d63_100%)] text-sm font-black text-white shadow-[0_0_20px_rgba(43,148,255,0.28)]">
-                    {initials}
+                  <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-cyan-300/30 bg-[linear-gradient(180deg,#0f7aff_0%,#062d63_100%)] text-sm font-black text-white shadow-[0_0_20px_rgba(43,148,255,0.28)]">
+                    {profile.profileImageDataUrl ? (
+                      <img src={profile.profileImageDataUrl} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      initials
+                    )}
                   </div>
                   <div className="hidden text-left md:block">
                     <p className="text-sm font-semibold text-white">{profile.name}</p>

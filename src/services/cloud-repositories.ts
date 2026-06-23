@@ -85,17 +85,26 @@ export async function loadCloudState(userId: string): Promise<CloudStateBundle> 
     ]),
   )
 
+  const profilePreferences = profileResult.data?.preferences as
+    | (UserProfile['preferences'] & { profileImageDataUrl?: string })
+    | undefined
+
   return {
     profile: profileResult.data
       ? {
           name: profileResult.data.name,
           nursingSchool: profileResult.data.nursing_school ?? undefined,
+          profileImageDataUrl: profilePreferences?.profileImageDataUrl,
           examTrack: profileResult.data.exam_track,
           examDate: profileResult.data.exam_date,
           studyIntensity: profileResult.data.study_intensity,
           dailyGoal: profileResult.data.daily_goal,
           streak: profileResult.data.streak,
-          preferences: profileResult.data.preferences,
+          preferences: {
+            reducedMotion: profilePreferences?.reducedMotion ?? false,
+            notifications: profilePreferences?.notifications ?? true,
+            analyticsScope: profilePreferences?.analyticsScope ?? 'selected-track',
+          },
           userId,
           createdAt: profileResult.data.created_at,
           updatedAt: profileResult.data.updated_at,
@@ -158,6 +167,10 @@ export async function loadCloudState(userId: string): Promise<CloudStateBundle> 
 export async function saveProfile(userId: string, profile: UserProfile) {
   const client = requireClient()
   const owned = withOwnership(userId, profile)
+  const preferences = {
+    ...owned.preferences,
+    ...(owned.profileImageDataUrl ? { profileImageDataUrl: owned.profileImageDataUrl } : {}),
+  }
   const { error } = await client.from('profiles').upsert({
     id: userId,
     name: owned.name,
@@ -167,7 +180,7 @@ export async function saveProfile(userId: string, profile: UserProfile) {
     study_intensity: owned.studyIntensity,
     daily_goal: owned.dailyGoal,
     streak: owned.streak,
-    preferences: owned.preferences,
+    preferences,
     updated_at: owned.updatedAt,
   })
   if (error) throw error

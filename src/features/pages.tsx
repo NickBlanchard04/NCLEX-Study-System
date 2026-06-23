@@ -1,4 +1,4 @@
-﻿import { useDeferredValue, useEffect, useMemo, useRef, useState, useTransition } from 'react'
+﻿import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   CartesianGrid,
@@ -42,6 +42,7 @@ import {
   TrendingUp,
   Upload,
   UploadCloud,
+  UserRound,
   Zap,
 } from 'lucide-react'
 import { clsx } from 'clsx'
@@ -90,9 +91,6 @@ import {
   Surface,
 } from './ui'
 import {
-  BottomCommandButton,
-  CommandBrand,
-  CommandChip,
   CommandMetricCard,
   CommandProgress,
   MaterialUploadAsset,
@@ -192,14 +190,22 @@ const launchToneClasses: Record<
   },
 }
 
+const selectedTaskClasses = {
+  border: 'border-amber-200/72',
+  surface: 'bg-gradient-to-br from-amber-300/[0.28] via-[#2d2612]/88 to-[#061426]/92',
+  icon: 'border-amber-100/70 bg-amber-300/26 text-amber-50 shadow-[0_0_22px_rgba(251,191,36,0.28)]',
+  meta: 'border-amber-100/52 bg-amber-300/24 text-amber-50',
+  text: 'text-amber-100',
+  glow: 'shadow-[0_0_34px_rgba(251,191,36,0.22)]',
+  accent: 'bg-amber-300 shadow-[0_0_18px_rgba(252,211,77,0.78)]',
+}
+
 export function StudyMenuPage() {
   const navigate = useNavigate()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const profile = useStudySystemStore((state) => state.profile)
   const attempts = useStudySystemStore((state) => state.attempts)
   const materials = useStudySystemStore((state) => state.materials)
-  const materialFlashcards = useStudySystemStore((state) => state.materialFlashcards)
-  const materialQuestions = useStudySystemStore((state) => state.materialQuestions)
   const importStudyMaterial = useStudySystemStore((state) => state.importStudyMaterial)
   const importStudyMaterialFromUrl = useStudySystemStore((state) => state.importStudyMaterialFromUrl)
   const dashboard = useMemo(() => getDashboardState(profile, attempts), [attempts, profile])
@@ -209,76 +215,123 @@ export function StudyMenuPage() {
   const [materialUrl, setMaterialUrl] = useState('')
   const [importMessage, setImportMessage] = useState('')
 
-  const readyMaterials = materials.filter((item) => item.extractionStatus === 'ready')
   const extractingMaterials = materials.filter((item) => item.extractionStatus === 'extracting')
-  const activeExamTrack = getExamTrack(profile.examTrack ?? 'nclex-rn')
   const weakestCategory = dashboard.weakestCategories[0]?.category ?? 'Pharmacology'
   const planProgress = Math.min(
     100,
     Math.round((dashboard.todayCompleted / Math.max(1, dashboard.dailyGoal)) * 100),
   )
   const accuracyPct = Math.round(analytics.overallAccuracy * 100)
-  const dueCards = materialFlashcards.filter((card) => card.status !== 'known').length
-  const materialCount = Math.max(readyMaterials.length, materials.length)
+  const answeredCount = attempts.length
+  const nurseLevel = Math.max(1, Math.floor(answeredCount / 50) + 1)
+  const levelProgress = Math.round(((answeredCount % 50) / 50) * 100)
+  const masteryPct = Math.max(1, accuracyPct)
+  const streakDays = Math.max(dashboard.streak, 0)
   const todayPriority = dashboard.weakestCategories[0]
     ? 'Train ' + shortCategoryLabel(weakestCategory)
     : dashboard.recommendation.title
 
-  const coreTools: Array<LaunchTool & { meta: string; tone: LaunchTone }> = [
+  const [activeMenuIndex, setActiveMenuIndex] = useState(0)
+
+  const titleMenuItems = useMemo<Array<LaunchTool & { eyebrow: string; status: string; tone: LaunchTone }>>(
+    () => [
+      {
+        title: 'Start Today',
+        eyebrow: 'Plan',
+        description: "Today's plan",
+        action: 'Open dashboard',
+        route: '/dashboard',
+        featured: true,
+        icon: <Goal className="h-5 w-5" />,
+        status: planProgress + '% today',
+        tone: 'cyan',
+      },
+      {
+        title: 'Quick Study',
+        eyebrow: 'Practice',
+        description: '10 min drill',
+        action: 'Start drill',
+        route: '/quick-study',
+        icon: <Zap className="h-5 w-5" />,
+        status: shortCategoryLabel(weakestCategory),
+        tone: 'amber',
+      },
+      {
+        title: 'Study Plan',
+        eyebrow: 'Plan',
+        description: 'Today / week / later',
+        action: 'View plan',
+        route: '/study-plan',
+        icon: <CalendarClock className="h-5 w-5" />,
+        status: dashboard.todayCompleted + '/' + dashboard.dailyGoal + ' done',
+        tone: 'cyan',
+      },
+      {
+        title: 'Question Bank',
+        eyebrow: 'Practice',
+        description: 'Question sets',
+        action: 'Open bank',
+        route: '/practice-questions',
+        icon: <ClipboardList className="h-5 w-5" />,
+        status: Math.max(attempts.length, 1245).toLocaleString() + ' answered',
+        tone: 'amber',
+      },
+      {
+        title: 'Performance',
+        eyebrow: 'Progress',
+        description: 'Signals and trends',
+        action: 'Read signals',
+        route: '/performance-analytics',
+        icon: <BarChart3 className="h-5 w-5" />,
+        status: Math.max(1, accuracyPct) + '% accuracy',
+        tone: 'emerald',
+      },
+      {
+        title: 'Nurse Lab',
+        eyebrow: 'Lab',
+        description: 'Games and simulation',
+        action: 'Open lab',
+        route: '/nurse-command-lab',
+        icon: <HeartPulse className="h-5 w-5" />,
+        status: '4 modules',
+        tone: 'violet',
+      },
+    ],
+    [
+      accuracyPct,
+      attempts.length,
+      dashboard.dailyGoal,
+      dashboard.todayCompleted,
+      planProgress,
+      weakestCategory,
+    ],
+  )
+
+  const activeTitleItem = titleMenuItems[activeMenuIndex] ?? titleMenuItems[0]
+
+  const progressBadges: Array<{ label: string; value: string; tone: LaunchTone; icon: React.ReactNode }> = [
     {
-      title: 'Continue My Plan',
-      description: "Open today's priority, streak, weak areas, and next assignments.",
-      action: 'Open plan',
-      route: '/dashboard',
-      featured: true,
-      icon: <Goal className="h-5 w-5" />,
-      meta: planProgress + '% today',
+      label: 'Level',
+      value: 'Lv ' + nurseLevel,
       tone: 'cyan',
+      icon: <ShieldCheck className="h-4 w-4" />,
     },
     {
-      title: 'Quick Study',
-      description: 'Run a focused 10 minute session from your current weak spots.',
-      action: 'Start drill',
-      route: '/quick-study',
-      icon: <Zap className="h-5 w-5" />,
-      meta: shortCategoryLabel(weakestCategory),
+      label: 'Mastery',
+      value: masteryPct + '%',
+      tone: 'emerald',
+      icon: <Sparkles className="h-4 w-4" />,
+    },
+    {
+      label: 'Streak',
+      value: streakDays + 'd',
       tone: 'amber',
-    },
-    {
-      title: 'Study Plan',
-      description: 'See what matters today, this week, and later.',
-      action: 'View plan',
-      route: '/study-plan',
-      icon: <CalendarClock className="h-5 w-5" />,
-      meta: dashboard.todayCompleted + '/' + dashboard.dailyGoal + ' done',
-      tone: 'cyan',
-    },
-    {
-      title: 'Question Bank',
-      description: 'Practice by category with rationale and confidence tracking.',
-      action: 'Practice',
-      route: '/practice-questions',
-      icon: <ClipboardList className="h-5 w-5" />,
-      meta: Math.max(attempts.length, 1245).toLocaleString() + ' answered',
-      tone: 'emerald',
-    },
-    {
-      title: 'Performance',
-      description: 'Review accuracy, confidence, and trends without extra noise.',
-      action: 'Check progress',
-      route: '/performance-analytics',
-      icon: <BarChart3 className="h-5 w-5" />,
-      meta: Math.max(1, accuracyPct) + '% accuracy',
-      tone: 'emerald',
-    },
-    {
-      title: 'My Materials',
-      description: 'Turn notes, files, and links into cards and questions.',
-      action: 'Open library',
-      route: '/my-materials',
-      icon: <UploadCloud className="h-5 w-5" />,
-      meta: materialCount + ' materials',
-      tone: 'violet',
+      icon: (
+        <span className="relative inline-grid h-4 w-4 place-items-center text-amber-200">
+          <span className="absolute inset-0 rounded-full bg-amber-300/20 animate-ping" />
+          <Flame className="relative h-4 w-4 animate-pulse fill-amber-300/35 drop-shadow-[0_0_8px_rgba(251,191,36,0.7)]" />
+        </span>
+      ),
     },
   ]
 
@@ -346,23 +399,23 @@ export function StudyMenuPage() {
       ],
     },
     {
-      title: 'Clinical tools',
-      description: 'Simulation surfaces stay available without leading the page.',
+      title: 'System and labs',
+      description: 'Materials, preferences, and simulation stay one layer down.',
       tone: 'violet',
       tools: [
         {
-          title: 'Shift Game',
-          description: 'Practice shift decisions in the game module.',
+          title: 'My Materials',
+          description: 'Turn files and links into cards and questions.',
           action: 'Open',
-          route: '/shift-command',
-          icon: <HeartPulse className="h-4 w-4" />,
+          route: '/my-materials',
+          icon: <UploadCloud className="h-4 w-4" />,
           tone: 'violet',
         },
         {
-          title: 'Simulator',
-          description: 'Enter the clinical simulation workspace.',
+          title: 'Nurse Lab',
+          description: 'Games and simulation hub.',
           action: 'Open',
-          route: '/clinical-simulator',
+          route: '/nurse-command-lab',
           icon: <Sparkles className="h-4 w-4" />,
           tone: 'violet',
         },
@@ -377,6 +430,40 @@ export function StudyMenuPage() {
       ],
     },
   ]
+
+  const activateTitleMenuItem = useCallback((item: LaunchTool) => {
+    if (item.onSelect) {
+      item.onSelect()
+      return
+    }
+    navigate(item.route)
+  }, [navigate])
+
+  useEffect(() => {
+    const handleTitleMenuKeys = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null
+      const targetTag = target?.tagName
+      if (targetTag && ['A', 'BUTTON', 'INPUT', 'SELECT', 'TEXTAREA'].includes(targetTag)) return
+
+      if (event.key === 'ArrowDown' || event.key.toLowerCase() === 's') {
+        event.preventDefault()
+        setActiveMenuIndex((current) => (current + 1) % titleMenuItems.length)
+      }
+
+      if (event.key === 'ArrowUp' || event.key.toLowerCase() === 'w') {
+        event.preventDefault()
+        setActiveMenuIndex((current) => (current - 1 + titleMenuItems.length) % titleMenuItems.length)
+      }
+
+      if (event.key === 'Enter') {
+        event.preventDefault()
+        activateTitleMenuItem(titleMenuItems[activeMenuIndex] ?? titleMenuItems[0])
+      }
+    }
+
+    window.addEventListener('keydown', handleTitleMenuKeys)
+    return () => window.removeEventListener('keydown', handleTitleMenuKeys)
+  }, [activeMenuIndex, activateTitleMenuItem, titleMenuItems])
 
   const handleMenuFiles = async (files: FileList | File[]) => {
     const incomingFiles = Array.from(files)
@@ -412,144 +499,178 @@ export function StudyMenuPage() {
   }
 
   return (
-    <NurseCommandBackdrop className="min-h-screen w-full overflow-x-hidden px-4 py-4 md:px-7">
-      <div className="mx-auto flex min-h-[calc(100vh-2rem)] max-w-7xl flex-col">
-        <header className="relative z-10 flex flex-col gap-4 border-b border-cyan-300/20 pb-4 sm:flex-row sm:items-center sm:justify-between">
-          <CommandBrand />
+    <NurseCommandBackdrop className="min-h-screen w-full overflow-x-hidden px-4 pb-4 pt-3 md:px-7 md:pt-6">
+      <div className="mx-auto flex min-h-[calc(100vh-1rem)] max-w-7xl flex-col">
+        <main className="relative z-10 flex flex-1 flex-col gap-5">
+          <section className="relative isolate grid min-h-[calc(100vh-8.25rem)] overflow-hidden border-y border-cyan-300/18 py-5 lg:min-h-[calc(100vh-7.25rem)] lg:grid-cols-[minmax(0,0.9fr)_minmax(22rem,0.58fr)] lg:items-center lg:gap-8 lg:py-8">
+            <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(56,189,248,0.08)_1px,transparent_1px),linear-gradient(180deg,rgba(56,189,248,0.06)_1px,transparent_1px)] bg-[length:88px_88px]" />
+            <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(2,8,18,0.08),rgba(2,8,18,0.72)_75%,rgba(2,8,18,0.96))]" />
+            <div className="pointer-events-none absolute left-0 top-0 h-full w-px bg-cyan-200/25" />
+            <div className="pointer-events-none absolute right-0 top-0 h-full w-px bg-cyan-200/12" />
+            <button
+              type="button"
+              onClick={() => navigate('/settings')}
+              className="absolute right-3 top-3 z-20 grid h-14 w-14 place-items-center rounded-2xl border border-cyan-200/36 bg-[#03101f]/82 text-cyan-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_24px_rgba(56,189,248,0.18)] transition hover:border-cyan-100/70 hover:bg-cyan-300/10 focus:outline-none focus:ring-4 focus:ring-cyan-300/20 sm:right-5 sm:top-5"
+              aria-label="Open profile settings"
+              title="Profile settings"
+            >
+              <span className="relative grid h-10 w-10 place-items-center overflow-hidden rounded-full border border-cyan-200/45 bg-[radial-gradient(circle_at_50%_25%,rgba(125,211,252,0.3),rgba(2,8,18,0.9)_72%)]">
+                {profile.profileImageDataUrl ? (
+                  <img src={profile.profileImageDataUrl} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <UserRound className="h-5 w-5" />
+                )}
+              </span>
+              <span className="absolute bottom-2 right-2 h-3 w-3 rounded-full border-2 border-[#03101f] bg-emerald-300 shadow-[0_0_12px_rgba(110,231,183,0.82)]" />
+            </button>
 
-          <div className="hidden flex-wrap justify-end gap-2 sm:flex">
-            <CommandChip>{activeExamTrack.shortName}</CommandChip>
-            <CommandChip tone="green">{Math.max(dashboard.streak, 0)} day streak</CommandChip>
-          </div>
-        </header>
-
-        <main className="relative z-10 flex flex-1 flex-col gap-5 pb-4 pt-5">
-          <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-stretch">
-            <div className="relative overflow-hidden rounded-xl border border-cyan-200/45 bg-[#061b31]/78 p-5 shadow-[0_18px_42px_rgba(0,0,0,0.24),0_0_42px_rgba(34,211,238,0.1)] md:p-6">
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-1.5 bg-[linear-gradient(90deg,#22d3ee,#34d399,#fbbf24,#fb7185,#a78bfa)]" />
-              <div className="pointer-events-none absolute -left-16 -top-20 h-48 w-48 rounded-full bg-cyan-300/18 blur-3xl" />
-              <div className="pointer-events-none absolute right-6 top-10 h-32 w-32 rounded-full bg-emerald-300/14 blur-3xl" />
-              <div className="pointer-events-none absolute -bottom-24 right-24 h-52 w-52 rounded-full bg-violet-300/16 blur-3xl" />
-              <div className="relative max-w-3xl">
-                <h1 className="text-4xl font-black leading-tight tracking-normal text-white sm:text-5xl lg:text-6xl">
-                  Nurse Command
+            <div className="min-w-0">
+              <div className="mt-3 max-w-4xl pr-14 sm:mt-0">
+                <p className="text-sm font-black uppercase tracking-normal text-cyan-200/72">
+                  Study. Practice. Lead.
+                </p>
+                <h1 className="mt-2 text-[clamp(2.85rem,6.4vw,5.8rem)] font-black uppercase leading-[0.86] tracking-normal text-white drop-shadow-[0_0_26px_rgba(125,211,252,0.24)]">
+                  Nurse
+                  <span className="block text-cyan-100">Command</span>
                 </h1>
-                <p className="mt-3 max-w-2xl text-base leading-7 text-sky-100/78 md:text-lg">
-                  A clean launch point for today's plan, fast practice, progress, and study materials.
+                <p className="mt-5 max-w-xl text-base leading-7 text-sky-50/76 md:text-lg">
+                  Start with one focused win.
                 </p>
               </div>
-              <div className="relative mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
-                <button
-                  type="button"
-                  onClick={() => navigate('/dashboard')}
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-cyan-50/70 bg-gradient-to-r from-cyan-200 via-sky-300 to-emerald-300 px-4 py-3 text-sm font-black text-[#03101f] shadow-[0_0_32px_rgba(34,211,238,0.38),0_12px_26px_rgba(0,0,0,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-cyan-300/30"
-                >
-                  Continue My Plan
-                  <ArrowRight className="h-4 w-4" />
-                </button>
-                <p className="text-sm font-semibold text-sky-100/68">
-                  {profile.name || 'Future RN'} - {activeExamTrack.title}
-                </p>
+
+              <div className="mt-7 grid max-w-3xl gap-2" aria-label="Title menu">
+                {titleMenuItems.map((item, index) => {
+                  const isActive = index === activeMenuIndex
+                  const tone = launchToneClasses[item.tone]
+
+                  return (
+                    <button
+                      key={item.route}
+                      type="button"
+                      aria-current={isActive ? 'page' : undefined}
+                      onClick={() => activateTitleMenuItem(item)}
+                      onFocus={() => setActiveMenuIndex(index)}
+                      onMouseEnter={() => setActiveMenuIndex(index)}
+                      className={clsx(
+                        'group flex min-h-[4rem] w-full min-w-0 items-center gap-3 rounded-xl border bg-gradient-to-br px-3 py-2.5 text-left transition focus:outline-none focus:ring-4 focus:ring-cyan-300/20 sm:px-4',
+                        isActive
+                          ? clsx(selectedTaskClasses.border, selectedTaskClasses.surface, selectedTaskClasses.glow)
+                          : clsx('border-sky-200/14 from-sky-300/[0.035] via-[#03101f]/68 to-[#020812]/88 hover:shadow-[0_0_28px_rgba(56,189,248,0.14)]', tone.hover),
+                      )}
+                    >
+                      <span className={clsx('grid h-11 w-11 shrink-0 place-items-center rounded-lg border transition', isActive ? selectedTaskClasses.icon : clsx('border-sky-200/18 bg-sky-300/8 text-sky-100/62 group-hover:border-current group-hover:bg-white/10 group-hover:text-white'))}>
+                        {item.icon}
+                      </span>
+                      <span className="grid min-w-0 flex-1 gap-1 sm:grid-cols-[minmax(0,0.95fr)_minmax(0,0.75fr)] sm:items-center">
+                        <span className="flex min-w-0 items-center gap-2">
+                          <span className="text-lg font-black text-white">{item.title}</span>
+                          <span className={clsx('hidden rounded-md border px-2 py-1 text-xs font-black sm:inline-flex', isActive ? selectedTaskClasses.meta : 'border-sky-200/18 bg-sky-300/8 text-sky-100/58')}>
+                            {item.status}
+                          </span>
+                        </span>
+                        <span className="min-w-0 text-sm font-semibold text-sky-50/62 sm:text-right">
+                          {item.eyebrow} · {item.description}
+                        </span>
+                      </span>
+                      <ArrowRight className={clsx('h-5 w-5 shrink-0 transition group-hover:translate-x-1', isActive ? selectedTaskClasses.text : 'text-sky-100/42')} />
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
-            <aside className="relative overflow-hidden rounded-xl border border-emerald-200/42 bg-gradient-to-br from-emerald-400/[0.16] via-[#082838]/88 to-[#071d34]/92 p-5 shadow-[0_14px_34px_rgba(0,0,0,0.18),0_0_36px_rgba(52,211,153,0.1)]">
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-emerald-300 via-cyan-300 to-amber-300" />
-              <div className="pointer-events-none absolute inset-y-4 left-0 w-1.5 rounded-r-full bg-emerald-300/90 shadow-[0_0_18px_rgba(110,231,183,0.72)]" />
-              <div className="pointer-events-none absolute -right-16 -top-16 h-36 w-36 rounded-full bg-emerald-300/20 blur-3xl" />
-              <div className="relative">
-              <p className="text-sm font-semibold text-emerald-50/82">Today's focus</p>
-              <h2 className="mt-2 text-2xl font-black leading-tight text-white">{todayPriority}</h2>
-              <p className="mt-2 text-sm leading-6 text-sky-50/72">
-                {dashboard.todayCompleted} of {dashboard.dailyGoal} planned activities complete. Keep the next action obvious and the rest secondary.
-              </p>
-              <CommandProgress value={planProgress} tone="green" className="mt-4" />
-              <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs font-semibold text-sky-100/70">
-                <div className="rounded-lg border border-emerald-200/36 bg-emerald-300/[0.14] px-2 py-2">
-                  <p className="text-base font-black text-white">{Math.max(1, accuracyPct)}%</p>
-                  <p>Accuracy</p>
-                </div>
-                <div className="rounded-lg border border-amber-200/36 bg-amber-300/[0.14] px-2 py-2">
-                  <p className="text-base font-black text-white">{Math.max(dueCards, 0)}</p>
-                  <p>Cards</p>
-                </div>
-                <div className="rounded-lg border border-violet-200/36 bg-violet-300/[0.14] px-2 py-2">
-                  <p className="text-base font-black text-white">{materialCount}</p>
-                  <p>Files</p>
+            <aside className="mt-5 min-w-0 lg:mt-0">
+              <div className={clsx('relative overflow-hidden rounded-xl border p-5', selectedTaskClasses.border, selectedTaskClasses.surface, selectedTaskClasses.glow)}>
+                <span className={clsx('pointer-events-none absolute inset-x-0 top-0 h-1.5', selectedTaskClasses.accent)} />
+                <div className="relative">
+                  <p className="text-xs font-black uppercase tracking-normal text-sky-100/62">
+                    Selected
+                  </p>
+                  <div className="mt-3 flex items-center gap-3">
+                    <span className={clsx('grid h-12 w-12 shrink-0 place-items-center rounded-lg border', selectedTaskClasses.icon)}>
+                      {activeTitleItem.icon}
+                    </span>
+                    <div className="min-w-0">
+                      <h2 className="text-2xl font-black leading-tight text-white">{activeTitleItem.title}</h2>
+                      <p className={clsx('mt-2 inline-flex rounded-md border px-2 py-1 text-xs font-black', selectedTaskClasses.meta)}>
+                        {activeTitleItem.eyebrow} · {activeTitleItem.status}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => activateTitleMenuItem(activeTitleItem)}
+                    className={clsx(
+                      'mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-black transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-cyan-300/22 sm:w-auto',
+                      selectedTaskClasses.border,
+                      selectedTaskClasses.icon,
+                    )}
+                  >
+                    {activeTitleItem.action}
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
+
+              <div className="mt-3 overflow-hidden rounded-xl border border-sky-200/16 bg-[linear-gradient(135deg,rgba(14,165,233,0.11),rgba(2,8,18,0.78)_42%,rgba(16,185,129,0.1))] p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-black text-white">Progress badges</p>
+                    <p className="mt-1 text-sm font-semibold leading-6 text-sky-50/66">Small wins stack up.</p>
+                  </div>
+                  <span className="shrink-0 rounded-full border border-amber-200/38 bg-amber-300/14 px-3 py-1 text-xs font-black text-amber-100">
+                    {levelProgress}% to Lv {nurseLevel + 1}
+                  </span>
+                </div>
+                <div className="mt-4 grid grid-cols-3 gap-2">
+                  {progressBadges.map((badge) => (
+                    <div key={badge.label} className={clsx('min-w-0 rounded-lg border bg-sky-300/[0.06] px-3 py-3', launchToneClasses[badge.tone].border)}>
+                      <div className={clsx('flex h-8 w-8 items-center justify-center rounded-lg border bg-white/8', launchToneClasses[badge.tone].border, launchToneClasses[badge.tone].text)}>
+                        {badge.icon}
+                      </div>
+                      <p className="mt-3 text-[0.7rem] font-black uppercase tracking-normal text-sky-100/56">{badge.label}</p>
+                      <p className="mt-1 truncate text-xl font-black leading-none text-white">{badge.value}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 rounded-lg border border-cyan-200/16 bg-[#03101f]/58 p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-xs font-black uppercase tracking-normal text-cyan-100/68">Today's momentum</span>
+                    <span className="text-sm font-black text-white">{dashboard.todayCompleted}/{dashboard.dailyGoal}</span>
+                  </div>
+                  <CommandProgress value={planProgress} tone="blue" className="mt-3" />
+                  <p className="mt-2 text-xs font-semibold leading-5 text-sky-100/56">{todayPriority}</p>
+                </div>
               </div>
             </aside>
           </section>
 
-          <section aria-label="Core actions" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {coreTools.map((tool) => {
-              const tone = launchToneClasses[tool.tone]
-              return (
-                <button
-                  key={tool.title}
-                  type="button"
-                  onClick={() => navigate(tool.route)}
-                  className={clsx(
-                    'group relative min-h-[8rem] overflow-hidden rounded-xl border p-4 text-left transition focus:outline-none focus:ring-4 focus:ring-sky-300/20',
-                    tone.border,
-                    tone.surface,
-                    tone.hover,
-                    tool.featured
-                      ? 'shadow-[0_14px_34px_rgba(56,189,248,0.18)]'
-                      : 'shadow-[0_12px_28px_rgba(0,0,0,0.16)]',
-                  )}
-                >
-                  <span className={clsx('pointer-events-none absolute -right-10 -top-12 h-28 w-28 rounded-full blur-2xl transition group-hover:scale-110', tone.glow)} />
-                  <span className={clsx('pointer-events-none absolute inset-x-0 top-0 h-1.5', tone.accent)} />
-                  <span className={clsx('pointer-events-none absolute inset-y-4 left-0 w-1.5 rounded-r-full', tone.accent)} />
-                  <div className="relative flex items-start justify-between gap-3">
-                    <span className={clsx('grid h-10 w-10 shrink-0 place-items-center rounded-lg border', tone.icon)}>
-                      {tool.icon}
-                    </span>
-                    <span className={clsx('max-w-[10rem] truncate rounded-md border px-2 py-1 text-xs font-bold', tone.meta)}>
-                      {tool.meta}
-                    </span>
-                  </div>
-                  <h3 className="relative mt-3 text-lg font-black text-white">{tool.title}</h3>
-                  <p className="relative mt-1 min-h-[2.5rem] text-sm leading-5 text-sky-50/74">{tool.description}</p>
-                  <span className={clsx('relative mt-3 inline-flex items-center gap-2 text-sm font-bold', tone.text)}>
-                    {tool.action}
-                    <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
-                  </span>
-                </button>
-              )
-            })}
-          </section>
-
-          <section className="grid gap-3 lg:grid-cols-3">
+          <section className="grid gap-3 lg:grid-cols-3" aria-label="Secondary tools">
             {secondaryGroups.map((group) => (
-              <section key={group.title} className={clsx('relative min-w-0 overflow-hidden rounded-xl border p-4', launchToneClasses[group.tone].border, launchToneClasses[group.tone].surface)}>
-                <span className={clsx('pointer-events-none absolute inset-x-0 top-0 h-1', launchToneClasses[group.tone].accent)} />
-                <span className={clsx('pointer-events-none absolute -right-12 -top-14 h-28 w-28 rounded-full blur-2xl', launchToneClasses[group.tone].glow)} />
-                <h2 className="relative text-base font-black text-white">{group.title}</h2>
-                <p className="relative mt-1 text-sm leading-6 text-sky-50/70">{group.description}</p>
-                <div className="relative mt-4 grid min-w-0 gap-2">
+              <section key={group.title} className={clsx('min-w-0 rounded-xl border p-4 shadow-[0_14px_30px_rgba(0,0,0,0.12)]', launchToneClasses[group.tone].border, launchToneClasses[group.tone].surface)}>
+                <div className="flex items-start gap-3">
+                  <span className={clsx('mt-1 h-9 w-1 shrink-0 rounded-full', launchToneClasses[group.tone].accent)} />
+                  <div className="min-w-0">
+                    <h2 className="text-base font-black text-white">{group.title}</h2>
+                    <p className="mt-1 text-sm leading-6 text-sky-50/66">{group.description}</p>
+                  </div>
+                </div>
+                <div className="mt-4 grid min-w-0 gap-2">
                   {group.tools.map((tool) => (
                     <button
                       key={tool.route}
                       type="button"
                       onClick={() => navigate(tool.route)}
-                      className={clsx(
-                        'flex min-h-12 w-full min-w-0 items-center gap-3 overflow-hidden rounded-lg border px-3 py-2 text-left transition focus:outline-none focus:ring-4 focus:ring-sky-300/16',
-                        launchToneClasses[tool.tone].border,
-                        launchToneClasses[tool.tone].surface,
-                        launchToneClasses[tool.tone].hover,
-                      )}
+                      className="flex min-h-[4.25rem] w-full min-w-0 items-start gap-3 overflow-hidden rounded-lg border border-sky-200/14 bg-sky-300/[0.05] px-3 py-3 text-left transition hover:border-cyan-200/40 hover:bg-cyan-300/10 focus:outline-none focus:ring-4 focus:ring-sky-300/16 sm:min-h-16"
                     >
                       <span className={clsx('grid h-8 w-8 shrink-0 place-items-center rounded-md border', launchToneClasses[tool.tone].icon)}>
                         {tool.icon}
                       </span>
                       <span className="min-w-0 flex-1 overflow-hidden">
                         <span className="block text-sm font-bold text-white">{tool.title}</span>
-                        <span className="block truncate text-xs text-sky-50/64">{tool.description}</span>
+                        <span className="block whitespace-normal break-words text-xs leading-4 text-sky-50/58">{tool.description}</span>
                       </span>
-                      <ArrowRight className={clsx('h-4 w-4 shrink-0', launchToneClasses[tool.tone].text)} />
+                      <ArrowRight className={clsx('mt-2 h-4 w-4 shrink-0', launchToneClasses[tool.tone].text)} />
                     </button>
                   ))}
                 </div>
@@ -557,40 +678,26 @@ export function StudyMenuPage() {
             ))}
           </section>
 
-          <section className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-            <section className="relative overflow-hidden rounded-xl border border-violet-200/34 bg-gradient-to-br from-violet-400/[0.16] via-[#111c3a]/82 to-[#061426]/92 p-4">
+          <section className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]" aria-label="User added materials">
+            <section className="relative overflow-hidden rounded-xl border border-violet-200/24 bg-[#03101f]/66 p-4">
               <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-300 via-cyan-300 to-emerald-300" />
-              <div className="pointer-events-none absolute -right-12 -top-14 h-32 w-32 rounded-full bg-violet-300/20 blur-3xl" />
-              <div className="relative">
-              <h2 className="text-base font-black text-white">Materials and imports</h2>
-              <p className="mt-1 text-sm leading-6 text-sky-50/70">
-                Add class notes only when you need them. The main launcher stays focused on what to do next.
+              <h2 className="text-base font-black text-white">User added materials</h2>
+              <p className="mt-1 text-sm leading-6 text-sky-50/66">
+                Your uploaded notes, files, and study links stay here when you need them.
               </p>
-              <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs font-semibold text-sky-100/64">
-                <div className="rounded-lg border border-violet-200/30 bg-violet-300/[0.12] px-2 py-3">
-                  <p className="text-lg font-black text-white">{materials.length}</p>
-                  <p>Materials</p>
-                </div>
-                <div className="rounded-lg border border-cyan-200/30 bg-cyan-300/[0.12] px-2 py-3">
-                  <p className="text-lg font-black text-white">{materialFlashcards.length}</p>
-                  <p>Cards</p>
-                </div>
-                <div className="rounded-lg border border-emerald-200/30 bg-emerald-300/[0.12] px-2 py-3">
-                  <p className="text-lg font-black text-white">{materialQuestions.length}</p>
-                  <p>Items</p>
-                </div>
+              <div className="mt-4 rounded-lg border border-violet-200/24 bg-violet-300/[0.1] px-4 py-4">
+                <p className="text-xs font-black uppercase tracking-normal text-violet-100/72">Total added</p>
+                <p className="mt-1 text-4xl font-black leading-none text-white">{materials.length}</p>
               </div>
               {extractingMaterials.length ? (
                 <p className="mt-3 rounded-lg border border-amber-300/22 bg-amber-300/10 px-3 py-2 text-sm font-semibold text-amber-100">
                   {extractingMaterials.length} material import in progress.
                 </p>
               ) : null}
-              </div>
             </section>
 
-            <section className="relative overflow-hidden rounded-xl border border-cyan-200/34 bg-gradient-to-br from-cyan-400/[0.15] via-[#08243b]/82 to-[#061426]/92 p-4">
+            <section className="relative overflow-hidden rounded-xl border border-cyan-200/24 bg-[#03101f]/66 p-4">
               <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-300 via-sky-300 to-amber-300" />
-              <div className="pointer-events-none absolute -left-12 bottom-[-4rem] h-32 w-32 rounded-full bg-cyan-300/18 blur-3xl" />
               <input
                 ref={fileInputRef}
                 type="file"
@@ -602,7 +709,7 @@ export function StudyMenuPage() {
                   event.currentTarget.value = ''
                 }}
               />
-              <div className="relative grid gap-3 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+              <div className="grid gap-3 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
                 <div
                   onDragEnter={(event) => {
                     event.preventDefault()
@@ -636,13 +743,13 @@ export function StudyMenuPage() {
                       value={materialUrl}
                       onChange={(event) => setMaterialUrl(event.target.value)}
                       placeholder="Paste a study link"
-                      className="h-12 w-full rounded-lg border border-cyan-200/35 bg-[#03101f]/78 pl-10 pr-3 text-sm text-white outline-none transition placeholder:text-sky-200/38 focus:border-cyan-100 focus:ring-4 focus:ring-cyan-300/18"
+                      className="h-12 w-full rounded-lg border border-cyan-200/30 bg-[#03101f]/78 pl-10 pr-3 text-sm text-white outline-none transition placeholder:text-sky-200/38 focus:border-cyan-100 focus:ring-4 focus:ring-cyan-300/18"
                     />
                   </div>
                   <button
                     type="submit"
                     disabled={isImporting || !materialUrl.trim()}
-                    className="inline-flex min-h-11 items-center justify-center rounded-lg border border-cyan-100/45 bg-gradient-to-r from-cyan-500 to-sky-500 px-4 py-3 text-sm font-bold text-white shadow-[0_0_22px_rgba(14,165,233,0.22)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex min-h-11 items-center justify-center rounded-lg border border-cyan-100/45 bg-gradient-to-r from-cyan-500 to-sky-500 px-4 py-3 text-sm font-bold text-white shadow-[0_0_22px_rgba(14,165,233,0.18)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {isImporting ? 'Importing...' : 'Import link'}
                   </button>
@@ -653,13 +760,6 @@ export function StudyMenuPage() {
           </section>
         </main>
 
-        <nav className="sticky bottom-0 z-20 mt-4 grid grid-cols-2 gap-2 border-t border-cyan-200/30 bg-[#020812]/88 px-2 py-3 shadow-[0_-16px_34px_rgba(34,211,238,0.08)] backdrop-blur md:grid-cols-5">
-          <BottomCommandButton label="Home" icon={<Goal className="h-5 w-5" />} active onClick={() => navigate('/')} />
-          <BottomCommandButton label="Study Plan" icon={<CalendarClock className="h-5 w-5" />} onClick={() => navigate('/study-plan')} />
-          <BottomCommandButton label="Performance" icon={<BarChart3 className="h-5 w-5" />} onClick={() => navigate('/performance-analytics')} />
-          <BottomCommandButton label="Resources" icon={<BookOpen className="h-5 w-5" />} onClick={() => navigate('/strategy-training')} />
-          <BottomCommandButton label="Settings" icon={<Target className="h-5 w-5" />} onClick={() => navigate('/settings')} />
-        </nav>
       </div>
     </NurseCommandBackdrop>
   )
@@ -4229,6 +4329,28 @@ export function SettingsPage() {
   const syncNow = useStudySystemStore((state) => state.syncNow)
   const signOut = useStudySystemStore((state) => state.signOut)
   const resetProgress = useStudySystemStore((state) => state.resetProgress)
+  const profilePhotoInputRef = useRef<HTMLInputElement | null>(null)
+  const [profilePhotoMessage, setProfilePhotoMessage] = useState('')
+  const profileInitials = getProfileInitials(profile.name)
+
+  const handleProfilePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.currentTarget.value = ''
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      setProfilePhotoMessage('Choose an image file.')
+      return
+    }
+
+    try {
+      const imageDataUrl = await createProfileImageDataUrl(file)
+      updateProfile({ profileImageDataUrl: imageDataUrl })
+      setProfilePhotoMessage('Profile picture updated.')
+    } catch (error) {
+      setProfilePhotoMessage(error instanceof Error ? error.message : 'Could not read that image.')
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -4241,6 +4363,60 @@ export function SettingsPage() {
         <Surface>
           <h3 className="font-serif text-3xl text-[#163042]">Profile preferences</h3>
           <div className="mt-6 grid gap-4">
+            <div className="rounded-[20px] border border-[var(--nclex-border)] bg-[var(--nclex-card-muted)] p-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-[#b8d7f4] bg-[linear-gradient(180deg,#0f7aff_0%,#062d63_100%)] text-xl font-black text-white shadow-[0_12px_28px_rgba(43,148,255,0.22)]">
+                    {profile.profileImageDataUrl ? (
+                      <img src={profile.profileImageDataUrl} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      profileInitials
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-[var(--nclex-text)]">Profile picture</p>
+                    <p className="mt-1 text-sm leading-6 text-[var(--nclex-text-muted)]">
+                      Shows on the Home title screen and account menu.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <input
+                    ref={profilePhotoInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(event) => void handleProfilePhotoUpload(event)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => profilePhotoInputRef.current?.click()}
+                    className="nclex-btn-primary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold"
+                  >
+                    <UploadCloud className="h-4 w-4" />
+                    Upload
+                  </button>
+                  {profile.profileImageDataUrl ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        updateProfile({ profileImageDataUrl: undefined })
+                        setProfilePhotoMessage('Profile picture removed.')
+                      }}
+                      className="nclex-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Remove
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+              {profilePhotoMessage ? (
+                <p className="mt-3 rounded-xl border border-[#d7e6f7] bg-white px-3 py-2 text-sm font-semibold text-[var(--nclex-text-muted)]">
+                  {profilePhotoMessage}
+                </p>
+              ) : null}
+            </div>
             <Field label="Display name">
               <input value={profile.name} onChange={(event) => updateProfile({ name: event.target.value })} className={inputClass} />
             </Field>
@@ -4591,6 +4767,45 @@ function MaterialQuizRunner() {
       </Surface>
     </div>
   )
+}
+
+function getProfileInitials(name: string) {
+  const initials = name
+    .split(' ')
+    .slice(0, 2)
+    .map((item) => item[0]?.toUpperCase())
+    .join('')
+
+  return initials || 'NC'
+}
+
+function createProfileImageDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onerror = () => reject(new Error('Could not read that image.'))
+    reader.onload = () => {
+      const image = new Image()
+      image.onerror = () => reject(new Error('Could not load that image.'))
+      image.onload = () => {
+        const maxSize = 320
+        const scale = Math.min(1, maxSize / Math.max(image.width, image.height))
+        const width = Math.max(1, Math.round(image.width * scale))
+        const height = Math.max(1, Math.round(image.height * scale))
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        const context = canvas.getContext('2d')
+        if (!context) {
+          reject(new Error('Could not prepare that image.'))
+          return
+        }
+        context.drawImage(image, 0, 0, width, height)
+        resolve(canvas.toDataURL('image/jpeg', 0.82))
+      }
+      image.src = String(reader.result)
+    }
+    reader.readAsDataURL(file)
+  })
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
