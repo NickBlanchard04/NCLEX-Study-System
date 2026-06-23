@@ -352,6 +352,17 @@ export const useStudySystemStore = create<StudySystemState>()(
         set({ authError: null, syncStatus: 'syncing' })
         try {
           const snapshot = await signUpWithPassword(email, password, get().profile)
+          if (!snapshot.user || !snapshot.session) {
+            set({
+              authUser: null,
+              authSession: null,
+              isDemoMode: false,
+              authError: null,
+              syncStatus: 'idle',
+            })
+            return
+          }
+
           set({
             authUser: snapshot.user,
             authSession: snapshot.session,

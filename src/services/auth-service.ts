@@ -66,8 +66,9 @@ export async function signUpWithPassword(
     },
   })
   if (error) throw error
+  const signedInUser = data.session ? data.user : null
   return {
-    user: toAuthUser(data.user),
+    user: toAuthUser(signedInUser),
     session: toAuthSession(data.session),
   }
 }
