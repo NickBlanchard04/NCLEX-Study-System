@@ -237,13 +237,19 @@ const createFreshProfile = ({
   },
 })
 
-const createFreshProfileForAuthUser = (user: AuthUser) =>
-  createFreshProfile({
+const createFreshProfileForAuthUser = (user: AuthUser) => {
+  const authMetadataIsSeeded =
+    user.name === initialProfile.name &&
+    user.nursingSchool === initialProfile.nursingSchool &&
+    user.examTrack === initialProfile.examTrack
+
+  return createFreshProfile({
     email: user.email,
-    name: user.name,
-    nursingSchool: user.nursingSchool,
+    name: authMetadataIsSeeded ? undefined : user.name,
+    nursingSchool: authMetadataIsSeeded ? undefined : user.nursingSchool,
     examTrack: user.examTrack,
   })
+}
 
 const createCleanAccountState = (profile: UserProfile) => ({
   profile,
