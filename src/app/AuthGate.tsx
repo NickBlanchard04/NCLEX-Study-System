@@ -257,6 +257,17 @@ function AuthLanding() {
               </div>
             </div>
           </div>
+
+          <div className="mt-4 rounded-[18px] border border-[var(--nclex-border)] bg-white px-4 py-3 text-xs leading-5 text-[var(--nclex-text-muted)]">
+            <p>
+              By using Nurse Command, you agree to use it as practice study support, not clinical advice,
+              licensure prediction, or a substitute for official NCLEX guidance.
+            </p>
+            <p className="mt-2">
+              Privacy: cloud accounts store your email and synced study data. Do not upload protected health information.
+              Support: <a className="font-semibold text-[var(--nclex-blue)]" href="mailto:support@cosmicgames.info">support@cosmicgames.info</a>.
+            </p>
+          </div>
         </motion.section>
       </div>
     </div>

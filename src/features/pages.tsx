@@ -1895,13 +1895,16 @@ export function PerformanceAnalyticsPage() {
               {performanceTakeaway}
             </h3>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-sky-100/82">
-              Engine signal: {readiness.nextBestAction}
+              Readiness is practice evidence from your activity in Nurse Command. It is not a licensure prediction, clinical advice, or a substitute for official exam guidance.
             </p>
           </div>
           <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
             <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-100/70">Readiness</p>
             <p className="mt-2 text-3xl font-black">{readinessLabel}</p>
             <p className="text-sm font-semibold text-sky-100/75">{Math.round(readiness.readinessScore * 100)}% readiness score</p>
+            <p className="mt-2 text-xs font-bold uppercase tracking-[0.14em] text-sky-100/60">
+              Practice evidence only
+            </p>
             <div className="mt-4">
               <ProgressBar
                 value={readiness.readinessScore}
@@ -4097,6 +4100,12 @@ export function SettingsPage() {
             <FeatureCallout title="Saved progress" description="Attempts, flashcards, notes, materials, and generated study tools can sync to Postgres." />
             <FeatureCallout title="Premium tiers" description="Feature gating can layer on top of existing page and session boundaries." />
             <FeatureCallout title="Retention hooks" description="Quick Study, streaks, weak-area review, and notes already support daily return behavior." />
+          </div>
+          <h3 className="mt-7 font-serif text-3xl text-[#163042]">Privacy, terms & support</h3>
+          <div className="mt-6 grid gap-4 md:grid-cols-3">
+            <FeatureCallout title="Privacy" description="Cloud accounts store your email and synced study activity. Do not upload protected health information or patient-identifying material." />
+            <FeatureCallout title="Terms" description="Nurse Command is practice study support only. Readiness and adaptive signals are practice evidence, not clinical advice or licensure guarantees." />
+            <FeatureCallout title="Support" description="For account, email, or study-material issues, contact support@cosmicgames.info." />
           </div>
           <button
             type="button"
