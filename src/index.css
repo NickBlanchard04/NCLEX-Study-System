@@ -31,22 +31,27 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: #04101f;
 }
 
 html {
+  min-height: 100%;
+  background-color: #04101f;
   scroll-behavior: smooth;
 }
 
 body {
   margin: 0;
+  min-height: 100%;
+  min-height: 100dvh;
   min-width: 320px;
-  background:
-    radial-gradient(circle at top right, rgba(42, 125, 225, 0.08), transparent 22%),
-    linear-gradient(180deg, #f9fbfe 0%, #f6f8fb 50%, #f3f7fc 100%);
+  background-color: #04101f;
 }
 
 #root {
   min-height: 100vh;
+  min-height: 100dvh;
+  background-color: #04101f;
 }
 
 h1,
