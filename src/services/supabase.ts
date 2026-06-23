@@ -3,8 +3,10 @@ import type { AuthSession, AuthUser, ExamTrackId } from '../app/types'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
+const initialAuthHash = typeof window === 'undefined' ? '' : window.location.hash
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey)
+export const initialUrlHasPasswordRecovery = initialAuthHash.includes('type=recovery')
 
 export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl!, supabaseAnonKey!, {

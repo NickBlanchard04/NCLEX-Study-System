@@ -364,6 +364,7 @@ export const useStudySystemStore = create<StudySystemState>()(
             authInitialized: true,
             isDemoMode: snapshot.user ? false : get().isDemoMode,
             authError: null,
+            passwordRecoveryRequired: snapshot.event === 'PASSWORD_RECOVERY' && Boolean(snapshot.user),
           })
 
           onAuthSnapshotChange((nextSnapshot) => {

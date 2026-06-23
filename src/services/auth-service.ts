@@ -1,5 +1,11 @@
 import type { AuthSession, AuthUser, UserProfile } from '../app/types'
-import { isSupabaseConfigured, supabase, toAuthSession, toAuthUser } from './supabase'
+import {
+  initialUrlHasPasswordRecovery,
+  isSupabaseConfigured,
+  supabase,
+  toAuthSession,
+  toAuthUser,
+} from './supabase'
 
 export interface AuthSnapshot {
   user: AuthUser | null
@@ -27,6 +33,7 @@ export async function getCurrentAuthSnapshot(): Promise<AuthSnapshot> {
   return {
     user: toAuthUser(data.session?.user ?? null),
     session: toAuthSession(data.session ?? null),
+    event: initialUrlHasPasswordRecovery && data.session ? 'PASSWORD_RECOVERY' : undefined,
   }
 }
 
