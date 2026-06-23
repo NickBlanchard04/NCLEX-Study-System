@@ -688,20 +688,51 @@ export function DashboardPage() {
     dashboard.todayCompleted === 0 ? 0 : Math.min(5, Math.max(1, Math.round(dashboard.todayCompleted / 1.5)))
   const readiness = analytics.overallAccuracy >= 0.75 ? 'Good' : analytics.overallAccuracy >= 0.62 ? 'Building' : 'Needs focus'
   const readinessTone = analytics.overallAccuracy >= 0.75 ? 'blue' : analytics.overallAccuracy >= 0.62 ? 'green' : 'amber'
+  const startPlanQuickStudy = (category?: QuestionCategory) => {
+    startQuickStudy(category)
+    navigate('/quick-study')
+  }
   const planItems = [
     {
       id: 'priority-drill',
       label: `15 Questions - ${shortCategoryLabel(weakestArea?.category ?? 'Pharmacology')}`,
       meta: '25 min',
+      actionLabel: 'Start now',
+      icon: <Sparkles className="h-4 w-4" />,
+      onSelect: () => startPlanQuickStudy(weakestArea?.category),
     },
     {
       id: 'secondary-drill',
       label: `10 Questions - ${shortCategoryLabel(dashboard.weakestCategories[1]?.category ?? 'Adult Health / Med-Surg')}`,
       meta: '15 min',
+      actionLabel: 'Drill',
+      icon: <Target className="h-4 w-4" />,
+      onSelect: () => startPlanQuickStudy(dashboard.weakestCategories[1]?.category),
     },
-    { id: 'review-incorrect', label: 'Review Incorrect', meta: '20 min' },
-    { id: 'reading', label: 'Read: Fluid & Electrolytes', meta: '15 min' },
-    { id: 'mini-exam', label: 'Mini Exam (25 Qs)', meta: '25 min' },
+    {
+      id: 'review-incorrect',
+      label: 'Review Incorrect',
+      meta: '20 min',
+      actionLabel: 'Review',
+      icon: <ClipboardList className="h-4 w-4" />,
+      onSelect: () => navigate('/weak-areas'),
+    },
+    {
+      id: 'reading',
+      label: 'Read: Fluid & Electrolytes',
+      meta: '15 min',
+      actionLabel: 'Read',
+      icon: <BookOpen className="h-4 w-4" />,
+      onSelect: () => navigate('/strategy-training'),
+    },
+    {
+      id: 'mini-exam',
+      label: 'Mini Exam (25 Qs)',
+      meta: '25 min',
+      actionLabel: 'Open',
+      icon: <CalendarClock className="h-4 w-4" />,
+      onSelect: () => navigate('/test-mode'),
+    },
   ]
   const planSections = [
     {
@@ -855,39 +886,92 @@ export function DashboardPage() {
 
       <DetailGrid className="xl:grid-cols-[1.12fr_0.88fr]">
         <Surface>
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h3 className="font-serif text-2xl text-[var(--nclex-text)]">Today's Plan</h3>
               <p className="mt-1 text-sm text-[var(--nclex-text-muted)]">
-                {completedPlanCount} of {planItems.length} completed
+                Start the first task, then use the lighter follow-ups only if the day still has room.
               </p>
             </div>
-            <span className="nclex-chip nclex-chip-success">{completedPlanCount} / {planItems.length}</span>
+            <span className="nclex-chip nclex-chip-success w-fit">{completedPlanCount} / {planItems.length} done</span>
           </div>
-          <div className="mt-5 grid gap-4">
+          <button
+            type="button"
+            onClick={planItems[0].onSelect}
+            className="mt-5 flex w-full items-stretch gap-3 rounded-2xl border border-emerald-200/30 bg-emerald-300/[0.105] p-4 text-left transition hover:-translate-y-0.5 hover:border-emerald-200/55 hover:bg-emerald-300/[0.15] focus:outline-none focus:ring-2 focus:ring-emerald-200/55"
+          >
+            <span
+              className={clsx(
+                'mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border',
+                completedPlanCount > 0
+                  ? 'border-emerald-300/55 bg-emerald-300/16 text-emerald-200'
+                  : 'border-emerald-200/35 bg-white/8 text-emerald-100',
+              )}
+            >
+              {completedPlanCount > 0 ? <CheckCircle2 className="h-5 w-5" /> : planItems[0].icon}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="text-xs font-black uppercase tracking-[0.16em] text-emerald-100/72">Do first</span>
+              <span className="mt-1 block text-lg font-black leading-snug text-white">{planItems[0].label}</span>
+              <span className="mt-2 block text-sm font-semibold text-sky-100/62">{planItems[0].meta}</span>
+            </span>
+            <span className="hidden shrink-0 items-center gap-2 self-center rounded-xl bg-white px-3 py-2 text-sm font-black text-[#063257] sm:inline-flex">
+              {planItems[0].actionLabel}
+              <ArrowRight className="h-4 w-4" />
+            </span>
+            <ArrowRight className="mt-1 h-5 w-5 shrink-0 text-emerald-100 sm:hidden" />
+          </button>
+          <div className="mt-4 grid gap-3">
             {planSections.map((section) => (
-              <div key={section.title} className="rounded-2xl border border-cyan-200/15 bg-sky-300/[0.055] p-4">
+              <div
+                key={section.title}
+                className={clsx(
+                  'rounded-2xl border border-cyan-200/15 bg-sky-300/[0.055] p-4',
+                  section.title === 'Next' && 'hidden sm:block',
+                  section.title === 'If You Have Extra Time' && 'hidden md:block',
+                )}
+              >
                 <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                   <p className="text-sm font-black text-white">{section.title}</p>
                   <p className="text-xs font-semibold text-sky-100/55">{section.description}</p>
                 </div>
-                <div className="space-y-1">
+                <div className="grid gap-2">
                   {section.items.map((item) => {
                     const planIndex = planItems.findIndex((planItem) => planItem.id === item.id)
+                    const completed = planIndex > -1 && planIndex < completedPlanCount
                     return (
-                      <ChecklistItem
+                      <button
                         key={item.id}
-                        label={item.label}
-                        meta={item.meta}
-                        completed={planIndex > -1 && planIndex < completedPlanCount}
-                      />
+                        type="button"
+                        onClick={item.onSelect}
+                        className="flex min-h-14 w-full items-center gap-3 rounded-xl border border-cyan-200/10 bg-[#03101f]/28 px-3 py-2.5 text-left transition hover:border-cyan-200/30 hover:bg-cyan-300/10 focus:outline-none focus:ring-2 focus:ring-cyan-200/45"
+                      >
+                        <span
+                          className={clsx(
+                            'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border',
+                            completed
+                              ? 'border-emerald-300/55 bg-emerald-300/14 text-emerald-200'
+                              : 'border-sky-300/24 bg-white/5 text-sky-100/72',
+                          )}
+                        >
+                          {completed ? <CheckCircle2 className="h-4 w-4" /> : item.icon}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-black text-white">{item.label}</span>
+                          <span className="mt-0.5 block text-xs font-semibold text-sky-100/50">{item.meta}</span>
+                        </span>
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-cyan-200/15 bg-cyan-300/10 px-2.5 py-1.5 text-xs font-black text-cyan-100">
+                          {item.actionLabel}
+                          <ArrowRight className="h-3.5 w-3.5" />
+                        </span>
+                      </button>
                     )
                   })}
                 </div>
               </div>
             ))}
           </div>
-          <div className="mt-5 rounded-2xl border border-cyan-200/15 bg-[#03101f]/55 p-4">
+          <div className="mt-5 hidden rounded-2xl border border-cyan-200/15 bg-[#03101f]/55 p-4 sm:block">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-black text-white">Plan context</p>
@@ -908,12 +992,12 @@ export function DashboardPage() {
           <button
             type="button"
             onClick={() => navigate('/study-plan')}
-            className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[var(--nclex-blue)]"
+            className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-cyan-200/18 bg-cyan-300/10 px-4 py-3 text-sm font-black text-cyan-100 transition hover:border-cyan-200/36 hover:bg-cyan-300/15 sm:w-auto sm:justify-start sm:border-0 sm:bg-transparent sm:p-0 sm:text-[var(--nclex-blue)]"
           >
             View Full Plan
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          </Surface>
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </Surface>
         <Surface>
           <SectionHeading
             title="Weak areas"
