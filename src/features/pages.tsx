@@ -1019,7 +1019,7 @@ export function PracticeQuestionsPage() {
   const activeTrack = getExamTrack(profile.examTrack ?? 'nclex-rn')
   const trackCategories = getExamCategories(activeTrack.id)
   const trackSystems = getExamSystems(activeTrack.id)
-  const launchPracticeSession = () =>
+  const launchPracticeSession = (overrides: Partial<Parameters<typeof startPracticeSession>[0]> = {}) =>
     startTransition(() =>
       startPracticeSession({
         category,
@@ -1029,8 +1029,30 @@ export function PracticeQuestionsPage() {
         format,
         difficulty,
         questionCount,
+        ...overrides,
       }),
     )
+  const priorityCategory = category === 'All' ? trackCategories[0] : category
+  const practicePresets = [
+    {
+      title: 'Recommended set',
+      description: 'Adaptive mixed questions using the current track and filters.',
+      action: 'Start adaptive',
+      config: {},
+    },
+    {
+      title: 'Missed repair',
+      description: 'Five previously missed questions for a fast remediation loop.',
+      action: 'Repair misses',
+      config: { category: priorityCategory, questionStatus: 'incorrect' as const, questionCount: 5 },
+    },
+    {
+      title: 'Fresh evidence',
+      description: 'Unused questions when you need a cleaner read on readiness.',
+      action: 'Start unused',
+      config: { questionStatus: 'unused' as const, questionCount: 10 },
+    },
+  ]
 
   if (activeSession?.mode === 'practice') {
     return (
@@ -1052,7 +1074,7 @@ export function PracticeQuestionsPage() {
         action={
           <button
             type="button"
-            onClick={launchPracticeSession}
+            onClick={() => launchPracticeSession()}
             className="nclex-btn-primary inline-flex min-h-[48px] items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold"
           >
             {isPending ? 'Building set...' : 'Start focused set'}
@@ -1061,7 +1083,7 @@ export function PracticeQuestionsPage() {
         }
       />
       <FocusPanel className="nclex-dark-panel text-white">
-        <div className="grid gap-5 p-5 md:p-6 xl:grid-cols-[1fr_0.78fr] xl:items-stretch">
+        <div className="grid gap-5 p-5 md:p-6 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-stretch">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-200">Next practice set</p>
             <h3 className="mt-3 text-3xl font-black tracking-[-0.04em] text-white md:text-5xl">
@@ -1069,28 +1091,32 @@ export function PracticeQuestionsPage() {
             </h3>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-sky-100/72">
               {questionCount} questions, {difficulty === 'adaptive' ? 'adaptive difficulty' : `${difficulty} difficulty`}, {format === 'mixed' ? 'mixed formats' : format.replaceAll('-', ' ')}.
-              Use this as the default rep, then adjust only when you need a specific drill.
+              Start with a preset, then tune the bank only when the session needs a narrower target.
             </p>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <button
-                type="button"
-                onClick={launchPracticeSession}
-                className="nclex-btn-primary inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black"
-              >
-                {isPending ? 'Building set...' : 'Start focused set'}
-                <ArrowRight className="h-4 w-4" />
-              </button>
-              <Link
-                to="/weak-areas"
-                className="nclex-btn-secondary inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black"
-              >
-                Review weak areas
-                <Target className="h-4 w-4" />
-              </Link>
+            <div className="mt-6 grid gap-3 md:grid-cols-3">
+              {practicePresets.map((preset, index) => (
+                <button
+                  key={preset.title}
+                  type="button"
+                  onClick={() => launchPracticeSession(preset.config)}
+                  className={clsx(
+                    'min-h-[9rem] rounded-2xl border p-4 text-left transition active:scale-[0.99]',
+                    index === 0
+                      ? 'border-cyan-200/45 bg-cyan-300/14 shadow-[0_0_30px_rgba(56,189,248,0.16)]'
+                      : 'border-cyan-200/18 bg-white/[0.045] hover:border-cyan-200/42 hover:bg-cyan-300/10',
+                  )}
+                >
+                  <span className="text-xs font-black uppercase tracking-[0.14em] text-cyan-100/72">
+                    {preset.action}
+                  </span>
+                  <span className="mt-3 block text-lg font-black text-white">{preset.title}</span>
+                  <span className="mt-2 block text-sm leading-6 text-sky-100/62">{preset.description}</span>
+                </button>
+              ))}
             </div>
           </div>
           <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-            <QuickMetric label="Questions" value={`${questionCount}`} detail="Touch-friendly set length." />
+            <QuickMetric label="Questions" value={`${questionCount}`} detail="Current custom set length." />
             <QuickMetric label="Track" value={activeTrack.shortName} detail="Blueprint-aligned bank." />
             <QuickMetric label="Review" value="Instant" detail="Rationale after every answer." />
           </div>
@@ -1166,7 +1192,7 @@ export function PracticeQuestionsPage() {
           </div>
           <button
             type="button"
-            onClick={launchPracticeSession}
+            onClick={() => launchPracticeSession()}
             className="nclex-btn-secondary mt-6 inline-flex min-h-[48px] items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold"
           >
             {isPending ? 'Building set...' : 'Start with these settings'}
@@ -1176,13 +1202,25 @@ export function PracticeQuestionsPage() {
 
         <Surface>
           <SectionHeading
-            title="Practice flow"
-            description="The question screen now keeps action buttons close to the answer flow."
+            title="Where this connects"
+            description="Practice should immediately point toward repair and performance, not another menu."
           />
           <div className="mt-5 grid gap-3">
-            <ChecklistItem label="Answer first, then reveal rationale" completed meta="Reduces peeking" />
-            <ChecklistItem label="Confidence locks in the learning signal" completed meta="Required" />
-            <ChecklistItem label="Next, review, and finish actions stay touch-sized" completed meta="Mobile ready" />
+            <Link
+              to="/weak-areas"
+              className="rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.06] p-4 transition hover:border-cyan-200/55 hover:bg-cyan-300/12"
+            >
+              <p className="text-sm font-black text-white">Open remediation</p>
+              <p className="mt-1 text-sm leading-6 text-sky-100/64">Turn missed categories into a repair queue.</p>
+            </Link>
+            <Link
+              to="/performance-analytics"
+              className="rounded-2xl border border-emerald-300/20 bg-emerald-300/[0.055] p-4 transition hover:border-emerald-200/55 hover:bg-emerald-300/12"
+            >
+              <p className="text-sm font-black text-white">Check performance</p>
+              <p className="mt-1 text-sm leading-6 text-sky-100/64">See whether practice is improving readiness signal.</p>
+            </Link>
+            <ChecklistItem label="Answer, confidence, rationale, next action" completed meta="Session loop" />
             <ChecklistItem label="Flag confusing items without leaving the set" completed={false} meta="Optional" />
           </div>
         </Surface>
