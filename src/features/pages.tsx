@@ -1087,21 +1087,21 @@ export function PracticeQuestionsPage() {
   const priorityCategory = category === 'All' ? trackCategories[0] : category
   const practicePresets = [
     {
-      title: 'Recommended set',
-      description: 'Adaptive mixed questions using the current track and filters.',
-      action: 'Start adaptive',
+      title: 'Adaptive practice',
+      description: 'Mixed questions from the selected track and filters.',
+      action: 'Recommended',
       config: {},
     },
     {
-      title: 'Missed repair',
-      description: 'Five previously missed questions for a fast remediation loop.',
+      title: 'Repair missed questions',
+      description: 'Five missed items for a short remediation loop.',
       action: 'Repair misses',
       config: { category: priorityCategory, questionStatus: 'incorrect' as const, questionCount: 5 },
     },
     {
-      title: 'Fresh evidence',
-      description: 'Unused questions when you need a cleaner read on readiness.',
-      action: 'Start unused',
+      title: 'New questions only',
+      description: 'Unused items for a cleaner read on readiness.',
+      action: 'Fresh set',
       config: { questionStatus: 'unused' as const, questionCount: 10 },
     },
   ]
@@ -1111,7 +1111,7 @@ export function PracticeQuestionsPage() {
       <QuestionSessionRunner
         key={`${activeSession.id}-${activeSession.currentIndex}`}
         session={activeSession}
-        modeLabel="Practice Questions"
+        modeLabel="Practice Set"
         onExit={abandonSession}
       />
     )
@@ -1121,8 +1121,8 @@ export function PracticeQuestionsPage() {
     <PageStack>
       <PageHeader
         eyebrow="Question Bank"
-        title="Start practice, then tune only if needed."
-        description={`A clean ${activeTrack.shortName} practice entry: one session start first, filters lower, rationales ready when the answer is submitted.`}
+        title="Choose the next practice set."
+        description={`Build a ${activeTrack.shortName} set from the bank. Use Quick Study for a short weak-area sprint.`}
         action={
           <button
             type="button"
@@ -1255,7 +1255,7 @@ export function PracticeQuestionsPage() {
         <Surface>
           <SectionHeading
             title="After this set"
-            description="Practice should immediately point toward repair and performance, not another menu."
+            description="After a set, missed items move into remediation and performance updates."
           />
           <div className="mt-5 grid gap-3">
             <Link

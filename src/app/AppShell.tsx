@@ -73,7 +73,7 @@ const mainNavigation: NavigationItem[] = [
   { label: 'Dashboard', icon: LayoutGrid, to: '/dashboard' },
   { label: 'Study Plan', icon: BookOpen, to: '/study-plan' },
   { label: 'Question Bank', icon: ClipboardList, to: '/practice-questions' },
-  { label: 'Quizzes', icon: Flashlight, to: '/quick-study' },
+  { label: 'Quick Study', icon: Flashlight, to: '/quick-study' },
   { label: 'Remediation', icon: FileText, to: '/weak-areas' },
   { label: 'Performance', icon: Trophy, to: '/performance-analytics' },
   { label: 'Nurse Lab', icon: Gamepad2, to: '/nurse-command-lab', activePaths: nurseLabRoutePaths },
@@ -100,7 +100,7 @@ const secondaryNavigation: NavigationItem[] = [{ label: 'Settings', icon: Settin
 const mobilePrimaryNavigation: NavigationItem[] = [
   { label: 'Home', icon: LayoutGrid, to: '/' },
   { label: 'Bank', icon: ClipboardList, to: '/practice-questions' },
-  { label: 'Quiz', icon: Flashlight, to: '/quick-study', emphasis: true },
+  { label: 'Quick', icon: Flashlight, to: '/quick-study', emphasis: true },
   { label: 'Cards', icon: SquareStack, to: '/flashcards' },
 ]
 
