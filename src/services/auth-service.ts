@@ -4,6 +4,7 @@ import { isSupabaseConfigured, supabase, toAuthSession, toAuthUser } from './sup
 export interface AuthSnapshot {
   user: AuthUser | null
   session: AuthSession | null
+  event?: string
 }
 
 const requireSupabase = () => {
@@ -34,10 +35,11 @@ export function onAuthSnapshotChange(callback: (snapshot: AuthSnapshot) => void)
 
   const {
     data: { subscription },
-  } = supabase.auth.onAuthStateChange((_event, session) => {
+  } = supabase.auth.onAuthStateChange((event, session) => {
     callback({
       user: toAuthUser(session?.user ?? null),
       session: toAuthSession(session ?? null),
+      event,
     })
   })
 
@@ -85,6 +87,12 @@ export async function requestPasswordReset(email: string) {
   const { error } = await client.auth.resetPasswordForEmail(email, {
     redirectTo: getAuthRedirectTo(),
   })
+  if (error) throw error
+}
+
+export async function updateCurrentUserPassword(password: string) {
+  const client = requireSupabase()
+  const { error } = await client.auth.updateUser({ password })
   if (error) throw error
 }
 

@@ -47,6 +47,9 @@ export type SyncEventType =
 export interface AuthUser {
   id: string
   email: string
+  name?: string
+  nursingSchool?: string
+  examTrack?: ExamTrackId
 }
 
 export interface AuthSession {

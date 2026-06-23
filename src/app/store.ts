@@ -51,6 +51,7 @@ import {
   signInWithPassword,
   signOutCurrentUser,
   signUpWithPassword,
+  updateCurrentUserPassword,
 } from '../services/auth-service'
 import {
   deleteMaterialCloud,
@@ -80,6 +81,7 @@ interface StudySystemState {
   authInitialized: boolean
   authConfigured: boolean
   authError: string | null
+  passwordRecoveryRequired: boolean
   isDemoMode: boolean
   syncStatus: SyncStatus
   syncError: string | null
@@ -101,9 +103,14 @@ interface StudySystemState {
   simulatorProgress: SimulatorProgressState
   initializeAuth: () => Promise<void>
   signIn: (email: string, password: string) => Promise<void>
-  signUp: (email: string, password: string) => Promise<void>
+  signUp: (
+    email: string,
+    password: string,
+    profile: Pick<UserProfile, 'name' | 'nursingSchool' | 'examTrack'>,
+  ) => Promise<void>
   signOut: () => Promise<void>
   requestPasswordReset: (email: string) => Promise<void>
+  updatePassword: (password: string) => Promise<void>
   continueAsDemo: () => void
   hydrateCloudState: () => Promise<void>
   migrateLocalDataToCloud: () => Promise<void>
@@ -199,12 +206,71 @@ const createInitialSimulatorProgress = (): SimulatorProgressState => ({
   completedLevelObjectives: {},
 })
 
+const createDefaultExamDate = () => {
+  const date = new Date()
+  date.setDate(date.getDate() + 56)
+  return date.toISOString().slice(0, 10)
+}
+
+const createFreshProfile = ({
+  email,
+  name,
+  nursingSchool,
+  examTrack,
+}: {
+  email: string
+  name?: string
+  nursingSchool?: string
+  examTrack?: UserProfile['examTrack']
+}): UserProfile => ({
+  name: name?.trim() || email.split('@')[0] || 'New learner',
+  nursingSchool: nursingSchool?.trim() || undefined,
+  examTrack: examTrack ?? 'nclex-rn',
+  examDate: createDefaultExamDate(),
+  studyIntensity: 'focused',
+  dailyGoal: 15,
+  streak: 0,
+  preferences: {
+    reducedMotion: false,
+    notifications: true,
+    analyticsScope: 'selected-track',
+  },
+})
+
+const createFreshProfileForAuthUser = (user: AuthUser) =>
+  createFreshProfile({
+    email: user.email,
+    name: user.name,
+    nursingSchool: user.nursingSchool,
+    examTrack: user.examTrack,
+  })
+
+const createCleanAccountState = (profile: UserProfile) => ({
+  profile,
+  attempts: [] as QuestionAttempt[],
+  notes: [] as Note[],
+  flashcardProgress: {} as Record<string, FlashcardStatus>,
+  flashcardReview: {} as Record<string, FlashcardReviewState>,
+  materials: [] as StudyMaterial[],
+  materialFlashcards: [] as MaterialFlashcard[],
+  materialQuestions: [] as MaterialQuestion[],
+  materialsHydrated: true,
+  activeSession: null as ActiveSession | null,
+  activeMaterialQuizSession: null as MaterialQuizSession | null,
+  preferredMaterialFlashcardsId: null as null | string,
+  tycoon: createInitialTycoonState(),
+  simulatorProgress: createInitialSimulatorProgress(),
+  syncEvents: [] as SyncEvent[],
+  migrationPromptVisible: false,
+})
+
 const baseState = {
   authUser: null as AuthUser | null,
   authSession: null as AuthSession | null,
   authInitialized: false,
   authConfigured: isSupabaseConfigured,
   authError: null as string | null,
+  passwordRecoveryRequired: false,
   isDemoMode: !isSupabaseConfigured,
   syncStatus: 'idle' as SyncStatus,
   syncError: null as string | null,
@@ -257,14 +323,6 @@ const getNextReviewState = (
   }
 }
 
-const hasMeaningfulLocalData = (state: StudySystemState) =>
-  state.attempts.length > 0 ||
-  state.notes.length > 0 ||
-  Object.keys(state.flashcardReview).length > 0 ||
-  state.materials.length > 0 ||
-  state.materialFlashcards.length > 0 ||
-  state.materialQuestions.length > 0
-
 const makeSyncEvent = (
   entityType: SyncEvent['entityType'],
   entityId: string,
@@ -299,6 +357,7 @@ export const useStudySystemStore = create<StudySystemState>()(
         try {
           const snapshot = await getCurrentAuthSnapshot()
           set({
+            ...(snapshot.user ? createCleanAccountState(createFreshProfileForAuthUser(snapshot.user)) : {}),
             authUser: snapshot.user,
             authSession: snapshot.session,
             authConfigured: true,
@@ -308,10 +367,22 @@ export const useStudySystemStore = create<StudySystemState>()(
           })
 
           onAuthSnapshotChange((nextSnapshot) => {
+            const shouldPrepareCleanAccount =
+              Boolean(nextSnapshot.user) &&
+              (nextSnapshot.event === 'SIGNED_IN' || nextSnapshot.event === 'PASSWORD_RECOVERY')
             set({
+              ...(shouldPrepareCleanAccount && nextSnapshot.user
+                ? createCleanAccountState(createFreshProfileForAuthUser(nextSnapshot.user))
+                : {}),
               authUser: nextSnapshot.user,
               authSession: nextSnapshot.session,
               isDemoMode: nextSnapshot.user ? false : get().isDemoMode,
+              passwordRecoveryRequired:
+                nextSnapshot.event === 'PASSWORD_RECOVERY'
+                  ? true
+                  : nextSnapshot.user
+                    ? get().passwordRecoveryRequired
+                    : false,
             })
             if (nextSnapshot.user) {
               void get().hydrateCloudState()
@@ -333,11 +404,16 @@ export const useStudySystemStore = create<StudySystemState>()(
         set({ authError: null, syncStatus: 'syncing' })
         try {
           const snapshot = await signInWithPassword(email, password)
+          if (!snapshot.user) {
+            throw new Error('Could not sign in.')
+          }
           set({
+            ...createCleanAccountState(createFreshProfileForAuthUser(snapshot.user)),
             authUser: snapshot.user,
             authSession: snapshot.session,
             isDemoMode: false,
             authError: null,
+            passwordRecoveryRequired: false,
           })
           await get().hydrateCloudState()
         } catch (error) {
@@ -348,29 +424,40 @@ export const useStudySystemStore = create<StudySystemState>()(
           throw error
         }
       },
-      signUp: async (email, password) => {
+      signUp: async (email, password, profileInput) => {
         set({ authError: null, syncStatus: 'syncing' })
+        const freshProfile = createFreshProfile({
+          email,
+          name: profileInput.name,
+          nursingSchool: profileInput.nursingSchool,
+          examTrack: profileInput.examTrack,
+        })
         try {
-          const snapshot = await signUpWithPassword(email, password, get().profile)
+          const snapshot = await signUpWithPassword(email, password, freshProfile)
           if (!snapshot.user || !snapshot.session) {
             set({
+              ...createCleanAccountState(freshProfile),
               authUser: null,
               authSession: null,
               isDemoMode: false,
               authError: null,
               syncStatus: 'idle',
+              passwordRecoveryRequired: false,
             })
             return
           }
 
           set({
+            ...createCleanAccountState(freshProfile),
             authUser: snapshot.user,
             authSession: snapshot.session,
             isDemoMode: false,
             authError: null,
+            passwordRecoveryRequired: false,
           })
           if (snapshot.user) {
-            await get().migrateLocalDataToCloud()
+            await saveProfile(snapshot.user.id, freshProfile)
+            set({ syncStatus: 'idle', syncError: null })
           }
         } catch (error) {
           set({
@@ -387,12 +474,22 @@ export const useStudySystemStore = create<StudySystemState>()(
           }
           await signOutCurrentUser()
         } finally {
+          const signedOutProfile = createFreshProfile({
+            email: 'learner@example.com',
+            name: 'New learner',
+          })
           set({
+            ...createCleanAccountState(signedOutProfile),
             authUser: null,
             authSession: null,
-            isDemoMode: true,
+            authInitialized: true,
+            authConfigured: isSupabaseConfigured,
+            isDemoMode: false,
             syncStatus: 'idle',
+            syncError: null,
+            authError: null,
             migrationPromptVisible: false,
+            passwordRecoveryRequired: false,
           })
         }
       },
@@ -405,8 +502,34 @@ export const useStudySystemStore = create<StudySystemState>()(
           throw error
         }
       },
+      updatePassword: async (password) => {
+        set({ authError: null, syncStatus: 'syncing' })
+        try {
+          await updateCurrentUserPassword(password)
+          set({
+            authError: null,
+            passwordRecoveryRequired: false,
+            syncStatus: 'idle',
+          })
+        } catch (error) {
+          set({
+            authError: error instanceof Error ? error.message : 'Could not update password.',
+            syncStatus: 'error',
+          })
+          throw error
+        }
+      },
       continueAsDemo: () => {
-        set({ isDemoMode: true, authError: null, migrationPromptVisible: false })
+        set({
+          ...baseState,
+          authInitialized: true,
+          authConfigured: isSupabaseConfigured,
+          isDemoMode: true,
+          authError: null,
+          migrationPromptVisible: false,
+          materialsHydrated: false,
+        })
+        void get().initializeMaterials()
       },
       hydrateCloudState: async () => {
         const user = get().authUser
@@ -422,29 +545,29 @@ export const useStudySystemStore = create<StudySystemState>()(
             cloud.materials.length > 0
 
           if (!cloudHasData) {
-            set((state) => ({
+            const freshProfile = createFreshProfileForAuthUser(user)
+            set({
+              ...createCleanAccountState(freshProfile),
               syncStatus: 'idle',
-              migrationPromptVisible: hasMeaningfulLocalData(state),
-            }))
+              syncError: null,
+            })
+            await saveProfile(user.id, freshProfile)
             return
           }
 
           set((state) => ({
-            profile: cloud.profile ?? state.profile,
-            attempts: cloud.attempts.length ? cloud.attempts : state.attempts,
-            notes: cloud.notes.length ? cloud.notes : state.notes,
-            flashcardReview: Object.keys(cloud.flashcardReview).length
-              ? cloud.flashcardReview
-              : state.flashcardReview,
-            flashcardProgress: Object.keys(cloud.flashcardReview).length
-              ? Object.fromEntries(
-                  Object.entries(cloud.flashcardReview).map(([id, review]) => [id, review.status]),
-                )
-              : state.flashcardProgress,
-            materials: cloud.materials.length ? cloud.materials : state.materials,
-            materialFlashcards: cloud.materialFlashcards.length ? cloud.materialFlashcards : state.materialFlashcards,
-            materialQuestions: cloud.materialQuestions.length ? cloud.materialQuestions : state.materialQuestions,
-            activeMaterialQuizSession: cloud.materialQuizSessions[0] ?? state.activeMaterialQuizSession,
+            ...createCleanAccountState(cloud.profile ?? createFreshProfileForAuthUser(user)),
+            attempts: cloud.attempts,
+            notes: cloud.notes,
+            flashcardReview: cloud.flashcardReview,
+            flashcardProgress: Object.fromEntries(
+              Object.entries(cloud.flashcardReview).map(([id, review]) => [id, review.status]),
+            ),
+            materials: cloud.materials,
+            materialFlashcards: cloud.materialFlashcards,
+            materialQuestions: cloud.materialQuestions,
+            activeMaterialQuizSession: cloud.materialQuizSessions[0] ?? null,
+            passwordRecoveryRequired: state.passwordRecoveryRequired,
             syncStatus: 'idle',
             syncError: null,
             migrationPromptVisible: false,
@@ -497,6 +620,10 @@ export const useStudySystemStore = create<StudySystemState>()(
       },
       initializeMaterials: async () => {
         if (get().materialsHydrated) return
+        if (isSupabaseConfigured && !get().isDemoMode) {
+          set({ materialsHydrated: true })
+          return
+        }
         const [materials, materialFlashcards, materialQuestions] = await Promise.all([
           getMaterialLibrary(),
           getMaterialFlashcards(),
@@ -539,6 +666,11 @@ export const useStudySystemStore = create<StudySystemState>()(
             ...questions,
             ...nextQuestions.filter((item) => item.sourceMaterialId !== material.id),
           ]
+        }
+
+        if (isSupabaseConfigured && !get().isDemoMode) {
+          set({ materialsHydrated: true })
+          return
         }
 
         set({

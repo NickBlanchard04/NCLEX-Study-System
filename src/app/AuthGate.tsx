@@ -1,12 +1,15 @@
 import { motion } from 'framer-motion'
-import { Cloud, LockKeyhole, ShieldCheck, UserPlus } from 'lucide-react'
+import { Cloud, Eye, EyeOff, LockKeyhole, ShieldCheck, UserPlus } from 'lucide-react'
 import { useState } from 'react'
+import { examTracks } from '../data/exam-tracks'
+import type { ExamTrackId } from './types'
 import { useStudySystemStore } from './store'
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const authInitialized = useStudySystemStore((state) => state.authInitialized)
   const authConfigured = useStudySystemStore((state) => state.authConfigured)
   const authUser = useStudySystemStore((state) => state.authUser)
+  const passwordRecoveryRequired = useStudySystemStore((state) => state.passwordRecoveryRequired)
   const isDemoMode = useStudySystemStore((state) => state.isDemoMode)
 
   if (!authInitialized) {
@@ -18,6 +21,10 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         </div>
       </div>
     )
+  }
+
+  if (authUser && passwordRecoveryRequired) {
+    return <PasswordRecoveryLanding />
   }
 
   if (authUser || isDemoMode || !authConfigured) {
@@ -33,9 +40,13 @@ function AuthLanding() {
   const requestPasswordReset = useStudySystemStore((state) => state.requestPasswordReset)
   const continueAsDemo = useStudySystemStore((state) => state.continueAsDemo)
   const authError = useStudySystemStore((state) => state.authError)
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin')
+  const [mode, setMode] = useState<'signin' | 'signup' | 'reset'>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [passwordVisible, setPasswordVisible] = useState(false)
+  const [name, setName] = useState('')
+  const [nursingSchool, setNursingSchool] = useState('')
+  const [examTrack, setExamTrack] = useState<ExamTrackId>('nclex-rn')
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -44,11 +55,18 @@ function AuthLanding() {
     setBusy(true)
     setMessage('')
     try {
-      if (mode === 'signin') {
+      if (mode === 'reset') {
+        await requestPasswordReset(email)
+        setMessage('Password reset email sent if that account exists. Open the link from that inbox to set a new password.')
+      } else if (mode === 'signin') {
         await signIn(email, password)
       } else {
-        await signUp(email, password)
-        setMessage('Account created. If your Supabase project requires email confirmation, check your inbox before signing in.')
+        await signUp(email, password, {
+          name,
+          nursingSchool: nursingSchool || undefined,
+          examTrack,
+        })
+        setMessage('Verification email sent. Open it to finish creating your account, then sign in.')
       }
     } catch {
       // Store owns the visible error copy.
@@ -57,21 +75,18 @@ function AuthLanding() {
     }
   }
 
-  const resetPassword = async () => {
-    if (!email) {
-      setMessage('Enter your email first, then request a reset link.')
-      return
-    }
-    setBusy(true)
-    try {
-      await requestPasswordReset(email)
-      setMessage('Password reset email sent if that account exists.')
-    } catch {
-      // Store owns the visible error copy.
-    } finally {
-      setBusy(false)
-    }
+  const changeMode = (nextMode: 'signin' | 'signup' | 'reset') => {
+    setMode(nextMode)
+    setMessage('')
   }
+
+  const title = mode === 'signin' ? 'Sign in' : mode === 'signup' ? 'Create account' : 'Reset password'
+  const submitLabel =
+    mode === 'reset'
+      ? 'Send password reset email'
+      : mode === 'signin'
+        ? 'Sign in and sync'
+        : 'Send verification email'
 
   return (
     <div className="nclex-shell-bg min-h-screen px-5 py-8 text-[var(--nclex-text)]">
@@ -122,7 +137,7 @@ function AuthLanding() {
                 Account Access
               </p>
               <h2 className="mt-2 font-serif text-3xl text-[var(--nclex-text)]">
-                {mode === 'signin' ? 'Sign in' : 'Create account'}
+                {title}
               </h2>
             </div>
             <div className="rounded-2xl bg-[var(--nclex-blue-soft)] p-3 text-[var(--nclex-blue)]">
@@ -136,24 +151,65 @@ function AuthLanding() {
               <input
                 type="email"
                 required
+                autoComplete="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 className="mt-2 w-full rounded-2xl border border-[var(--nclex-border)] bg-white px-4 py-3 text-sm outline-none transition focus:border-[var(--nclex-blue)] focus:ring-4 focus:ring-blue-100"
                 placeholder="you@example.com"
               />
             </label>
-            <label className="block">
-              <span className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]">Password</span>
-              <input
-                type="password"
-                required
-                minLength={6}
+            {mode === 'signup' ? (
+              <>
+                <label className="block">
+                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]">Name</span>
+                  <input
+                    type="text"
+                    required
+                    autoComplete="name"
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
+                    className="mt-2 w-full rounded-2xl border border-[var(--nclex-border)] bg-white px-4 py-3 text-sm outline-none transition focus:border-[var(--nclex-blue)] focus:ring-4 focus:ring-blue-100"
+                    placeholder="Your name"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]">School</span>
+                  <input
+                    type="text"
+                    autoComplete="organization"
+                    value={nursingSchool}
+                    onChange={(event) => setNursingSchool(event.target.value)}
+                    className="mt-2 w-full rounded-2xl border border-[var(--nclex-border)] bg-white px-4 py-3 text-sm outline-none transition focus:border-[var(--nclex-blue)] focus:ring-4 focus:ring-blue-100"
+                    placeholder="Optional"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]">Exam track</span>
+                  <select
+                    value={examTrack}
+                    onChange={(event) => setExamTrack(event.target.value as ExamTrackId)}
+                    className="mt-2 w-full rounded-2xl border border-[var(--nclex-border)] bg-white px-4 py-3 text-sm outline-none transition focus:border-[var(--nclex-blue)] focus:ring-4 focus:ring-blue-100"
+                  >
+                    {examTracks.map((track) => (
+                      <option key={track.id} value={track.id}>
+                        {track.shortName}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </>
+            ) : null}
+            {mode !== 'reset' ? (
+              <PasswordField
+                label="Password"
                 value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                className="mt-2 w-full rounded-2xl border border-[var(--nclex-border)] bg-white px-4 py-3 text-sm outline-none transition focus:border-[var(--nclex-blue)] focus:ring-4 focus:ring-blue-100"
+                visible={passwordVisible}
+                onVisibleChange={setPasswordVisible}
+                onChange={setPassword}
                 placeholder="At least 6 characters"
+                autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
               />
-            </label>
+            ) : null}
 
             {authError || message ? (
               <div className="rounded-2xl border border-[#d4e4f7] bg-[var(--nclex-blue-soft)] px-4 py-3 text-sm leading-6 text-[var(--nclex-text-secondary)]">
@@ -166,20 +222,20 @@ function AuthLanding() {
               disabled={busy}
               className="nclex-btn-primary flex min-h-[48px] w-full items-center justify-center rounded-2xl px-5 py-3 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {busy ? 'Working...' : mode === 'signin' ? 'Sign in and sync' : 'Create account'}
+              {busy ? 'Working...' : submitLabel}
             </button>
           </form>
 
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
             <button
               type="button"
-              onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}
+              onClick={() => changeMode(mode === 'signup' ? 'signin' : 'signup')}
               className="text-sm font-semibold text-[var(--nclex-blue)]"
             >
-              {mode === 'signin' ? 'Need an account?' : 'Already have an account?'}
+              {mode === 'signup' ? 'Already have an account?' : 'Need an account?'}
             </button>
-            <button type="button" onClick={resetPassword} className="text-sm font-semibold text-[var(--nclex-text-muted)]">
-              Reset password
+            <button type="button" onClick={() => changeMode(mode === 'reset' ? 'signin' : 'reset')} className="text-sm font-semibold text-[var(--nclex-text-muted)]">
+              {mode === 'reset' ? 'Back to sign in' : 'Reset password'}
             </button>
           </div>
 
@@ -189,7 +245,7 @@ function AuthLanding() {
               <div>
                 <p className="font-semibold text-[var(--nclex-text)]">Just previewing?</p>
                 <p className="mt-1 text-sm leading-6 text-[var(--nclex-text-muted)]">
-                  Continue in local demo mode. Your data stays on this device until you sign in and import it.
+                  Continue in local demo mode. Your data stays on this device and will not be mixed into a cloud account automatically.
                 </p>
                 <button
                   type="button"
@@ -204,5 +260,132 @@ function AuthLanding() {
         </motion.section>
       </div>
     </div>
+  )
+}
+
+function PasswordRecoveryLanding() {
+  const updatePassword = useStudySystemStore((state) => state.updatePassword)
+  const authError = useStudySystemStore((state) => state.authError)
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordVisible, setPasswordVisible] = useState(false)
+  const [message, setMessage] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setMessage('')
+    if (password !== confirmPassword) {
+      setMessage('Passwords do not match.')
+      return
+    }
+    setBusy(true)
+    try {
+      await updatePassword(password)
+    } catch {
+      // Store owns the visible error copy.
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="nclex-shell-bg flex min-h-screen items-center justify-center px-5 py-8 text-[var(--nclex-text)]">
+      <motion.section
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="nclex-surface w-full max-w-[460px] rounded-[28px] p-6 md:p-7"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-blue)]">
+              Password Recovery
+            </p>
+            <h2 className="mt-2 font-serif text-3xl text-[var(--nclex-text)]">
+              Set a new password
+            </h2>
+          </div>
+          <div className="rounded-2xl bg-[var(--nclex-blue-soft)] p-3 text-[var(--nclex-blue)]">
+            <LockKeyhole className="h-5 w-5" />
+          </div>
+        </div>
+        <form onSubmit={submit} className="mt-6 space-y-4">
+          <PasswordField
+            label="New password"
+            value={password}
+            visible={passwordVisible}
+            onVisibleChange={setPasswordVisible}
+            onChange={setPassword}
+            placeholder="At least 6 characters"
+            autoComplete="new-password"
+          />
+          <PasswordField
+            label="Confirm password"
+            value={confirmPassword}
+            visible={passwordVisible}
+            onVisibleChange={setPasswordVisible}
+            onChange={setConfirmPassword}
+            placeholder="Retype password"
+            autoComplete="new-password"
+          />
+          {authError || message ? (
+            <div className="rounded-2xl border border-[#d4e4f7] bg-[var(--nclex-blue-soft)] px-4 py-3 text-sm leading-6 text-[var(--nclex-text-secondary)]">
+              {authError ?? message}
+            </div>
+          ) : null}
+          <button
+            type="submit"
+            disabled={busy}
+            className="nclex-btn-primary flex min-h-[48px] w-full items-center justify-center rounded-2xl px-5 py-3 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {busy ? 'Updating...' : 'Update password'}
+          </button>
+        </form>
+      </motion.section>
+    </div>
+  )
+}
+
+function PasswordField({
+  label,
+  value,
+  visible,
+  onVisibleChange,
+  onChange,
+  placeholder,
+  autoComplete,
+}: {
+  label: string
+  value: string
+  visible: boolean
+  onVisibleChange: (value: boolean) => void
+  onChange: (value: string) => void
+  placeholder: string
+  autoComplete: string
+}) {
+  return (
+    <label className="block">
+      <span className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]">{label}</span>
+      <div className="mt-2 flex overflow-hidden rounded-2xl border border-[var(--nclex-border)] bg-white focus-within:border-[var(--nclex-blue)] focus-within:ring-4 focus-within:ring-blue-100">
+        <input
+          type={visible ? 'text' : 'password'}
+          required
+          minLength={6}
+          autoComplete={autoComplete}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm outline-none"
+          placeholder={placeholder}
+        />
+        <button
+          type="button"
+          onClick={() => onVisibleChange(!visible)}
+          className="inline-flex w-12 shrink-0 items-center justify-center text-[var(--nclex-text-muted)] transition hover:text-[var(--nclex-blue)]"
+          aria-label={visible ? 'Hide password' : 'Show password'}
+        >
+          {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        </button>
+      </div>
+    </label>
   )
 }
