@@ -3,10 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Area,
   AreaChart,
-  Bar,
-  BarChart,
   CartesianGrid,
-  Cell,
   Line,
   LineChart,
   ResponsiveContainer,
@@ -1639,15 +1636,35 @@ export function PerformanceAnalyticsPage() {
   const repairQueueCount = analytics.engineRemediationEvents.filter(
     (event) => event.repairRequired && !event.repairSuccess,
   ).length
+  const readinessLabel =
+    readiness.status === 'insufficient_evidence'
+      ? 'Needs evidence'
+      : readiness.status === 'building'
+        ? 'Building'
+        : readiness.status === 'approaching'
+          ? 'Approaching'
+          : 'Ready'
+  const categoryFocus = [...analytics.categoryStats]
+    .sort((left, right) => left.accuracy - right.accuracy || right.confidenceMismatchScore - left.confidenceMismatchScore)
+    .slice(0, 3)
+  const primaryFocusCategory = categoryFocus[0]
+  const performanceTakeaway =
+    readiness.status === 'ready'
+      ? `${activeTrack.shortName} readiness is in the ready range. Protect consistency with mixed timed sets.`
+      : repairQueueCount
+        ? `${repairQueueCount} repair ${repairQueueCount === 1 ? 'item needs' : 'items need'} transfer proof before adding more random volume.`
+        : primaryFocusCategory
+          ? `${shortCategoryLabel(primaryFocusCategory.category)} is the clearest score-lift opportunity right now.`
+          : 'Keep building signal with short focused sessions before reading too much into the trend.'
 
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Performance Analytics"
-        title={`${activeTrack.shortName} progress you can actually trust.`}
-        description="Toggle between the selected exam and all-exam history without mixing signals accidentally."
+        title="One readout. One next move."
+        description={`${activeTrack.shortName} performance should explain what changed, what matters, and where to act next.`}
         action={
-          <div className="inline-flex rounded-xl border border-[var(--nclex-border)] bg-white p-1 shadow-sm">
+          <div className="inline-flex rounded-xl border border-cyan-300/20 bg-white/[0.04] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
             {[
               { label: 'Selected exam', value: 'selected-track' as const },
               { label: 'All exams', value: 'all-tracks' as const },
@@ -1664,10 +1681,10 @@ export function PerformanceAnalyticsPage() {
                   })
                 }
                 className={clsx(
-                  'rounded-lg px-3 py-2 text-xs font-semibold transition',
+                  'rounded-lg px-3 py-2 text-xs font-black transition',
                   (profile.preferences.analyticsScope ?? 'selected-track') === item.value
-                    ? 'bg-[var(--nclex-blue)] text-white'
-                    : 'text-[var(--nclex-text-muted)] hover:text-[var(--nclex-blue)]',
+                    ? 'bg-cyan-300 text-[#04101f] shadow-[0_0_18px_rgba(56,189,248,0.28)]'
+                    : 'text-sky-100/62 hover:text-sky-100',
                 )}
               >
                 {item.label}
@@ -1676,108 +1693,106 @@ export function PerformanceAnalyticsPage() {
           </div>
         }
       />
-      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+
+      <FocusPanel>
+        <div className="grid gap-5 bg-[linear-gradient(135deg,#003b66_0%,#12375a_100%)] px-5 py-5 text-white md:px-6 lg:grid-cols-[minmax(0,1fr)_260px]">
+          <div>
+            <p className="text-sm font-semibold text-sky-100/85">Main takeaway</p>
+            <h3 className="mt-3 font-serif text-3xl leading-tight md:text-[2.15rem]">
+              {performanceTakeaway}
+            </h3>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-sky-100/82">
+              This page now favors action over dashboard noise: one trend, three signals, and the details that explain where to train next.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-100/70">Readiness</p>
+            <p className="mt-2 text-3xl font-black">{readinessLabel}</p>
+            <p className="text-sm font-semibold text-sky-100/75">{Math.round(readiness.readinessScore * 100)}% readiness score</p>
+            <div className="mt-4">
+              <ProgressBar
+                value={readiness.readinessScore}
+                tone={readiness.status === 'ready' ? 'green' : readiness.status === 'approaching' ? 'blue' : 'amber'}
+              />
+            </div>
+          </div>
+        </div>
+      </FocusPanel>
+
+      <div className="grid gap-5 md:grid-cols-3">
         <StatCard
           label="Practice accuracy"
           value={`${Math.round(readiness.practiceAccuracy * 100)}%`}
-          detail="Useful practice signal, separate from official readiness."
+          detail={`${analytics.questionsCompleted} questions completed`}
           tone={readiness.practiceAccuracy >= 0.75 ? 'success' : 'warning'}
+          statusLabel={readiness.practiceAccuracy >= 0.75 ? 'On track' : 'Focus'}
         />
         <StatCard
-          label="Readiness evidence"
-          value={`${readiness.trustedAttemptCount} trusted attempts counted`}
-          detail={
-            readiness.status === 'insufficient_evidence'
-              ? 'Evidence needed'
-              : `${Math.round(readiness.readinessScore * 100)}% readiness score`
-          }
+          label="Trusted evidence"
+          value={`${readiness.trustedAttemptCount}`}
+          detail={`${readiness.practiceAttemptCount} practice attempts available`}
           tone={readiness.status === 'ready' ? 'success' : readiness.status === 'approaching' ? 'neutral' : 'warning'}
+          statusLabel={readinessLabel}
         />
         <StatCard
           label="Repair queue"
           value={`${repairQueueCount}`}
           detail="High-confidence or safety-sensitive misses needing transfer proof."
           tone={repairQueueCount ? 'warning' : 'success'}
+          statusLabel={repairQueueCount ? 'Repair' : 'Clear'}
         />
-        <StatCard label="Questions completed" value={`${analytics.questionsCompleted}`} detail="Enough reps to show real patterns, not just a lucky day." />
       </div>
-      <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
-        <Surface>
-          <div className="flex items-center justify-between">
-            <h3 className="font-serif text-2xl text-[#163042]">Accuracy trend</h3>
-            <span className="nclex-chip nclex-chip-info">daily</span>
-          </div>
-          <div className="mt-5 h-[320px] min-h-[320px] min-w-0">
-            <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 1, height: 1 }} minWidth={0}>
-              <LineChart data={analytics.dailyAccuracy}>
-                <CartesianGrid vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} tickFormatter={(value) => `${Math.round(value * 100)}%`} />
-                <Tooltip formatter={percentTooltip} />
-                <Line type="monotone" dataKey="accuracy" stroke="#0f172a" strokeWidth={3} dot={{ r: 4, fill: '#0f172a' }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </Surface>
-        <Surface>
-          <div className="flex items-center justify-between">
-            <h3 className="font-serif text-2xl text-[#163042]">Category accuracy</h3>
-            <span className="nclex-chip nclex-chip-info">by system</span>
-          </div>
-          <div className="mt-5 h-[320px] min-h-[320px] min-w-0">
-            <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 1, height: 1 }} minWidth={0}>
-              <BarChart data={analytics.categoryStats}>
-                <CartesianGrid vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="category" hide />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} tickFormatter={(value) => `${Math.round(value * 100)}%`} />
-                <Tooltip formatter={percentTooltip} />
-                <Bar dataKey="accuracy" radius={[10, 10, 0, 0]}>
-                  {analytics.categoryStats.map((entry) => (
-                    <Cell
-                      key={entry.category}
-                      fill={
-                        entry.masteryLevel === 'strong'
-                          ? '#10b981'
-                          : entry.masteryLevel === 'developing'
-                            ? '#f59e0b'
-                            : '#ef4444'
-                      }
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Surface>
-      </div>
+      <Surface>
+        <SectionHeading
+          title="Accuracy Trend"
+          description="The single chart worth checking first: daily accuracy over the last seven days."
+          action={<span className="nclex-chip nclex-chip-info">daily</span>}
+        />
+        <div className="mt-5 h-[320px] min-h-[320px] min-w-0">
+          <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 1, height: 1 }} minWidth={0}>
+            <LineChart data={analytics.dailyAccuracy}>
+              <CartesianGrid vertical={false} stroke="rgba(125,211,252,0.2)" />
+              <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#bae6fd', fontSize: 12 }} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#bae6fd', fontSize: 12 }} tickFormatter={(value) => `${Math.round(value * 100)}%`} />
+              <Tooltip formatter={percentTooltip} />
+              <Line type="monotone" dataKey="accuracy" stroke="#38bdf8" strokeWidth={3} dot={{ r: 4, fill: '#38bdf8' }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </Surface>
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
+      <DetailGrid>
         <Surface>
-          <div className="flex items-center justify-between">
-            <h3 className="font-serif text-2xl text-[#163042]">Confidence trend</h3>
-            <span className="nclex-chip nclex-chip-info">stability</span>
-          </div>
-          <div className="mt-5 h-[300px] min-h-[300px] min-w-0">
-            <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 1, height: 1 }} minWidth={0}>
-              <AreaChart data={analytics.confidenceTrend}>
-                <defs>
-                  <linearGradient id="confidenceFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.28} />
-                    <stop offset="100%" stopColor="#10b981" stopOpacity={0.02} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
-                <Tooltip />
-                <Area type="monotone" dataKey="confidence" stroke="#059669" fill="url(#confidenceFill)" strokeWidth={3} />
-                <Line type="monotone" dataKey="mismatch" stroke="#ef4444" strokeWidth={2} dot={false} />
-              </AreaChart>
-            </ResponsiveContainer>
+          <SectionHeading
+            title="Category Focus"
+            description="The few areas most likely to improve the next score report."
+          />
+          <div className="mt-5 space-y-4">
+            {categoryFocus.map((category) => (
+              <div key={category.category} className="rounded-2xl border border-cyan-200/15 bg-sky-300/[0.055] p-4">
+                <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="font-black text-white">{shortCategoryLabel(category.category)}</p>
+                    <p className="mt-1 text-sm text-sky-100/60">
+                      {category.attemptCount} attempts · {Math.round(category.confidenceMismatchScore * 100)}% confidence mismatch
+                    </p>
+                  </div>
+                  <MasteryPill mastery={category.masteryLevel} />
+                </div>
+                <ProgressBar
+                  value={category.accuracy}
+                  tone={category.masteryLevel === 'strong' ? 'green' : category.masteryLevel === 'developing' ? 'amber' : 'red'}
+                />
+              </div>
+            ))}
           </div>
         </Surface>
+
         <Surface>
-          <h3 className="font-serif text-2xl text-[#163042]">What the data says</h3>
+          <SectionHeading
+            title="What The Data Says"
+            description="Plain-English interpretation without adding more chart noise."
+          />
           <div className="mt-5 space-y-4">
             <InsightRow
               icon={<TrendingUp className="h-4 w-4 text-emerald-600" />}
@@ -1792,7 +1807,7 @@ export function PerformanceAnalyticsPage() {
               icon={<Flame className="h-4 w-4 text-amber-500" />}
               title="Confidence mismatch"
               body={
-                analytics.highConfidenceMisses > 2
+                analytics.highConfidenceMisses > 2 || repairQueueCount > 0
                   ? 'You have several high-confidence misses. Review those first because they represent risky assumptions.'
                   : 'Confidence mismatch is manageable right now. Keep reviewing low-confidence correct answers before they fade.'
               }
@@ -1800,11 +1815,11 @@ export function PerformanceAnalyticsPage() {
             <InsightRow
               icon={<Clock3 className="h-4 w-4 text-sky-600" />}
               title="Study efficiency"
-              body="Short focused sessions are still producing usable signal, which means your loop is efficient."
+              body={`${analytics.timeStudiedMinutes} minutes logged. Short focused sessions are still the cleanest way to add reliable signal.`}
             />
           </div>
         </Surface>
-      </div>
+      </DetailGrid>
     </div>
   )
 }

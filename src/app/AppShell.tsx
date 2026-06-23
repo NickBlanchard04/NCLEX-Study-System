@@ -238,6 +238,7 @@ function NclexAppShell() {
   const showMobileQuickStudyCta =
     location.pathname !== '/dashboard' &&
     location.pathname !== '/study-plan' &&
+    location.pathname !== '/performance-analytics' &&
     location.pathname !== '/quick-study' &&
     !location.pathname.startsWith('/nurse-command-lab')
 
