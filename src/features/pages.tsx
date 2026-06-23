@@ -1935,6 +1935,22 @@ export function PerformanceAnalyticsPage() {
             <p className="mt-3 max-w-3xl text-sm leading-7 text-sky-100/82">
               Readiness is practice evidence from your activity in Nurse Command. It is not a licensure prediction, clinical advice, or a substitute for official exam guidance.
             </p>
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <Link
+                to="/weak-areas"
+                className="nclex-btn-primary inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black"
+              >
+                Open remediation
+                <Target className="h-4 w-4" />
+              </Link>
+              <Link
+                to="/practice-questions"
+                className="nclex-btn-secondary inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black"
+              >
+                Start practice
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
           </div>
           <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
             <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-100/70">Readiness</p>
@@ -1998,8 +2014,8 @@ export function PerformanceAnalyticsPage() {
       <DetailGrid>
         <Surface>
           <SectionHeading
-            title="Category Focus"
-            description="The few areas most likely to improve the next score report."
+            title="Repair Targets"
+            description="The few areas most likely to improve the next score report, paired with the next route."
           />
           <div className="mt-5 space-y-4">
             {categoryFocus.map((category) => (
@@ -2017,6 +2033,22 @@ export function PerformanceAnalyticsPage() {
                   value={category.accuracy}
                   tone={category.masteryLevel === 'strong' ? 'green' : category.masteryLevel === 'developing' ? 'amber' : 'red'}
                 />
+                <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                  <Link
+                    to="/weak-areas"
+                    className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-cyan-300/24 bg-cyan-300/10 px-4 py-2 text-sm font-black text-cyan-100 transition hover:border-cyan-200/60 hover:bg-cyan-300/16"
+                  >
+                    Repair target
+                    <Target className="h-4 w-4" />
+                  </Link>
+                  <Link
+                    to="/practice-questions"
+                    className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-black text-sky-100/76 transition hover:border-cyan-200/40 hover:text-white"
+                  >
+                    Practice set
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
               </div>
             ))}
           </div>
@@ -2054,6 +2086,25 @@ export function PerformanceAnalyticsPage() {
           </div>
         </Surface>
       </DetailGrid>
+
+      <Surface>
+        <SectionHeading
+          title="History & Details"
+          description="Lower-priority context for the current readout. Use this after the main takeaway and repair targets."
+        />
+        <div className="mt-5 grid gap-3 md:grid-cols-4">
+          <MetricChip label="Questions" value={`${analytics.questionsCompleted}`} />
+          <MetricChip label="Trusted attempts" value={`${readiness.trustedAttemptCount}`} />
+          <MetricChip label="Coverage gaps" value={`${readiness.coverageGaps.length}`} />
+          <MetricChip label="Scope" value={(profile.preferences.analyticsScope ?? 'selected-track') === 'selected-track' ? activeTrack.shortName : 'All exams'} />
+        </div>
+        <div className="mt-5 rounded-2xl border border-cyan-200/15 bg-sky-300/[0.045] p-4">
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-100/56">Method note</p>
+          <p className="mt-2 text-sm leading-7 text-sky-100/70">
+            Performance separates practice attempts, trusted evidence, confidence mismatches, and coverage gaps so the next action stays about learning behavior rather than a single chart line.
+          </p>
+        </div>
+      </Surface>
     </div>
   )
 }
