@@ -71,6 +71,7 @@ import {
   getAnalyticsSnapshot,
   getDashboardState,
   getWeakAreas,
+  questionLookup,
 } from '../services/study-system'
 import {
   ChecklistItem,
@@ -1609,86 +1610,208 @@ export function WeakAreasPage() {
   const profile = useStudySystemStore((state) => state.profile)
   const attempts = useStudySystemStore((state) => state.attempts)
   const startPracticeSession = useStudySystemStore((state) => state.startPracticeSession)
+  const analytics = useMemo(() => getAnalyticsSnapshot(attempts, profile), [attempts, profile])
   const weakAreas = useMemo(
     () => getWeakAreas(attempts, profile.examTrack ?? 'nclex-rn', profile.preferences.analyticsScope ?? 'selected-track'),
     [attempts, profile.examTrack, profile.preferences.analyticsScope],
   )
   const activeTrack = getExamTrack(profile.examTrack ?? 'nclex-rn')
+  const priorityArea = weakAreas[0]
+  const readiness = analytics.readinessSnapshot
+  const activeRepairs = analytics.engineRemediationEvents.filter((event) => event.repairRequired && !event.repairSuccess)
+  const highConfidenceMisses = analytics.engineDiagnoses.filter(
+    (diagnosis) => diagnosis.confidenceEscalated && !diagnosis.scoreResult.isCorrect,
+  )
+  const startRepairSet = (category: QuestionCategory, questionCount = 5) => {
+    startPracticeSession({
+      category,
+      difficulty: 'adaptive',
+      questionCount,
+      format: 'mixed',
+    })
+    navigate('/practice-questions')
+  }
+  const getRepairCountForCategory = (category: QuestionCategory) =>
+    attempts.filter((attempt) => {
+      const attemptCategory = questionLookup[attempt.questionId]?.category
+      const hasOpenRepair = attempt.engineRemediationEvents?.some(
+        (event) => event.repairRequired && !event.repairSuccess,
+      )
+      return attemptCategory === category && (!attempt.isCorrect || hasOpenRepair)
+    }).length
+  const readinessBlockers = [
+    `${readiness.trustedAttemptCount} trusted attempts`,
+    `${readiness.coverageGaps.length} coverage gaps`,
+    `${highConfidenceMisses.length} high-confidence misses`,
+  ]
 
   return (
-    <div className="space-y-6">
+    <PageStack>
       <PageHeader
-        eyebrow="Actionable Review"
-        title={`${activeTrack.shortName} weak areas should turn into action, not shame.`}
-        description="Every category below follows your selected exam track and explains the fastest way to improve it."
+        eyebrow="Remediation"
+        title="Repair the pattern, then prove transfer."
+        description={`${activeTrack.shortName} weak areas now start with the next repair action. Details stay below the fold so remediation feels direct, not punitive.`}
+        action={
+          priorityArea ? (
+            <button
+              type="button"
+              onClick={() => startRepairSet(priorityArea.category)}
+              className="nclex-btn-primary inline-flex min-h-[48px] items-center gap-2 rounded-xl px-5 py-3 text-sm font-black"
+            >
+              Start repair set
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          ) : null
+        }
       />
-      <div className="grid gap-5">
-        {weakAreas.map((area) => (
-          <Surface key={area.category}>
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-              <div className="max-w-3xl">
-                <div className="flex flex-wrap items-center gap-3">
-                <h3 className="font-serif text-3xl text-[#163042]">{area.category}</h3>
-                  <MasteryPill mastery={area.masteryLevel} />
+
+      {priorityArea ? (
+        <FocusPanel className="nclex-dark-panel text-white">
+          <div className="grid gap-5 p-5 md:p-6 xl:grid-cols-[1fr_0.76fr] xl:items-center">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-200">Next repair</p>
+              <h3 className="mt-3 text-3xl font-black tracking-[-0.04em] text-white md:text-5xl">
+                Train {shortCategoryLabel(priorityArea.category)}
+              </h3>
+              <p className="mt-3 max-w-3xl text-sm leading-7 text-sky-100/72">
+                {priorityArea.suggestedAction} Then answer a short transfer set to prove the pattern changed.
+              </p>
+              <div className="mt-5 flex flex-wrap gap-2">
+                {priorityArea.commonMistakes.slice(0, 3).map((mistake) => (
+                  <span key={mistake} className="rounded-full border border-rose-300/30 bg-rose-300/10 px-3 py-1.5 text-xs font-black uppercase tracking-[0.14em] text-rose-100">
+                    {mistake}
+                  </span>
+                ))}
+              </div>
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => startRepairSet(priorityArea.category)}
+                  className="nclex-btn-primary inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black"
+                >
+                  Start {shortCategoryLabel(priorityArea.category)} repair
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate(`/flashcards?category=${encodeURIComponent(priorityArea.category)}`)}
+                  className="nclex-btn-secondary inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black"
+                >
+                  Review cards
+                  <SquareStack className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+              <QuickMetric label="Accuracy" value={`${Math.round(priorityArea.accuracy * 100)}%`} detail={`${priorityArea.attemptCount} attempts`} />
+              <QuickMetric label="Open repairs" value={`${getRepairCountForCategory(priorityArea.category)}`} detail="Misses or active repair routes." />
+              <QuickMetric label="Mismatch" value={`${Math.round(priorityArea.confidenceMismatchScore * 100)}%`} detail="Confidence calibration risk." />
+            </div>
+          </div>
+        </FocusPanel>
+      ) : (
+        <EmptyState
+          title="No weak area signal yet."
+          description="Complete a short practice set so Nurse Command can turn misses into a repair queue."
+          action={
+            <button
+              type="button"
+              onClick={() => navigate('/practice-questions')}
+              className="nclex-btn-primary rounded-xl px-4 py-3 text-sm font-black"
+            >
+              Start practice
+            </button>
+          }
+        />
+      )}
+
+      <DetailGrid>
+        <Surface>
+          <SectionHeading
+            title="Repair queue"
+            description="Train the first item now. The rest are backup lanes, not equal priorities."
+            action={<span className="nclex-chip nclex-chip-warning">{activeRepairs.length} active</span>}
+          />
+          <div className="mt-5 grid gap-4">
+            {weakAreas.slice(0, 4).map((area, index) => (
+              <div key={area.category} className="rounded-2xl border border-cyan-200/15 bg-sky-300/[0.055] p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-full border border-cyan-300/24 bg-cyan-300/10 px-2.5 py-1 text-xs font-black text-cyan-100">
+                        {index === 0 ? 'Next' : `Later ${index}`}
+                      </span>
+                      <MasteryPill mastery={area.masteryLevel} />
+                    </div>
+                    <h3 className="mt-3 text-xl font-black tracking-[-0.03em] text-white">
+                      {shortCategoryLabel(area.category)}
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-sky-100/65">{area.suggestedAction}</p>
+                  </div>
+                  <div className="grid min-w-[138px] grid-cols-2 gap-2 text-center">
+                    <div className="rounded-xl border border-cyan-300/15 bg-white/[0.04] p-3">
+                      <p className="text-lg font-black text-white">{Math.round(area.accuracy * 100)}%</p>
+                      <p className="text-xs font-semibold text-sky-100/55">accuracy</p>
+                    </div>
+                    <div className="rounded-xl border border-cyan-300/15 bg-white/[0.04] p-3">
+                      <p className="text-lg font-black text-white">{getRepairCountForCategory(area.category)}</p>
+                      <p className="text-xs font-semibold text-sky-100/55">repairs</p>
+                    </div>
+                  </div>
                 </div>
-                <p className="mt-3 text-sm leading-6 text-[#4f687a]">{area.suggestedAction}</p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {area.commonMistakes.map((mistake) => (
-                    <span key={mistake} className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-rose-700">
-                      {mistake}
-                    </span>
-                  ))}
-                  {area.keyConcepts.map((concept) => (
-                    <span key={concept} className="nclex-chip nclex-chip-info">
-                      {concept}
-                    </span>
-                  ))}
+                <div className="mt-4">
+                  <ProgressBar value={area.accuracy} tone={area.masteryLevel === 'strong' ? 'green' : area.masteryLevel === 'developing' ? 'amber' : 'red'} />
+                </div>
+                <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => startRepairSet(area.category)}
+                    className="nclex-btn-primary inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black"
+                  >
+                    Train {shortCategoryLabel(area.category)}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/notes?category=${encodeURIComponent(area.category)}`)}
+                    className="nclex-btn-secondary inline-flex min-h-[44px] items-center justify-center rounded-xl px-4 py-2.5 text-sm font-black"
+                  >
+                    Open notes
+                  </button>
                 </div>
               </div>
-              <div className="grid gap-3 md:min-w-[280px]">
-                <MetricChip label="Accuracy" value={`${Math.round(area.accuracy * 100)}%`} />
-                <MetricChip label="Attempts" value={`${area.attemptCount}`} />
-                <MetricChip label="Mismatch" value={`${Math.round(area.confidenceMismatchScore * 100)}%`} />
+            ))}
+          </div>
+        </Surface>
+
+        <Surface>
+          <SectionHeading
+            title="Evidence context"
+            description="Readiness stays separate from practice signal until evidence is trustworthy."
+          />
+          <div className="mt-5 grid gap-3">
+            {readinessBlockers.map((item) => (
+              <div key={item} className="rounded-2xl border border-cyan-200/15 bg-white/[0.035] p-4">
+                <p className="text-sm font-black text-white">{item}</p>
               </div>
+            ))}
+          </div>
+          <div className="mt-5 rounded-2xl border border-amber-300/20 bg-amber-300/10 p-4">
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-200">Next best action</p>
+            <p className="mt-2 text-sm leading-7 text-sky-100/72">{readiness.nextBestAction}</p>
+          </div>
+          {readiness.coverageGaps.length ? (
+            <div className="mt-5 grid gap-3">
+              {readiness.coverageGaps.slice(0, 3).map((gap, index) => (
+                <div key={`${gap.dimensionType}-${gap.dimensionId}-${index}`} className="rounded-2xl border border-cyan-200/15 bg-white/[0.035] p-4">
+                  <p className="font-black text-white">{gap.dimensionId.replaceAll('_', ' ')}</p>
+                  <p className="mt-1 text-sm text-sky-100/60">{gap.gapType.replaceAll('_', ' ')}</p>
+                </div>
+              ))}
             </div>
-            <div className="mt-5">
-              <ProgressBar value={area.accuracy} />
-            </div>
-            <div className="mt-5 flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  startPracticeSession({
-                    category: area.category,
-                    difficulty: 'adaptive',
-                    questionCount: 5,
-                    format: 'mixed',
-                  })
-                  navigate('/practice-questions')
-                }}
-                className="nclex-btn-primary rounded-full px-4 py-2 text-sm font-semibold"
-              >
-                Targeted quiz
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate(`/flashcards?category=${encodeURIComponent(area.category)}`)}
-                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
-              >
-                Flashcards
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate(`/notes?category=${encodeURIComponent(area.category)}`)}
-                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
-              >
-                Notes
-              </button>
-            </div>
-          </Surface>
-        ))}
-      </div>
-    </div>
+          ) : null}
+        </Surface>
+      </DetailGrid>
+    </PageStack>
   )
 }
 
@@ -1714,6 +1837,10 @@ export function PerformanceAnalyticsPage() {
     .sort((left, right) => left.accuracy - right.accuracy || right.confidenceMismatchScore - left.confidenceMismatchScore)
     .slice(0, 3)
   const primaryFocusCategory = categoryFocus[0]
+  const weakestDimensionLabel = analytics.learnerMasteryVector.summary.weakestDimensionId
+    ?.replaceAll('_', ' ')
+    .replace(':', ': ')
+  const primaryCoverageGap = readiness.coverageGaps[0]
   const performanceTakeaway =
     readiness.status === 'ready'
       ? `${activeTrack.shortName} readiness is in the ready range. Protect consistency with mixed timed sets.`
@@ -1768,7 +1895,7 @@ export function PerformanceAnalyticsPage() {
               {performanceTakeaway}
             </h3>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-sky-100/82">
-              This page now favors action over dashboard noise: one trend, three signals, and the details that explain where to train next.
+              Engine signal: {readiness.nextBestAction}
             </p>
           </div>
           <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
@@ -1856,32 +1983,32 @@ export function PerformanceAnalyticsPage() {
 
         <Surface>
           <SectionHeading
-            title="What The Data Says"
-            description="Plain-English interpretation without adding more chart noise."
+            title="Engine Signals"
+            description="Practice signal, readiness evidence, and repair logic stay separated."
           />
           <div className="mt-5 space-y-4">
             <InsightRow
-              icon={<TrendingUp className="h-4 w-4 text-emerald-600" />}
-              title="Overall trajectory"
+              icon={<Target className="h-4 w-4 text-cyan-300" />}
+              title="Next action"
+              body={readiness.nextBestAction}
+            />
+            <InsightRow
+              icon={<Flame className="h-4 w-4 text-amber-300" />}
+              title="Weakest pattern"
               body={
-                analytics.overallAccuracy >= 0.72
-                  ? 'Your overall accuracy is trending toward exam-ready territory. Keep building consistency.'
-                  : 'You are still in the build phase. Use weak-area targeting instead of more random question volume.'
+                weakestDimensionLabel
+                  ? `${weakestDimensionLabel} is the strongest repair signal in the current mastery vector.`
+                  : 'No durable weak pattern yet. Add practice evidence before over-reading the dashboard.'
               }
             />
             <InsightRow
-              icon={<Flame className="h-4 w-4 text-amber-500" />}
-              title="Confidence mismatch"
+              icon={<Clock3 className="h-4 w-4 text-sky-300" />}
+              title="Evidence gap"
               body={
-                analytics.highConfidenceMisses > 2 || repairQueueCount > 0
-                  ? 'You have several high-confidence misses. Review those first because they represent risky assumptions.'
-                  : 'Confidence mismatch is manageable right now. Keep reviewing low-confidence correct answers before they fade.'
+                primaryCoverageGap
+                  ? `${primaryCoverageGap.dimensionId.replaceAll('_', ' ')} needs ${primaryCoverageGap.gapType.replaceAll('_', ' ')} repair before it can support readiness.`
+                  : `${readiness.trustedAttemptCount} trusted attempts and ${readiness.practiceAttemptCount} practice attempts are currently separated.`
               }
-            />
-            <InsightRow
-              icon={<Clock3 className="h-4 w-4 text-sky-600" />}
-              title="Study efficiency"
-              body={`${analytics.timeStudiedMinutes} minutes logged. Short focused sessions are still the cleanest way to add reliable signal.`}
             />
           </div>
         </Surface>

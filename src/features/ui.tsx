@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import {
   AlertTriangle,
   ArrowLeft,
@@ -404,7 +405,9 @@ export function QuestionSessionRunner({
   const previousQuestion = useStudySystemStore((state) => state.previousQuestion)
   const goToSessionQuestion = useStudySystemStore((state) => state.goToSessionQuestion)
   const finishSession = useStudySystemStore((state) => state.finishSession)
+  const startPracticeSession = useStudySystemStore((state) => state.startPracticeSession)
   const attempts = useStudySystemStore((state) => state.attempts)
+  const navigate = useNavigate()
   const questionId = session.questionIds[session.currentIndex]
   const question = questionLookup[questionId]
   const existingResponse = session.responses.find((response) => response.questionId === questionId)
@@ -444,64 +447,101 @@ export function QuestionSessionRunner({
 
   if (session.endedAt) {
     const missedQuestions = session.responses.filter((response) => !response.isCorrect)
+    const correctCount = session.responses.filter((response) => response.isCorrect).length
+    const topMissedQuestion = missedQuestions[0] ? questionLookup[missedQuestions[0].questionId] : null
+    const topMissedAttempt = missedQuestions[0] ? getAttemptForResponse(missedQuestions[0]) : null
+    const topRemediation = topMissedAttempt?.engineRemediationEvents?.[0]
     const topMissReason = missedQuestions[0]
       ? getMissReason(missedQuestions[0].questionId, missedQuestions[0].selectedAnswer)
       : null
+    const sessionTakeaway = topRemediation?.nextActionCopy ??
+      (topMissedQuestion
+        ? `Train ${topMissedQuestion.category} before adding more mixed volume.`
+        : 'No repair needed from this set. Keep the same pace with a short mixed session.')
+    const startRepairSet = () => {
+      if (!topMissedQuestion) return
+      startPracticeSession({
+        category: topMissedQuestion.category,
+        difficulty: 'adaptive',
+        questionCount: 5,
+        format: 'mixed',
+      })
+      navigate('/practice-questions')
+    }
+
     return (
       <div className="space-y-6">
         <Surface className="overflow-hidden p-0">
-          <div className="border-b border-[var(--nclex-border)] bg-[linear-gradient(180deg,#f9fbff_0%,#eef5ff_100%)] px-5 py-5 md:px-6">
+          <div className="border-b border-[var(--nclex-border)] bg-[linear-gradient(135deg,#04213d_0%,#07172b_100%)] px-5 py-5 text-white md:px-6">
             <div className="grid gap-5 md:grid-cols-[1.15fr_0.85fr] md:items-center">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-blue)]">
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-200">
                   {modeLabel}
                 </p>
-                <h3 className="mt-2 font-serif text-3xl text-[var(--nclex-text)]">Session complete.</h3>
-                <p className="mt-2 max-w-2xl text-sm leading-7 text-[var(--nclex-text-muted)]">
-                  {score >= 80
-                    ? 'Strong work. Your clinical judgment is getting more stable under pressure.'
-                    : score >= 60
-                      ? 'Useful progress. Review the misses now while the reasoning is still fresh.'
-                      : 'This is a productive diagnostic. Your misses now give the clearest next-step plan.'}
+                <h3 className="mt-2 text-3xl font-black tracking-[-0.04em] md:text-5xl">Session complete.</h3>
+                <p className="mt-3 max-w-2xl text-sm leading-7 text-sky-100/78">
+                  {sessionTakeaway}
                 </p>
               </div>
-              <div className="rounded-[18px] border border-[var(--nclex-border)] bg-white p-5 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-text-muted)]">
-                  Score
-                </p>
-                <div className="mt-2 flex items-end justify-between gap-4">
-                  <p className="font-serif text-5xl text-[var(--nclex-text)]">{score}%</p>
-                  <p className="text-sm text-[var(--nclex-text-muted)]">
-                    {session.responses.filter((response) => response.isCorrect).length} correct
-                  </p>
+              <div className="grid gap-3 sm:grid-cols-3 md:grid-cols-1">
+                <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-100/65">Score</p>
+                  <p className="mt-2 text-3xl font-black">{score}%</p>
+                  <p className="text-sm font-semibold text-sky-100/70">{correctCount} correct</p>
+                </div>
+                <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-100/65">Missed</p>
+                  <p className="mt-2 text-3xl font-black">{missedQuestions.length}</p>
+                  <p className="text-sm font-semibold text-sky-100/70">review items</p>
+                </div>
+                <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-100/65">Next</p>
+                  <p className="mt-2 text-lg font-black">{topMissedQuestion?.category ?? 'Mixed set'}</p>
                 </div>
               </div>
             </div>
           </div>
-          <div className="flex flex-wrap gap-3 px-5 py-4 md:px-6">
+          <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:flex-wrap md:px-6">
+            {topMissedQuestion ? (
+              <button
+                type="button"
+                onClick={startRepairSet}
+                className="nclex-btn-primary inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black"
+              >
+                Repair {topMissedQuestion.category}
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => navigate('/weak-areas')}
+              className="nclex-btn-secondary inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black"
+            >
+              Open remediation
+            </button>
             <button
               type="button"
               onClick={onExit}
-              className="nclex-btn-secondary rounded-xl px-4 py-2.5 text-sm font-semibold"
+              className="nclex-btn-secondary min-h-[48px] rounded-xl px-4 py-2.5 text-sm font-black"
             >
               Close session
             </button>
           </div>
         </Surface>
 
-        {topMissReason ? (
-          <Surface className="border-[#ffe0b0] bg-[var(--nclex-warning-soft)]">
+        {topMissedQuestion ? (
+          <Surface className="border-amber-300/30 bg-amber-300/10">
             <div className="flex items-start gap-3">
-              <AlertTriangle className="mt-1 h-5 w-5 shrink-0 text-[var(--nclex-warning)]" />
+              <AlertTriangle className="mt-1 h-5 w-5 shrink-0 text-amber-300" />
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-warning)]">
-                  Why you missed it
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-200">
+                  Why it matters
                 </p>
-                <h4 className="mt-2 font-serif text-2xl text-[var(--nclex-text)]">
-                  Pattern detected from this quiz
+                <h4 className="mt-2 text-2xl font-black tracking-[-0.03em] text-white">
+                  {topMissedQuestion?.category ?? 'Pattern detected from this quiz'}
                 </h4>
-                <p className="mt-2 text-sm leading-7 text-[var(--nclex-text-secondary)]">
-                  {topMissReason}
+                <p className="mt-2 text-sm leading-7 text-sky-100/72">
+                  {topMissReason ?? topRemediation?.nextActionCopy ?? `This miss belongs to ${topMissedQuestion.category}. Review the rationale, then answer a nearby transfer question before moving on.`}
                 </p>
               </div>
             </div>

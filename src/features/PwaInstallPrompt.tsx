@@ -76,7 +76,7 @@ export function PwaInstallPrompt() {
                   Mobile App Ready
                 </p>
                 <h2 className="mt-1 font-serif text-2xl text-[var(--nclex-text)]">
-                  Install NCLEX Study System on your phone.
+                  Install Nurse Command on your phone.
                 </h2>
                 <p className="mt-1 max-w-2xl text-sm leading-6 text-[var(--nclex-text-muted)]">
                   Get an app icon, full-screen study sessions, faster repeat loading, and offline fallback for saved screens.
