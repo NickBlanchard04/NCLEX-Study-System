@@ -13,6 +13,12 @@ const requireSupabase = () => {
   return supabase
 }
 
+const getAuthRedirectTo = () => {
+  const baseUrl = import.meta.env.BASE_URL || '/'
+  if (typeof window === 'undefined') return baseUrl
+  return new URL(baseUrl, window.location.origin).toString()
+}
+
 export async function getCurrentAuthSnapshot(): Promise<AuthSnapshot> {
   if (!supabase) return { user: null, session: null }
   const { data, error } = await supabase.auth.getSession()
@@ -58,6 +64,7 @@ export async function signUpWithPassword(
     email,
     password,
     options: {
+      emailRedirectTo: getAuthRedirectTo(),
       data: {
         name: profile.name,
         nursing_school: profile.nursingSchool,
@@ -75,7 +82,9 @@ export async function signUpWithPassword(
 
 export async function requestPasswordReset(email: string) {
   const client = requireSupabase()
-  const { error } = await client.auth.resetPasswordForEmail(email)
+  const { error } = await client.auth.resetPasswordForEmail(email, {
+    redirectTo: getAuthRedirectTo(),
+  })
   if (error) throw error
 }
 
