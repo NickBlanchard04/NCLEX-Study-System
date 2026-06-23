@@ -2940,6 +2940,8 @@ export function StudyPlanPage() {
   const attempts = useStudySystemStore((state) => state.attempts)
   const updateProfile = useStudySystemStore((state) => state.updateProfile)
   const startQuickStudy = useStudySystemStore((state) => state.startQuickStudy)
+  const [studyPlanToday] = useState(() => new Date().toISOString().slice(0, 10))
+  const [studyPlanNowMs] = useState(() => new Date().getTime())
   const weakAreas = useMemo(
     () => getWeakAreas(attempts, profile.examTrack ?? 'nclex-rn', profile.preferences.analyticsScope ?? 'selected-track'),
     [attempts, profile.examTrack, profile.preferences.analyticsScope],
@@ -2947,9 +2949,30 @@ export function StudyPlanPage() {
   const plan = useMemo(() => buildStudyPlan(profile, weakAreas), [profile, weakAreas])
   const activeTrack = getExamTrack(profile.examTrack ?? 'nclex-rn')
   const priorityArea = weakAreas[0]?.category ?? 'prioritization'
+  const todayCompleted = useMemo(() => {
+    return attempts.filter((attempt) => attempt.completedAt.slice(0, 10) === studyPlanToday).length
+  }, [attempts, studyPlanToday])
+  const todayProgress = profile.dailyGoal ? todayCompleted / profile.dailyGoal : 0
+  const daysUntilExam = Math.max(
+    0,
+    Math.ceil((new Date(profile.examDate).getTime() - studyPlanNowMs) / (1000 * 60 * 60 * 24)),
+  )
   const todayTasks = [
-    `Start with ${shortCategoryLabel(priorityArea)}`,
-    ...plan.dailyFocus.slice(0, 2),
+    {
+      title: `Priority drill: ${shortCategoryLabel(priorityArea)}`,
+      detail: `${Math.max(5, Math.min(profile.dailyGoal, 15))} focused questions before anything else.`,
+      meta: 'Next',
+    },
+    {
+      title: 'Review the misses',
+      detail: plan.dailyFocus[1] ?? 'Use rationales and notes to repair the decision pattern.',
+      meta: 'Later today',
+    },
+    {
+      title: 'Lock one recall set',
+      detail: plan.dailyFocus[2] ?? 'Run a short flashcard pass for the next weak category.',
+      meta: 'Extra',
+    },
   ]
   const thisWeekTasks = plan.weeklyGoals.slice(0, 4)
   const laterTasks = plan.recommendedSessions.slice(0, 4)
@@ -2958,8 +2981,8 @@ export function StudyPlanPage() {
     <PageStack>
       <PageHeader
         eyebrow="Study Plan"
-        title="One plan, three time horizons."
-        description={`A simpler ${activeTrack.shortName} plan: finish today, glance at the week, park the rest for later.`}
+        title="Today first. The rest can wait."
+        description={`A simpler ${activeTrack.shortName} plan: one action now, a small weekly lane, and later work kept out of the way.`}
         action={
           <button
             type="button"
@@ -2976,33 +2999,47 @@ export function StudyPlanPage() {
       />
 
       <FocusPanel>
-        <div className="grid gap-5 bg-[linear-gradient(135deg,#003b66_0%,#12375a_100%)] px-5 py-5 text-white md:px-6 lg:grid-cols-[minmax(0,1fr)_240px]">
+        <div className="grid gap-5 bg-[linear-gradient(135deg,#003b66_0%,#12375a_100%)] px-5 py-5 text-white md:px-6 lg:grid-cols-[minmax(0,1fr)_260px]">
           <div>
             <p className="text-sm font-semibold text-sky-100/85">Today</p>
             <h3 className="mt-3 font-serif text-3xl leading-tight md:text-[2.15rem]">
-              {todayTasks[0]}
+              Start with {shortCategoryLabel(priorityArea)}
             </h3>
-            <ul className="mt-5 grid gap-3">
-              {todayTasks.map((task, index) => (
-                <li key={`${task}-${index}`} className="flex items-start gap-3 text-sm leading-6 text-sky-100/88">
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
-                  <span>{task}</span>
-                </li>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-sky-100/82">
+              Keep the day narrow: finish the priority drill, review the misses, then decide whether extra work is worth it.
+            </p>
+            <div className="mt-5 grid gap-3">
+              {todayTasks.map((task) => (
+                <div key={task.title} className="rounded-2xl border border-white/12 bg-white/[0.07] p-4">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="font-black text-white">{task.title}</p>
+                      <p className="mt-1 text-sm leading-6 text-sky-100/68">{task.detail}</p>
+                    </div>
+                    <span className="shrink-0 rounded-full border border-cyan-200/25 bg-cyan-300/10 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-cyan-100">
+                      {task.meta}
+                    </span>
+                  </div>
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
-          <div className="grid content-start gap-3 rounded-2xl border border-white/15 bg-white/10 p-4">
-            <div>
-              <p className="text-xs font-semibold text-sky-100/70">Daily goal</p>
-              <p className="mt-1 font-semibold">{profile.dailyGoal} questions</p>
+          <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-100/70">Today progress</p>
+            <p className="mt-2 text-3xl font-black">{todayCompleted}/{profile.dailyGoal}</p>
+            <p className="text-sm font-semibold text-sky-100/75">questions completed</p>
+            <div className="mt-4">
+              <ProgressBar value={todayProgress} tone="green" />
             </div>
-            <div>
-              <p className="text-xs font-semibold text-sky-100/70">Intensity</p>
-              <p className="mt-1 font-semibold capitalize">{profile.studyIntensity}</p>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-sky-100/70">Target date</p>
-              <p className="mt-1 font-semibold">{profile.examDate}</p>
+            <div className="mt-5 grid gap-3 text-sm">
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-semibold text-sky-100/65">Intensity</span>
+                <span className="font-black capitalize">{profile.studyIntensity}</span>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-semibold text-sky-100/65">Exam window</span>
+                <span className="font-black">{daysUntilExam} days</span>
+              </div>
             </div>
           </div>
         </div>
@@ -3012,12 +3049,17 @@ export function StudyPlanPage() {
         <Surface>
           <SectionHeading
             title="This Week"
-            description="Enough structure to keep momentum without turning the page into a planner."
+            description="Only the weekly commitments that should influence today."
           />
-          <ul className="mt-5 space-y-3 text-sm leading-6 text-slate-700">
-            {thisWeekTasks.map((goal) => (
-              <li key={goal} className="rounded-2xl bg-[#f7fbfd] px-4 py-3">
-                {goal}
+          <ul className="mt-5 space-y-3">
+            {thisWeekTasks.map((goal, index) => (
+              <li key={goal} className="rounded-2xl border border-cyan-200/15 bg-sky-300/[0.055] px-4 py-3">
+                <div className="flex items-start gap-3">
+                  <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-cyan-300/12 text-xs font-black text-cyan-100">
+                    {index + 1}
+                  </span>
+                  <p className="text-sm leading-6 text-sky-100/76">{goal}</p>
+                </div>
               </li>
             ))}
           </ul>
@@ -3026,13 +3068,16 @@ export function StudyPlanPage() {
         <Surface>
           <SectionHeading
             title="Later"
-            description="Sessions to pull forward after today's focus is done."
+            description="Useful work, parked below the main plan until today is complete."
             action={<CalendarClock className="h-5 w-5 text-[#2d77bf]" />}
           />
-          <ul className="mt-5 space-y-3 text-sm leading-6 text-slate-700">
+          <ul className="mt-5 space-y-3">
             {laterTasks.map((item) => (
-              <li key={item} className="rounded-2xl bg-[#f7fbfd] px-4 py-3">
-                {item}
+              <li key={item} className="rounded-2xl border border-cyan-200/15 bg-sky-300/[0.055] px-4 py-3">
+                <div className="flex items-start gap-3">
+                  <Clock3 className="mt-1 h-4 w-4 shrink-0 text-sky-200/70" />
+                  <p className="text-sm leading-6 text-sky-100/76">{item}</p>
+                </div>
               </li>
             ))}
           </ul>
@@ -3041,8 +3086,8 @@ export function StudyPlanPage() {
 
       <Surface>
         <SectionHeading
-          title="Plan settings"
-          description={`This plan is currently biased toward ${priorityArea} because that is where the most score lift is available.`}
+          title="Plan Controls"
+          description={`Lower priority settings. The plan is biased toward ${shortCategoryLabel(priorityArea)} because that is where the most score lift is available.`}
         />
         <div className="mt-5 grid gap-4 md:grid-cols-3">
           <Field label="Exam date">
