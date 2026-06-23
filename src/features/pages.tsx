@@ -1,8 +1,6 @@
 ﻿import { useDeferredValue, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
-  Area,
-  AreaChart,
   CartesianGrid,
   Line,
   LineChart,
@@ -35,6 +33,7 @@ import {
   NotebookPen,
   RefreshCw,
   Shuffle,
+  ShieldCheck,
   Sparkles,
   SquareStack,
   Target,
@@ -684,18 +683,58 @@ export function DashboardPage() {
         .reduce((sum, attempt) => sum + attempt.timeSpentSec, 0) / 60,
     )
   }, [attempts])
-  const completedPlanCount =
-    dashboard.todayCompleted === 0 ? 0 : Math.min(5, Math.max(1, Math.round(dashboard.todayCompleted / 1.5)))
-  const readiness = analytics.overallAccuracy >= 0.75 ? 'Good' : analytics.overallAccuracy >= 0.62 ? 'Building' : 'Needs focus'
-  const readinessTone = analytics.overallAccuracy >= 0.75 ? 'blue' : analytics.overallAccuracy >= 0.62 ? 'green' : 'amber'
+  const activeExamTrack = getExamTrack(profile.examTrack ?? 'nclex-rn')
+  const dashboardCopy = getExamDashboardCopy(activeExamTrack.id)
+  const daysUntilExam = Math.max(
+    0,
+    Math.ceil((new Date(profile.examDate).getTime() - dashboardNowMs) / (1000 * 60 * 60 * 24)),
+  )
+  const readinessSnapshot = analytics.readinessSnapshot
+  const readinessScore = Math.max(readinessSnapshot.readinessScore, analytics.overallAccuracy)
+  const readinessPercent = Math.round(readinessScore * 100)
+  const readinessBadge =
+    readinessSnapshot.status === 'ready'
+      ? 'Strong Signal'
+      : readinessSnapshot.status === 'approaching'
+        ? 'On Track'
+        : readinessSnapshot.status === 'building'
+          ? 'Building'
+          : 'New Signal'
+  const readinessTone =
+    readinessSnapshot.status === 'ready'
+      ? 'emerald'
+      : readinessSnapshot.status === 'approaching'
+        ? 'cyan'
+        : readinessSnapshot.status === 'building'
+          ? 'amber'
+          : 'slate'
+  const todayGoalProgress = dashboard.dailyGoal ? dashboard.todayCompleted / dashboard.dailyGoal : 0
+  const materialsReadyCount = materials.filter((item) => item.extractionStatus === 'ready').length
+  const materialsNeedingAttention = materials.filter(
+    (item) =>
+      item.extractionStatus === 'error' ||
+      (item.extractionStatus === 'ready' &&
+        (!item.generatedFlashcardIds.length || !item.generatedQuestionIds.length)),
+  ).length
   const startPlanQuickStudy = (category?: QuestionCategory) => {
     startQuickStudy(category)
     navigate('/quick-study')
   }
+  const primaryCategory = weakestArea?.category ?? getExamCategories(activeExamTrack.id)[0] ?? 'Pharmacology'
+  const missionTitle = weakestArea
+    ? `${dashboardCopy.priorityPrefix}: ${shortCategoryLabel(primaryCategory)}`
+    : materialsReadyCount
+      ? 'Turn one upload into active recall'
+      : 'Complete one Quick Study session'
+  const missionCopy = weakestArea
+    ? `Train this first. It is the clearest practice signal for score lift right now.`
+    : materialsReadyCount
+      ? 'Use your uploaded materials for recall before adding more notes.'
+      : 'One focused set gives the dashboard fresh evidence without overloading the day.'
   const planItems = [
     {
       id: 'priority-drill',
-      label: `15 Questions - ${shortCategoryLabel(weakestArea?.category ?? 'Pharmacology')}`,
+      label: `15 Questions - ${shortCategoryLabel(primaryCategory)}`,
       meta: '25 min',
       actionLabel: 'Start now',
       icon: <Sparkles className="h-4 w-4" />,
@@ -734,294 +773,243 @@ export function DashboardPage() {
       onSelect: () => navigate('/test-mode'),
     },
   ]
-  const planSections = [
+  const missionStats = [
     {
-      title: 'Next',
-      description: 'Do this first.',
-      items: planItems.slice(0, 1),
+      label: 'Today',
+      value: `${dashboard.todayCompleted}/${dashboard.dailyGoal}`,
+      detail: `${Math.round(todayGoalProgress * 100)}% complete`,
     },
     {
-      title: 'Later Today',
-      description: 'Keep momentum after the priority drill.',
-      items: planItems.slice(1, 3),
+      label: 'Accuracy',
+      value: `${Math.round(dashboard.recentAccuracy * 100)}%`,
+      detail: 'recent set',
     },
     {
-      title: 'If You Have Extra Time',
-      description: 'Helpful, but not required to win the day.',
-      items: planItems.slice(3),
-    },
-  ]
-  const completionTrend = analytics.dailyAccuracy.map((item) => item.completed || 0)
-  const accuracyTrend = analytics.dailyAccuracy.map((item) => Math.round(item.accuracy * 100) || 0)
-  const todayGoalProgress = dashboard.dailyGoal ? dashboard.todayCompleted / dashboard.dailyGoal : 0
-  const materialsReadyCount = materials.filter((item) => item.extractionStatus === 'ready').length
-  const materialsNeedingAttention = materials.filter(
-    (item) =>
-      item.extractionStatus === 'error' ||
-      (item.extractionStatus === 'ready' &&
-        (!item.generatedFlashcardIds.length || !item.generatedQuestionIds.length)),
-  ).length
-  const recommendationBody = weakestArea
-    ? `You missed ${Math.max(1, weakestArea.flaggedCount || 2)} high-value questions in this area. Strengthen this topic to boost your score and reduce second-guessing.`
-    : dashboard.recommendation.description
-  const activeExamTrack = getExamTrack(profile.examTrack ?? 'nclex-rn')
-  const dashboardCopy = getExamDashboardCopy(activeExamTrack.id)
-  const daysUntilExam = Math.max(
-    0,
-    Math.ceil((new Date(profile.examDate).getTime() - dashboardNowMs) / (1000 * 60 * 60 * 24)),
-  )
-  const todayPriority = weakestArea
-    ? `${dashboardCopy.priorityPrefix}: ${shortCategoryLabel(weakestArea.category)}`
-    : materialsReadyCount
-      ? 'Convert your uploaded material into active recall'
-      : 'Complete one Quick Study session to generate fresh signal'
-  const secondaryWeakArea = dashboard.weakestCategories[1]?.category
-  const performanceTakeaway = weakestArea
-    ? `Accuracy dipped after ${shortCategoryLabel(secondaryWeakArea ?? weakestArea.category)} questions. ${shortCategoryLabel(weakestArea.category)} is still the priority.`
-    : 'Accuracy is steady. Complete one focused session today so the trend has fresh signal.'
-  const readinessStatTone = readinessTone === 'amber' ? 'warning' : 'success'
-  const planContextMetrics = [
-    {
-      label: 'Exam window',
-      value: `${daysUntilExam} days`,
-      detail: dashboardCopy.examLabel,
-    },
-    {
-      label: 'Readiness',
-      value: readiness,
-      detail: `${Math.round(analytics.overallAccuracy * 100)}% overall accuracy`,
-    },
-    {
-      label: 'Materials',
-      value: `${materialsReadyCount}`,
-      detail: materialsNeedingAttention ? `${materialsNeedingAttention} need attention` : 'Ready to review',
+      label: 'Streak',
+      value: `${dashboard.streak}d`,
+      detail: `${formatMinutes(todayMinutes)} today`,
     },
   ]
+  const badgeToneClasses = {
+    strong: {
+      ring: 'border-emerald-300/38 bg-emerald-300/[0.105] text-emerald-100',
+      icon: 'bg-emerald-300/16 text-emerald-100',
+      progress: 'green' as const,
+      label: 'Strong',
+    },
+    developing: {
+      ring: 'border-amber-300/38 bg-amber-300/[0.105] text-amber-100',
+      icon: 'bg-amber-300/16 text-amber-100',
+      progress: 'amber' as const,
+      label: 'Building',
+    },
+    fragile: {
+      ring: 'border-rose-300/38 bg-rose-300/[0.105] text-rose-100',
+      icon: 'bg-rose-300/16 text-rose-100',
+      progress: 'red' as const,
+      label: 'Focus',
+    },
+    empty: {
+      ring: 'border-slate-300/22 bg-slate-300/[0.07] text-slate-100',
+      icon: 'bg-slate-300/12 text-slate-100',
+      progress: 'blue' as const,
+      label: 'No signal',
+    },
+  }
+  const masteryBadges = getExamCategories(activeExamTrack.id)
+    .slice(0, 4)
+    .map((category, index) => {
+      const stat = analytics.categoryStats.find((item) => item.category === category)
+      const tone = stat && stat.attemptCount > 0 ? stat.masteryLevel : 'empty'
+      const progress = stat && stat.attemptCount > 0 ? stat.accuracy : 0
+      const icon =
+        index % 3 === 0 ? (
+          <HeartPulse className="h-4 w-4" />
+        ) : index % 3 === 1 ? (
+          <BrainCircuit className="h-4 w-4" />
+        ) : (
+          <ShieldCheck className="h-4 w-4" />
+        )
+
+      return {
+        category,
+        label: shortCategoryLabel(category),
+        progress,
+        attempts: stat?.attemptCount ?? 0,
+        theme: badgeToneClasses[tone],
+        icon,
+      }
+    })
+  const supportActions = planItems.slice(1, 4)
 
   return (
-    <PageStack>
-      <PageHeader
-        eyebrow="Command Center"
-        title="Today, do the next useful thing."
-        description={`A simpler ${activeExamTrack.shortName} command view: priority first, then progress and context.`}
-        action={
-          <button
-            type="button"
-            onClick={() => {
-              startQuickStudy(weakestArea?.category)
-              navigate('/quick-study')
-            }}
-            className="nclex-btn-primary inline-flex min-h-11 items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold"
-          >
-            <Sparkles className="h-4 w-4" />
-            Start priority session
-          </button>
-        }
-      />
-
+    <PageStack className="space-y-4 md:space-y-5">
       <FocusPanel>
-        <div className="grid gap-5 bg-[linear-gradient(135deg,#003b66_0%,#12375a_100%)] px-5 py-5 text-white md:px-6 lg:grid-cols-[minmax(0,1fr)_240px]">
-          <div>
-            <p className="text-sm font-semibold text-sky-100/85">Today's next action</p>
-            <h3 className="mt-3 font-serif text-3xl leading-tight md:text-[2.15rem]">
-              {todayPriority}
-            </h3>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-sky-100/85">
-              {recommendationBody}
-            </p>
-          </div>
-          <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
-            <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-100/70">Priority session</p>
-            <p className="mt-2 text-2xl font-black">{Math.max(0, dashboard.dailyGoal - dashboard.todayCompleted)}</p>
-            <p className="text-sm font-semibold text-sky-100/75">questions left for today's goal</p>
-            <button
-              type="button"
-              onClick={() => {
-                startQuickStudy(weakestArea?.category)
-                navigate('/quick-study')
-              }}
-              className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-black text-[#063257] shadow-[0_18px_34px_rgba(0,0,0,0.22)] transition hover:-translate-y-0.5"
-            >
-              Start drill
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      </FocusPanel>
-
-      <div className="grid gap-5 md:grid-cols-3">
-        <StatCard
-          label="Today's Progress"
-          value={`${dashboard.todayCompleted}/${dashboard.dailyGoal}`}
-          detail="questions completed"
-          trend={`${Math.round(todayGoalProgress * 100)}% complete · ${formatMinutes(todayMinutes)} today`}
-          tone="success"
-          statusLabel="Today"
-          icon={<Goal className="h-5 w-5" />}
-          progressValue={todayGoalProgress}
-          sparkline={completionTrend}
-        />
-        <StatCard
-          label="Accuracy"
-          value={`${Math.round(dashboard.recentAccuracy * 100)}%`}
-          detail="most recent set"
-          trend={dashboard.recentAccuracy >= 0.75 ? '+6% this week' : 'Focus on stability'}
-          tone={dashboard.recentAccuracy >= 0.75 ? 'success' : 'warning'}
-          statusLabel={dashboard.recentAccuracy >= 0.75 ? 'On track' : 'Focus'}
-          icon={<CheckCircle2 className="h-5 w-5" />}
-          sparkline={accuracyTrend}
-        />
-        <StatCard
-          label="Streak / Readiness"
-          value={`${dashboard.streak} days`}
-          detail={`${readiness} readiness`}
-          trend={`Exam in ${daysUntilExam} days`}
-          tone={readinessStatTone}
-          statusLabel={readiness}
-          icon={<Flame className="h-5 w-5" />}
-          progressValue={analytics.overallAccuracy}
-          sparkline={completionTrend}
-        />
-      </div>
-
-      <DetailGrid className="xl:grid-cols-[1.12fr_0.88fr]">
-        <Surface>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="bg-[linear-gradient(135deg,#06294a_0%,#0c3c52_58%,#12375a_100%)] p-5 text-white md:p-6">
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-center">
             <div>
-              <h3 className="font-serif text-2xl text-[var(--nclex-text)]">Today's Plan</h3>
-              <p className="mt-1 text-sm text-[var(--nclex-text-muted)]">
-                Start the first task, then use the lighter follow-ups only if the day still has room.
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full border border-cyan-200/24 bg-cyan-300/10 px-3 py-1 text-xs font-black uppercase text-cyan-100">
+                  {activeExamTrack.shortName}
+                </span>
+                <span className="rounded-full border border-white/14 bg-white/8 px-3 py-1 text-xs font-black uppercase text-sky-100/70">
+                  Exam in {daysUntilExam}d
+                </span>
+              </div>
+              <p className="mt-5 text-sm font-black uppercase text-cyan-100/72">Today&apos;s mission</p>
+              <h2 className="mt-2 max-w-3xl text-3xl font-black leading-tight text-white md:text-4xl">
+                {missionTitle}
+              </h2>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-sky-100/74">
+                {missionCopy}
               </p>
+              <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <button
+                  type="button"
+                  onClick={planItems[0].onSelect}
+                  className="nclex-btn-primary inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black"
+                >
+                  {planItems[0].actionLabel}
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate('/study-plan')}
+                  className="nclex-btn-secondary inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black"
+                >
+                  View plan
+                  <CalendarClock className="h-4 w-4" />
+                </button>
+              </div>
             </div>
-            <span className="nclex-chip nclex-chip-success w-fit">{completedPlanCount} / {planItems.length} done</span>
-          </div>
-          <button
-            type="button"
-            onClick={planItems[0].onSelect}
-            className="mt-5 flex w-full items-stretch gap-3 rounded-2xl border border-emerald-200/30 bg-emerald-300/[0.105] p-4 text-left transition hover:-translate-y-0.5 hover:border-emerald-200/55 hover:bg-emerald-300/[0.15] focus:outline-none focus:ring-2 focus:ring-emerald-200/55"
-          >
-            <span
-              className={clsx(
-                'mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border',
-                completedPlanCount > 0
-                  ? 'border-emerald-300/55 bg-emerald-300/16 text-emerald-200'
-                  : 'border-emerald-200/35 bg-white/8 text-emerald-100',
-              )}
-            >
-              {completedPlanCount > 0 ? <CheckCircle2 className="h-5 w-5" /> : planItems[0].icon}
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="text-xs font-black uppercase tracking-[0.16em] text-emerald-100/72">Do first</span>
-              <span className="mt-1 block text-lg font-black leading-snug text-white">{planItems[0].label}</span>
-              <span className="mt-2 block text-sm font-semibold text-sky-100/62">{planItems[0].meta}</span>
-            </span>
-            <span className="hidden shrink-0 items-center gap-2 self-center rounded-xl bg-white px-3 py-2 text-sm font-black text-[#063257] sm:inline-flex">
-              {planItems[0].actionLabel}
-              <ArrowRight className="h-4 w-4" />
-            </span>
-            <ArrowRight className="mt-1 h-5 w-5 shrink-0 text-emerald-100 sm:hidden" />
-          </button>
-          <div className="mt-4 grid gap-3">
-            {planSections.map((section) => (
+            <div className="flex items-center justify-between gap-4 rounded-[1rem] border border-white/14 bg-white/[0.075] p-4 lg:block">
+              <div>
+                <p className="text-xs font-black uppercase text-sky-100/62">Readiness badge</p>
+                <p className="mt-2 max-w-36 text-xs leading-5 text-sky-100/60 lg:mt-3">
+                  Practice evidence only, not a licensure prediction.
+                </p>
+              </div>
               <div
-                key={section.title}
                 className={clsx(
-                  'rounded-2xl border border-cyan-200/15 bg-sky-300/[0.055] p-4',
-                  section.title === 'Next' && 'hidden sm:block',
-                  section.title === 'If You Have Extra Time' && 'hidden md:block',
+                  'flex h-24 w-24 shrink-0 items-center justify-center rounded-full border text-center shadow-[0_0_28px_rgba(125,211,252,0.14)] lg:mt-3 lg:h-28 lg:w-28',
+                  readinessTone === 'emerald' && 'border-emerald-200/45 bg-emerald-300/12',
+                  readinessTone === 'cyan' && 'border-cyan-200/45 bg-cyan-300/12',
+                  readinessTone === 'amber' && 'border-amber-200/45 bg-amber-300/12',
+                  readinessTone === 'slate' && 'border-slate-200/25 bg-slate-300/10',
                 )}
               >
-                <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-                  <p className="text-sm font-black text-white">{section.title}</p>
-                  <p className="text-xs font-semibold text-sky-100/55">{section.description}</p>
+                <div>
+                  <p className="text-3xl font-black text-white">{readinessPercent}%</p>
+                  <p className="mt-1 text-xs font-black uppercase text-sky-100/62">{readinessBadge}</p>
                 </div>
-                <div className="grid gap-2">
-                  {section.items.map((item) => {
-                    const planIndex = planItems.findIndex((planItem) => planItem.id === item.id)
-                    const completed = planIndex > -1 && planIndex < completedPlanCount
-                    return (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={item.onSelect}
-                        className="flex min-h-14 w-full items-center gap-3 rounded-xl border border-cyan-200/10 bg-[#03101f]/28 px-3 py-2.5 text-left transition hover:border-cyan-200/30 hover:bg-cyan-300/10 focus:outline-none focus:ring-2 focus:ring-cyan-200/45"
-                      >
-                        <span
-                          className={clsx(
-                            'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border',
-                            completed
-                              ? 'border-emerald-300/55 bg-emerald-300/14 text-emerald-200'
-                              : 'border-sky-300/24 bg-white/5 text-sky-100/72',
-                          )}
-                        >
-                          {completed ? <CheckCircle2 className="h-4 w-4" /> : item.icon}
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-sm font-black text-white">{item.label}</span>
-                          <span className="mt-0.5 block text-xs font-semibold text-sky-100/50">{item.meta}</span>
-                        </span>
-                        <span className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-cyan-200/15 bg-cyan-300/10 px-2.5 py-1.5 text-xs font-black text-cyan-100">
-                          {item.actionLabel}
-                          <ArrowRight className="h-3.5 w-3.5" />
-                        </span>
-                      </button>
-                    )
-                  })}
+              </div>
+            </div>
+          </div>
+          <div className="mt-5 grid grid-cols-3 gap-2 border-t border-white/10 pt-4">
+            {missionStats.map((stat) => (
+              <div key={stat.label} className="min-w-0">
+                <p className="truncate text-xs font-black uppercase text-sky-100/54">{stat.label}</p>
+                <div className="mt-1">
+                  <p className="truncate text-xl font-black text-white">{stat.value}</p>
+                  <p className="truncate text-xs font-semibold text-sky-100/55">{stat.detail}</p>
                 </div>
               </div>
             ))}
           </div>
-          <div className="mt-5 hidden rounded-2xl border border-cyan-200/15 bg-[#03101f]/55 p-4 sm:block">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm font-black text-white">Plan context</p>
-                <p className="text-xs font-semibold text-sky-100/55">{activeExamTrack.title}</p>
-              </div>
-              <p className="text-xs font-semibold text-sky-100/55">Target date: {profile.examDate}</p>
-            </div>
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
-              {planContextMetrics.map((metric) => (
-                <div key={metric.label} className="rounded-xl border border-cyan-200/12 bg-sky-300/[0.06] p-3">
-                  <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-sky-100/50">{metric.label}</p>
-                  <p className="mt-2 text-lg font-black text-white">{metric.value}</p>
-                  <p className="mt-1 text-xs font-semibold text-sky-100/55">{metric.detail}</p>
-                </div>
-              ))}
-            </div>
+        </div>
+      </FocusPanel>
+
+      <section>
+        <div className="mb-3 flex items-end justify-between gap-3">
+          <div>
+            <p className="text-xs font-black uppercase text-sky-100/56">Badge board</p>
+            <h3 className="mt-1 text-2xl font-black text-white">Mastery signals</h3>
           </div>
-          <button
-            type="button"
-            onClick={() => navigate('/study-plan')}
-            className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-cyan-200/18 bg-cyan-300/10 px-4 py-3 text-sm font-black text-cyan-100 transition hover:border-cyan-200/36 hover:bg-cyan-300/15 sm:w-auto sm:justify-start sm:border-0 sm:bg-transparent sm:p-0 sm:text-[var(--nclex-blue)]"
-          >
-            View Full Plan
-            <ArrowRight className="h-4 w-4" />
-          </button>
-        </Surface>
+          <Link to="/performance-analytics" className="hidden text-sm font-black text-cyan-100 sm:inline-flex">
+            Analytics
+          </Link>
+        </div>
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
+          {masteryBadges.map((badge) => (
+            <div key={badge.category} className={clsx('rounded-[1rem] border p-3 sm:p-4', badge.theme.ring)}>
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <span className={clsx('inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl', badge.theme.icon)}>
+                    {badge.icon}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-black text-white">{badge.label}</p>
+                    <p className="mt-1 text-xs font-semibold text-sky-100/58">{badge.attempts} attempts</p>
+                  </div>
+                </div>
+                <span className="rounded-full border border-white/12 bg-white/8 px-2 py-1 text-[0.68rem] font-black text-sky-100">
+                  {badge.theme.label}
+                </span>
+              </div>
+              <div className="mt-4">
+                <ProgressBar value={badge.progress} tone={badge.theme.progress} />
+              </div>
+              <p className="mt-2 text-xs font-semibold text-sky-100/55">
+                {badge.attempts ? `${Math.round(badge.progress * 100)}% current accuracy` : 'Complete practice to unlock.'}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <DetailGrid className="xl:grid-cols-[0.9fr_1.1fr]">
         <Surface>
           <SectionHeading
-            title="Weak areas"
-            description="Each weak area has a direct action, not just a warning."
-            action={
-              <Link to="/weak-areas" className="text-sm font-semibold text-[var(--nclex-blue)]">
-                See all
-              </Link>
-            }
+            title="Next best actions"
+            description="Only the work that should influence today."
           />
-          <div className="mt-5 space-y-5">
-            {dashboard.weakestCategories.slice(0, 3).map((area, index) => {
-              const actionVerb = index === 0 ? 'Train' : index === 1 ? 'Review' : 'Practice'
+          <div className="mt-5 grid gap-3">
+            {supportActions.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={item.onSelect}
+                className="flex min-h-14 w-full items-center gap-3 rounded-xl border border-cyan-200/12 bg-sky-300/[0.055] px-3 py-3 text-left transition hover:border-cyan-200/32 hover:bg-cyan-300/10 focus:outline-none focus:ring-2 focus:ring-cyan-200/45"
+              >
+                <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-cyan-300/12 text-cyan-100">
+                  {item.icon}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-black text-white">{item.label}</span>
+                  <span className="mt-0.5 block text-xs font-semibold text-sky-100/52">{item.meta}</span>
+                </span>
+                <span className="text-xs font-black uppercase text-cyan-100">{item.actionLabel}</span>
+              </button>
+            ))}
+          </div>
+          <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.035] p-4">
+            <p className="text-xs font-black uppercase text-sky-100/48">Materials</p>
+            <p className="mt-2 text-sm font-semibold leading-6 text-sky-100/68">
+              {materialsReadyCount} ready file{materialsReadyCount === 1 ? '' : 's'}
+              {materialsNeedingAttention ? `, ${materialsNeedingAttention} need attention.` : ', ready to review.'}
+            </p>
+          </div>
+        </Surface>
+
+        <Surface>
+          <SectionHeading
+            title="Focus lane"
+            description="Weak areas stay compact until you want the full review view."
+            action={<Link to="/weak-areas" className="text-sm font-black text-cyan-100">See all</Link>}
+          />
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
+            {dashboard.weakestCategories.slice(0, 2).map((area, index) => {
+              const actionVerb = index === 0 ? 'Train' : 'Review'
               return (
-                <div key={area.category} className="rounded-2xl border border-cyan-200/15 bg-sky-300/[0.055] p-4">
-                  <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0">
-                      <p className="font-semibold text-[var(--nclex-text)]">{shortCategoryLabel(area.category)}</p>
-                      <p className="text-sm text-[var(--nclex-text-muted)]">{area.suggestedAction}</p>
-                    </div>
+                <div key={area.category} className="rounded-[1rem] border border-cyan-200/15 bg-sky-300/[0.055] p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="font-black text-white">{shortCategoryLabel(area.category)}</p>
                     <MasteryPill mastery={area.masteryLevel} />
                   </div>
+                  <p className="mt-2 text-sm leading-6 text-sky-100/62">{area.suggestedAction}</p>
                   <ProgressBar
                     value={area.accuracy}
+                    className="mt-4"
                     tone={area.masteryLevel === 'strong' ? 'green' : area.masteryLevel === 'developing' ? 'amber' : 'red'}
                   />
                   <button
@@ -1039,52 +1027,30 @@ export function DashboardPage() {
               )
             })}
           </div>
+          <div className="mt-5 rounded-xl border border-cyan-200/12 bg-[#03101f]/45 p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs font-black uppercase text-sky-100/48">Progress snapshot</p>
+                <p className="mt-1 text-sm font-semibold text-sky-100/68">{activeExamTrack.title}</p>
+              </div>
+              <p className="text-sm font-black text-white">{dashboardCopy.examLabel}</p>
+            </div>
+            <div className="mt-4 grid grid-cols-3 gap-3">
+              {[
+                { label: 'Readiness', value: readinessBadge, detail: `${readinessPercent}% signal` },
+                { label: 'Track', value: activeExamTrack.shortName, detail: `${daysUntilExam} days left` },
+                { label: 'Questions', value: `${analytics.questionsCompleted}`, detail: 'practice evidence' },
+              ].map((metric) => (
+                <div key={metric.label} className="min-w-0 border-l border-cyan-200/16 pl-3 first:border-l-0 first:pl-0">
+                  <p className="truncate text-[0.68rem] font-black uppercase text-sky-100/46">{metric.label}</p>
+                  <p className="mt-1 truncate text-sm font-black text-white">{metric.value}</p>
+                  <p className="mt-0.5 truncate text-xs font-semibold text-sky-100/52">{metric.detail}</p>
+                </div>
+              ))}
+            </div>
+          </div>
         </Surface>
       </DetailGrid>
-
-      <Surface>
-        <SectionHeading
-          title="Performance trend"
-          description="One clean chart, with the takeaway written before the graph."
-        />
-        <div className="mt-5 rounded-2xl border border-cyan-200/15 bg-cyan-300/10 p-4">
-          <div className="flex items-start gap-3">
-            <TrendingDown className="mt-0.5 h-5 w-5 shrink-0 text-cyan-200" />
-            <p className="text-sm font-semibold leading-6 text-sky-100/78">{performanceTakeaway}</p>
-          </div>
-        </div>
-        <div className="mt-5 h-[280px] min-h-[280px] min-w-0">
-          <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 1, height: 1 }} minWidth={0}>
-            <AreaChart data={analytics.dailyAccuracy}>
-              <defs>
-                <linearGradient id="accuracyFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#38bdf8" stopOpacity={0.28} />
-                  <stop offset="100%" stopColor="#38bdf8" stopOpacity={0.03} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid vertical={false} stroke="rgba(125,211,252,0.2)" />
-              <XAxis dataKey="day" tick={{ fill: '#bae6fd', fontSize: 12 }} axisLine={false} tickLine={false} />
-              <YAxis tickFormatter={(value) => `${Math.round(value * 100)}%`} tick={{ fill: '#bae6fd', fontSize: 12 }} axisLine={false} tickLine={false} />
-              <Tooltip formatter={percentTooltip} />
-              <Area type="monotone" dataKey="accuracy" stroke="#38bdf8" fill="url(#accuracyFill)" strokeWidth={3} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="mt-5 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-2xl border border-cyan-200/15 bg-sky-300/[0.055] p-4">
-            <p className="text-xs font-black uppercase tracking-[0.14em] text-sky-100/50">Time today</p>
-            <p className="mt-2 text-xl font-black text-white">{formatMinutes(todayMinutes)}</p>
-          </div>
-          <div className="rounded-2xl border border-cyan-200/15 bg-sky-300/[0.055] p-4">
-            <p className="text-xs font-black uppercase tracking-[0.14em] text-sky-100/50">Track</p>
-            <p className="mt-2 text-xl font-black text-white">{activeExamTrack.shortName}</p>
-          </div>
-          <div className="rounded-2xl border border-cyan-200/15 bg-sky-300/[0.055] p-4">
-            <p className="text-xs font-black uppercase tracking-[0.14em] text-sky-100/50">Focus</p>
-            <p className="mt-2 text-xl font-black text-white">{shortCategoryLabel(weakestArea?.category ?? 'Pharmacology')}</p>
-          </div>
-        </div>
-      </Surface>
     </PageStack>
   )
 }
@@ -1288,7 +1254,7 @@ export function PracticeQuestionsPage() {
 
         <Surface>
           <SectionHeading
-            title="Where this connects"
+            title="After this set"
             description="Practice should immediately point toward repair and performance, not another menu."
           />
           <div className="mt-5 grid gap-3">

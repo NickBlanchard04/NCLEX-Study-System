@@ -239,6 +239,10 @@ function NclexAppShell() {
     void initializeMaterials()
   }, [initializeMaterials])
 
+  useEffect(() => {
+    window.scrollTo({ left: 0, top: 0, behavior: 'auto' })
+  }, [location.pathname])
+
   const pageMeta = useMemo(() => {
     const match = pageMetaNavigation.find((item) => isNavigationItemActive(location.pathname, item))
     return match ?? mainNavigation[0]
