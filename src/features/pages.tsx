@@ -1477,8 +1477,8 @@ export function QuickStudyPage() {
     <PageStack>
       <PageHeader
         eyebrow="Quick Study"
-        title="Five questions. One repair."
-        description="Quick Study should feel like a clean clinical rep: start fast, answer deliberately, review the rationale, move on."
+        title="Start the rep. Repair one pattern."
+        description="A five-question clinical sprint with the rationale, confidence check, and next move kept close to the answer."
         action={
           <button
             type="button"
@@ -1491,16 +1491,16 @@ export function QuickStudyPage() {
         }
       />
       <FocusPanel className="nclex-dark-panel text-white">
-        <div className="grid gap-5 p-5 md:p-6 xl:grid-cols-[1fr_0.72fr] xl:items-center">
+        <div className="grid gap-5 p-5 md:p-6 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-end">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-200">Auto-selected focus</p>
-            <h3 className="mt-3 text-3xl font-black tracking-[-0.04em] text-white md:text-5xl">
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-200">Next five questions</p>
+            <h3 className="mt-3 max-w-3xl text-3xl font-black tracking-[-0.04em] text-white md:text-5xl">
               {weakArea?.category ?? getExamCategories(activeTrack.id)[0]}
             </h3>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-sky-100/72">
               {weakArea
-                ? `${Math.round(weakArea.accuracy * 100)}% accuracy, with ${weakArea.commonMistakes.join(', ')} showing up most often.`
-                : 'No attempt history yet. Start with high-yield safety and prioritization questions.'}
+                ? `${Math.round(weakArea.accuracy * 100)}% accuracy here. Keep this short: answer, review, choose confidence, then move.`
+                : 'No attempt history yet. Start with high-yield safety and prioritization questions, then let the engine find the first repair pattern.'}
             </p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <button
@@ -1520,23 +1520,23 @@ export function QuickStudyPage() {
               </Link>
             </div>
           </div>
-          <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-            <QuickMetric label="Questions" value="5" detail="Short enough for a break." />
-            <QuickMetric label="Feedback" value="Instant" detail="Review while it is fresh." />
-            <QuickMetric label="Goal" value="One fix" detail="No random volume." />
+          <div className="grid grid-cols-3 gap-2 xl:grid-cols-1">
+            <QuickMetric label="Set" value="5" detail="Short rep." />
+            <QuickMetric label="Review" value="Now" detail="Rationale after submit." />
+            <QuickMetric label="Finish" value="Repair" detail="Next action at the end." />
           </div>
         </div>
       </FocusPanel>
 
       <div className="grid gap-5 lg:grid-cols-3">
         <Surface>
-          <SectionHeading title="Question flow" description="Answer, submit, choose confidence, then move forward." />
+          <SectionHeading title="1. Decide" description="Read the scenario, choose the safest answer, and submit without hunting through side panels." />
         </Surface>
         <Surface>
-          <SectionHeading title="Rationale review" description="The explanation appears after the answer, not before the decision." />
+          <SectionHeading title="2. Review" description="The rationale opens after the answer so the clinical decision stays primary." />
         </Surface>
         <Surface>
-          <SectionHeading title="Finish cleanly" description="The final screen turns missed items into the next repair route." />
+          <SectionHeading title="3. Repair" description="The finish screen turns misses into a remediation or focused practice route." />
         </Surface>
       </div>
     </PageStack>

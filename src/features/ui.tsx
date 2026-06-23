@@ -714,7 +714,7 @@ export function QuestionSessionRunner({
         </div>
       </Surface>
 
-      <div className="grid gap-6 xl:grid-cols-[1.18fr_0.82fr]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
         <Surface className="nclex-surface-muted">
           {question.scenario ? (
             <div className="rounded-[16px] border border-[#cfe1f7] bg-[#eef5ff] p-4">
@@ -787,7 +787,7 @@ export function QuestionSessionRunner({
             })}
           </div>
 
-          <div className="mobile-quiz-actions sticky bottom-[calc(env(safe-area-inset-bottom,0px)+5.9rem)] z-10 -mx-1 mt-6 flex flex-wrap gap-3 rounded-[18px] border border-[var(--nclex-border)] bg-white/96 p-3 backdrop-blur-xl md:static md:mx-0 md:rounded-none md:border-0 md:bg-transparent md:p-0">
+          <div className="mobile-quiz-actions sticky bottom-[calc(env(safe-area-inset-bottom,0px)+5.9rem)] z-10 -mx-1 mt-6 flex flex-wrap gap-3 rounded-[18px] border border-cyan-300/24 bg-[#061b31]/95 p-3 shadow-[0_-18px_48px_rgba(3,16,31,0.34)] backdrop-blur-xl md:static md:mx-0 md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none">
             {!submitted ? (
               <button
                 type="button"
@@ -802,7 +802,7 @@ export function QuestionSessionRunner({
                 <button
                   type="button"
                   onClick={nextQuestion}
-                  className="nclex-btn-primary inline-flex min-h-[48px] flex-[1.2] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold md:flex-none"
+                  className="nclex-btn-primary inline-flex min-h-[48px] flex-[1.2] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black md:flex-none"
                 >
                   Next question
                   <ArrowRight className="h-4 w-4" />
@@ -811,14 +811,14 @@ export function QuestionSessionRunner({
                 <button
                   type="button"
                   onClick={finishSession}
-                  className="nclex-btn-primary inline-flex min-h-[48px] flex-[1.2] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold md:flex-none"
+                  className="nclex-btn-primary inline-flex min-h-[48px] flex-[1.2] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black md:flex-none"
                 >
                   Finish session
                   <CheckCircle2 className="h-4 w-4" />
                 </button>
               )
             ) : (
-              <div className="flex min-h-[48px] flex-1 items-center rounded-xl border border-[var(--nclex-border)] bg-[var(--nclex-card-muted)] px-4 py-3 text-sm font-semibold text-[var(--nclex-text-muted)]">
+              <div className="flex min-h-[48px] flex-1 items-center rounded-xl border border-cyan-300/20 bg-white/[0.06] px-4 py-3 text-sm font-semibold text-sky-100/76 md:border-[var(--nclex-border)] md:bg-[var(--nclex-card-muted)] md:text-[var(--nclex-text-muted)]">
                 Choose confidence to continue
               </div>
             )}
@@ -826,7 +826,7 @@ export function QuestionSessionRunner({
               <button
                 type="button"
                 onClick={() => setShowRationale((current) => !current)}
-                className="nclex-btn-secondary inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold md:flex-none"
+                className="nclex-btn-secondary inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black md:flex-none"
               >
                 <Eye className="h-4 w-4" />
                 {showRationale ? 'Hide review' : 'Review rationale'}
@@ -840,7 +840,7 @@ export function QuestionSessionRunner({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 8 }}
-                className="mt-6 rounded-[18px] border border-[var(--nclex-border)] bg-white p-5"
+                className="mt-6 rounded-[18px] border border-cyan-300/18 bg-[#071b2f] p-5 text-white shadow-[0_18px_50px_rgba(2,18,34,0.22)]"
               >
                 <div className="flex flex-wrap items-center gap-3">
                   <span
@@ -878,8 +878,8 @@ export function QuestionSessionRunner({
 
                 {!confidenceChosen ? (
                   <div className="mt-5">
-                    <p className="text-sm font-semibold text-[var(--nclex-text)]">How confident were you?</p>
-                    <p className="mt-1 text-sm text-[var(--nclex-text-muted)]">
+                    <p className="text-sm font-black text-white">How confident were you?</p>
+                    <p className="mt-1 text-sm leading-6 text-sky-100/68">
                       High confidence + wrong reveals a critical blind spot. Low confidence + correct means the idea is close, but still unstable.
                     </p>
                     <div className="mt-4 flex flex-wrap gap-3">
@@ -889,7 +889,7 @@ export function QuestionSessionRunner({
                           type="button"
                           onClick={() => handleConfidence(level)}
                           className={clsx(
-                            'rounded-full border px-4 py-2 text-sm font-semibold capitalize transition',
+                            'min-h-[44px] rounded-full border px-4 py-2 text-sm font-black capitalize transition',
                             confidenceTone[level],
                           )}
                         >
@@ -990,44 +990,33 @@ export function QuestionSessionRunner({
         </div>
       </div>
 
-      <div className="safe-bottom mobile-quiz-actions sticky bottom-[5.15rem] z-20 -mx-1 rounded-[20px] border border-[var(--nclex-border)] bg-white/96 p-3 backdrop-blur-xl xl:hidden">
-        <div className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]">
-          <span>Question flow</span>
+      <div className="safe-bottom mobile-quiz-actions sticky bottom-[5.15rem] z-20 -mx-1 rounded-[18px] border border-cyan-300/20 bg-[#061b31]/94 p-3 text-white shadow-[0_-18px_44px_rgba(3,16,31,0.28)] backdrop-blur-xl xl:hidden">
+        <div className="flex items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.14em] text-sky-100/62">
+          <span>Progress</span>
           <span>
             {session.responses.length}/{session.questionIds.length} complete
           </span>
         </div>
-        <div className="flex flex-wrap gap-3">
+        <div className="mt-2">
+          <ProgressBar value={session.responses.length / session.questionIds.length} />
+        </div>
+        <div className="mt-3 flex flex-wrap gap-3">
           <button
             type="button"
             onClick={previousQuestion}
             disabled={session.currentIndex === 0 || Boolean(session.config.noBacktracking)}
-            className="nclex-btn-secondary inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40"
+            className="nclex-btn-secondary inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-black disabled:cursor-not-allowed disabled:opacity-40"
           >
             <ArrowLeft className="h-4 w-4" />
             Back
           </button>
-          {!isLastQuestion ? (
-            <button
-              type="button"
-              onClick={nextQuestion}
-              disabled={!confidenceChosen}
-              className="nclex-btn-primary inline-flex min-h-[48px] flex-[1.3] items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:bg-slate-300"
-            >
-              Next
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={finishSession}
-              disabled={!confidenceChosen}
-              className="nclex-btn-primary inline-flex min-h-[48px] flex-[1.3] items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:bg-slate-300"
-            >
-              Finish
-              <CheckCircle2 className="h-4 w-4" />
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={onExit}
+            className="nclex-btn-secondary inline-flex min-h-[44px] flex-1 items-center justify-center rounded-xl px-4 py-2 text-sm font-black"
+          >
+            Exit
+          </button>
         </div>
       </div>
     </div>
@@ -1111,7 +1100,7 @@ function RationaleCard({
       <p className="text-xs font-semibold uppercase tracking-[0.16em]">{title}</p>
       <p className="mt-2 text-sm leading-6 text-[var(--nclex-text-secondary)]">{body}</p>
       {footer ? (
-        <p className="mt-3 rounded-full border border-sky-300/25 bg-sky-300/10 px-3 py-1.5 text-xs font-semibold text-sky-100/72">
+        <p className="mt-3 rounded-full border border-sky-300/35 bg-white/70 px-3 py-1.5 text-xs font-semibold text-[var(--nclex-blue)]">
           {footer}
         </p>
       ) : null}
