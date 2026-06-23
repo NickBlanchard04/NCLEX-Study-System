@@ -428,7 +428,7 @@ export function QuestionSessionRunner({
   const attempts = useStudySystemStore((state) => state.attempts)
   const navigate = useNavigate()
   const questionId = session.questionIds[session.currentIndex]
-  const question = questionLookup[questionId]
+  const question = questionId ? questionLookup[questionId] : undefined
   const existingResponse = session.responses.find((response) => response.questionId === questionId)
   const [selectedAnswers, setSelectedAnswers] = useState<string[]>(existingResponse?.selectedAnswer ?? [])
   const [submitted, setSubmitted] = useState(Boolean(existingResponse))
@@ -470,7 +470,7 @@ export function QuestionSessionRunner({
     const topMissedQuestion = missedQuestions[0] ? questionLookup[missedQuestions[0].questionId] : null
     const topMissedAttempt = missedQuestions[0] ? getAttemptForResponse(missedQuestions[0]) : null
     const topRemediation = topMissedAttempt?.engineRemediationEvents?.[0]
-    const topMissReason = missedQuestions[0]
+    const topMissReason = missedQuestions[0] && questionLookup[missedQuestions[0].questionId]
       ? getMissReason(missedQuestions[0].questionId, missedQuestions[0].selectedAnswer)
       : null
     const sessionTakeaway = topRemediation?.nextActionCopy ??
@@ -599,6 +599,21 @@ export function QuestionSessionRunner({
                   const missedAttempt = getAttemptForResponse(response)
                   const diagnosis = missedAttempt?.engineDiagnosis
                   const remediation = missedAttempt?.engineRemediationEvents?.[0]
+                  if (!missed) {
+                    return (
+                      <div
+                        key={response.questionId}
+                        className="rounded-[16px] border border-[var(--nclex-border)] bg-[var(--nclex-card-muted)] p-4"
+                      >
+                        <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[var(--nclex-warning)]">
+                          Missing item
+                        </p>
+                        <p className="mt-2 text-sm leading-6 text-[var(--nclex-text-muted)]">
+                          This saved question is no longer available. Rebuild the set before using this result for review.
+                        </p>
+                      </div>
+                    )
+                  }
                   return (
                     <div
                       key={response.questionId}
@@ -638,6 +653,44 @@ export function QuestionSessionRunner({
             </div>
           </Surface>
         </div>
+      </div>
+    )
+  }
+
+  if (!question || !questionId) {
+    return (
+      <div className="space-y-6">
+        <EmptyState
+          title="This practice set needs to be rebuilt."
+          description="The saved session no longer points to an available question. Rebuild the set to continue without losing your past attempts."
+          action={
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() =>
+                  startPracticeSession({
+                    questionCount: session.config.questionCount || 10,
+                    category: 'All',
+                    questionStatus: 'all',
+                    format: 'mixed',
+                    difficulty: 'adaptive',
+                  })
+                }
+                className="nclex-btn-primary inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black"
+              >
+                Rebuild set
+                <ArrowRight className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={onExit}
+                className="nclex-btn-secondary min-h-[48px] rounded-xl px-4 py-2.5 text-sm font-black"
+              >
+                Back to Question Bank
+              </button>
+            </div>
+          }
+        />
       </div>
     )
   }
@@ -810,7 +863,10 @@ export function QuestionSessionRunner({
             {!submitted ? (
               <button
                 type="button"
-                onClick={() => setSubmitted(true)}
+                onClick={() => {
+                  setSubmitted(true)
+                  setShowRationale(true)
+                }}
                 disabled={selectedAnswers.length === 0}
                 className="nclex-btn-primary min-h-[48px] flex-1 rounded-xl px-5 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:bg-slate-300 md:flex-none"
               >
@@ -838,7 +894,7 @@ export function QuestionSessionRunner({
               )
             ) : (
               <div className="flex min-h-[48px] flex-1 items-center rounded-xl border border-cyan-300/20 bg-white/[0.06] px-4 py-3 text-sm font-semibold text-sky-100/76 md:border-[var(--nclex-border)] md:bg-[var(--nclex-card-muted)] md:text-[var(--nclex-text-muted)]">
-                Choose confidence to continue
+                Choose confidence below to continue
               </div>
             )}
             {submitted ? (
@@ -897,9 +953,9 @@ export function QuestionSessionRunner({
 
                 {!confidenceChosen ? (
                   <div className="mt-5">
-                    <p className="text-sm font-black text-white">How confident were you?</p>
+                    <p className="text-sm font-black text-white">Choose confidence</p>
                     <p className="mt-1 text-sm leading-6 text-sky-100/68">
-                      High confidence + wrong reveals a critical blind spot. Low confidence + correct means the idea is close, but still unstable.
+                      This unlocks the next question and helps separate lucky guesses from real mastery.
                     </p>
                     <div className="mt-4 flex flex-wrap gap-3">
                       {(['low', 'medium', 'high'] as ConfidenceLevel[]).map((level) => (
