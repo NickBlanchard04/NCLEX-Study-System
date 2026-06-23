@@ -264,6 +264,11 @@ const createCleanAccountState = (profile: UserProfile) => ({
   migrationPromptVisible: false,
 })
 
+const isSeedProfile = (profile: UserProfile | null | undefined) =>
+  profile?.name === initialProfile.name &&
+  profile.nursingSchool === initialProfile.nursingSchool &&
+  profile.examTrack === initialProfile.examTrack
+
 const baseState = {
   authUser: null as AuthUser | null,
   authSession: null as AuthSession | null,
@@ -538,12 +543,16 @@ export const useStudySystemStore = create<StudySystemState>()(
         set({ syncStatus: 'syncing', syncError: null })
         try {
           const cloud = await loadCloudState(user.id)
-          const cloudHasData =
-            Boolean(cloud.profile) ||
+          const cloudHasLearningData =
             cloud.attempts.length > 0 ||
             cloud.notes.length > 0 ||
             Object.keys(cloud.flashcardReview).length > 0 ||
-            cloud.materials.length > 0
+            cloud.materials.length > 0 ||
+            cloud.materialFlashcards.length > 0 ||
+            cloud.materialQuestions.length > 0 ||
+            cloud.materialQuizSessions.length > 0
+          const cloudProfileIsSeeded = isSeedProfile(cloud.profile)
+          const cloudHasData = Boolean(cloud.profile && !cloudProfileIsSeeded) || cloudHasLearningData
 
           if (!cloudHasData) {
             const freshProfile = createFreshProfileForAuthUser(user)
@@ -556,8 +565,12 @@ export const useStudySystemStore = create<StudySystemState>()(
             return
           }
 
+          const profile = cloudProfileIsSeeded
+            ? createFreshProfileForAuthUser(user)
+            : cloud.profile ?? createFreshProfileForAuthUser(user)
+
           set((state) => ({
-            ...createCleanAccountState(cloud.profile ?? createFreshProfileForAuthUser(user)),
+            ...createCleanAccountState(profile),
             attempts: cloud.attempts,
             notes: cloud.notes,
             flashcardReview: cloud.flashcardReview,
@@ -573,6 +586,9 @@ export const useStudySystemStore = create<StudySystemState>()(
             syncError: null,
             migrationPromptVisible: false,
           }))
+          if (cloudProfileIsSeeded) {
+            await saveProfile(user.id, profile)
+          }
         } catch (error) {
           set({
             syncStatus: navigator.onLine ? 'error' : 'offline',
