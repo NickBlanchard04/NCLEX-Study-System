@@ -15,6 +15,8 @@ const dayOffset = (daysAgo: number, hour: number) => {
 export const initialProfile: UserProfile = {
   name: 'Sarah Johnson',
   nursingSchool: 'University of Pennsylvania School of Nursing',
+  state: 'Pennsylvania',
+  directoryVisible: true,
   examTrack: 'nclex-rn',
   examDate: (() => {
     const date = new Date()

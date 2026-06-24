@@ -446,6 +446,9 @@ export interface StudyPlan {
 export interface UserProfile extends CloudOwnedEntity {
   name: string
   nursingSchool?: string
+  state?: string
+  memberNumber?: number
+  directoryVisible?: boolean
   profileImageDataUrl?: string
   examTrack: ExamTrackId
   examDate: string

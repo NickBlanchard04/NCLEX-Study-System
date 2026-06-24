@@ -227,6 +227,7 @@ const createFreshProfile = ({
 }): UserProfile => ({
   name: name?.trim() || email.split('@')[0] || 'New learner',
   nursingSchool: nursingSchool?.trim() || undefined,
+  directoryVisible: true,
   examTrack: examTrack ?? 'nclex-rn',
   examDate: createDefaultExamDate(),
   studyIntensity: 'focused',

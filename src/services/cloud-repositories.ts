@@ -94,6 +94,12 @@ export async function loadCloudState(userId: string): Promise<CloudStateBundle> 
       ? {
           name: profileResult.data.name,
           nursingSchool: profileResult.data.nursing_school ?? undefined,
+          state: profileResult.data.profile_state ?? undefined,
+          memberNumber:
+            typeof profileResult.data.member_number === 'number'
+              ? profileResult.data.member_number
+              : Number(profileResult.data.member_number) || undefined,
+          directoryVisible: profileResult.data.directory_visible ?? true,
           profileImageDataUrl: profilePreferences?.profileImageDataUrl,
           examTrack: profileResult.data.exam_track,
           examDate: profileResult.data.exam_date,
@@ -175,6 +181,8 @@ export async function saveProfile(userId: string, profile: UserProfile) {
     id: userId,
     name: owned.name,
     nursing_school: owned.nursingSchool ?? null,
+    profile_state: owned.state?.trim() || null,
+    directory_visible: owned.directoryVisible ?? true,
     exam_track: owned.examTrack,
     exam_date: owned.examDate,
     study_intensity: owned.studyIntensity,

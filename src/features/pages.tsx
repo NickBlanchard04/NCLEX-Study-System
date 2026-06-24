@@ -12,6 +12,7 @@ import {
 import {
   ArrowLeft,
   ArrowRight,
+  BadgeCheck,
   BarChart3,
   BrainCircuit,
   BookOpen,
@@ -4395,6 +4396,12 @@ export function SettingsPage() {
                     <p className="mt-1 text-sm leading-6 text-[var(--nclex-text-muted)]">
                       Shows on the Home title screen and account menu.
                     </p>
+                    {profile.memberNumber ? (
+                      <span className="mt-3 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-black text-amber-700">
+                        <BadgeCheck className="h-4 w-4" />
+                        Founding learner #{profile.memberNumber}
+                      </span>
+                    ) : null}
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -4437,6 +4444,22 @@ export function SettingsPage() {
             <Field label="Display name">
               <input value={profile.name} onChange={(event) => updateProfile({ name: event.target.value })} className={inputClass} />
             </Field>
+            <Field label="College">
+              <input
+                value={profile.nursingSchool ?? ''}
+                onChange={(event) => updateProfile({ nursingSchool: event.target.value })}
+                placeholder="Optional"
+                className={inputClass}
+              />
+            </Field>
+            <Field label="State">
+              <input
+                value={profile.state ?? ''}
+                onChange={(event) => updateProfile({ state: event.target.value })}
+                placeholder="Optional"
+                className={inputClass}
+              />
+            </Field>
             <Field label="Exam track">
               <select
                 value={profile.examTrack ?? 'nclex-rn'}
@@ -4453,6 +4476,7 @@ export function SettingsPage() {
             <Field label="Daily goal">
               <input type="number" min={5} max={40} value={profile.dailyGoal} onChange={(event) => updateProfile({ dailyGoal: Number(event.target.value) })} className={inputClass} />
             </Field>
+            <ToggleRow label="Show in people search" description="Let other learners find your name card." checked={profile.directoryVisible ?? true} onChange={(value) => updateProfile({ directoryVisible: value })} />
             <ToggleRow label="Reduced motion" description="Simplify motion if you prefer a calmer UI." checked={profile.preferences.reducedMotion} onChange={(value) => updateProfile({ preferences: { ...profile.preferences, reducedMotion: value } })} />
             <ToggleRow label="Study reminders" description="Future-ready notification preference for backend integration." checked={profile.preferences.notifications} onChange={(value) => updateProfile({ preferences: { ...profile.preferences, notifications: value } })} />
           </div>

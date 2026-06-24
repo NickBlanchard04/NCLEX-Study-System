@@ -24,12 +24,14 @@ import {
   SquareStack,
   Target,
   Trophy,
+  Users,
   X,
 } from 'lucide-react'
 import { lazy, Suspense, useEffect, useMemo, useState, type ComponentType, type ReactNode } from 'react'
 import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { clsx } from 'clsx'
 import { PwaInstallPrompt } from '../features/PwaInstallPrompt'
+import { SocialPage } from '../features/SocialPage'
 import {
   DashboardPage,
   ClinicalSimulatorPage,
@@ -95,7 +97,10 @@ const labNavigation: NavigationItem[] = [
   { label: 'Simulator', icon: Brain, to: '/clinical-simulator' },
 ]
 
-const secondaryNavigation: NavigationItem[] = [{ label: 'Settings', icon: Settings, to: '/settings' }]
+const secondaryNavigation: NavigationItem[] = [
+  { label: 'Social', icon: Users, to: '/social' },
+  { label: 'Settings', icon: Settings, to: '/settings' },
+]
 
 const mobilePrimaryNavigation: NavigationItem[] = [
   { label: 'Home', icon: LayoutGrid, to: '/' },
@@ -552,6 +557,7 @@ function NclexAppShell() {
                     <Route path="/strategy-training" element={<StrategyTrainingPage />} />
                     <Route path="/notes" element={<NotesPage />} />
                     <Route path="/my-materials" element={<MyMaterialsPage />} />
+                    <Route path="/social" element={<SocialPage />} />
                     <Route path="/settings" element={<SettingsPage />} />
                   </Routes>
                 </motion.div>
