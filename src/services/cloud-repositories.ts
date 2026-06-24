@@ -306,6 +306,14 @@ export async function saveMaterials(
         updated_at: quizSession.updatedAt ?? nowIso(),
       }),
     )
+  } else if (quizSession === null) {
+    operations.push(
+      client
+        .from('material_quiz_sessions')
+        .update({ deleted_at: nowIso() })
+        .eq('user_id', userId)
+        .is('deleted_at', null),
+    )
   }
 
   const results = await Promise.all(operations)
@@ -328,6 +336,11 @@ export async function deleteMaterialCloud(userId: string, materialId: string) {
       .update({ deleted_at: deletedAt })
       .eq('user_id', userId)
       .eq('source_material_id', materialId),
+    client
+      .from('material_quiz_sessions')
+      .update({ deleted_at: deletedAt })
+      .eq('user_id', userId)
+      .eq('material_id', materialId),
   ])
   const error = results.find((result) => result.error)?.error
   if (error) throw error
