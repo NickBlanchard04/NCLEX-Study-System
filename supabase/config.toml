@@ -244,7 +244,7 @@ otp_expiry = 3600
 # content_path = "./supabase/templates/invite.html"
 
 [auth.email.template.confirmation]
-subject = "Confirm your Nurse Command beta account"
+subject = "Confirm your Nurse Command account"
 content_path = "./supabase/templates/confirmation.html"
 
 [auth.email.template.recovery]

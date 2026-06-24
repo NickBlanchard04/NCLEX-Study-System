@@ -3,16 +3,15 @@
     <div style="background:#063257;padding:24px 28px;color:#ffffff;">
       <img src="https://nickblanchard04.github.io/NCLEX-Study-System/nursing-command-logo.png" alt="Nursing Command" width="148" style="display:block;width:148px;max-width:70%;height:auto;margin:0 0 16px;border:0;border-radius:14px;">
       <div style="font-size:12px;letter-spacing:0.16em;text-transform:uppercase;font-weight:700;color:#b9e5ff;">Nurse Command</div>
-      <h1 style="margin:8px 0 0;font-size:24px;line-height:1.25;">Confirm your beta account</h1>
+      <h1 style="margin:8px 0 0;font-size:24px;line-height:1.25;">Confirm your account</h1>
     </div>
     <div style="padding:28px;">
-      <p style="margin:0 0 16px;font-size:16px;line-height:1.6;">Welcome to the Nurse Command open beta.</p>
-      <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#52657a;">Use the secure button below to verify this email address and finish setting up your beta account.</p>
-      <p style="margin:0 0 24px;"><a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#0b6bd3;color:#ffffff;text-decoration:none;font-size:15px;font-weight:800;padding:14px 22px;border-radius:12px;">Confirm beta account</a></p>
+      <p style="margin:0 0 16px;font-size:16px;line-height:1.6;">Welcome to Nurse Command.</p>
+      <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#52657a;">Use the secure button below to verify this email address and finish setting up your account.</p>
+      <p style="margin:0 0 24px;"><a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#0b6bd3;color:#ffffff;text-decoration:none;font-size:15px;font-weight:800;padding:14px 22px;border-radius:12px;">Confirm account</a></p>
       <div style="margin:0 0 24px;padding:18px;border:1px solid #b7ebff;border-radius:14px;background:#eefaff;">
-        <p style="margin:0 0 8px;font-size:14px;font-weight:800;color:#102033;">Invite a user</p>
-        <p style="margin:0 0 14px;font-size:13px;line-height:1.6;color:#52657a;">Know another nursing student who should try Nurse Command? Send them the open beta link.</p>
-        <p style="margin:0;"><a href="mailto:?subject=Join%20Nurse%20Command%20open%20beta&body=Try%20Nurse%20Command%20with%20me:%20{{ .SiteURL }}" style="display:inline-block;background:#063257;color:#ffffff;text-decoration:none;font-size:13px;font-weight:800;padding:11px 16px;border-radius:10px;">Invite a user</a></p>
+        <p style="margin:0 0 8px;font-size:14px;font-weight:800;color:#102033;">About this email</p>
+        <p style="margin:0;font-size:13px;line-height:1.6;color:#52657a;">Nurse Command is an open beta study-support app for nursing exam practice. This email was sent because this address was used to create an account. Readiness and adaptive labels are practice evidence only, not clinical advice or a licensure prediction.</p>
       </div>
       {{ if .Data.beta_terms_copy_requested }}
       <div style="margin:0 0 24px;padding:18px;border:1px solid #dbe7f3;border-radius:14px;background:#f8fbff;">
@@ -23,6 +22,6 @@
       <p style="margin:0 0 8px;font-size:12px;line-height:1.5;color:#70849b;">Button not working? Copy and paste this link into your browser:</p>
       <p style="margin:0;word-break:break-all;font-size:12px;line-height:1.5;"><a href="{{ .ConfirmationURL }}" style="color:#0b6bd3;">{{ .ConfirmationURL }}</a></p>
     </div>
-    <div style="border-top:1px solid #e4edf6;padding:18px 28px;background:#fbfdff;font-size:12px;line-height:1.5;color:#70849b;">This email was sent to {{ .Email }} for your Nurse Command beta account. Terms version: {{ .Data.beta_terms_version }}.</div>
+    <div style="border-top:1px solid #e4edf6;padding:18px 28px;background:#fbfdff;font-size:12px;line-height:1.5;color:#70849b;">This account email was sent to {{ .Email }} by Nurse Command. Need help or want to report a problem? Contact support@cosmicgames.info. Terms version: {{ .Data.beta_terms_version }}.</div>
   </div>
 </div>

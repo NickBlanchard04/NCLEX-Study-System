@@ -9,6 +9,7 @@ import type {
   StudyMaterial,
   StudyMaterialFileType,
 } from '../app/types'
+import { hasCodeLikeStudyArtifact } from './material-quality'
 
 GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString()
 
@@ -41,6 +42,9 @@ const monthNamePattern =
 const monthYearPattern = new RegExp(`\\b${monthNamePattern}\\s+\\d{4}\\b`, 'gi')
 const sourceDomainPattern =
   /\b(?:https?:\/\/|www\.)\S+|\b[a-z0-9.-]+\.(?:com|org|edu|gov|net)(?:\/\S*)?/gi
+const codeSourceHostPattern =
+  /\b(?:github\.com|raw\.githubusercontent\.com|gitlab\.com|bitbucket\.org|stackoverflow\.com|stackblitz\.com|codesandbox\.io|npmjs\.com|react\.dev|vitejs\.dev)\b/i
+const codeSourcePathPattern = /\.(?:cjs|css|js|jsx|json|mjs|py|sql|ts|tsx)(?:$|[?#])/i
 
 const genericConceptLabels = new Set([
   'answer',
@@ -231,6 +235,34 @@ const normalizeStudyUrl = (rawUrl: string) => {
   return url
 }
 
+const isCodeLikeStudyUrl = (url: URL) =>
+  codeSourceHostPattern.test(url.hostname) || codeSourcePathPattern.test(url.pathname)
+
+const nursingStudySignalPatterns = [
+  /\b(?:nurse|nursing|client|patient|clinical|nclex|rn|pn|fnp)\b/i,
+  /\b(?:assessment|intervention|priority|delegation|teaching|therapeutic|safety|precaution)\b/i,
+  /\b(?:medication|dose|administer|toxicity|contraindication|insulin|anticoagulant)\b/i,
+  /\b(?:lab|laboratory|vital|abg|potassium|sodium|glucose|platelet|albumin|hemoglobin|hematocrit)\b/i,
+  /\b(?:airway|breathing|oxygen|sepsis|infection|bleeding|cardiac|renal|postpartum|pediatric)\b/i,
+]
+
+function validateStudyMaterialContent(text: string, sourceLabel: string, strict = false) {
+  const cleaned = cleanSentence(text)
+  if (hasCodeLikeStudyArtifact(cleaned)) {
+    throw new Error(
+      'This looks like source code or app data, not nursing study material. Upload nursing notes, a study guide, or a text-heavy clinical reference instead.',
+    )
+  }
+
+  const signalCount = nursingStudySignalPatterns.filter((pattern) => pattern.test(cleaned)).length
+  const clinicalTopicMatch = clinicalTopicPatterns.some(({ pattern }) => pattern.test(cleaned))
+  if (!clinicalTopicMatch && signalCount < (strict ? 2 : 1)) {
+    throw new Error(
+      `${sourceLabel} does not look like nursing study material yet. Upload NCLEX notes, a nursing study guide, or a clinical reference with enough readable text.`,
+    )
+  }
+}
+
 const titleFromUrl = (url: URL) => {
   const pathTitle = url.pathname
     .split('/')
@@ -298,6 +330,7 @@ export async function extractMaterialText(file: File) {
   if (!cleaned) {
     throw new Error('We could not extract readable text from this file.')
   }
+  validateStudyMaterialContent(cleaned, file.name)
 
   return {
     fileType,
@@ -328,6 +361,11 @@ function htmlToStudyText(markup: string) {
 
 export async function extractMaterialTextFromUrl(rawUrl: string) {
   const source = normalizeStudyUrl(rawUrl)
+  if (isCodeLikeStudyUrl(source)) {
+    throw new Error(
+      'This link looks like source code or a software page. Import a nursing study article, class handout, or text-heavy clinical reference instead.',
+    )
+  }
 
   let response: Response
   try {
@@ -365,6 +403,10 @@ export async function extractMaterialTextFromUrl(rawUrl: string) {
   }
 
   const cleaned = cleanExtractedStudyText(parsed.text)
+  if (!cleaned) {
+    throw new Error('We could not find enough readable study text at this link.')
+  }
+  validateStudyMaterialContent(cleaned, parsed.title || titleFromUrl(source), true)
 
   return {
     fileType: 'link' as const,
@@ -602,6 +644,7 @@ const extractStudySegments = (content: string) =>
     .map((segment) => cleanStudyFragment(segment))
     .filter((segment) => {
       if (segment.length < 28 || segment.length > 720) return false
+      if (hasCodeLikeStudyArtifact(segment)) return false
       if (isSourceNoiseLine(segment) || isLikelyFrontMatter(segment)) return false
       if (/^(?:abstract|background|objective|purpose|introduction|methods?|discussion|conclusion)s?\b[:\s]*$/i.test(segment)) {
         return false
@@ -668,6 +711,7 @@ const makeFlashcardFront = (point: LearningPoint) => {
 const hasBrokenGeneratedShape = (value: string) => {
   const cleaned = cleanSentence(value).toLowerCase()
   if (!cleaned) return true
+  if (hasCodeLikeStudyArtifact(value)) return true
   if (/(?:https?:\/\/|www\.|\bdoi\b|\bpmid\b|\bissn\b)/i.test(value)) return true
   if (/\b(?:frontiersin\.org|nursingcenter\.com|copyright|publisher|all rights reserved)\b/i.test(value)) {
     return true

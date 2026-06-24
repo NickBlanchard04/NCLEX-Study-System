@@ -886,31 +886,31 @@ export function DashboardPage() {
   }
   const primaryCategory = weakestArea?.category ?? getExamCategories(activeExamTrack.id)[0] ?? 'Pharmacology'
   const missionTitle = priorityRepair
-    ? `Repair: ${priorityRepair.routeLabel}`
+    ? `Fix first: ${priorityRepair.routeLabel}`
     : primaryCoverageGap
-      ? `Build evidence for ${coverageGapLabel}`
+      ? `Do this next: ${coverageGapLabel}`
       : weakestArea
-        ? `${dashboardCopy.priorityPrefix}: ${shortCategoryLabel(primaryCategory)}`
+        ? `Do this next: ${shortCategoryLabel(primaryCategory)}`
         : materialsReadyCount
-          ? 'Turn one upload into active recall'
+          ? 'Review one uploaded material'
           : 'Complete one Quick Study session'
   const missionCopy = priorityRepair
     ? priorityRepair.nextActionCopy
     : primaryCoverageGap
-      ? `The engine sees a ${formatEngineReasonLabel(primaryCoverageGap.gapType)} gap here. Build trustworthy signal before treating readiness as settled.`
+      ? `Practice this area to create enough evidence for the readiness badge. Current gap: ${formatEngineReasonLabel(primaryCoverageGap.gapType)}.`
       : weakestArea
-        ? 'Train this first. It is the clearest practice signal for score lift right now.'
+        ? 'One short drill is the clearest next step from recent misses. Finish it, then the dashboard will update.'
         : materialsReadyCount
-        ? 'Use your uploaded materials for recall before adding more notes.'
-        : 'One focused set gives the dashboard fresh evidence without overloading the day.'
+        ? 'Use a material you already uploaded before adding more notes. Turn it into recall, not storage.'
+        : 'One focused set gives the dashboard fresh practice evidence without overloading the day.'
   const missionReason = priorityRepair
-    ? 'Repair queued'
+    ? 'First task'
     : primaryCoverageGap
-      ? 'Coverage gap'
+      ? 'Evidence gap'
       : weakestArea
-    ? 'Priority from recent misses'
+    ? 'Recent misses'
     : materialsReadyCount
-      ? 'Upload-to-recall step'
+      ? 'Uploaded material'
       : 'Fresh practice signal'
   const planItems = [
     {
@@ -956,21 +956,21 @@ export function DashboardPage() {
   ]
   const missionStats = [
     {
-      label: 'Today',
+      label: 'Daily target',
       value: `${dashboard.todayCompleted}/${dashboard.dailyGoal}`,
       detail: `${Math.round(todayGoalProgress * 100)}% complete`,
       icon: <Target className="h-4 w-4" />,
       tone: 'cyan',
     },
     {
-      label: 'Readiness',
+      label: 'Badge signal',
       value: readinessBadge,
       detail: `${readinessSnapshot.trustedAttemptCount} trusted attempts`,
       icon: <Activity className="h-4 w-4" />,
       tone: readinessSnapshot.status === 'building' ? 'amber' : readinessSnapshot.status === 'ready' ? 'emerald' : 'cyan',
     },
     {
-      label: 'Repairs',
+      label: 'Fix queue',
       value: `${repairQueueCount}`,
       detail: primaryCoverageGap ? `${readinessSnapshot.coverageGaps.length} coverage gaps` : `${formatMinutes(todayMinutes)} today`,
       icon: <Flame className="h-4 w-4" />,
@@ -1113,8 +1113,15 @@ export function DashboardPage() {
 
   return (
     <PageStack className="space-y-4 md:space-y-5">
-      <FocusPanel>
-        <div className="relative overflow-hidden bg-[#061c31] p-4 text-white sm:p-5 md:p-6">
+      <FocusPanel
+        className="dashboard-section-mission border-cyan-200/24"
+        style={{
+          background:
+            'radial-gradient(circle at 24% 18%, rgba(34, 211, 238, 0.2), transparent 34%), linear-gradient(135deg, rgba(7, 29, 52, 0.9), rgba(6, 28, 49, 0.82))',
+          borderColor: 'rgba(103, 232, 249, 0.3)',
+        }}
+      >
+        <div className="relative overflow-hidden bg-[linear-gradient(135deg,rgba(8,47,73,0.98),rgba(6,28,49,0.94)_54%,rgba(14,116,144,0.42))] p-4 text-white sm:p-5 md:p-6">
           <div className="pointer-events-none absolute inset-0 opacity-35 [background-image:linear-gradient(rgba(125,211,252,0.12)_1px,transparent_1px),linear-gradient(90deg,rgba(125,211,252,0.09)_1px,transparent_1px)] [background-size:38px_38px]" />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,#22d3ee_0%,#34d399_36%,#fbbf24_70%,#f472b6_100%)]" />
           <div className="relative grid gap-5 lg:grid-cols-[minmax(0,1fr)_250px] lg:items-stretch">
@@ -1140,7 +1147,11 @@ export function DashboardPage() {
                 ) : null}
               </div>
 
-              <p className="mt-5 text-sm font-black uppercase text-cyan-100/78">Today&apos;s mission</p>
+              <div className="mt-5 inline-flex max-w-full items-center gap-2 rounded-xl border border-cyan-200/20 bg-[#02101f]/32 px-3 py-2 text-xs font-bold text-cyan-50/78">
+                <Target className="h-3.5 w-3.5 shrink-0 text-cyan-200" />
+                <span className="min-w-0">One task, one badge signal, and one review queue for today.</span>
+              </div>
+              <p className="mt-5 text-sm font-black uppercase text-cyan-100/78">Start here</p>
               <h2 className="mt-2 max-w-3xl text-[2rem] font-black leading-[1.08] text-white sm:text-3xl md:text-4xl">
                 {missionTitle}
               </h2>
@@ -1148,7 +1159,7 @@ export function DashboardPage() {
                 {missionCopy}
               </p>
               <p className="mt-3 max-w-2xl text-xs font-semibold uppercase tracking-[0.14em] text-sky-100/52">
-                Engine pattern: {engineWeakPatternLabel}
+                Study signal: {engineWeakPatternLabel}
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 <span className="inline-flex items-center gap-2 rounded-lg border border-emerald-200/24 bg-emerald-300/10 px-3 py-1.5 text-xs font-black text-emerald-100">
@@ -1246,13 +1257,20 @@ export function DashboardPage() {
         </div>
       </FocusPanel>
 
-      <section>
+      <section
+        className="dashboard-section-mastery rounded-[1.25rem] border border-emerald-300/22 p-4 shadow-[0_18px_50px_rgba(16,185,129,0.08)] md:p-5"
+        style={{
+          background:
+            'radial-gradient(circle at 18% 24%, rgba(52, 211, 153, 0.18), transparent 32%), linear-gradient(135deg, rgba(6, 78, 59, 0.38), rgba(6, 28, 49, 0.82) 58%, rgba(20, 83, 45, 0.22))',
+          borderColor: 'rgba(110, 231, 183, 0.28)',
+        }}
+      >
         <div className="mb-3 flex items-end justify-between gap-3">
           <div>
-            <p className="text-xs font-black uppercase text-sky-100/56">Badge board</p>
+            <p className="text-xs font-black uppercase text-emerald-100/70">Badge board</p>
             <h3 className="mt-1 text-2xl font-black text-white">Mastery badges</h3>
             <p className="mt-1 text-sm leading-6 text-sky-100/62">
-              Gold, silver, blue, and locked states move with practice evidence.{' '}
+              Category badges show where practice evidence is strong, improving, needs reps, or still locked.{' '}
               {primaryConfidenceRisk
                 ? `Confidence risk: ${confidenceRiskLabel}`
                 : primaryCoverageGap
@@ -1264,7 +1282,7 @@ export function DashboardPage() {
             Analytics
           </Link>
         </div>
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {masteryBadges.map((badge) => (
             <div key={badge.category} className={clsx('relative overflow-hidden rounded-[1rem] border p-3.5 sm:p-4', badge.theme.ring)}>
               <span className={clsx('absolute inset-x-0 top-0 h-1', badge.visual.line)} />
@@ -1274,11 +1292,11 @@ export function DashboardPage() {
                     {badge.theme.marker}
                   </span>
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-black text-white">{badge.label}</p>
+                    <p className="max-w-full whitespace-normal break-words text-sm font-black leading-tight text-white [overflow-wrap:anywhere]">{badge.label}</p>
                     <p className="mt-1 text-xs font-semibold text-sky-100/58">{badge.attempts} attempts</p>
                   </div>
                 </div>
-                <span className="rounded-lg border border-white/12 bg-white/8 px-2 py-1 text-[0.68rem] font-black uppercase text-sky-100">
+                <span className="shrink-0 rounded-lg border border-white/12 bg-white/8 px-2 py-1 text-[0.68rem] font-black uppercase text-sky-100">
                   {badge.theme.tier}
                 </span>
               </div>
@@ -1310,10 +1328,17 @@ export function DashboardPage() {
       </section>
 
       <DetailGrid className="xl:grid-cols-[0.9fr_1.1fr]">
-        <Surface>
+        <Surface
+          className="dashboard-section-actions border-amber-300/22 shadow-[0_18px_50px_rgba(251,191,36,0.07)]"
+          style={{
+            background:
+              'radial-gradient(circle at 18% 22%, rgba(251, 191, 36, 0.18), transparent 34%), linear-gradient(135deg, rgba(120, 53, 15, 0.28), rgba(6, 28, 49, 0.82) 62%)',
+            borderColor: 'rgba(252, 211, 77, 0.3)',
+          }}
+        >
           <SectionHeading
             title="Next best actions"
-            description="Only the work that should influence today."
+            description="Short tasks only. These are the next moves worth doing today."
           />
           <div className="mt-5 grid gap-3">
             {supportActions.map((item) => (
@@ -1343,7 +1368,14 @@ export function DashboardPage() {
           </div>
         </Surface>
 
-        <Surface>
+        <Surface
+          className="dashboard-section-focus border-fuchsia-300/20 shadow-[0_18px_50px_rgba(192,132,252,0.07)]"
+          style={{
+            background:
+              'radial-gradient(circle at 18% 22%, rgba(192, 132, 252, 0.18), transparent 34%), linear-gradient(135deg, rgba(88, 28, 135, 0.3), rgba(6, 28, 49, 0.82) 58%, rgba(14, 116, 144, 0.16))',
+            borderColor: 'rgba(216, 180, 254, 0.28)',
+          }}
+        >
           <SectionHeading
             title="Focus lane"
             description="Weak areas stay compact until you want the full review view."

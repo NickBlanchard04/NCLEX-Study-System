@@ -72,24 +72,31 @@ const nurseLabRoutePaths = [
   '/clinical-simulator',
 ]
 
-const mainNavigation: NavigationItem[] = [
+const commandNavigation: NavigationItem[] = [
   { label: 'Home', icon: LayoutGrid, to: '/' },
   { label: 'Dashboard', icon: LayoutGrid, to: '/dashboard' },
   { label: 'Study Plan', icon: BookOpen, to: '/study-plan' },
-  { label: 'Question Bank', icon: ClipboardList, to: '/practice-questions' },
-  { label: 'Quick Study', icon: Flashlight, to: '/quick-study' },
-  { label: 'Remediation', icon: FileText, to: '/weak-areas' },
-  { label: 'Performance', icon: Trophy, to: '/performance-analytics' },
-  { label: 'Nurse Lab', icon: Gamepad2, to: '/nurse-command-lab', activePaths: nurseLabRoutePaths },
 ]
 
-const studyToolsNavigation: NavigationItem[] = [
+const practiceNavigation: NavigationItem[] = [
+  { label: 'Question Bank', icon: ClipboardList, to: '/practice-questions' },
+  { label: 'Quick Study', icon: Flashlight, to: '/quick-study' },
   { label: 'Exam Prep', icon: Target, to: '/exam-prep' },
   { label: 'Exams', icon: Target, to: '/test-mode' },
+]
+
+const reviewNavigation: NavigationItem[] = [
+  { label: 'Remediation', icon: FileText, to: '/weak-areas' },
+  { label: 'Performance', icon: Trophy, to: '/performance-analytics' },
   { label: 'Flashcards', icon: SquareStack, to: '/flashcards' },
   { label: 'Notes', icon: NotebookPen, to: '/notes' },
   { label: 'My Materials', icon: FolderOpen, to: '/my-materials' },
   { label: 'Resources', icon: Brain, to: '/strategy-training' },
+]
+
+const communityNavigation: NavigationItem[] = [
+  { label: 'Nurse Lab', icon: Gamepad2, to: '/nurse-command-lab', activePaths: nurseLabRoutePaths },
+  { label: 'Social', icon: Users, to: '/social' },
 ]
 
 const labNavigation: NavigationItem[] = [
@@ -100,30 +107,42 @@ const labNavigation: NavigationItem[] = [
 ]
 
 const secondaryNavigation: NavigationItem[] = [
-  { label: 'Social', icon: Users, to: '/social' },
   { label: 'Settings', icon: Settings, to: '/settings' },
 ]
 
-const mobilePrimaryNavigation: NavigationItem[] = [
-  { label: 'Home', icon: LayoutGrid, to: '/' },
-  { label: 'Bank', icon: ClipboardList, to: '/practice-questions' },
-  { label: 'Quick', icon: Flashlight, to: '/quick-study', emphasis: true },
-  { label: 'Cards', icon: SquareStack, to: '/flashcards' },
+const mainNavigation = [
+  ...commandNavigation,
+  ...practiceNavigation,
+  ...reviewNavigation,
+  ...communityNavigation,
 ]
 
+const studyToolsNavigation = [...practiceNavigation, ...reviewNavigation]
+
+const sidebarNavigationGroups = [
+  { title: 'Start', tone: 'cyan' as const, items: commandNavigation },
+  { title: 'Practice', tone: 'emerald' as const, items: practiceNavigation },
+  { title: 'Review', tone: 'amber' as const, items: reviewNavigation },
+  { title: 'Connect', tone: 'violet' as const, items: communityNavigation },
+]
+
+const mobilePrimaryNavigation: NavigationItem[] = [
+  { label: 'Today', icon: LayoutGrid, to: '/dashboard' },
+  { label: 'Quick', icon: Flashlight, to: '/quick-study' },
+  { label: 'Bank', icon: ClipboardList, to: '/practice-questions' },
+  { label: 'Files', icon: FolderOpen, to: '/my-materials' },
+]
+
+const mobilePrimaryRoutes = new Set(mobilePrimaryNavigation.map((item) => item.to))
+
 const mobileMoreNavigationGroups = [
-  {
-    title: 'Command',
-    items: mainNavigation.filter((item) => !['/', '/practice-questions', '/quick-study'].includes(item.to)),
-  },
-  {
-    title: 'Study Tools',
-    items: studyToolsNavigation.filter((item) => item.to !== '/flashcards'),
-  },
-  {
-    title: 'Account',
-    items: secondaryNavigation,
-  },
+  ...sidebarNavigationGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => !mobilePrimaryRoutes.has(item.to)),
+    }))
+    .filter((group) => group.items.length),
+  { title: 'Account', tone: 'slate' as const, items: secondaryNavigation },
 ]
 
 const pageMetaNavigation = [...labNavigation, ...mainNavigation, ...studyToolsNavigation, ...secondaryNavigation]
@@ -264,13 +283,6 @@ function NclexAppShell() {
         .join(''),
     [profile.name],
   )
-  const showMobileQuickStudyCta =
-    location.pathname !== '/dashboard' &&
-    location.pathname !== '/study-plan' &&
-    location.pathname !== '/performance-analytics' &&
-    location.pathname !== '/quick-study' &&
-    location.pathname !== '/practice-questions' &&
-    !location.pathname.startsWith('/nurse-command-lab')
   const isLocalDraft =
     import.meta.env.DEV ||
     window.location.hostname === 'localhost' ||
@@ -349,26 +361,16 @@ function NclexAppShell() {
     <AuthGate>
     <div className="nurse-command-app nclex-shell-bg min-h-screen text-[var(--nclex-text)]">
       <div className="flex min-h-screen w-full">
-        <aside className="nclex-sidebar hidden w-[282px] shrink-0 px-5 py-5 text-white lg:flex lg:flex-col">
+        <aside className="nclex-sidebar hidden w-[264px] shrink-0 px-4 py-5 text-white lg:flex lg:flex-col">
           <BrandLockup />
-          <nav className="mt-8 flex-1 space-y-1.5">
-            {mainNavigation.map(({ label, icon: Icon, to, activePaths }) => (
-              <SidebarLink key={to} label={label} icon={<Icon className="h-4 w-4" />} to={to} activePaths={activePaths} />
+          <nav className="mt-6 flex-1 space-y-4 overflow-y-auto pr-1">
+            {sidebarNavigationGroups.map((group) => (
+              <SidebarNavigationGroup key={group.title} group={group} />
             ))}
-            <div className="pt-5">
-              <p className="px-3 pb-2 text-[10px] font-black uppercase tracking-[0.2em] text-sky-100/42">
-                Study Tools
-              </p>
-              <div className="space-y-1.5">
-                {studyToolsNavigation.map(({ label, icon: Icon, to, activePaths }) => (
-                  <SidebarLink key={to} label={label} icon={<Icon className="h-4 w-4" />} to={to} activePaths={activePaths} />
-                ))}
-              </div>
-            </div>
           </nav>
           <div className="space-y-1.5 border-t border-white/10 pt-5">
             {secondaryNavigation.map(({ label, icon: Icon, to }) => (
-              <SidebarLink key={to} label={label} icon={<Icon className="h-4 w-4" />} to={to} />
+              <SidebarLink key={to} label={label} icon={<Icon className="h-4 w-4" />} to={to} tone="slate" />
             ))}
             <button
               type="button"
@@ -575,17 +577,6 @@ function NclexAppShell() {
         onOpenQuickStudy={() => navigate('/quick-study')}
       />
 
-      {showMobileQuickStudyCta ? (
-        <button
-          type="button"
-          onClick={() => navigate('/quick-study')}
-          className="mobile-sticky-cta fixed bottom-[6.1rem] right-4 z-30 inline-flex items-center gap-2 rounded-2xl bg-[linear-gradient(180deg,#3388ef_0%,#2a7de1_100%)] px-4 py-3 text-sm font-bold text-white lg:hidden"
-        >
-          <Flashlight className="h-4 w-4" />
-          10 min
-        </button>
-      ) : null}
-
       <AnimatePresence>
         {mobileMenuOpen ? (
           <motion.div
@@ -611,40 +602,21 @@ function NclexAppShell() {
                   <X className="h-4 w-4" />
                 </button>
               </div>
-              <nav className="mt-8 flex-1 space-y-1.5 overflow-y-auto">
-                {mainNavigation.map(({ label, icon: Icon, to, activePaths }) => (
-                  <SidebarLink
-                    key={to}
-                    label={label}
-                    icon={<Icon className="h-4 w-4" />}
-                    to={to}
-                    activePaths={activePaths}
-                    onClick={() => setMobileMenuOpen(false)}
+              <nav className="mt-6 flex-1 space-y-4 overflow-y-auto pr-1">
+                {sidebarNavigationGroups.map((group) => (
+                  <SidebarNavigationGroup
+                    key={group.title}
+                    group={group}
+                    onNavigate={() => setMobileMenuOpen(false)}
                   />
                 ))}
-                <div className="pt-5">
-                  <p className="px-3 pb-2 text-[10px] font-black uppercase tracking-[0.2em] text-sky-100/42">
-                    Study Tools
-                  </p>
-                  <div className="space-y-1.5">
-                    {studyToolsNavigation.map(({ label, icon: Icon, to, activePaths }) => (
-                      <SidebarLink
-                        key={to}
-                        label={label}
-                        icon={<Icon className="h-4 w-4" />}
-                        to={to}
-                        activePaths={activePaths}
-                        onClick={() => setMobileMenuOpen(false)}
-                      />
-                    ))}
-                  </div>
-                </div>
               </nav>
               <div className="space-y-1.5 border-t border-white/10 pt-5">
                 <SidebarLink
                   label="Settings"
                   icon={<Settings className="h-4 w-4" />}
                   to="/settings"
+                  tone="slate"
                   onClick={() => setMobileMenuOpen(false)}
                 />
                 <button
@@ -759,21 +731,96 @@ function NclexAppShell() {
   )
 }
 
+type NavigationTone = 'amber' | 'cyan' | 'emerald' | 'slate' | 'violet'
+
+const navigationToneClasses: Record<
+  NavigationTone,
+  { active: string; dot: string; group: string; icon: string }
+> = {
+  amber: {
+    active: 'border-amber-200/42 bg-amber-300/12 text-white shadow-[inset_3px_0_0_rgba(251,191,36,0.95)]',
+    dot: 'bg-amber-300',
+    group: 'text-amber-100/72',
+    icon: 'text-amber-100',
+  },
+  cyan: {
+    active: 'border-cyan-200/42 bg-cyan-300/12 text-white shadow-[inset_3px_0_0_rgba(34,211,238,0.95)]',
+    dot: 'bg-cyan-300',
+    group: 'text-cyan-100/72',
+    icon: 'text-cyan-100',
+  },
+  emerald: {
+    active: 'border-emerald-200/42 bg-emerald-300/12 text-white shadow-[inset_3px_0_0_rgba(52,211,153,0.95)]',
+    dot: 'bg-emerald-300',
+    group: 'text-emerald-100/72',
+    icon: 'text-emerald-100',
+  },
+  slate: {
+    active: 'border-sky-200/34 bg-white/[0.07] text-white shadow-[inset_3px_0_0_rgba(186,230,253,0.7)]',
+    dot: 'bg-sky-200',
+    group: 'text-sky-100/52',
+    icon: 'text-sky-100',
+  },
+  violet: {
+    active: 'border-fuchsia-200/38 bg-fuchsia-300/12 text-white shadow-[inset_3px_0_0_rgba(217,70,239,0.88)]',
+    dot: 'bg-fuchsia-300',
+    group: 'text-fuchsia-100/72',
+    icon: 'text-fuchsia-100',
+  },
+}
+
+function SidebarNavigationGroup({
+  group,
+  onNavigate,
+}: {
+  group: { title: string; tone: NavigationTone; items: NavigationItem[] }
+  onNavigate?: () => void
+}) {
+  const tone = navigationToneClasses[group.tone]
+
+  return (
+    <div>
+      <div className="mb-2 flex items-center gap-2 px-3">
+        <span className={clsx('h-1.5 w-1.5 rounded-full', tone.dot)} />
+        <p className={clsx('text-[10px] font-black uppercase tracking-[0.2em]', tone.group)}>
+          {group.title}
+        </p>
+      </div>
+      <div className="space-y-1">
+        {group.items.map(({ label, icon: Icon, to, activePaths }) => (
+          <SidebarLink
+            key={to}
+            label={label}
+            icon={<Icon className="h-4 w-4" />}
+            to={to}
+            activePaths={activePaths}
+            tone={group.tone}
+            onClick={onNavigate}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function SidebarLink({
   label,
   icon,
   to,
   activePaths,
+  tone = 'cyan',
   onClick,
 }: {
   label: string
   icon: React.ReactNode
   to: string
   activePaths?: string[]
+  tone?: NavigationTone
   onClick?: () => void
 }) {
   const location = useLocation()
   const activeByPath = activePaths?.some((path) => location.pathname.startsWith(path)) ?? false
+  const toneClass = navigationToneClasses[tone]
 
   return (
     <NavLink
@@ -782,15 +829,15 @@ function SidebarLink({
       onClick={onClick}
       className={({ isActive }) =>
         clsx(
-          'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition',
+          'group flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-sm font-semibold transition',
           isActive || activeByPath
-            ? 'bg-[linear-gradient(180deg,#2f87f0_0%,#2a7de1_100%)] text-white shadow-[0_14px_28px_rgba(42,125,225,0.28)]'
-            : 'text-slate-200 hover:bg-white/8 hover:text-white',
+            ? toneClass.active
+            : 'text-slate-200/88 hover:border-white/10 hover:bg-white/[0.055] hover:text-white',
         )
       }
     >
-      {icon}
-      {label}
+      <span className={clsx('transition group-hover:text-white', toneClass.icon)}>{icon}</span>
+      <span className="truncate">{label}</span>
     </NavLink>
   )
 }
@@ -936,6 +983,24 @@ function SupportSheet({ open, onClose }: { open: boolean; onClose: () => void })
                   {item}
                 </div>
               ))}
+              <div className="grid gap-3 sm:grid-cols-2">
+                <a
+                  href="mailto:support@cosmicgames.info?subject=Nurse%20Command%20beta%20feedback"
+                  className="rounded-2xl border border-emerald-300/24 bg-emerald-300/10 px-4 py-3 text-sm font-semibold text-emerald-100 transition hover:border-emerald-200/48"
+                >
+                  Send beta feedback
+                </a>
+                <NavLink
+                  to="/settings"
+                  onClick={onClose}
+                  className="rounded-2xl border border-cyan-300/24 bg-cyan-300/10 px-4 py-3 text-sm font-semibold text-cyan-100 transition hover:border-cyan-200/48"
+                >
+                  Privacy, terms, support
+                </NavLink>
+              </div>
+              <div className="rounded-2xl border border-amber-200/24 bg-amber-300/10 px-4 py-3 text-xs font-semibold leading-5 text-amber-50/82">
+                Readiness and adaptive labels are practice evidence only. Nurse Command is study support, not clinical advice or a licensure prediction.
+              </div>
             </div>
           </motion.div>
         </motion.div>
