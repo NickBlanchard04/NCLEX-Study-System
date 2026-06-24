@@ -24,6 +24,7 @@ import type {
   TycoonGameState,
   UserProfile,
 } from './types'
+import type { BetaTermsConsent } from './beta-terms'
 import { initialProfile, seededAttempts, seededFlashcardProgress, seededNotes } from '../data/seed'
 import {
   deleteMaterialBundle,
@@ -107,6 +108,7 @@ interface StudySystemState {
     email: string,
     password: string,
     profile: Pick<UserProfile, 'name' | 'nursingSchool' | 'examTrack'>,
+    betaTermsConsent?: BetaTermsConsent,
   ) => Promise<void>
   signOut: () => Promise<void>
   requestPasswordReset: (email: string) => Promise<void>
@@ -436,7 +438,7 @@ export const useStudySystemStore = create<StudySystemState>()(
           throw error
         }
       },
-      signUp: async (email, password, profileInput) => {
+      signUp: async (email, password, profileInput, betaTermsConsent) => {
         set({ authError: null, syncStatus: 'syncing' })
         const freshProfile = createFreshProfile({
           email,
@@ -445,7 +447,7 @@ export const useStudySystemStore = create<StudySystemState>()(
           examTrack: profileInput.examTrack,
         })
         try {
-          const snapshot = await signUpWithPassword(email, password, freshProfile)
+          const snapshot = await signUpWithPassword(email, password, freshProfile, betaTermsConsent)
           if (!snapshot.user || !snapshot.session) {
             set({
               ...createCleanAccountState(freshProfile),

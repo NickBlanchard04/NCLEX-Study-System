@@ -1,4 +1,5 @@
 import type { AuthSession, AuthUser, UserProfile } from '../app/types'
+import { BETA_TERMS_EMAIL_COPY, type BetaTermsConsent } from '../app/beta-terms'
 import {
   initialUrlHasPasswordRecovery,
   isSupabaseConfigured,
@@ -67,6 +68,7 @@ export async function signUpWithPassword(
   email: string,
   password: string,
   profile: UserProfile,
+  betaTermsConsent?: BetaTermsConsent,
 ): Promise<AuthSnapshot> {
   const client = requireSupabase()
   const { data, error } = await client.auth.signUp({
@@ -78,6 +80,11 @@ export async function signUpWithPassword(
         name: profile.name,
         nursing_school: profile.nursingSchool,
         exam_track: profile.examTrack,
+        beta_terms_accepted: Boolean(betaTermsConsent),
+        beta_terms_accepted_at: betaTermsConsent?.acceptedAt,
+        beta_terms_copy_requested: betaTermsConsent?.emailCopyRequested ?? false,
+        beta_terms_email_copy: betaTermsConsent?.emailCopyRequested ? BETA_TERMS_EMAIL_COPY : undefined,
+        beta_terms_version: betaTermsConsent?.version,
       },
     },
   })

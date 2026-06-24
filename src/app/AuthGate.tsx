@@ -5,6 +5,7 @@ import { examTracks } from '../data/exam-tracks'
 import type { ExamTrackId } from './types'
 import { useStudySystemStore } from './store'
 import nursingCommandLogo from '../assets/brand/nursing-command-logo.png'
+import { createBetaTermsConsent } from './beta-terms'
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const authInitialized = useStudySystemStore((state) => state.authInitialized)
@@ -49,6 +50,7 @@ function AuthLanding() {
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
   const [termsAccepted, setTermsAccepted] = useState(false)
+  const [termsCopyRequested, setTermsCopyRequested] = useState(false)
 
   const agreementRequired = mode !== 'reset'
   const canSubmit = !busy && authConfigured && (!agreementRequired || termsAccepted)
@@ -78,8 +80,12 @@ function AuthLanding() {
           name,
           nursingSchool: nursingSchool || undefined,
           examTrack,
-        })
-        setMessage('Verification email sent. Open it to finish creating your account, then sign in.')
+        }, createBetaTermsConsent(termsCopyRequested))
+        setMessage(
+          termsCopyRequested
+            ? 'Verification email sent with a copy of the open beta terms. Open it to finish creating your account, then sign in.'
+            : 'Verification email sent. Open it to finish creating your account, then sign in.',
+        )
       }
     } catch {
       // Store owns the visible error copy.
@@ -91,6 +97,9 @@ function AuthLanding() {
   const changeMode = (nextMode: 'signin' | 'signup' | 'reset') => {
     setMode(nextMode)
     setMessage('')
+    if (nextMode !== 'signup') {
+      setTermsCopyRequested(false)
+    }
   }
 
   const title = mode === 'signin' ? 'Welcome back' : mode === 'signup' ? 'Create beta account' : 'Reset password'
@@ -241,6 +250,19 @@ function AuthLanding() {
                 />
                 <span className="text-sm leading-6 text-sky-100/70">
                   I agree to the beta terms, privacy notice, and study-support limitations. I understand Nurse Command may change during open beta and that account access is required.
+                </span>
+              </label>
+            ) : null}
+            {mode === 'signup' ? (
+              <label className="flex cursor-pointer gap-3 rounded-2xl border border-lime-200/18 bg-lime-300/8 p-4">
+                <input
+                  type="checkbox"
+                  checked={termsCopyRequested}
+                  onChange={(event) => setTermsCopyRequested(event.target.checked)}
+                  className="mt-1 h-5 w-5 shrink-0 accent-lime-300"
+                />
+                <span className="text-sm leading-6 text-sky-100/72">
+                  <span className="font-black text-white">Email me a copy of these terms.</span> Include the current open beta terms in my verification email.
                 </span>
               </label>
             ) : null}
