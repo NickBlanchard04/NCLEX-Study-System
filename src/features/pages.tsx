@@ -502,8 +502,9 @@ export function StudyMenuPage() {
     <NurseCommandBackdrop className="min-h-screen w-full overflow-x-hidden px-4 pb-4 pt-3 md:px-7 md:pt-6">
       <div className="mx-auto flex min-h-[calc(100vh-1rem)] max-w-7xl flex-col">
         <main className="relative z-10 flex flex-1 flex-col gap-5">
-          <section className="relative isolate grid min-h-[calc(100vh-8.25rem)] overflow-hidden border-y border-cyan-300/18 py-5 lg:min-h-[calc(100vh-7.25rem)] lg:grid-cols-[minmax(0,0.9fr)_minmax(22rem,0.58fr)] lg:items-center lg:gap-8 lg:py-8">
+          <section className="home-title-stage relative isolate grid min-h-[calc(100vh-8.25rem)] overflow-hidden border-y border-cyan-300/18 py-5 lg:min-h-[calc(100vh-7.25rem)] lg:grid-cols-[minmax(0,0.9fr)_minmax(22rem,0.58fr)] lg:items-center lg:gap-8 lg:py-8">
             <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(56,189,248,0.08)_1px,transparent_1px),linear-gradient(180deg,rgba(56,189,248,0.06)_1px,transparent_1px)] bg-[length:88px_88px]" />
+            <div className="home-motion-field pointer-events-none absolute inset-0 -z-10" aria-hidden="true" />
             <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(2,8,18,0.08),rgba(2,8,18,0.72)_75%,rgba(2,8,18,0.96))]" />
             <div className="pointer-events-none absolute left-0 top-0 h-full w-px bg-cyan-200/25" />
             <div className="pointer-events-none absolute right-0 top-0 h-full w-px bg-cyan-200/12" />

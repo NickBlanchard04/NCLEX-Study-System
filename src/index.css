@@ -127,6 +127,122 @@ textarea {
   z-index: 1;
 }
 
+.home-title-stage {
+  background: #03101f;
+}
+
+.home-motion-field {
+  opacity: 0.78;
+  transform: translateZ(0);
+  background-image:
+    linear-gradient(120deg, transparent 0%, rgba(56, 189, 248, 0.09) 28%, transparent 45%),
+    linear-gradient(65deg, transparent 0%, rgba(52, 211, 153, 0.08) 38%, transparent 58%),
+    repeating-linear-gradient(105deg, transparent 0 5.8rem, rgba(251, 191, 36, 0.055) 6rem, transparent 6.35rem);
+  background-position:
+    0% 50%,
+    100% 48%,
+    0 0;
+  background-size:
+    140% 140%,
+    150% 150%,
+    11rem 11rem;
+  filter: saturate(1.12);
+  animation: home-command-field-drift 28s linear infinite;
+  will-change: background-position, transform;
+}
+
+.home-motion-field::before,
+.home-motion-field::after {
+  content: '';
+  position: absolute;
+  inset: -18%;
+  pointer-events: none;
+}
+
+.home-motion-field::before {
+  background:
+    conic-gradient(
+      from 0deg at 64% 42%,
+      transparent 0deg,
+      transparent 226deg,
+      rgba(125, 211, 252, 0.16) 244deg,
+      rgba(167, 139, 250, 0.09) 258deg,
+      transparent 278deg,
+      transparent 360deg
+    );
+  mix-blend-mode: screen;
+  opacity: 0.72;
+  animation: home-command-sweep 18s linear infinite;
+}
+
+.home-motion-field::after {
+  background:
+    linear-gradient(180deg, transparent 0 46%, rgba(125, 211, 252, 0.13) 50%, transparent 54%),
+    linear-gradient(90deg, transparent 0 38%, rgba(52, 211, 153, 0.08) 44%, transparent 52%);
+  background-size:
+    100% 9rem,
+    13rem 100%;
+  opacity: 0.58;
+  animation: home-command-scan 12s ease-in-out infinite alternate;
+}
+
+@keyframes home-command-field-drift {
+  0% {
+    background-position:
+      0% 50%,
+      100% 48%,
+      0 0;
+  }
+
+  50% {
+    background-position:
+      82% 42%,
+      26% 62%,
+      5.5rem 3rem;
+  }
+
+  100% {
+    background-position:
+      0% 50%,
+      100% 48%,
+      11rem 6rem;
+  }
+}
+
+@keyframes home-command-sweep {
+  from {
+    transform: rotate(0deg) scale(1.04);
+  }
+
+  to {
+    transform: rotate(360deg) scale(1.04);
+  }
+}
+
+@keyframes home-command-scan {
+  from {
+    transform: translate3d(-2.5rem, -1.5rem, 0);
+  }
+
+  to {
+    transform: translate3d(2.5rem, 1.5rem, 0);
+  }
+}
+
+@media (max-width: 640px) {
+  .home-motion-field {
+    opacity: 0.62;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-motion-field,
+  .home-motion-field::before,
+  .home-motion-field::after {
+    animation: none;
+  }
+}
+
 .nclex-sidebar {
   background: linear-gradient(180deg, var(--nclex-navy) 0%, #082c4b 100%);
   box-shadow: 34px 0 64px rgba(0, 40, 77, 0.18);
