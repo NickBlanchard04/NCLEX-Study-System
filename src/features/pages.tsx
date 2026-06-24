@@ -96,6 +96,9 @@ import {
   MaterialUploadAsset,
   NurseCommandBackdrop,
 } from './nurse-command-assets'
+import levelBadgeIcon from '../assets/progress-badges/level-shield.png'
+import masteryBadgeIcon from '../assets/progress-badges/mastery-emblem.png'
+import streakBadgeIcon from '../assets/progress-badges/streak-flame.png'
 
 const percentTooltip = (
   value: number | string | ReadonlyArray<number | string> | undefined,
@@ -309,29 +312,41 @@ export function StudyMenuPage() {
 
   const activeTitleItem = titleMenuItems[activeMenuIndex] ?? titleMenuItems[0]
 
-  const progressBadges: Array<{ label: string; value: string; tone: LaunchTone; icon: React.ReactNode }> = [
+  const progressBadges: Array<{
+    label: string
+    value: string
+    iconSrc: string
+    cardClass: string
+    iconFrameClass: string
+    imageClass: string
+    labelClass: string
+  }> = [
     {
       label: 'Level',
       value: 'Lv ' + nurseLevel,
-      tone: 'cyan',
-      icon: <ShieldCheck className="h-4 w-4" />,
+      iconSrc: levelBadgeIcon,
+      cardClass: 'border-lime-200/70 bg-[linear-gradient(135deg,rgba(163,230,53,0.34),rgba(28,55,10,0.88)_48%,rgba(5,20,14,0.94))] shadow-[inset_0_1px_0_rgba(236,252,203,0.24),0_0_24px_rgba(163,230,53,0.14)]',
+      iconFrameClass: 'border-lime-100/50 bg-lime-300/14 shadow-[0_0_18px_rgba(163,230,53,0.2)]',
+      imageClass: 'h-10 w-10 drop-shadow-[0_0_10px_rgba(190,242,100,0.52)]',
+      labelClass: 'text-lime-100/74',
     },
     {
       label: 'Mastery',
       value: masteryPct + '%',
-      tone: 'emerald',
-      icon: <Sparkles className="h-4 w-4" />,
+      iconSrc: masteryBadgeIcon,
+      cardClass: 'border-violet-200/76 bg-[linear-gradient(135deg,rgba(167,139,250,0.46),rgba(76,29,149,0.72)_46%,rgba(10,13,34,0.95))] shadow-[inset_0_1px_0_rgba(221,214,254,0.24),0_0_28px_rgba(139,92,246,0.2)]',
+      iconFrameClass: 'border-violet-100/50 bg-violet-300/14 shadow-[0_0_20px_rgba(167,139,250,0.22)]',
+      imageClass: 'h-11 w-12 max-w-none drop-shadow-[0_0_11px_rgba(167,139,250,0.58)]',
+      labelClass: 'text-violet-100/76',
     },
     {
       label: 'Streak',
       value: streakDays + 'd',
-      tone: 'amber',
-      icon: (
-        <span className="relative inline-grid h-4 w-4 place-items-center text-amber-200">
-          <span className="absolute inset-0 rounded-full bg-amber-300/20 animate-ping" />
-          <Flame className="relative h-4 w-4 animate-pulse fill-amber-300/35 drop-shadow-[0_0_8px_rgba(251,191,36,0.7)]" />
-        </span>
-      ),
+      iconSrc: streakBadgeIcon,
+      cardClass: 'border-amber-200/72 bg-gradient-to-br from-amber-300/[0.34] via-[#3a2b0f]/88 to-[#071426]/94 shadow-[inset_0_1px_0_rgba(254,240,138,0.24),0_0_26px_rgba(251,191,36,0.17)]',
+      iconFrameClass: 'border-amber-100/56 bg-amber-300/16 shadow-[0_0_20px_rgba(251,191,36,0.24)]',
+      imageClass: 'h-10 w-10 animate-pulse drop-shadow-[0_0_12px_rgba(251,191,36,0.72)]',
+      labelClass: 'text-amber-100/78',
     },
   ]
 
@@ -625,11 +640,12 @@ export function StudyMenuPage() {
                 </div>
                 <div className="mt-4 grid grid-cols-3 gap-2">
                   {progressBadges.map((badge) => (
-                    <div key={badge.label} className={clsx('min-w-0 rounded-lg border bg-sky-300/[0.06] px-3 py-3', launchToneClasses[badge.tone].border)}>
-                      <div className={clsx('flex h-8 w-8 items-center justify-center rounded-lg border bg-white/8', launchToneClasses[badge.tone].border, launchToneClasses[badge.tone].text)}>
-                        {badge.icon}
+                    <div key={badge.label} className={clsx('home-progress-badge-card relative min-w-0 overflow-hidden rounded-lg border px-3 py-3', badge.cardClass)}>
+                      <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/38" />
+                      <div className={clsx('flex h-11 w-11 items-center justify-center rounded-xl border', badge.iconFrameClass)}>
+                        <img src={badge.iconSrc} alt="" className={clsx('object-contain', badge.imageClass)} />
                       </div>
-                      <p className="mt-3 text-[0.7rem] font-black uppercase tracking-normal text-sky-100/56">{badge.label}</p>
+                      <p className={clsx('mt-3 text-[0.7rem] font-black uppercase tracking-normal', badge.labelClass)}>{badge.label}</p>
                       <p className="mt-1 truncate text-xl font-black leading-none text-white">{badge.value}</p>
                     </div>
                   ))}
