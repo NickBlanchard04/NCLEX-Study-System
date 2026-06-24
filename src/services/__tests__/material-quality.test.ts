@@ -73,6 +73,25 @@ describe('material quality gates', () => {
     )
   })
 
+  it('blocks generic uploaded-material placeholders', () => {
+    const summary = summarizeMaterialQuality(
+      [
+        makeCard({
+          front: 'What is the key nursing point about uploaded nursing concept?',
+        }),
+      ],
+      [
+        makeQuestion({
+          prompt: 'A nurse is reviewing this study material. Which statement is best supported?',
+        }),
+      ],
+    )
+
+    expect(summary.issues.map((issue) => issue.code)).toEqual(
+      expect.arrayContaining(['flashcard_source_noise', 'question_source_noise']),
+    )
+  })
+
   it('filters blocker items before they are saved', () => {
     const goodCard = makeCard({ id: 'good-card' })
     const badCard = makeCard({

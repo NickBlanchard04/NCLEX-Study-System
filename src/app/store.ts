@@ -216,14 +216,21 @@ const generateReviewReadyMaterialTools = async (
     reportSafeError('material-ai-generation', error)
     return null
   })
-  const generatedFlashcards = aiTools?.flashcards.length
-    ? aiTools.flashcards
-    : pipeline.generateCleanFlashcardsFromMaterial(material)
-  const generatedQuestions = aiTools?.questions.length
-    ? aiTools.questions
-    : pipeline.generateCleanQuestionsFromMaterial(material, generatedFlashcards)
+  const localFlashcards = pipeline.generateCleanFlashcardsFromMaterial(material)
+  const localQuestions = pipeline.generateCleanQuestionsFromMaterial(material, localFlashcards)
+  const localTools = filterMaterialStudyTools(localFlashcards, localQuestions)
 
-  return filterMaterialStudyTools(generatedFlashcards, generatedQuestions)
+  if (!aiTools?.flashcards.length && !aiTools?.questions.length) {
+    return localTools
+  }
+
+  const aiToolsAfterReview = filterMaterialStudyTools(aiTools.flashcards, aiTools.questions)
+  const aiHasEnoughCards =
+    aiToolsAfterReview.flashcards.length >= Math.min(3, Math.max(1, localTools.flashcards.length))
+  const aiHasEnoughQuestions =
+    aiToolsAfterReview.questions.length >= Math.min(2, Math.max(1, localTools.questions.length))
+
+  return aiHasEnoughCards && aiHasEnoughQuestions ? aiToolsAfterReview : localTools
 }
 
 const createInitialSimulatorProgress = (): SimulatorProgressState => ({

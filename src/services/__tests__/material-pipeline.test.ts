@@ -67,7 +67,7 @@ describe('material pipeline local generation', () => {
     expect(cards[0].front).toMatch(/causes|platelet|thrombocytopenia/i)
     expect(cards[0].back).toMatch(/bone marrow suppression|platelet destruction/i)
     expect(cards[0].back).not.toMatch(/^of\s/i)
-    expect(allCardText).not.toMatch(/what should you know about result|www\.|june 2025/i)
+    expect(allCardText).not.toMatch(/what should you know about result|uploaded nursing concept|www\.|june 2025/i)
   })
 
   it('generates editable NCLEX-style questions with concise choices and rationales', () => {
@@ -111,13 +111,49 @@ describe('material pipeline local generation', () => {
     expect(questions.length).toBeGreaterThan(0)
     questions.forEach((question) => {
       expect(question.prompt).toMatch(/nurse|which statement|which point/i)
-      expect(question.prompt).not.toMatch(/best matches this point|what should you know about result|www\./i)
+      expect(question.prompt).not.toMatch(
+        /best matches this point|what should you know about result|uploaded nursing concept|this study material|www\./i,
+      )
       expect(question.choices).toHaveLength(4)
       expect(new Set(question.choices.map((choice) => choice.text))).toHaveProperty('size', 4)
       expect(question.choices.every((choice) => choice.text.length <= 190)).toBe(true)
       expect(question.choices.some((choice) => choice.id === question.correctAnswer[0])).toBe(true)
-      expect(question.rationale).toMatch(/uploaded concept|unsupported|different study point/i)
+      expect(question.rationale).toMatch(/reviewed material|unsupported|different study point/i)
       expect(question.rationale).not.toMatch(/www\.|june 2025/i)
     })
+  })
+
+  it('uses clinical topic labels instead of file-name placeholders', () => {
+    const material = makeMaterial([
+      {
+        id: 'asset-1',
+        materialId: 'material-lab-values',
+        title: 'Overview',
+        content:
+          'Thrombocytopenia means the platelet count is below the expected range. The nurse should assess for petechiae, bruising, bleeding gums, hematuria, melena, and prolonged bleeding.',
+        order: 0,
+      },
+      {
+        id: 'asset-2',
+        materialId: 'material-lab-values',
+        title: 'Overview',
+        content:
+          'The client should use an electric razor and report black stools, blood in urine, severe headache, or new neurologic changes.',
+        order: 1,
+      },
+    ])
+    const flashcards = generateCleanFlashcardsFromMaterial({
+      ...material,
+      displayTitle: 'smoke material',
+      filename: 'smoke-material.txt',
+    })
+    const questions = generateCleanQuestionsFromMaterial(material, flashcards)
+    const generatedText = [
+      ...flashcards.map((card) => `${card.front} ${card.back}`),
+      ...questions.map((question) => `${question.prompt} ${question.rationale}`),
+    ].join(' ')
+
+    expect(generatedText).toMatch(/thrombocytopenia|bleeding risk/i)
+    expect(generatedText).not.toMatch(/smoke material|uploaded nursing concept/i)
   })
 })

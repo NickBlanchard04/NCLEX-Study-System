@@ -66,6 +66,7 @@ const genericConceptLabels = new Set([
   'source',
   'study material',
   'table',
+  'uploaded nursing concept',
   'value',
 ])
 
@@ -456,6 +457,12 @@ const clinicalTopicPatterns: Array<{ pattern: RegExp; label: string; kind: Learn
     label: 'thrombocytopenia causes',
     kind: 'causes',
   },
+  {
+    pattern:
+      /\b(?:thrombocytopenia|low platelet count|platelet count is below|platelets? below|bleeding precautions?|petechiae|bruising|bleeding gums|hematuria|melena|electric razor)\b/i,
+    label: 'thrombocytopenia bleeding risk',
+    kind: 'safety',
+  },
   { pattern: /\btotal protein\b|\balbumin\b/i, label: 'total protein lab value', kind: 'lab' },
   { pattern: /\bpotassium\b|\bhyperkalemia\b|\bhypokalemia\b/i, label: 'potassium lab value', kind: 'lab' },
   { pattern: /\bsodium\b|\bhypernatremia\b|\bhyponatremia\b/i, label: 'sodium lab value', kind: 'lab' },
@@ -520,10 +527,24 @@ const safeHeading = (heading: string) => {
   return cleaned
 }
 
+const inferSpecificTopicCue = (text: string) => {
+  if (
+    /\b(?:thrombocytopenia|low platelet count|platelet count is below|platelets? below|petechiae|bruising|bleeding gums|hematuria|melena|electric razor)\b/i.test(
+      text,
+    )
+  ) {
+    return 'thrombocytopenia bleeding risk'
+  }
+  if (/\bbleeding precautions?\b/i.test(text)) return 'bleeding precautions'
+  return ''
+}
+
 const inferTopicFromText = (text: string, fallbackTitle: string) => {
   const cleanedText = cleanStudyFragment(text)
   const matchedTopic = clinicalTopicPatterns.find(({ pattern }) => pattern.test(cleanedText))
   if (matchedTopic) return matchedTopic.label
+  const specificCue = inferSpecificTopicCue(cleanedText)
+  if (specificCue) return specificCue
 
   const title = normalizeConceptLabel(fallbackTitle)
   if (isMeaningfulConceptLabel(title)) return title
@@ -636,12 +657,12 @@ const makeFlashcardFront = (point: LearningPoint) => {
   if (point.kind === 'causes') {
     return `What are common causes of ${topic.replace(/\s+causes$/i, '')}?`
   }
-  if (point.kind === 'lab') return `What is the nursing significance of ${topic}?`
+  if (point.kind === 'lab') return `How should a nurse interpret ${topic}?`
   if (point.kind === 'priority') return `What priority point matters for ${topic}?`
-  if (point.kind === 'safety') return `What safety point should you remember about ${topic}?`
+  if (point.kind === 'safety') return `Which safety precautions matter for ${topic}?`
   if (point.kind === 'medication') return `What medication safety point applies to ${topic}?`
   if (point.kind === 'assessment') return `What assessment point matters for ${topic}?`
-  return `What is the key nursing point about ${topic}?`
+  return `What nursing action or teaching point is linked to ${topic}?`
 }
 
 const hasBrokenGeneratedShape = (value: string) => {
@@ -652,9 +673,14 @@ const hasBrokenGeneratedShape = (value: string) => {
     return true
   }
   if (/what should you know about (?:result|results|value|source)\??/i.test(value)) return true
-  if (/^what is a key point about (?:overview|this study material|uploaded nursing concept)\??$/i.test(value)) {
+  if (
+    /^what is (?:a|the) key (?:nursing )?point about (?:overview|this study material|uploaded nursing concept)\??$/i.test(
+      value,
+    )
+  ) {
     return true
   }
+  if (/\b(?:uploaded nursing concept|this study material|smoke material)\b/i.test(value)) return true
   return false
 }
 
@@ -700,15 +726,15 @@ const buildQuestionPrompt = (point: LearningPoint, index: number) => {
     return `A nurse is studying ${topic}. Which statement best reflects the nursing interpretation from the material?`
   }
   if (point.kind === 'priority') {
-    return `A nurse is applying the uploaded material about ${topic}. Which point should guide priority thinking?`
+    return `A nurse is reviewing ${topic}. Which point should guide priority follow-up?`
   }
   if (point.kind === 'safety') {
-    return `A nurse is using this material to plan safe care for ${topic}. Which statement is best supported?`
+    return `A nurse is planning safe care for ${topic}. Which statement is best supported?`
   }
   if (index % 2 === 0) {
-    return `A nurse is reviewing ${topic}. Which statement is best supported by the uploaded material?`
+    return `A nurse is reviewing ${topic}. Which statement is best supported by the material?`
   }
-  return `Which study statement best matches the uploaded material about ${topic}?`
+  return `Which study statement best matches the material about ${topic}?`
 }
 
 const qualityFilterQuestions = (questions: MaterialQuestion[]) =>
@@ -974,7 +1000,7 @@ export function generateCleanQuestionsFromMaterial(
       prompt: buildQuestionPrompt(point, index),
       choices,
       correctAnswer: correctChoice ? [correctChoice.id] : ['A'],
-      rationale: `The correct answer reflects the uploaded concept: ${point.statement} The other options are either unsupported by this material or describe a different study point.`,
+      rationale: `The correct answer matches the reviewed material: ${point.statement} The other options are either unsupported by this material or describe a different study point.`,
       createdAt: new Date().toISOString(),
     }
   })

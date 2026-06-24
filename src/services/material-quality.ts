@@ -24,7 +24,7 @@ export interface MaterialQualitySummary {
 const sourceArtifactPattern =
   /\b(?:https?:\/\/|www\.|doi\b|pmid\b|issn\b|copyright|all rights reserved|nursingcenter\.com|frontiersin\.org)\b/i
 const genericFragmentPattern =
-  /\b(?:what should you know about (?:result|results|value|source)|best matches this point|june\s+\d{4})\b/i
+  /\b(?:what should you know about (?:result|results|value|source)|best matches this point|uploaded nursing concept|this study material|june\s+\d{4})\b/i
 
 const clean = (value: string) => value.replace(/\s+/g, ' ').trim()
 

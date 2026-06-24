@@ -178,6 +178,7 @@ Deno.serve(async (request) => {
     '{"flashcards":[{"front":"...","back":"..."}],"questions":[{"prompt":"...","choices":[{"id":"A","text":"..."},{"id":"B","text":"..."},{"id":"C","text":"..."},{"id":"D","text":"..."}],"correctAnswer":["A"],"rationale":"..."}],"warnings":["..."]}',
     `Create up to ${flashcardCount} flashcards and ${questionCount} single-answer questions.`,
     'Rules: use only the material, remove source footers/URLs/dates, avoid raw fragments, keep choices concise, write nursing judgment stems, and include rationales.',
+    'Do not use the file name, URL slug, "uploaded nursing concept", "this material", "result", or source title as the clinical topic. Name the actual nursing concept, finding, action, risk, or teaching point.',
     `Material:\n${sourceText}`,
   ].join('\n\n')
 
