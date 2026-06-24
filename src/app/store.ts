@@ -45,6 +45,8 @@ import {
   updateNote,
 } from '../services/study-system'
 import { createAttemptEngineEvidence } from '../services/question-engine'
+import { filterMaterialStudyTools } from '../services/material-quality'
+import { generateMaterialToolsWithAi } from '../services/material-ai'
 import {
   getCurrentAuthSnapshot,
   onAuthSnapshotChange,
@@ -66,6 +68,7 @@ import {
   uploadMaterialFile,
 } from '../services/cloud-repositories'
 import { isSupabaseConfigured } from '../services/supabase'
+import { getSafeErrorCopy, reportSafeError } from '../services/safe-errors'
 import {
   advanceTycoonShiftTime,
   completeTycoonTaskWithAction,
@@ -199,6 +202,36 @@ const simulatorLevelOrder: SimulatorLevelId[] = [
 ]
 
 const loadMaterialPipeline = () => import('../services/material-pipeline')
+
+type MaterialPipelineModule = Awaited<ReturnType<typeof loadMaterialPipeline>>
+
+const generateReviewReadyMaterialTools = async (
+  material: StudyMaterial,
+  pipeline: Pick<
+    MaterialPipelineModule,
+    'generateCleanFlashcardsFromMaterial' | 'generateCleanQuestionsFromMaterial'
+  >,
+) => {
+  const aiTools = await generateMaterialToolsWithAi(material).catch((error) => {
+    reportSafeError('material-ai-generation', error)
+    return null
+  })
+  const localFlashcards = pipeline.generateCleanFlashcardsFromMaterial(material)
+  const localQuestions = pipeline.generateCleanQuestionsFromMaterial(material, localFlashcards)
+  const localTools = filterMaterialStudyTools(localFlashcards, localQuestions)
+
+  if (!aiTools?.flashcards.length && !aiTools?.questions.length) {
+    return localTools
+  }
+
+  const aiToolsAfterReview = filterMaterialStudyTools(aiTools.flashcards, aiTools.questions)
+  const aiHasEnoughCards =
+    aiToolsAfterReview.flashcards.length >= Math.min(3, Math.max(1, localTools.flashcards.length))
+  const aiHasEnoughQuestions =
+    aiToolsAfterReview.questions.length >= Math.min(2, Math.max(1, localTools.questions.length))
+
+  return aiHasEnoughCards && aiHasEnoughQuestions ? aiToolsAfterReview : localTools
+}
 
 const createInitialSimulatorProgress = (): SimulatorProgressState => ({
   currentSimulatorLevel: 'level-1',
@@ -408,9 +441,10 @@ export const useStudySystemStore = create<StudySystemState>()(
             await get().hydrateCloudState()
           }
         } catch (error) {
+          reportSafeError('auth-initialize', error)
           set({
             authInitialized: true,
-            authError: error instanceof Error ? error.message : 'Could not initialize authentication.',
+            authError: getSafeErrorCopy('auth-initialize'),
             isDemoMode: false,
           })
         }
@@ -432,8 +466,9 @@ export const useStudySystemStore = create<StudySystemState>()(
           })
           await get().hydrateCloudState()
         } catch (error) {
+          reportSafeError('auth-sign-in', error)
           set({
-            authError: error instanceof Error ? error.message : 'Could not sign in.',
+            authError: getSafeErrorCopy('auth-sign-in'),
             syncStatus: 'error',
           })
           throw error
@@ -475,8 +510,9 @@ export const useStudySystemStore = create<StudySystemState>()(
             set({ syncStatus: 'idle', syncError: null })
           }
         } catch (error) {
+          reportSafeError('auth-sign-up', error)
           set({
-            authError: error instanceof Error ? error.message : 'Could not create your account.',
+            authError: getSafeErrorCopy('auth-sign-up'),
             syncStatus: 'error',
           })
           throw error
@@ -513,7 +549,8 @@ export const useStudySystemStore = create<StudySystemState>()(
         try {
           await requestPasswordReset(email)
         } catch (error) {
-          set({ authError: error instanceof Error ? error.message : 'Could not send reset email.' })
+          reportSafeError('auth-reset-password', error)
+          set({ authError: getSafeErrorCopy('auth-reset-password') })
           throw error
         }
       },
@@ -527,8 +564,9 @@ export const useStudySystemStore = create<StudySystemState>()(
             syncStatus: 'idle',
           })
         } catch (error) {
+          reportSafeError('auth-update-password', error)
           set({
-            authError: error instanceof Error ? error.message : 'Could not update password.',
+            authError: getSafeErrorCopy('auth-update-password'),
             syncStatus: 'error',
           })
           throw error
@@ -596,9 +634,10 @@ export const useStudySystemStore = create<StudySystemState>()(
             await saveProfile(user.id, profile)
           }
         } catch (error) {
+          reportSafeError('cloud-hydrate', error)
           set({
             syncStatus: navigator.onLine ? 'error' : 'offline',
-            syncError: error instanceof Error ? error.message : 'Cloud hydration failed.',
+            syncError: getSafeErrorCopy('cloud-hydrate'),
           })
         }
       },
@@ -632,9 +671,10 @@ export const useStudySystemStore = create<StudySystemState>()(
           ])
           set({ syncStatus: 'idle', syncError: null, syncEvents: [] })
         } catch (error) {
+          reportSafeError('cloud-sync', error)
           set((current) => ({
             syncStatus: navigator.onLine ? 'error' : 'offline',
-            syncError: error instanceof Error ? error.message : 'Cloud sync failed.',
+            syncError: getSafeErrorCopy('cloud-sync'),
             syncEvents: current.syncEvents.length
               ? current.syncEvents
               : [makeSyncEvent('profile', user.id, 'upsert', current.profile)],
@@ -666,8 +706,10 @@ export const useStudySystemStore = create<StudySystemState>()(
 
         for (const material of repairs) {
           const repairedMaterial = repairStudyMaterialContent(material)
-          const flashcards = generateCleanFlashcardsFromMaterial(repairedMaterial)
-          const questions = generateCleanQuestionsFromMaterial(repairedMaterial, flashcards)
+          const { flashcards, questions } = await generateReviewReadyMaterialTools(repairedMaterial, {
+            generateCleanFlashcardsFromMaterial,
+            generateCleanQuestionsFromMaterial,
+          })
           const nextMaterial = {
             ...repairedMaterial,
             generatedFlashcardIds: flashcards.map((item) => item.id),
@@ -876,9 +918,10 @@ export const useStudySystemStore = create<StudySystemState>()(
           const storagePath =
             get().authUser && !get().isDemoMode
               ? await uploadMaterialFile(get().authUser!.id, pending.id, file).catch((error) => {
+                  reportSafeError('cloud-file-upload', error)
                   set({
                     syncStatus: 'error',
-                    syncError: error instanceof Error ? error.message : 'Cloud file upload failed.',
+                    syncError: getSafeErrorCopy('cloud-file-upload'),
                   })
                   return undefined
                 })
@@ -887,8 +930,10 @@ export const useStudySystemStore = create<StudySystemState>()(
             ...createStudyMaterialRecord(file, extracted, pending.id),
             storagePath,
           }
-          const flashcards = generateCleanFlashcardsFromMaterial(material)
-          const questions = generateCleanQuestionsFromMaterial(material, flashcards)
+          const { flashcards, questions } = await generateReviewReadyMaterialTools(material, {
+            generateCleanFlashcardsFromMaterial,
+            generateCleanQuestionsFromMaterial,
+          })
           const nextMaterial = {
             ...material,
             reviewStatus: 'pending-review' as const,
@@ -910,9 +955,10 @@ export const useStudySystemStore = create<StudySystemState>()(
           }))
           void get().syncNow()
         } catch (error) {
+          reportSafeError('material-file-import', error)
           const failure = createErroredMaterial(
             pending,
-            error instanceof Error ? error.message : 'We could not import this file.',
+            getSafeErrorCopy('material-file-import'),
           )
           await saveMaterialBundle({ material: failure, flashcards: [], questions: [] })
           set((state) => ({
@@ -939,8 +985,10 @@ export const useStudySystemStore = create<StudySystemState>()(
         try {
           const extracted = await extractMaterialTextFromUrl(url)
           const material = createStudyMaterialRecordFromUrl(url, extracted, pending.id)
-          const flashcards = generateCleanFlashcardsFromMaterial(material)
-          const questions = generateCleanQuestionsFromMaterial(material, flashcards)
+          const { flashcards, questions } = await generateReviewReadyMaterialTools(material, {
+            generateCleanFlashcardsFromMaterial,
+            generateCleanQuestionsFromMaterial,
+          })
           const nextMaterial = {
             ...material,
             reviewStatus: 'pending-review' as const,
@@ -962,7 +1010,8 @@ export const useStudySystemStore = create<StudySystemState>()(
           }))
           void get().syncNow()
         } catch (error) {
-          const message = error instanceof Error ? error.message : 'We could not import this link.'
+          reportSafeError('material-link-import', error)
+          const message = getSafeErrorCopy('material-link-import')
           const failure = createErroredMaterial(
             pending,
             message,
@@ -979,12 +1028,13 @@ export const useStudySystemStore = create<StudySystemState>()(
       deleteStudyMaterial: async (id) => {
         await deleteMaterialBundle(id)
         if (get().authUser && !get().isDemoMode) {
-          await deleteMaterialCloud(get().authUser!.id, id).catch((error) =>
+          await deleteMaterialCloud(get().authUser!.id, id).catch((error) => {
+            reportSafeError('cloud-material-delete', error)
             set({
               syncStatus: 'error',
-              syncError: error instanceof Error ? error.message : 'Cloud material delete failed.',
-            }),
-          )
+              syncError: getSafeErrorCopy('cloud-material-delete'),
+            })
+          })
         }
         set((state) => ({
           materials: state.materials.filter((item) => item.id !== id),
@@ -1017,8 +1067,10 @@ export const useStudySystemStore = create<StudySystemState>()(
         if (!material || material.extractionStatus !== 'ready') return
 
         const repairedMaterial = repairStudyMaterialContent(material)
-        const flashcards = generateCleanFlashcardsFromMaterial(repairedMaterial)
-        const questions = generateCleanQuestionsFromMaterial(repairedMaterial, flashcards)
+        const { flashcards, questions } = await generateReviewReadyMaterialTools(repairedMaterial, {
+          generateCleanFlashcardsFromMaterial,
+          generateCleanQuestionsFromMaterial,
+        })
         const nextMaterial = {
           ...repairedMaterial,
           reviewStatus: 'pending-review' as const,
@@ -1043,13 +1095,16 @@ export const useStudySystemStore = create<StudySystemState>()(
         const material = get().materials.find((item) => item.id === id)
         if (!material || material.extractionStatus !== 'ready') return
 
-        const approvedFlashcards = flashcards.map((card) => ({
+        const { flashcards: reviewReadyFlashcards, questions: reviewReadyQuestions } =
+          filterMaterialStudyTools(flashcards, questions)
+
+        const approvedFlashcards = reviewReadyFlashcards.map((card) => ({
           ...card,
           sourceMaterialId: id,
           sourceTitle: material.displayTitle,
           createdAt: card.createdAt || new Date().toISOString(),
         }))
-        const approvedQuestions = questions.map((question) => ({
+        const approvedQuestions = reviewReadyQuestions.map((question) => ({
           ...question,
           sourceMaterialId: id,
           sourceTitle: material.displayTitle,
