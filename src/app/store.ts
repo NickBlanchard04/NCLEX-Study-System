@@ -282,7 +282,7 @@ const baseState = {
   authConfigured: isSupabaseConfigured,
   authError: null as string | null,
   passwordRecoveryRequired: false,
-  isDemoMode: !isSupabaseConfigured,
+  isDemoMode: false,
   syncStatus: 'idle' as SyncStatus,
   syncError: null as string | null,
   syncEvents: [] as SyncEvent[],
@@ -359,7 +359,7 @@ export const useStudySystemStore = create<StudySystemState>()(
           set({
             authConfigured: false,
             authInitialized: true,
-            isDemoMode: true,
+            isDemoMode: false,
             syncStatus: 'idle',
           })
           return
@@ -373,7 +373,7 @@ export const useStudySystemStore = create<StudySystemState>()(
             authSession: snapshot.session,
             authConfigured: true,
             authInitialized: true,
-            isDemoMode: snapshot.user ? false : get().isDemoMode,
+            isDemoMode: false,
             authError: null,
             passwordRecoveryRequired: snapshot.event === 'PASSWORD_RECOVERY' && Boolean(snapshot.user),
           })
@@ -388,7 +388,7 @@ export const useStudySystemStore = create<StudySystemState>()(
                 : {}),
               authUser: nextSnapshot.user,
               authSession: nextSnapshot.session,
-              isDemoMode: nextSnapshot.user ? false : get().isDemoMode,
+              isDemoMode: false,
               passwordRecoveryRequired:
                 nextSnapshot.event === 'PASSWORD_RECOVERY'
                   ? true
@@ -408,7 +408,7 @@ export const useStudySystemStore = create<StudySystemState>()(
           set({
             authInitialized: true,
             authError: error instanceof Error ? error.message : 'Could not initialize authentication.',
-            isDemoMode: true,
+            isDemoMode: false,
           })
         }
       },
@@ -533,15 +533,12 @@ export const useStudySystemStore = create<StudySystemState>()(
       },
       continueAsDemo: () => {
         set({
-          ...baseState,
           authInitialized: true,
           authConfigured: isSupabaseConfigured,
-          isDemoMode: true,
-          authError: null,
+          isDemoMode: false,
+          authError: 'Local demo access is disabled during open beta. Please sign in or create a cloud account.',
           migrationPromptVisible: false,
-          materialsHydrated: false,
         })
-        void get().initializeMaterials()
       },
       hydrateCloudState: async () => {
         const user = get().authUser

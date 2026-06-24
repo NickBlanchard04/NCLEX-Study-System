@@ -1,23 +1,22 @@
 import { motion } from 'framer-motion'
-import { Cloud, Eye, EyeOff, LockKeyhole, ShieldCheck, UserPlus } from 'lucide-react'
+import { Eye, EyeOff, FileText, LockKeyhole, ShieldCheck, UserPlus } from 'lucide-react'
 import { useState } from 'react'
 import { examTracks } from '../data/exam-tracks'
 import type { ExamTrackId } from './types'
 import { useStudySystemStore } from './store'
+import nursingCommandLogo from '../assets/brand/nursing-command-logo.png'
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const authInitialized = useStudySystemStore((state) => state.authInitialized)
-  const authConfigured = useStudySystemStore((state) => state.authConfigured)
   const authUser = useStudySystemStore((state) => state.authUser)
   const passwordRecoveryRequired = useStudySystemStore((state) => state.passwordRecoveryRequired)
-  const isDemoMode = useStudySystemStore((state) => state.isDemoMode)
 
   if (!authInitialized) {
     return (
-      <div className="nclex-shell-bg flex min-h-screen items-center justify-center p-6">
-        <div className="nclex-surface rounded-[24px] p-6 text-center">
-          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-[var(--nclex-blue-soft)] border-t-[var(--nclex-blue)]" />
-          <p className="mt-4 text-sm font-semibold text-[var(--nclex-text-muted)]">Checking account status...</p>
+      <div className="nurse-command-app flex min-h-screen items-center justify-center bg-[#04101f] p-6 text-white">
+        <div className="rounded-[24px] border border-sky-300/20 bg-[#071d34]/78 p-6 text-center shadow-[0_24px_70px_rgba(0,0,0,0.28)]">
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-sky-300/20 border-t-sky-300" />
+          <p className="mt-4 text-sm font-semibold text-sky-100/70">Checking account status...</p>
         </div>
       </div>
     )
@@ -27,7 +26,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     return <PasswordRecoveryLanding />
   }
 
-  if (authUser || isDemoMode || !authConfigured) {
+  if (authUser) {
     return children
   }
 
@@ -35,10 +34,10 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 }
 
 function AuthLanding() {
+  const authConfigured = useStudySystemStore((state) => state.authConfigured)
   const signIn = useStudySystemStore((state) => state.signIn)
   const signUp = useStudySystemStore((state) => state.signUp)
   const requestPasswordReset = useStudySystemStore((state) => state.requestPasswordReset)
-  const continueAsDemo = useStudySystemStore((state) => state.continueAsDemo)
   const authError = useStudySystemStore((state) => state.authError)
   const [mode, setMode] = useState<'signin' | 'signup' | 'reset'>('signin')
   const [email, setEmail] = useState('')
@@ -49,11 +48,25 @@ function AuthLanding() {
   const [examTrack, setExamTrack] = useState<ExamTrackId>('nclex-rn')
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
+  const [termsAccepted, setTermsAccepted] = useState(false)
+
+  const agreementRequired = mode !== 'reset'
+  const canSubmit = !busy && authConfigured && (!agreementRequired || termsAccepted)
+  const inputClass =
+    'mt-2 w-full rounded-2xl border border-sky-300/20 bg-[#04101f]/82 px-4 py-3 text-sm text-white outline-none transition placeholder:text-sky-100/34 focus:border-cyan-200/70 focus:ring-4 focus:ring-cyan-300/16'
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setBusy(true)
     setMessage('')
+    if (!authConfigured) {
+      setMessage('Nurse Command beta access requires cloud authentication. Supabase is not configured in this build.')
+      return
+    }
+    if (agreementRequired && !termsAccepted) {
+      setMessage('Please accept the beta terms, privacy notice, and study-support limitations before continuing.')
+      return
+    }
+    setBusy(true)
     try {
       if (mode === 'reset') {
         await requestPasswordReset(email)
@@ -80,48 +93,50 @@ function AuthLanding() {
     setMessage('')
   }
 
-  const title = mode === 'signin' ? 'Sign in' : mode === 'signup' ? 'Create account' : 'Reset password'
+  const title = mode === 'signin' ? 'Welcome back' : mode === 'signup' ? 'Create beta account' : 'Reset password'
   const submitLabel =
     mode === 'reset'
       ? 'Send password reset email'
       : mode === 'signin'
-        ? 'Sign in and sync'
+        ? 'Sign in'
         : 'Send verification email'
 
   return (
-    <div className="nclex-shell-bg min-h-screen px-5 py-8 text-[var(--nclex-text)]">
-      <div className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-6xl items-center gap-8 lg:grid-cols-[1.05fr_0.95fr]">
+    <div className="nurse-command-app relative min-h-screen overflow-hidden bg-[#04101f] px-4 py-6 text-white sm:px-6 lg:px-8">
+      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(56,189,248,0.22),transparent_30%),radial-gradient(circle_at_78%_22%,rgba(163,230,53,0.12),transparent_26%),linear-gradient(180deg,#071d34_0%,#04101f_52%,#020812_100%)]" />
+      <div className="pointer-events-none fixed inset-0 bg-[linear-gradient(90deg,rgba(125,211,252,0.08)_1px,transparent_1px),linear-gradient(180deg,rgba(125,211,252,0.06)_1px,transparent_1px)] bg-[length:72px_72px] opacity-40" />
+      <div className="relative z-10 mx-auto grid min-h-[calc(100vh-3rem)] max-w-6xl items-center gap-8 lg:grid-cols-[minmax(0,0.92fr)_minmax(360px,0.58fr)]">
         <motion.section
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-[32px] border border-[var(--nclex-border)] bg-[radial-gradient(circle_at_18%_18%,rgba(42,125,225,0.18),transparent_32%),linear-gradient(135deg,#ffffff_0%,#eef5ff_100%)] p-7 shadow-[0_24px_70px_rgba(15,37,61,0.1)] md:p-10"
+          className="min-w-0 text-center lg:text-left"
         >
-          <div className="inline-flex items-center gap-3 rounded-2xl bg-white/80 px-4 py-3 shadow-sm">
-            <div className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-[var(--nclex-blue)] text-white">
-              <ShieldCheck className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-[var(--nclex-text)]">Nurse Command</p>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--nclex-blue)]">Cloud Sync</p>
-            </div>
+          <img
+            src={nursingCommandLogo}
+            alt="Nursing Command"
+            className="mx-auto w-[min(18rem,78vw)] rounded-[28px] shadow-[0_30px_80px_rgba(0,0,0,0.42)] lg:mx-0 lg:w-[24rem]"
+          />
+          <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-lime-200/32 bg-lime-300/10 px-4 py-2 text-xs font-black uppercase tracking-normal text-lime-100">
+            <ShieldCheck className="h-4 w-4" />
+            Open beta testing
           </div>
-          <h1 className="mt-8 max-w-3xl font-serif text-4xl leading-tight text-[var(--nclex-text)] md:text-6xl">
-            Your progress follows you now.
+          <h1 className="mt-5 max-w-3xl text-4xl font-black leading-tight text-white md:text-6xl">
+            Welcome to Nurse Command.
           </h1>
-          <p className="mt-5 max-w-2xl text-base leading-8 text-[var(--nclex-text-muted)]">
-            Create an account to sync Nurse Command exam prep, notes, flashcards, uploaded materials, and performance history across devices.
+          <p className="mx-auto mt-5 max-w-2xl text-base leading-8 text-sky-50/76 lg:mx-0">
+            A premium nursing study command center for focused practice, weak-area repair, performance signals, and study materials in one place.
           </p>
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {[
-              ['Secure accounts', 'Supabase Auth with user-owned data.'],
-              ['Cloud progress', 'Attempts, notes, cards, and materials sync.'],
-              ['SaaS-ready', 'RLS policies and storage paths are already scoped.'],
-            ].map(([title, copy]) => (
-              <div key={title} className="rounded-[20px] border border-white bg-white/80 p-4 shadow-sm">
-                <p className="font-semibold text-[var(--nclex-text)]">{title}</p>
-                <p className="mt-2 text-sm leading-6 text-[var(--nclex-text-muted)]">{copy}</p>
-              </div>
-            ))}
+          <div id="beta-terms" className="mx-auto mt-7 max-w-2xl rounded-2xl border border-cyan-200/18 bg-[#071d34]/68 p-5 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] lg:mx-0">
+            <p className="text-sm font-black text-white">Open beta notice</p>
+            <p className="mt-2 text-sm leading-7 text-sky-100/68">
+              Nurse Command is currently in open beta. Features, content, analytics, and availability may change while we test and improve the product.
+            </p>
+            <p className="mt-3 text-sm leading-7 text-sky-100/68">
+              By accessing the beta, users agree not to copy, scrape, reverse engineer, resell, redistribute, or use Nurse Command content or interface patterns to train or build competing systems.
+            </p>
+            <p className="mt-3 text-sm leading-7 text-sky-100/68">
+              Nurse Command is study support only. It is not clinical advice, patient care guidance, licensure prediction, or a substitute for official exam guidance.
+            </p>
           </div>
         </motion.section>
 
@@ -129,66 +144,71 @@ function AuthLanding() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.08 }}
-          className="nclex-surface rounded-[28px] p-6 md:p-7"
+          className="rounded-[28px] border border-cyan-200/20 bg-[#071d34]/88 p-6 shadow-[0_28px_80px_rgba(0,0,0,0.34),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur md:p-7"
         >
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-blue)]">
-                Account Access
+              <p className="text-xs font-black uppercase tracking-normal text-cyan-200/72">
+                Beta account access
               </p>
-              <h2 className="mt-2 font-serif text-3xl text-[var(--nclex-text)]">
+              <h2 className="mt-2 text-3xl font-black text-white">
                 {title}
               </h2>
             </div>
-            <div className="rounded-2xl bg-[var(--nclex-blue-soft)] p-3 text-[var(--nclex-blue)]">
-              {mode === 'signin' ? <LockKeyhole className="h-5 w-5" /> : <UserPlus className="h-5 w-5" />}
+            <div className="rounded-2xl border border-cyan-200/24 bg-cyan-300/10 p-3 text-cyan-100">
+              {mode === 'signup' ? <UserPlus className="h-5 w-5" /> : <LockKeyhole className="h-5 w-5" />}
             </div>
           </div>
+          {!authConfigured ? (
+            <div className="mt-5 rounded-2xl border border-amber-200/30 bg-amber-300/10 px-4 py-3 text-sm leading-6 text-amber-100">
+              Cloud authentication is required for beta access. This build is missing Supabase configuration.
+            </div>
+          ) : null}
 
           <form onSubmit={submit} className="mt-6 space-y-4">
             <label className="block">
-              <span className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]">Email</span>
+              <span className="text-xs font-black uppercase tracking-normal text-sky-100/58">Email</span>
               <input
                 type="email"
                 required
                 autoComplete="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                className="mt-2 w-full rounded-2xl border border-[var(--nclex-border)] bg-white px-4 py-3 text-sm outline-none transition focus:border-[var(--nclex-blue)] focus:ring-4 focus:ring-blue-100"
+                className={inputClass}
                 placeholder="you@example.com"
               />
             </label>
             {mode === 'signup' ? (
               <>
                 <label className="block">
-                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]">Name</span>
+                  <span className="text-xs font-black uppercase tracking-normal text-sky-100/58">Name</span>
                   <input
                     type="text"
                     required
                     autoComplete="name"
                     value={name}
                     onChange={(event) => setName(event.target.value)}
-                    className="mt-2 w-full rounded-2xl border border-[var(--nclex-border)] bg-white px-4 py-3 text-sm outline-none transition focus:border-[var(--nclex-blue)] focus:ring-4 focus:ring-blue-100"
+                    className={inputClass}
                     placeholder="Your name"
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]">School</span>
+                  <span className="text-xs font-black uppercase tracking-normal text-sky-100/58">School</span>
                   <input
                     type="text"
                     autoComplete="organization"
                     value={nursingSchool}
                     onChange={(event) => setNursingSchool(event.target.value)}
-                    className="mt-2 w-full rounded-2xl border border-[var(--nclex-border)] bg-white px-4 py-3 text-sm outline-none transition focus:border-[var(--nclex-blue)] focus:ring-4 focus:ring-blue-100"
+                    className={inputClass}
                     placeholder="Optional"
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]">Exam track</span>
+                  <span className="text-xs font-black uppercase tracking-normal text-sky-100/58">Exam track</span>
                   <select
                     value={examTrack}
                     onChange={(event) => setExamTrack(event.target.value as ExamTrackId)}
-                    className="mt-2 w-full rounded-2xl border border-[var(--nclex-border)] bg-white px-4 py-3 text-sm outline-none transition focus:border-[var(--nclex-blue)] focus:ring-4 focus:ring-blue-100"
+                    className={inputClass}
                   >
                     {examTracks.map((track) => (
                       <option key={track.id} value={track.id}>
@@ -208,19 +228,33 @@ function AuthLanding() {
                 onChange={setPassword}
                 placeholder="At least 6 characters"
                 autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                tone="dark"
               />
+            ) : null}
+            {agreementRequired ? (
+              <label className="flex cursor-pointer gap-3 rounded-2xl border border-cyan-200/18 bg-[#04101f]/58 p-4">
+                <input
+                  type="checkbox"
+                  checked={termsAccepted}
+                  onChange={(event) => setTermsAccepted(event.target.checked)}
+                  className="mt-1 h-5 w-5 shrink-0 accent-cyan-300"
+                />
+                <span className="text-sm leading-6 text-sky-100/70">
+                  I agree to the beta terms, privacy notice, and study-support limitations. I understand Nurse Command may change during open beta and that account access is required.
+                </span>
+              </label>
             ) : null}
 
             {authError || message ? (
-              <div className="rounded-2xl border border-[#d4e4f7] bg-[var(--nclex-blue-soft)] px-4 py-3 text-sm leading-6 text-[var(--nclex-text-secondary)]">
+              <div className="rounded-2xl border border-cyan-200/20 bg-cyan-300/10 px-4 py-3 text-sm leading-6 text-sky-50/80">
                 {authError ?? message}
               </div>
             ) : null}
 
             <button
               type="submit"
-              disabled={busy}
-              className="nclex-btn-primary flex min-h-[48px] w-full items-center justify-center rounded-2xl px-5 py-3 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={!canSubmit}
+              className="nclex-btn-primary flex min-h-[48px] w-full items-center justify-center rounded-2xl px-5 py-3 text-sm font-black disabled:cursor-not-allowed disabled:opacity-45"
             >
               {busy ? 'Working...' : submitLabel}
             </button>
@@ -230,42 +264,28 @@ function AuthLanding() {
             <button
               type="button"
               onClick={() => changeMode(mode === 'signup' ? 'signin' : 'signup')}
-              className="text-sm font-semibold text-[var(--nclex-blue)]"
+              className="text-sm font-bold text-cyan-200"
             >
               {mode === 'signup' ? 'Already have an account?' : 'Need an account?'}
             </button>
-            <button type="button" onClick={() => changeMode(mode === 'reset' ? 'signin' : 'reset')} className="text-sm font-semibold text-[var(--nclex-text-muted)]">
+            <button type="button" onClick={() => changeMode(mode === 'reset' ? 'signin' : 'reset')} className="text-sm font-bold text-sky-100/60">
               {mode === 'reset' ? 'Back to sign in' : 'Reset password'}
             </button>
           </div>
 
-          <div className="mt-6 rounded-[20px] border border-dashed border-[var(--nclex-border)] bg-[var(--nclex-card-muted)] p-4">
-            <div className="flex items-start gap-3">
-              <Cloud className="mt-1 h-5 w-5 text-[var(--nclex-blue)]" />
-              <div>
-                <p className="font-semibold text-[var(--nclex-text)]">Just previewing?</p>
-                <p className="mt-1 text-sm leading-6 text-[var(--nclex-text-muted)]">
-                  Continue in local demo mode. Your data stays on this device and will not be mixed into a cloud account automatically.
-                </p>
-                <button
-                  type="button"
-                  onClick={continueAsDemo}
-                  className="mt-3 rounded-xl border border-[var(--nclex-border)] bg-white px-4 py-2 text-sm font-semibold text-[var(--nclex-blue)]"
-                >
-                  Continue local demo
-                </button>
-              </div>
+          <div className="mt-6 rounded-[18px] border border-sky-200/14 bg-[#04101f]/56 px-4 py-3 text-xs leading-5 text-sky-100/56">
+            <div className="mb-2 flex items-center gap-2 text-sky-100/78">
+              <FileText className="h-4 w-4" />
+              <p className="font-black uppercase tracking-normal">Privacy and terms summary</p>
             </div>
-          </div>
-
-          <div className="mt-4 rounded-[18px] border border-[var(--nclex-border)] bg-white px-4 py-3 text-xs leading-5 text-[var(--nclex-text-muted)]">
             <p>
-              By using Nurse Command, you agree to use it as practice study support, not clinical advice,
-              licensure prediction, or a substitute for official NCLEX guidance.
+              Privacy: cloud accounts store your email and synced study activity. Do not upload protected health information, patient-identifying data, or clinical records.
             </p>
             <p className="mt-2">
-              Privacy: cloud accounts store your email and synced study data. Do not upload protected health information.
-              Support: <a className="font-semibold text-[var(--nclex-blue)]" href="mailto:support@cosmicgames.info">support@cosmicgames.info</a>.
+              Terms: beta access is personal. Do not copy, scrape, reverse engineer, redistribute, resell, or train competing systems from Nurse Command content, interfaces, or study logic.
+            </p>
+            <p className="mt-2">
+              Support: <a className="font-semibold text-cyan-200" href="mailto:support@cosmicgames.info">support@cosmicgames.info</a>.
             </p>
           </div>
         </motion.section>
@@ -365,6 +385,7 @@ function PasswordField({
   onChange,
   placeholder,
   autoComplete,
+  tone = 'light',
 }: {
   label: string
   value: string
@@ -373,11 +394,14 @@ function PasswordField({
   onChange: (value: string) => void
   placeholder: string
   autoComplete: string
+  tone?: 'light' | 'dark'
 }) {
+  const isDark = tone === 'dark'
+
   return (
     <label className="block">
-      <span className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]">{label}</span>
-      <div className="mt-2 flex overflow-hidden rounded-2xl border border-[var(--nclex-border)] bg-white focus-within:border-[var(--nclex-blue)] focus-within:ring-4 focus-within:ring-blue-100">
+      <span className={isDark ? 'text-xs font-black uppercase tracking-normal text-sky-100/58' : 'text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]'}>{label}</span>
+      <div className={isDark ? 'mt-2 flex overflow-hidden rounded-2xl border border-sky-300/20 bg-[#04101f]/82 focus-within:border-cyan-200/70 focus-within:ring-4 focus-within:ring-cyan-300/16' : 'mt-2 flex overflow-hidden rounded-2xl border border-[var(--nclex-border)] bg-white focus-within:border-[var(--nclex-blue)] focus-within:ring-4 focus-within:ring-blue-100'}>
         <input
           type={visible ? 'text' : 'password'}
           required
@@ -385,13 +409,13 @@ function PasswordField({
           autoComplete={autoComplete}
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm outline-none"
+          className={isDark ? 'min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-white outline-none placeholder:text-sky-100/34' : 'min-w-0 flex-1 bg-transparent px-4 py-3 text-sm outline-none'}
           placeholder={placeholder}
         />
         <button
           type="button"
           onClick={() => onVisibleChange(!visible)}
-          className="inline-flex w-12 shrink-0 items-center justify-center text-[var(--nclex-text-muted)] transition hover:text-[var(--nclex-blue)]"
+          className={isDark ? 'inline-flex w-12 shrink-0 items-center justify-center text-sky-100/58 transition hover:text-cyan-200' : 'inline-flex w-12 shrink-0 items-center justify-center text-[var(--nclex-text-muted)] transition hover:text-[var(--nclex-blue)]'}
           aria-label={visible ? 'Hide password' : 'Show password'}
         >
           {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
