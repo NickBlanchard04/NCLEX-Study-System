@@ -594,9 +594,20 @@ export function EmptyState({
 }
 
 const confidenceTone: Record<ConfidenceLevel, string> = {
-  low: 'border-[#f7d7a0] bg-[var(--nclex-warning-soft)] text-[var(--nclex-warning)]',
-  medium: 'border-[#c5dcfb] bg-[var(--nclex-blue-soft)] text-[var(--nclex-blue)]',
-  high: 'border-[#bfead8] bg-[var(--nclex-success-soft)] text-[var(--nclex-success)]',
+  low: 'border-amber-300/34 bg-amber-300/[0.08] text-amber-100 hover:bg-amber-300/14',
+  medium: 'border-cyan-300/34 bg-cyan-300/[0.08] text-cyan-100 hover:bg-cyan-300/14',
+  high: 'border-emerald-300/34 bg-emerald-300/[0.08] text-emerald-100 hover:bg-emerald-300/14',
+}
+
+const practiceActionButton = {
+  submit:
+    'inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-black text-white shadow-[0_14px_34px_rgba(251,191,36,0.2)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20 disabled:cursor-not-allowed disabled:border-slate-400/20 disabled:bg-slate-500/18 disabled:text-slate-200/45 disabled:shadow-none',
+  next:
+    'inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl border border-cyan-100/42 bg-[linear-gradient(180deg,#22d3ee_0%,#0e7490_100%)] px-5 py-3 text-sm font-black text-white shadow-[0_14px_34px_rgba(34,211,238,0.18)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-cyan-300/20',
+  finish:
+    'inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl border border-emerald-100/42 bg-[linear-gradient(180deg,#34d399_0%,#047857_100%)] px-5 py-3 text-sm font-black text-white shadow-[0_14px_34px_rgba(52,211,153,0.18)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-emerald-300/20',
+  review:
+    'inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl border border-violet-200/30 bg-violet-300/[0.08] px-5 py-3 text-sm font-black text-violet-100 shadow-[0_12px_28px_rgba(124,58,237,0.12)] transition hover:border-violet-100/56 hover:bg-violet-300/14 focus:outline-none focus:ring-4 focus:ring-violet-300/18',
 }
 
 export function QuestionSessionRunner({
@@ -884,6 +895,11 @@ export function QuestionSessionRunner({
     )
   }
 
+  const openReviewForCurrentAnswer = () => {
+    setSubmitted(true)
+    setShowRationale(true)
+  }
+
   const toggleChoice = (choiceId: string) => {
     if (existingResponse) return
     if (question.format === 'multiple-choice') {
@@ -961,7 +977,7 @@ export function QuestionSessionRunner({
   const evidenceBadges = [...tutorInsight.trustFlags, `Evidence: ${evidenceLevel}`]
 
   return (
-    <div className="space-y-6 pb-28 xl:pb-0">
+    <div className="space-y-6 pb-44 xl:pb-0">
       <Surface className="p-4 md:p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -1005,9 +1021,9 @@ export function QuestionSessionRunner({
                 className={clsx(
                   'flex h-9 w-9 items-center justify-center rounded-full border text-xs font-semibold transition',
                   index === session.currentIndex
-                    ? 'border-[var(--nclex-blue)] bg-[var(--nclex-blue)] text-white'
+                    ? 'border-amber-200/70 bg-amber-300/22 text-amber-50 shadow-[0_0_18px_rgba(251,191,36,0.18)]'
                     : answered
-                      ? 'border-[#bce8d4] bg-[var(--nclex-success-soft)] text-[var(--nclex-success)]'
+                      ? 'border-emerald-300/34 bg-emerald-300/[0.08] text-emerald-100'
                       : 'border-[var(--nclex-border)] bg-white text-[var(--nclex-text-muted)]',
                   session.config.noBacktracking && 'cursor-not-allowed opacity-60',
                 )}
@@ -1071,6 +1087,15 @@ export function QuestionSessionRunner({
                   type="button"
                   onClick={() => toggleChoice(choice.id)}
                   disabled={Boolean(existingResponse)}
+                  style={
+                    selected && !submitted
+                      ? {
+                          background: 'rgba(251, 191, 36, 0.13)',
+                          borderColor: 'rgba(251, 191, 36, 0.6)',
+                          boxShadow: '0 0 28px rgba(251, 191, 36, 0.18)',
+                        }
+                      : undefined
+                  }
                   className={clsx(
                     'nclex-answer flex min-h-[64px] w-full items-start gap-4 rounded-[16px] border p-4 text-left transition active:scale-[0.995] sm:min-h-0',
                     selected && 'nclex-answer-selected',
@@ -1083,7 +1108,7 @@ export function QuestionSessionRunner({
                     className={clsx(
                       'mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-xs font-semibold',
                       selected
-                        ? 'border-[var(--nclex-blue)] bg-[var(--nclex-blue)] text-white'
+                        ? 'border-amber-200/70 bg-amber-300/22 text-amber-50 shadow-[0_0_16px_rgba(251,191,36,0.16)]'
                         : 'border-[var(--nclex-border-strong)] bg-white text-[var(--nclex-text-muted)]',
                       submitted && correct && 'border-[var(--nclex-success)] bg-[var(--nclex-success)] text-white',
                       incorrectSelection && 'border-[var(--nclex-danger)] bg-[var(--nclex-danger)] text-white',
@@ -1101,12 +1126,9 @@ export function QuestionSessionRunner({
             {!submitted ? (
               <button
                 type="button"
-                onClick={() => {
-                  setSubmitted(true)
-                  setShowRationale(true)
-                }}
+                onClick={openReviewForCurrentAnswer}
                 disabled={selectedAnswers.length === 0}
-                className="nclex-btn-primary min-h-[48px] flex-1 rounded-xl px-5 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:bg-slate-300 md:flex-none"
+                className={clsx(practiceActionButton.submit, 'flex-1 md:flex-none')}
               >
                 Submit answer
               </button>
@@ -1115,7 +1137,7 @@ export function QuestionSessionRunner({
                 <button
                   type="button"
                   onClick={nextQuestion}
-                  className="nclex-btn-primary inline-flex min-h-[48px] flex-[1.2] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black md:flex-none"
+                  className={clsx(practiceActionButton.next, 'flex-[1.2] md:flex-none')}
                 >
                   Next question
                   <ArrowRight className="h-4 w-4" />
@@ -1124,7 +1146,7 @@ export function QuestionSessionRunner({
                 <button
                   type="button"
                   onClick={finishSession}
-                  className="nclex-btn-primary inline-flex min-h-[48px] flex-[1.2] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black md:flex-none"
+                  className={clsx(practiceActionButton.finish, 'flex-[1.2] md:flex-none')}
                 >
                   Finish session
                   <CheckCircle2 className="h-4 w-4" />
@@ -1139,7 +1161,7 @@ export function QuestionSessionRunner({
               <button
                 type="button"
                 onClick={() => setShowRationale((current) => !current)}
-                className="nclex-btn-secondary inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black md:flex-none"
+                className={clsx(practiceActionButton.review, 'flex-1 md:flex-none')}
               >
                 <Eye className="h-4 w-4" />
                 {showRationale ? 'Hide review' : 'Review rationale'}
@@ -1169,7 +1191,7 @@ export function QuestionSessionRunner({
                     >
                       {resultLabel}
                     </ReviewBadge>
-                    <ReviewBadge tone="blue" icon={<ArrowRight className="h-3.5 w-3.5" />}>
+                    <ReviewBadge tone="violet" icon={<ArrowRight className="h-3.5 w-3.5" />}>
                       Next action: {nextActionLabel}
                     </ReviewBadge>
                     {finalResponse ? (
@@ -1221,7 +1243,7 @@ export function QuestionSessionRunner({
                       <div className="md:col-span-2">
                         <RationaleCard
                           title="Miss pattern"
-                          tone="amber"
+                          tone="rose"
                           body={getMissReason(questionId, selectedAnswers)}
                         />
                       </div>
@@ -1230,7 +1252,7 @@ export function QuestionSessionRunner({
                       <div className="md:col-span-2">
                         <RationaleCard
                           title="Next repair"
-                          tone="blue"
+                          tone="rose"
                           body={finalRemediation.nextActionCopy}
                           badges={[finalRemediation.routeLabel]}
                         />
@@ -1243,7 +1265,7 @@ export function QuestionSessionRunner({
                     />
                     <RationaleCard
                       title="Test-taking cue"
-                      tone="blue"
+                      tone="violet"
                       body={`${question.nclexTip} ${tutorInsight.reviewTarget}. Watch for: ${tutorInsight.trap}`}
                       badges={evidenceBadges}
                     />
@@ -1321,7 +1343,43 @@ export function QuestionSessionRunner({
         <div className="mt-2">
           <ProgressBar value={session.responses.length / session.questionIds.length} />
         </div>
-        <div className="mt-3 flex flex-wrap gap-3">
+        <div className="mt-3 grid gap-2">
+          {!submitted ? (
+            <button
+              type="button"
+              onClick={openReviewForCurrentAnswer}
+              disabled={selectedAnswers.length === 0}
+              className={clsx(practiceActionButton.submit, 'w-full')}
+            >
+              Submit answer
+            </button>
+          ) : confidenceChosen ? (
+            !isLastQuestion ? (
+              <button
+                type="button"
+                onClick={nextQuestion}
+                className={clsx(practiceActionButton.next, 'w-full')}
+              >
+                Next question
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={finishSession}
+                className={clsx(practiceActionButton.finish, 'w-full')}
+              >
+                Finish session
+                <CheckCircle2 className="h-4 w-4" />
+              </button>
+            )
+          ) : (
+            <div className="flex min-h-[48px] w-full items-center justify-center rounded-xl border border-amber-300/22 bg-amber-300/[0.08] px-4 py-3 text-center text-sm font-black text-amber-100">
+              Choose confidence to continue
+            </div>
+          )}
+        </div>
+        <div className="mt-2 flex flex-wrap gap-3">
           <button
             type="button"
             onClick={previousQuestion}
@@ -1405,7 +1463,7 @@ function ReviewBadge({
   icon,
 }: {
   children: React.ReactNode
-  tone?: 'blue' | 'green' | 'amber' | 'red'
+  tone?: 'blue' | 'green' | 'amber' | 'red' | 'violet'
   icon?: React.ReactNode
 }) {
   const styles = {
@@ -1413,6 +1471,7 @@ function ReviewBadge({
     green: 'border-emerald-300/30 bg-emerald-300/10 text-emerald-200',
     amber: 'border-amber-300/32 bg-amber-300/10 text-amber-200',
     red: 'border-rose-300/32 bg-rose-300/10 text-rose-200',
+    violet: 'border-violet-300/30 bg-violet-300/10 text-violet-200',
   }[tone]
 
   return (
@@ -1454,25 +1513,27 @@ function RationaleCard({
 }: {
   title: string
   body: string
-  tone: 'blue' | 'green' | 'amber'
+  tone: 'blue' | 'green' | 'amber' | 'rose' | 'violet'
   badges?: string[]
 }) {
   const styles = {
-    blue: 'border-[#cfe1f7] bg-[#eef5ff] text-[var(--nclex-blue)]',
-    green: 'border-[#c8eddc] bg-[var(--nclex-success-soft)] text-[var(--nclex-success)]',
-    amber: 'border-[#ffe0b0] bg-[var(--nclex-warning-soft)] text-[var(--nclex-warning)]',
+    blue: 'border-cyan-300/24 bg-cyan-300/[0.07] text-cyan-100',
+    green: 'border-emerald-300/28 bg-emerald-300/[0.08] text-emerald-100',
+    amber: 'border-amber-300/30 bg-amber-300/[0.08] text-amber-100',
+    rose: 'border-rose-300/30 bg-rose-300/[0.08] text-rose-100',
+    violet: 'border-violet-300/30 bg-violet-300/[0.08] text-violet-100',
   }[tone]
 
   return (
     <div className={clsx('rounded-[16px] border p-4', styles)}>
       <p className="text-xs font-semibold uppercase tracking-[0.16em]">{title}</p>
-      <p className="mt-2 text-sm leading-6 text-[var(--nclex-text-secondary)]">{body}</p>
+      <p className="mt-2 text-sm leading-6 text-sky-100/72">{body}</p>
       {badges?.length ? (
         <div className="mt-3 flex flex-wrap gap-2">
           {badges.map((badge) => (
             <span
               key={badge}
-              className="rounded-lg border border-sky-300/35 bg-white/75 px-2.5 py-1 text-xs font-semibold leading-5 text-[var(--nclex-blue)]"
+              className="rounded-lg border border-current bg-white/[0.06] px-2.5 py-1 text-xs font-semibold leading-5 text-sky-100/78"
             >
               {badge}
             </span>

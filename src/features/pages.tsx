@@ -1461,16 +1461,16 @@ export function PracticeQuestionsPage() {
   const priorityCategory = category === 'All' ? trackCategories[0] : category
   const practicePresets = [
     {
-      title: 'Adaptive practice',
-      description: 'Mixed questions from the selected track and filters.',
-      action: 'Recommended',
-      tone: 'cyan' as const,
+      title: 'Start adaptive set',
+      description: 'Best everyday route: mixed questions tuned to the filters below.',
+      action: 'Start here',
+      tone: 'amber' as const,
       icon: <Target className="h-5 w-5" />,
       config: {},
     },
     {
       title: 'Repair missed questions',
-      description: 'Five missed items for a short remediation loop.',
+      description: 'Five misses for a short, direct remediation loop.',
       action: 'Repair misses',
       tone: 'rose' as const,
       icon: <TrendingDown className="h-5 w-5" />,
@@ -1478,7 +1478,7 @@ export function PracticeQuestionsPage() {
     },
     {
       title: 'New questions only',
-      description: 'Unused items for a cleaner read on readiness.',
+      description: 'Fresh items for a cleaner read on readiness.',
       action: 'Fresh set',
       tone: 'emerald' as const,
       icon: <Sparkles className="h-5 w-5" />,
@@ -1500,17 +1500,17 @@ export function PracticeQuestionsPage() {
   return (
     <PageStack>
       <CommandPageIntro
-        title={category === 'All' ? 'Build a focused practice set.' : `Train ${shortCategoryLabel(category)}.`}
-        description={`${questionCount} questions, ${difficulty === 'adaptive' ? 'adaptive difficulty' : `${difficulty} difficulty`}, ${format === 'mixed' ? 'mixed formats' : format.replaceAll('-', ' ')}. Keep the defaults for a clean practice signal or tune the bank below.`}
+        title="Question Bank"
+        description={`${questionCount} questions. ${category === 'All' ? 'Mixed category practice' : `Focused ${shortCategoryLabel(category)} practice`}. Start adaptive for the cleanest signal, or tune the set below.`}
         badges={
           <>
             <CommandBadge tone="cyan" icon={<BadgeCheck className="h-3.5 w-3.5" />}>
               {activeTrack.shortName}
             </CommandBadge>
-            <CommandBadge tone="emerald" icon={<ShieldCheck className="h-3.5 w-3.5" />}>
-              Practice evidence
+            <CommandBadge tone="amber" icon={<Zap className="h-3.5 w-3.5" />}>
+              Practice mode
             </CommandBadge>
-            <CommandBadge tone="amber" icon={<Clock3 className="h-3.5 w-3.5" />}>
+            <CommandBadge tone="emerald" icon={<ShieldCheck className="h-3.5 w-3.5" />}>
               Instant rationale
             </CommandBadge>
           </>
@@ -1520,7 +1520,7 @@ export function PracticeQuestionsPage() {
             <button
               type="button"
               onClick={() => launchPracticeSession()}
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-cyan-100/45 bg-[linear-gradient(180deg,#24b8ff_0%,#0b83d6_100%)] px-6 py-3 text-sm font-black text-white shadow-[0_12px_34px_rgba(14,165,233,0.28)] transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-cyan-200/55"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-6 py-3 text-sm font-black text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
             >
               {isPending ? 'Building set...' : 'Start focused set'}
               <ArrowRight className="h-4 w-4" />
@@ -1535,8 +1535,8 @@ export function PracticeQuestionsPage() {
           </>
         }
         aside={
-          <div className="h-full rounded-[1rem] border border-cyan-200/24 bg-cyan-300/[0.07] p-4">
-            <p className="text-xs font-black uppercase text-sky-100/64">Current set</p>
+          <div className="h-full rounded-[1rem] border border-amber-200/26 bg-amber-300/[0.08] p-4">
+            <p className="text-xs font-black uppercase text-amber-100/72">Ready set</p>
             <p className="mt-2 text-3xl font-black text-white">{questionCount}</p>
             <p className="text-sm font-semibold text-sky-100/70">questions queued</p>
             <div className="mt-4 space-y-2 text-sm font-semibold text-sky-100/68">
@@ -1548,17 +1548,17 @@ export function PracticeQuestionsPage() {
         }
         stats={
           <>
-            <CommandStatTile label="Questions" value={`${questionCount}`} detail="Current set length" icon={<ClipboardList className="h-4 w-4" />} tone="cyan" />
-            <CommandStatTile label="Track" value={activeTrack.shortName} detail="Blueprint-aligned bank" icon={<BadgeCheck className="h-4 w-4" />} tone="emerald" />
-            <CommandStatTile label="Review" value="Instant" detail="Rationale after each answer" icon={<BookOpen className="h-4 w-4" />} tone="amber" />
+            <CommandStatTile label="Practice" value={`${questionCount}`} detail="questions" icon={<ClipboardList className="h-4 w-4" />} tone="amber" />
+            <CommandStatTile label="Track" value={activeTrack.shortName} detail="blueprint bank" icon={<BadgeCheck className="h-4 w-4" />} tone="cyan" />
+            <CommandStatTile label="Review" value="Instant" detail="rationale" icon={<BookOpen className="h-4 w-4" />} tone="emerald" />
           </>
         }
       />
 
       <Surface>
         <SectionHeading
-          title="Start from a preset"
-          description="Three obvious routes cover most practice moments. Fine-tune below when needed."
+          title="Choose a practice route"
+          description="Amber starts a normal set, rose repairs misses, emerald gives you fresh questions."
         />
         <div className="mt-5 grid gap-3 md:grid-cols-3">
           {practicePresets.map((preset) => (
@@ -1579,8 +1579,8 @@ export function PracticeQuestionsPage() {
       <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
         <Surface>
           <SectionHeading
-            title="Adjust the set"
-            description="Keep the defaults unless you need a category, system, or missed-question repair."
+            title="Tune the set"
+            description="Use filters when you need precision. Otherwise, start adaptive and keep moving."
           />
           <div className="mt-5 grid gap-4 md:grid-cols-2">
             <Field label="Category">
@@ -1656,7 +1656,7 @@ export function PracticeQuestionsPage() {
         <Surface>
           <SectionHeading
             title="After this set"
-            description="After a set, missed items move into remediation and performance updates."
+            description="Misses become repairs. Finished sets update your performance readout."
           />
           <div className="mt-5 grid gap-3">
             <CommandActionCard
@@ -1673,7 +1673,7 @@ export function PracticeQuestionsPage() {
               title="Check performance"
               description="See whether practice is improving readiness signal."
               meta="Readout"
-              tone="emerald"
+              tone="violet"
               icon={<BarChart3 className="h-5 w-5" />}
               action={<ArrowRight className="h-4 w-4" />}
             />
@@ -1972,36 +1972,36 @@ export function QuickStudyPage() {
     <PageStack>
       <PageHeader
         eyebrow="Quick Study"
-        title="Start the rep. Repair one pattern."
-        description="A five-question clinical sprint with the rationale, confidence check, and next move kept close to the answer."
+        title="Quick Study"
+        description="Five questions. One priority. Answer, review, choose confidence, and move."
         action={
           <button
             type="button"
             onClick={() => startQuickStudy()}
-            className="nclex-btn-primary inline-flex min-h-[48px] items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold"
+            className="inline-flex min-h-[48px] items-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-black text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
           >
             <Sparkles className="h-4 w-4" />
             Start 5 questions
           </button>
         }
       />
-      <FocusPanel className="nclex-dark-panel text-white">
+      <FocusPanel className="border-amber-200/34 bg-[linear-gradient(135deg,rgba(251,191,36,0.16),rgba(6,28,49,0.92)_42%,rgba(2,8,18,0.94))] text-white shadow-[0_0_38px_rgba(251,191,36,0.12)]">
         <div className="grid gap-5 p-5 md:p-6 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-end">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-200">Next five questions</p>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-100/78">Next sprint</p>
             <h3 className="mt-3 max-w-3xl text-3xl font-black tracking-[-0.04em] text-white md:text-5xl">
-              {weakArea?.category ?? getExamCategories(activeTrack.id)[0]}
+              Train {shortCategoryLabel(weakArea?.category ?? getExamCategories(activeTrack.id)[0])}
             </h3>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-sky-100/72">
               {weakArea
-                ? `${Math.round(weakArea.accuracy * 100)}% accuracy here. Keep this short: answer, review, choose confidence, then move.`
-                : 'No attempt history yet. Start with high-yield safety and prioritization questions, then let the engine find the first repair pattern.'}
+                ? `${Math.round(weakArea.accuracy * 100)}% accuracy here. Keep the loop short and let the review tell you what to repair.`
+                : 'No attempt history yet. Start with high-yield safety and prioritization questions so Nurse Command can find the first repair pattern.'}
             </p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <button
                 type="button"
                 onClick={() => startQuickStudy()}
-                className="nclex-btn-primary inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black"
+                className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-black text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
               >
                 Start 5 questions
                 <ArrowRight className="h-4 w-4" />
@@ -2016,21 +2016,21 @@ export function QuickStudyPage() {
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2 xl:grid-cols-1">
-            <QuickMetric label="Set" value="5" detail="Short rep." />
-            <QuickMetric label="Review" value="Now" detail="Rationale after submit." />
-            <QuickMetric label="Finish" value="Repair" detail="Next action at the end." />
+            <CommandStatTile label="Set" value="5" detail="questions" tone="amber" icon={<Zap className="h-4 w-4" />} />
+            <CommandStatTile label="Review" value="Now" detail="rationale" tone="emerald" icon={<BookOpen className="h-4 w-4" />} />
+            <CommandStatTile label="Repair" value="Next" detail="after finish" tone="rose" icon={<Target className="h-4 w-4" />} />
           </div>
         </div>
       </FocusPanel>
 
       <div className="grid gap-5 lg:grid-cols-3">
-        <Surface>
+        <Surface className="border-amber-200/24 bg-amber-300/[0.06]">
           <SectionHeading title="1. Decide" description="Read the scenario, choose the safest answer, and submit without hunting through side panels." />
         </Surface>
-        <Surface>
+        <Surface className="border-emerald-200/24 bg-emerald-300/[0.06]">
           <SectionHeading title="2. Review" description="The rationale opens after the answer so the clinical decision stays primary." />
         </Surface>
-        <Surface>
+        <Surface className="border-rose-200/24 bg-rose-300/[0.06]">
           <SectionHeading title="3. Repair" description="The finish screen turns misses into a remediation or focused practice route." />
         </Surface>
       </div>
