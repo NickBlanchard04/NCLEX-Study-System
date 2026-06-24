@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   AlertTriangle,
   ArrowLeft,
@@ -110,6 +110,192 @@ export function FocusPanel({
   children: React.ReactNode
 }) {
   return <Surface className={clsx('overflow-hidden p-0', className)}>{children}</Surface>
+}
+
+type CommandTone = 'cyan' | 'emerald' | 'amber' | 'rose' | 'slate' | 'violet'
+
+const commandToneStyles: Record<CommandTone, {
+  badge: string
+  icon: string
+  stat: string
+  line: string
+  action: string
+}> = {
+  cyan: {
+    badge: 'border-cyan-200/26 bg-cyan-300/10 text-cyan-100',
+    icon: 'border-cyan-200/30 bg-cyan-300/14 text-cyan-100',
+    stat: 'border-cyan-200/22 bg-cyan-300/[0.08] text-cyan-100',
+    line: 'bg-cyan-300',
+    action: 'border-cyan-200/24 bg-cyan-300/[0.07] hover:border-cyan-200/45 hover:bg-cyan-300/[0.11]',
+  },
+  emerald: {
+    badge: 'border-emerald-200/26 bg-emerald-300/10 text-emerald-100',
+    icon: 'border-emerald-200/30 bg-emerald-300/14 text-emerald-100',
+    stat: 'border-emerald-200/22 bg-emerald-300/[0.08] text-emerald-100',
+    line: 'bg-emerald-300',
+    action: 'border-emerald-200/24 bg-emerald-300/[0.07] hover:border-emerald-200/45 hover:bg-emerald-300/[0.11]',
+  },
+  amber: {
+    badge: 'border-amber-200/26 bg-amber-300/10 text-amber-100',
+    icon: 'border-amber-200/30 bg-amber-300/14 text-amber-100',
+    stat: 'border-amber-200/22 bg-amber-300/[0.08] text-amber-100',
+    line: 'bg-amber-300',
+    action: 'border-amber-200/24 bg-amber-300/[0.07] hover:border-amber-200/45 hover:bg-amber-300/[0.11]',
+  },
+  rose: {
+    badge: 'border-rose-200/26 bg-rose-300/10 text-rose-100',
+    icon: 'border-rose-200/30 bg-rose-300/14 text-rose-100',
+    stat: 'border-rose-200/22 bg-rose-300/[0.08] text-rose-100',
+    line: 'bg-rose-300',
+    action: 'border-rose-200/24 bg-rose-300/[0.07] hover:border-rose-200/45 hover:bg-rose-300/[0.11]',
+  },
+  slate: {
+    badge: 'border-slate-200/18 bg-slate-300/[0.07] text-slate-100',
+    icon: 'border-slate-200/20 bg-slate-300/12 text-slate-100',
+    stat: 'border-slate-200/18 bg-slate-300/[0.07] text-slate-100',
+    line: 'bg-slate-300',
+    action: 'border-slate-200/16 bg-slate-300/[0.055] hover:border-slate-200/35 hover:bg-slate-300/[0.09]',
+  },
+  violet: {
+    badge: 'border-fuchsia-200/22 bg-fuchsia-300/10 text-fuchsia-100',
+    icon: 'border-fuchsia-200/26 bg-fuchsia-300/14 text-fuchsia-100',
+    stat: 'border-fuchsia-200/20 bg-fuchsia-300/[0.08] text-fuchsia-100',
+    line: 'bg-fuchsia-300',
+    action: 'border-fuchsia-200/22 bg-fuchsia-300/[0.07] hover:border-fuchsia-200/40 hover:bg-fuchsia-300/[0.11]',
+  },
+}
+
+export function CommandBadge({
+  children,
+  icon,
+  tone = 'cyan',
+}: {
+  children: React.ReactNode
+  icon?: React.ReactNode
+  tone?: CommandTone
+}) {
+  return (
+    <span className={clsx('inline-flex min-h-8 items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-black', commandToneStyles[tone].badge)}>
+      {icon}
+      {children}
+    </span>
+  )
+}
+
+export function CommandStatTile({
+  label,
+  value,
+  detail,
+  icon,
+  tone = 'cyan',
+}: {
+  label: string
+  value: string
+  detail: string
+  icon?: React.ReactNode
+  tone?: CommandTone
+}) {
+  return (
+    <div className={clsx('min-w-0 rounded-xl border px-2 py-2.5 sm:px-3 sm:py-3', commandToneStyles[tone].stat)}>
+      <div className="flex items-center gap-1.5 text-[0.68rem] font-black uppercase sm:gap-2 sm:text-xs">
+        {icon ? <span className="hidden sm:inline-flex">{icon}</span> : null}
+        <span className="truncate">{label}</span>
+      </div>
+      <p className="mt-1.5 truncate text-xl font-black text-white sm:mt-2 sm:text-2xl">{value}</p>
+      <p className="truncate text-[0.68rem] font-semibold text-sky-100/58 sm:text-xs">{detail}</p>
+    </div>
+  )
+}
+
+export function CommandPageIntro({
+  title,
+  description,
+  badges,
+  action,
+  aside,
+  stats,
+}: {
+  title: string
+  description: string
+  badges?: React.ReactNode
+  action?: React.ReactNode
+  aside?: React.ReactNode
+  stats?: React.ReactNode
+}) {
+  return (
+    <FocusPanel>
+      <div className="relative overflow-hidden bg-[#061c31] p-4 text-white sm:p-5 md:p-6">
+        <div className="pointer-events-none absolute inset-0 opacity-35 [background-image:linear-gradient(rgba(125,211,252,0.12)_1px,transparent_1px),linear-gradient(90deg,rgba(125,211,252,0.09)_1px,transparent_1px)] [background-size:38px_38px]" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,#22d3ee_0%,#34d399_38%,#fbbf24_72%,#f472b6_100%)]" />
+        <div className={clsx('relative grid gap-5', aside && 'lg:grid-cols-[minmax(0,1fr)_250px] lg:items-stretch')}>
+          <div className="min-w-0">
+            {badges ? <div className="flex flex-wrap gap-2">{badges}</div> : null}
+            <h2 className={clsx('max-w-3xl font-black leading-[1.08] text-white', badges ? 'mt-5' : '', 'text-[2rem] sm:text-3xl md:text-4xl')}>
+              {title}
+            </h2>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-sky-100/78">{description}</p>
+            {action ? <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">{action}</div> : null}
+          </div>
+          {aside ? <div className="hidden sm:block">{aside}</div> : null}
+        </div>
+        {stats ? <div className="relative mt-5 grid grid-cols-3 gap-2 border-t border-white/10 pt-4">{stats}</div> : null}
+      </div>
+    </FocusPanel>
+  )
+}
+
+export function CommandActionCard({
+  title,
+  description,
+  meta,
+  icon,
+  tone = 'cyan',
+  action,
+  onClick,
+  to,
+}: {
+  title: string
+  description: string
+  meta?: string
+  icon?: React.ReactNode
+  tone?: CommandTone
+  action?: React.ReactNode
+  onClick?: () => void
+  to?: string
+}) {
+  const content = (
+    <>
+      <span className={clsx('absolute inset-y-0 left-0 w-1', commandToneStyles[tone].line)} />
+      <div className="flex items-start gap-3">
+        {icon ? (
+          <span className={clsx('inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border', commandToneStyles[tone].icon)}>
+            {icon}
+          </span>
+        ) : null}
+        <span className="min-w-0 flex-1">
+          {meta ? <span className="block text-xs font-black uppercase text-sky-100/54">{meta}</span> : null}
+          <span className="block text-sm font-black text-white">{title}</span>
+          <span className="mt-1 block text-sm leading-6 text-sky-100/62">{description}</span>
+        </span>
+        {action ? <span className="shrink-0 text-sm font-black text-cyan-100">{action}</span> : null}
+      </div>
+    </>
+  )
+  const className = clsx('relative block min-h-[6.25rem] w-full overflow-hidden rounded-[1rem] border p-4 text-left transition focus:outline-none focus:ring-2 focus:ring-cyan-200/45', commandToneStyles[tone].action)
+
+  if (to) {
+    return (
+      <Link to={to} className={className}>
+        {content}
+      </Link>
+    )
+  }
+
+  return (
+    <button type="button" onClick={onClick} className={className}>
+      {content}
+    </button>
+  )
 }
 
 export function DetailGrid({

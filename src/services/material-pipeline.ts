@@ -36,6 +36,39 @@ const splitParagraphs = (text: string) =>
 
 const cleanSentence = (value: string) => value.replace(/\s+/g, ' ').trim()
 
+const monthNamePattern =
+  '(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)'
+const monthYearPattern = new RegExp(`\\b${monthNamePattern}\\s+\\d{4}\\b`, 'gi')
+const sourceDomainPattern =
+  /\b(?:https?:\/\/|www\.)\S+|\b[a-z0-9.-]+\.(?:com|org|edu|gov|net)(?:\/\S*)?/gi
+
+const genericConceptLabels = new Set([
+  'answer',
+  'answers',
+  'background',
+  'content',
+  'definition',
+  'description',
+  'findings',
+  'information',
+  'key point',
+  'material',
+  'note',
+  'notes',
+  'objective',
+  'objectives',
+  'overview',
+  'purpose',
+  'question',
+  'range',
+  'result',
+  'results',
+  'source',
+  'study material',
+  'table',
+  'value',
+])
+
 const truncate = (value: string, max = MAX_CARD_BACK) => {
   const cleaned = cleanSentence(value)
   if (cleaned.length <= max) return cleaned
@@ -43,7 +76,61 @@ const truncate = (value: string, max = MAX_CARD_BACK) => {
   return `${clipped}...`
 }
 
+const stripSourceArtifacts = (value: string) =>
+  value
+    .replace(/â€¢/g, '\n- ')
+    .replace(/[•·▪◦]/g, '\n- ')
+    .replace(/\b(?:doi|pmid|issn)\s*[:#]?\s*\S+/gi, ' ')
+    .replace(sourceDomainPattern, ' ')
+    .replace(monthYearPattern, ' ')
+    .replace(/\bpage\s+\d+\s+(?:of\s+\d+)?\b/gi, ' ')
+    .replace(/\b(?:retrieved|accessed|downloaded)\s+(?:from|on)\b.*$/gim, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+const isSourceNoiseLine = (line: string) => {
+  const raw = cleanSentence(line)
+  const stripped = cleanSentence(stripSourceArtifacts(line))
+  const lowerRaw = raw.toLowerCase()
+
+  if (!raw) return true
+  if (stripped.length >= 32 && stripped !== raw) return false
+  if (/^(?:page\s*)?\d+(?:\s+of\s+\d+)?$/i.test(raw)) return true
+  if (new RegExp(`^${monthNamePattern}\\s+\\d{4}$`, 'i').test(raw)) return true
+  if (/(?:https?:\/\/|www\.|\bdoi\b|\bpmid\b|\bissn\b)/i.test(raw)) return true
+  if (
+    [
+      'all rights reserved',
+      'author manuscript',
+      'copyright',
+      'downloaded from',
+      'frontiersin.org',
+      'nursingcenter.com',
+      'publisher',
+      'retrieved from',
+    ].some((token) => lowerRaw.includes(token))
+  ) {
+    return true
+  }
+  if (/^(?:volume|vol\.|issue|copyright|references)\b/i.test(raw)) return true
+
+  return false
+}
+
+const cleanStudyFragment = (value: string) => {
+  const cleaned = stripSourceArtifacts(value)
+    .replace(/^(?:answer|finding|findings|note|notes|question|range|result|results|value)\s*[:;-]\s*/i, '')
+    .replace(/^of\s+/i, '')
+    .replace(/\s+([,.;:])/g, '$1')
+    .replace(/^[,;:\s-]+/, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  return cleaned
+}
+
 const isLikelyFrontMatter = (paragraph: string) => {
+  if (isSourceNoiseLine(paragraph)) return true
   const lower = paragraph.toLowerCase()
   const metadataHits = [
     'frontiersin.org',
@@ -78,15 +165,23 @@ export function cleanExtractedStudyText(rawText: string) {
     .replace(/\n{3,}/g, '\n\n')
     .trim()
 
-  const bodyStartMatch = normalized.match(
+  const withoutLineNoise = normalized
+    .split('\n')
+    .map((line) => cleanStudyFragment(line))
+    .filter((line) => line && !isSourceNoiseLine(line))
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+
+  const bodyStartMatch = withoutLineNoise.match(
     /\b(abstract|background|objective|objectives|purpose|introduction)\b[:\s]/i,
   )
   const bodyStart = bodyStartMatch?.index ?? -1
-  const bodyEndMatch = normalized.match(
+  const bodyEndMatch = withoutLineNoise.match(
     /\b(references|acknowledg(e)?ments|supplementary material|author contributions|conflict of interest)\b[:\s]/i,
   )
   const bodyEnd = bodyEndMatch?.index ?? -1
-  const scopedText = normalized
+  const scopedText = withoutLineNoise
     .slice(bodyStart >= 0 && bodyStart < 9000 ? bodyStart : 0, bodyEnd > 0 ? bodyEnd : undefined)
     .replace(/\b(Abstract|Background|Objective|Objectives|Purpose|Introduction|Methods?|Results?|Discussion|Conclusions?)\b[:\s]*/gi, '\n\n$1: ')
     .replace(/\n{3,}/g, '\n\n')
@@ -287,15 +382,16 @@ export function chunkMaterialContent(materialText: string) {
   let order = 0
 
   paragraphs.forEach((paragraph) => {
-    if (isLikelyFrontMatter(paragraph)) return
+    const content = cleanStudyFragment(paragraph)
+    if (!content || isLikelyFrontMatter(content)) return
     const headingLike =
-      paragraph.length <= 70 &&
-      paragraph.split(' ').length <= 8 &&
-      !paragraph.includes('.') &&
-      !paragraph.includes(':')
+      content.length <= 70 &&
+      content.split(' ').length <= 8 &&
+      !content.includes('.') &&
+      !content.includes(':')
 
     if (headingLike) {
-      currentHeading = truncate(paragraph, 48).replace(/\.+$/, '')
+      currentHeading = truncate(content, 48).replace(/\.+$/, '')
       return
     }
 
@@ -303,7 +399,7 @@ export function chunkMaterialContent(materialText: string) {
       id: crypto.randomUUID(),
       materialId: '',
       title: currentHeading,
-      content: paragraph,
+      content,
       order,
     })
     order += 1
@@ -327,50 +423,304 @@ export function chunkMaterialContent(materialText: string) {
   return assets.slice(0, 20)
 }
 
-const toSentence = (content: string) => {
-  const sentence =
-    content
-      .split(/(?<=[.?!])\s+/)
-      .map(cleanSentence)
-      .find((item) => item.length > 35 && !isLikelyFrontMatter(item)) ?? content
-  return truncate(sentence, MAX_CARD_BACK)
-}
-
-const safeHeading = (heading: string) => {
-  const cleaned = truncate(heading, 56)
-  if (!cleaned || cleaned === 'Overview') return 'this study material'
-  if (isLikelyFrontMatter(cleaned)) return 'this study material'
-  return cleaned
-}
-
-const normalizeFlashcardCandidate = (item: { front: string; back: string }) => {
-  const front = truncate(item.front, MAX_CARD_FRONT)
-  const back = truncate(item.back, MAX_CARD_BACK)
-  if (front.length < 8 || back.length < 16) return null
-  if (front.toLowerCase() === back.toLowerCase()) return null
-  if (isLikelyFrontMatter(front) || isLikelyFrontMatter(back)) return null
-  return { front, back }
-}
-
 const uniqueByKey = <T,>(items: T[], getKey: (item: T) => string) => {
   const seen = new Set<string>()
   return items.filter((item) => {
-    const key = getKey(item)
+    const key = getKey(item).toLowerCase().replace(/\s+/g, ' ').trim()
     if (seen.has(key)) return false
     seen.add(key)
     return true
   })
 }
 
-const buildChoices = (correct: string, distractors: string[]): AnswerChoice[] => {
-  const shuffled = [correct, ...distractors.slice(0, 3)]
-    .sort(() => Math.random() - 0.5)
-    .map((text, index) => ({
-      id: String.fromCharCode(65 + index),
-      text,
-    }))
-  return shuffled
+type LearningPointKind =
+  | 'assessment'
+  | 'causes'
+  | 'general'
+  | 'lab'
+  | 'medication'
+  | 'priority'
+  | 'safety'
+
+interface LearningPoint {
+  topic: string
+  statement: string
+  sourceTitle: string
+  kind: LearningPointKind
 }
+
+const clinicalTopicPatterns: Array<{ pattern: RegExp; label: string; kind: LearningPointKind }> = [
+  {
+    pattern:
+      /\b(?:thrombocytopenia|platelets?)\b(?=.*\b(?:bone marrow|destruction|production|sepsis|sequestration|spleen|splenic|autoimmune|drug-induced))/i,
+    label: 'thrombocytopenia causes',
+    kind: 'causes',
+  },
+  { pattern: /\btotal protein\b|\balbumin\b/i, label: 'total protein lab value', kind: 'lab' },
+  { pattern: /\bpotassium\b|\bhyperkalemia\b|\bhypokalemia\b/i, label: 'potassium lab value', kind: 'lab' },
+  { pattern: /\bsodium\b|\bhypernatremia\b|\bhyponatremia\b/i, label: 'sodium lab value', kind: 'lab' },
+  { pattern: /\bglucose\b|\binsulin\b|\bhypoglycemia\b|\bhyperglycemia\b/i, label: 'glucose control', kind: 'lab' },
+  { pattern: /\bhemoglobin\b|\bhematocrit\b|\bbleeding\b/i, label: 'bleeding risk', kind: 'safety' },
+  { pattern: /\binfection\b|\bsterile\b|\bsepsis\b/i, label: 'infection and sepsis safety', kind: 'safety' },
+  { pattern: /\bairway\b|\bbreathing\b|\boxygen\b|\bo2\b/i, label: 'oxygenation priority', kind: 'priority' },
+  { pattern: /\bdelegate|delegation|uap|lpn|charge nurse\b/i, label: 'delegation priority', kind: 'priority' },
+  { pattern: /\bmedication\b|\bdrug\b|\bdose\b|\btoxicity\b|\bcontraindication\b/i, label: 'medication safety', kind: 'medication' },
+  { pattern: /\bfluid\b|\belectrolyte\b|\bdehydration\b|\bedema\b/i, label: 'fluid and electrolyte balance', kind: 'lab' },
+]
+
+const fallbackDistractors = [
+  'The nurse should treat the cue as stable without completing a focused assessment.',
+  'The nurse should delay clinical judgment until an unrelated finding appears.',
+  'The priority is to document the topic label before interpreting the client cue.',
+  'The safest response is to choose an intervention unrelated to the current finding.',
+]
+
+const sentenceCase = (value: string) => {
+  const cleaned = cleanSentence(value)
+  if (!cleaned) return cleaned
+  return `${cleaned.charAt(0).toUpperCase()}${cleaned.slice(1)}`
+}
+
+const ensureTerminalPunctuation = (value: string) => {
+  const cleaned = cleanSentence(value)
+  if (!cleaned) return cleaned
+  return /[.!?]$/.test(cleaned) ? cleaned : `${cleaned}.`
+}
+
+const lowerFirst = (value: string) => {
+  const cleaned = cleanSentence(value)
+  if (!cleaned) return cleaned
+  return `${cleaned.charAt(0).toLowerCase()}${cleaned.slice(1)}`
+}
+
+const normalizeConceptLabel = (value: string) =>
+  cleanStudyFragment(value)
+    .replace(/\b(?:laboratory value|nursing considerations|normal range|range)\b/gi, '')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+const isMeaningfulConceptLabel = (value: string) => {
+  const normalized = normalizeConceptLabel(value)
+  const lower = normalized.toLowerCase()
+  const wordCount = normalized.split(/\s+/).filter(Boolean).length
+
+  if (!normalized || normalized.length < 4 || normalized.length > 80) return false
+  if (wordCount > 8) return false
+  if (genericConceptLabels.has(lower)) return false
+  if (/^\d+|^[a-d]$/i.test(normalized)) return false
+  if (isSourceNoiseLine(normalized) || isLikelyFrontMatter(normalized)) return false
+
+  return /[a-z]/i.test(normalized)
+}
+
+const safeHeading = (heading: string) => {
+  const cleaned = normalizeConceptLabel(truncate(heading, 56))
+  if (!isMeaningfulConceptLabel(cleaned)) return 'uploaded nursing concept'
+  return cleaned
+}
+
+const inferTopicFromText = (text: string, fallbackTitle: string) => {
+  const cleanedText = cleanStudyFragment(text)
+  const matchedTopic = clinicalTopicPatterns.find(({ pattern }) => pattern.test(cleanedText))
+  if (matchedTopic) return matchedTopic.label
+
+  const title = normalizeConceptLabel(fallbackTitle)
+  if (isMeaningfulConceptLabel(title)) return title
+
+  const phraseMatch = cleanedText.match(
+    /\b(?:[a-z]+(?:emia|osis|itis|pathy|tion|sion)|platelet(?:s)?|protein|albumin|potassium|sodium|calcium|magnesium|glucose|insulin|sepsis|infection|oxygenation|delegation)(?:\s+[a-z]+){0,3}\b/i,
+  )
+  const phrase = phraseMatch ? normalizeConceptLabel(phraseMatch[0]) : ''
+  return isMeaningfulConceptLabel(phrase) ? phrase : 'uploaded nursing concept'
+}
+
+const inferLearningKind = (topic: string, statement: string): LearningPointKind => {
+  const haystack = `${topic} ${statement}`
+  const matchedTopic = clinicalTopicPatterns.find(({ pattern }) => pattern.test(haystack))
+  if (matchedTopic) return matchedTopic.kind
+  if (/\b(?:cause|caused|causes|due to|result(?:s)? from|production|destruction|sequestration|risk factor)\b/i.test(haystack)) {
+    return 'causes'
+  }
+  if (/\b(?:lab|range|value|sodium|potassium|protein|albumin|glucose|hemoglobin|hematocrit|platelet)\b/i.test(haystack)) {
+    return 'lab'
+  }
+  if (/\b(?:priority|first|immediate|airway|breathing|circulation|unstable|deteriorate)\b/i.test(haystack)) {
+    return 'priority'
+  }
+  if (/\b(?:safety|precaution|fall|bleeding|infection|sterile|sepsis)\b/i.test(haystack)) return 'safety'
+  if (/\b(?:medication|drug|dose|administer|toxicity|contraindication)\b/i.test(haystack)) return 'medication'
+  if (/\b(?:assess|assessment|monitor|finding|symptom|sign)\b/i.test(haystack)) return 'assessment'
+  return 'general'
+}
+
+const polishLearningStatement = (statement: string, kind: LearningPointKind, topic: string) => {
+  const cleaned = cleanStudyFragment(statement)
+    .replace(/^(?:can include|include|includes)\s+/i, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (!cleaned) return cleaned
+
+  if (
+    kind === 'causes' &&
+    !/\b(?:cause|caused|causes|due to|include|includes|result(?:s)? from)\b/i.test(cleaned)
+  ) {
+    return ensureTerminalPunctuation(`Common causes include ${lowerFirst(cleaned).replace(/[.;:,]+$/, '')}`)
+  }
+
+  if (topic.toLowerCase().includes('lab value') && /\b\d/.test(cleaned) && !/\bnursing\b/i.test(cleaned)) {
+    return ensureTerminalPunctuation(sentenceCase(cleaned))
+  }
+
+  return ensureTerminalPunctuation(sentenceCase(cleaned))
+}
+
+const extractStudySegments = (content: string) =>
+  cleanStudyFragment(content)
+    .split(/(?<=[.?!])\s+|\s+-\s+|\n+|;\s+/)
+    .map((segment) => cleanStudyFragment(segment))
+    .filter((segment) => {
+      if (segment.length < 28 || segment.length > 720) return false
+      if (isSourceNoiseLine(segment) || isLikelyFrontMatter(segment)) return false
+      if (/^(?:abstract|background|objective|purpose|introduction|methods?|discussion|conclusion)s?\b[:\s]*$/i.test(segment)) {
+        return false
+      }
+      return true
+    })
+
+const learningPointFromSegment = (segment: string, assetTitle: string): LearningPoint | null => {
+  const colonMatch = segment.match(/^([^:]{2,90}):\s*(.{20,})$/)
+  const label = colonMatch ? normalizeConceptLabel(colonMatch[1]) : ''
+  const statementSource = colonMatch ? colonMatch[2] : segment
+  const baseStatement = cleanStudyFragment(statementSource)
+
+  if (baseStatement.length < 28 || isSourceNoiseLine(baseStatement) || isLikelyFrontMatter(baseStatement)) {
+    return null
+  }
+
+  const topic = isMeaningfulConceptLabel(label)
+    ? label
+    : inferTopicFromText(`${assetTitle} ${baseStatement}`, assetTitle)
+  const kind = inferLearningKind(topic, baseStatement)
+  const statement = polishLearningStatement(baseStatement, kind, topic)
+
+  if (statement.length < 32 || statement.length > MAX_CARD_BACK) return null
+
+  return {
+    topic,
+    statement,
+    sourceTitle: safeHeading(assetTitle),
+    kind,
+  }
+}
+
+const extractLearningPoints = (material: StudyMaterial): LearningPoint[] => {
+  const points = material.assets.flatMap((asset) =>
+    extractStudySegments(asset.content)
+      .map((segment) => learningPointFromSegment(segment, asset.title))
+      .filter((point): point is LearningPoint => Boolean(point)),
+  )
+
+  const fallbackText = cleanExtractedStudyText(
+    `${material.preview}\n\n${material.assets.map((asset) => asset.content).join('\n\n')}`,
+  )
+  const fallbackPoints = extractStudySegments(fallbackText)
+    .map((segment) => learningPointFromSegment(segment, material.displayTitle))
+    .filter((point): point is LearningPoint => Boolean(point))
+
+  return uniqueByKey([...points, ...fallbackPoints], (point) => `${point.topic}-${point.statement}`).slice(0, 12)
+}
+
+const makeFlashcardFront = (point: LearningPoint) => {
+  const topic = point.topic === 'uploaded nursing concept' ? point.sourceTitle : point.topic
+  if (point.kind === 'causes') {
+    return `What are common causes of ${topic.replace(/\s+causes$/i, '')}?`
+  }
+  if (point.kind === 'lab') return `What is the nursing significance of ${topic}?`
+  if (point.kind === 'priority') return `What priority point matters for ${topic}?`
+  if (point.kind === 'safety') return `What safety point should you remember about ${topic}?`
+  if (point.kind === 'medication') return `What medication safety point applies to ${topic}?`
+  if (point.kind === 'assessment') return `What assessment point matters for ${topic}?`
+  return `What is the key nursing point about ${topic}?`
+}
+
+const hasBrokenGeneratedShape = (value: string) => {
+  const cleaned = cleanSentence(value).toLowerCase()
+  if (!cleaned) return true
+  if (/(?:https?:\/\/|www\.|\bdoi\b|\bpmid\b|\bissn\b)/i.test(value)) return true
+  if (/\b(?:frontiersin\.org|nursingcenter\.com|copyright|publisher|all rights reserved)\b/i.test(value)) {
+    return true
+  }
+  if (/what should you know about (?:result|results|value|source)\??/i.test(value)) return true
+  if (/^what is a key point about (?:overview|this study material|uploaded nursing concept)\??$/i.test(value)) {
+    return true
+  }
+  return false
+}
+
+const normalizeFlashcardCandidate = (item: { front: string; back: string }) => {
+  const front = truncate(sentenceCase(item.front).replace(/\.+$/, '?').replace(/\?+$/, '?'), MAX_CARD_FRONT)
+  const back = truncate(ensureTerminalPunctuation(item.back), MAX_CARD_BACK)
+  if (front.length < 14 || back.length < 24) return null
+  if (front.toLowerCase() === back.toLowerCase()) return null
+  if (hasBrokenGeneratedShape(front) || hasBrokenGeneratedShape(back)) return null
+  if (isLikelyFrontMatter(front) || isLikelyFrontMatter(back)) return null
+  return { front, back }
+}
+
+const cleanChoiceText = (value: string) => {
+  const cleaned = truncate(ensureTerminalPunctuation(value), 190)
+  return cleaned.replace(/\s+/g, ' ').trim()
+}
+
+const buildChoices = (correct: string, distractors: string[]): AnswerChoice[] => {
+  const correctText = cleanChoiceText(correct)
+  const options = uniqueByKey(
+    [correctText, ...distractors.map(cleanChoiceText), ...fallbackDistractors.map(cleanChoiceText)].filter(
+      (choice) => choice.length >= 18 && !hasBrokenGeneratedShape(choice),
+    ),
+    (choice) => choice,
+  ).slice(0, 4)
+  const safeOptions = options.length ? options : [correctText]
+  const rotation = correctText.length % safeOptions.length
+  const ordered = [...safeOptions.slice(rotation), ...safeOptions.slice(0, rotation)]
+
+  return ordered.map((text, index) => ({
+    id: String.fromCharCode(65 + index),
+    text,
+  }))
+}
+
+const buildQuestionPrompt = (point: LearningPoint, index: number) => {
+  const topic = point.topic === 'uploaded nursing concept' ? point.sourceTitle : point.topic
+  if (point.kind === 'causes') {
+    return `A nurse is reviewing ${topic.replace(/\s+causes$/i, '')}. Which statement best explains the cause pattern from the material?`
+  }
+  if (point.kind === 'lab') {
+    return `A nurse is studying ${topic}. Which statement best reflects the nursing interpretation from the material?`
+  }
+  if (point.kind === 'priority') {
+    return `A nurse is applying the uploaded material about ${topic}. Which point should guide priority thinking?`
+  }
+  if (point.kind === 'safety') {
+    return `A nurse is using this material to plan safe care for ${topic}. Which statement is best supported?`
+  }
+  if (index % 2 === 0) {
+    return `A nurse is reviewing ${topic}. Which statement is best supported by the uploaded material?`
+  }
+  return `Which study statement best matches the uploaded material about ${topic}?`
+}
+
+const qualityFilterQuestions = (questions: MaterialQuestion[]) =>
+  questions.filter((question) => {
+    if (hasBrokenGeneratedShape(question.prompt) || question.prompt.length < 40) return false
+    if (question.choices.length !== 4) return false
+    if (new Set(question.choices.map((choice) => choice.text.toLowerCase())).size !== 4) return false
+    if (question.choices.some((choice) => hasBrokenGeneratedShape(choice.text) || choice.text.length < 18)) return false
+    if (question.correctAnswer.length !== 1) return false
+    if (!question.choices.some((choice) => choice.id === question.correctAnswer[0])) return false
+    return question.rationale.length >= 60 && !hasBrokenGeneratedShape(question.rationale)
+  })
 
 const inferCategory = (material: StudyMaterial) => {
   const haystack = `${material.displayTitle} ${material.preview}`.toLowerCase()
@@ -545,6 +895,105 @@ export function materialNeedsRepair(
 }
 
 export function generateCleanFlashcardsFromMaterial(material: StudyMaterial): MaterialFlashcard[] {
+  let candidates = uniqueByKey(
+    extractLearningPoints(material)
+      .map((point) =>
+        normalizeFlashcardCandidate({
+          front: makeFlashcardFront(point),
+          back: point.statement,
+        }),
+      )
+      .filter((item): item is { front: string; back: string } => Boolean(item)),
+    (item) => `${item.front}-${item.back}`,
+  ).slice(0, 12)
+
+  if (!candidates.length) {
+    const fallbackText = cleanExtractedStudyText(
+      `${material.preview}\n\n${material.assets.map((asset) => asset.content).join('\n\n')}`,
+    )
+    const fallbackSentences = fallbackText
+      .split(/(?<=[.?!])\s+/)
+      .map(cleanStudyFragment)
+      .filter((sentence) => sentence.length > 40 && !isLikelyFrontMatter(sentence))
+      .slice(0, 12)
+
+    candidates = fallbackSentences
+      .map((sentence, index) =>
+        normalizeFlashcardCandidate({
+          front: `What is study point ${index + 1} from this material?`,
+          back: sentence,
+        }),
+      )
+      .filter((item): item is { front: string; back: string } => Boolean(item))
+  }
+
+  return candidates.map((item) => ({
+    id: crypto.randomUUID(),
+    sourceMaterialId: material.id,
+    sourceTitle: material.displayTitle,
+    front: item.front,
+    back: item.back,
+    status: 'new',
+    createdAt: new Date().toISOString(),
+  }))
+}
+
+export function generateCleanQuestionsFromMaterial(
+  material: StudyMaterial,
+  flashcards: MaterialFlashcard[],
+): MaterialQuestion[] {
+  if (!flashcards.length) return []
+
+  const learningPoints = extractLearningPoints(material)
+  const fallbackPoints = flashcards.map((card): LearningPoint => ({
+    topic: inferTopicFromText(`${card.front} ${card.back}`, material.displayTitle),
+    statement: ensureTerminalPunctuation(card.back),
+    sourceTitle: safeHeading(material.displayTitle),
+    kind: inferLearningKind(card.front, card.back),
+  }))
+  const questionPoints = uniqueByKey(
+    [...learningPoints, ...fallbackPoints],
+    (point) => `${point.topic}-${point.statement}`,
+  ).slice(0, 8)
+
+  const questions = questionPoints.map((point, index) => {
+    const distractors = uniqueByKey(
+      [...questionPoints.filter((item) => item.statement !== point.statement), ...fallbackPoints]
+        .map((item) => item.statement)
+        .filter((statement) => statement !== point.statement),
+      (statement) => statement,
+    )
+    const correctText = cleanChoiceText(point.statement)
+    const choices = buildChoices(correctText, distractors)
+    const correctChoice = choices.find((choice) => choice.text === correctText)
+
+    return {
+      id: crypto.randomUUID(),
+      sourceMaterialId: material.id,
+      sourceTitle: material.displayTitle,
+      prompt: buildQuestionPrompt(point, index),
+      choices,
+      correctAnswer: correctChoice ? [correctChoice.id] : ['A'],
+      rationale: `The correct answer reflects the uploaded concept: ${point.statement} The other options are either unsupported by this material or describe a different study point.`,
+      createdAt: new Date().toISOString(),
+    }
+  })
+
+  return qualityFilterQuestions(questions)
+}
+
+export function generateFlashcardsFromMaterial(material: StudyMaterial): MaterialFlashcard[] {
+  return generateCleanFlashcardsFromMaterial(material)
+}
+
+export function generateQuestionsFromMaterial(
+  material: StudyMaterial,
+  flashcards: MaterialFlashcard[],
+): MaterialQuestion[] {
+  return generateCleanQuestionsFromMaterial(material, flashcards)
+}
+
+export function generateCleanFlashcardsFromMaterialLegacy(material: StudyMaterial): MaterialFlashcard[] {
   const usableAssets = material.assets.filter(
     (asset) => asset.content.length > 30 && !isLikelyFrontMatter(asset.content),
   )
@@ -556,7 +1005,7 @@ export function generateCleanFlashcardsFromMaterial(material: StudyMaterial): Ma
       .map((item) => {
         const [term, ...rest] = item.split(':')
         return {
-          front: `What should you know about ${term.trim()}?`,
+          front: `What nursing point is supported by ${safeHeading(term)}?`,
           back: rest.join(':').trim(),
         }
       }),
@@ -564,12 +1013,12 @@ export function generateCleanFlashcardsFromMaterial(material: StudyMaterial): Ma
 
   const bySectionSummary = usableAssets.map((asset) => ({
     front: `What is a key point about ${safeHeading(asset.title)}?`,
-    back: toSentence(asset.content),
+    back: truncate(cleanStudyFragment(asset.content), MAX_CARD_BACK),
   }))
 
   const byPromptPattern = usableAssets.map((asset) => ({
     front: `What should you remember from ${safeHeading(asset.title)}?`,
-    back: toSentence(asset.content),
+    back: truncate(cleanStudyFragment(asset.content), MAX_CARD_BACK),
   }))
 
   let candidates = uniqueByKey(
@@ -610,7 +1059,7 @@ export function generateCleanFlashcardsFromMaterial(material: StudyMaterial): Ma
   }))
 }
 
-export function generateCleanQuestionsFromMaterial(
+export function generateCleanQuestionsFromMaterialLegacy(
   material: StudyMaterial,
   flashcards: MaterialFlashcard[],
 ): MaterialQuestion[] {
@@ -631,7 +1080,7 @@ export function generateCleanQuestionsFromMaterial(
       sourceTitle: material.displayTitle,
       prompt:
         index % 2 === 0
-          ? `Based on your material, which answer best matches this point: ${truncate(card.front, 110)}`
+          ? `A nurse is reviewing the uploaded material. Which statement is best supported by ${truncate(card.front, 110)}?`
           : `Which statement best completes this study point: ${truncate(card.front, 110)}`,
       choices,
       correctAnswer: correctChoice ? [correctChoice.id] : ['A'],
@@ -641,7 +1090,7 @@ export function generateCleanQuestionsFromMaterial(
   })
 }
 
-export function generateFlashcardsFromMaterial(material: StudyMaterial): MaterialFlashcard[] {
+export function generateFlashcardsFromMaterialLegacy(material: StudyMaterial): MaterialFlashcard[] {
   const byColonPattern = material.assets.flatMap((asset) =>
     asset.content
       .split(/\s*•\s*|\s*-\s*/)
@@ -658,14 +1107,14 @@ export function generateFlashcardsFromMaterial(material: StudyMaterial): Materia
 
   const bySectionSummary = material.assets.map((asset) => ({
     front: `What is a key point about ${asset.title}?`,
-    back: toSentence(asset.content),
+    back: truncate(cleanStudyFragment(asset.content), MAX_CARD_BACK),
   }))
 
   const byPromptPattern = material.assets
     .filter((asset) => asset.content.length > 30)
     .map((asset) => ({
       front: `What should you remember from ${asset.title}?`,
-      back: toSentence(asset.content),
+      back: truncate(cleanStudyFragment(asset.content), MAX_CARD_BACK),
     }))
 
   const candidates = uniqueByKey(
@@ -686,7 +1135,7 @@ export function generateFlashcardsFromMaterial(material: StudyMaterial): Materia
   }))
 }
 
-export function generateQuestionsFromMaterial(
+export function generateQuestionsFromMaterialLegacy(
   material: StudyMaterial,
   flashcards: MaterialFlashcard[],
 ): MaterialQuestion[] {
@@ -707,7 +1156,7 @@ export function generateQuestionsFromMaterial(
       sourceTitle: material.displayTitle,
       prompt:
         index % 2 === 0
-          ? `Based on your material, which answer best matches: ${card.front}?`
+          ? `A nurse is reviewing the uploaded material. Which statement is best supported by ${truncate(card.front, 110)}?`
           : `Which statement best completes this study point: ${card.front}?`,
       choices,
       correctAnswer: correctChoice ? [correctChoice.id] : ['A'],

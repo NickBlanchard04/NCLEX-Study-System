@@ -10,8 +10,10 @@ import {
   YAxis,
 } from 'recharts'
 import {
+  Activity,
   ArrowLeft,
   ArrowRight,
+  Award,
   BadgeCheck,
   BarChart3,
   BrainCircuit,
@@ -31,6 +33,7 @@ import {
   HeartPulse,
   Link2,
   LoaderCircle,
+  LockKeyhole,
   NotebookPen,
   RefreshCw,
   Shuffle,
@@ -57,6 +60,8 @@ import type {
   StudyMaterial,
 } from '../app/types'
 import { useStudySystemStore } from '../app/store'
+import { getSafeErrorCopy, reportSafeError } from '../services/safe-errors'
+import { summarizeMaterialQuality, type MaterialQualityIssue } from '../services/material-quality'
 import {
   flashcards,
   getExamCategories,
@@ -76,6 +81,10 @@ import {
 } from '../services/study-system'
 import {
   ChecklistItem,
+  CommandActionCard,
+  CommandBadge,
+  CommandPageIntro,
+  CommandStatTile,
   DetailGrid,
   EmptyState,
   FlipCard,
@@ -506,9 +515,8 @@ export function StudyMenuPage() {
       setMaterialUrl('')
       setImportMessage('Link imported. Review and approve the generated tools in My Materials.')
     } catch (error) {
-      setImportMessage(
-        error instanceof Error ? error.message : 'We could not import that link.',
-      )
+      reportSafeError('material-link-import', error)
+      setImportMessage(getSafeErrorCopy('material-link-import'))
     } finally {
       setIsImporting(false)
     }
@@ -876,8 +884,17 @@ export function DashboardPage() {
       : weakestArea
         ? 'Train this first. It is the clearest practice signal for score lift right now.'
         : materialsReadyCount
-          ? 'Use your uploaded materials for recall before adding more notes.'
-          : 'One focused set gives the dashboard fresh evidence without overloading the day.'
+        ? 'Use your uploaded materials for recall before adding more notes.'
+        : 'One focused set gives the dashboard fresh evidence without overloading the day.'
+  const missionReason = priorityRepair
+    ? 'Repair queued'
+    : primaryCoverageGap
+      ? 'Coverage gap'
+      : weakestArea
+    ? 'Priority from recent misses'
+    : materialsReadyCount
+      ? 'Upload-to-recall step'
+      : 'Fresh practice signal'
   const planItems = [
     {
       id: 'priority-drill',
@@ -925,58 +942,146 @@ export function DashboardPage() {
       label: 'Today',
       value: `${dashboard.todayCompleted}/${dashboard.dailyGoal}`,
       detail: `${Math.round(todayGoalProgress * 100)}% complete`,
+      icon: <Target className="h-4 w-4" />,
+      tone: 'cyan',
     },
     {
       label: 'Readiness',
       value: readinessBadge,
       detail: `${readinessSnapshot.trustedAttemptCount} trusted attempts`,
+      icon: <Activity className="h-4 w-4" />,
+      tone: readinessSnapshot.status === 'building' ? 'amber' : readinessSnapshot.status === 'ready' ? 'emerald' : 'cyan',
     },
     {
       label: 'Repairs',
       value: `${repairQueueCount}`,
       detail: primaryCoverageGap ? `${readinessSnapshot.coverageGaps.length} coverage gaps` : `${formatMinutes(todayMinutes)} today`,
+      icon: <Flame className="h-4 w-4" />,
+      tone: 'amber',
     },
   ]
+  const missionStatToneClasses = {
+    cyan: 'border-cyan-200/22 bg-cyan-300/[0.08] text-cyan-100',
+    emerald: 'border-emerald-200/22 bg-emerald-300/[0.08] text-emerald-100',
+    amber: 'border-amber-200/22 bg-amber-300/[0.08] text-amber-100',
+  }
   const badgeToneClasses = {
     strong: {
-      ring: 'border-emerald-300/38 bg-emerald-300/[0.105] text-emerald-100',
-      icon: 'bg-emerald-300/16 text-emerald-100',
-      progress: 'green' as const,
-      label: 'Strong',
+      ring: 'border-amber-200/45 bg-[linear-gradient(145deg,rgba(251,191,36,0.18),rgba(16,185,129,0.08))] text-amber-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]',
+      icon: 'border-amber-200/30 bg-amber-300/18 text-amber-100',
+      fill: 'bg-[linear-gradient(90deg,#fbbf24_0%,#34d399_100%)]',
+      tier: 'Gold',
+      label: 'Strong signal',
+      marker: <Award className="h-4 w-4" />,
     },
     developing: {
-      ring: 'border-amber-300/38 bg-amber-300/[0.105] text-amber-100',
-      icon: 'bg-amber-300/16 text-amber-100',
-      progress: 'amber' as const,
-      label: 'Building',
+      ring: 'border-slate-200/32 bg-[linear-gradient(145deg,rgba(226,232,240,0.14),rgba(20,184,166,0.07))] text-slate-100',
+      icon: 'border-slate-200/24 bg-slate-200/12 text-slate-100',
+      fill: 'bg-[linear-gradient(90deg,#cbd5e1_0%,#2dd4bf_100%)]',
+      tier: 'Silver',
+      label: 'Improving',
+      marker: <BadgeCheck className="h-4 w-4" />,
     },
     fragile: {
-      ring: 'border-rose-300/38 bg-rose-300/[0.105] text-rose-100',
-      icon: 'bg-rose-300/16 text-rose-100',
-      progress: 'red' as const,
-      label: 'Focus',
+      ring: 'border-sky-200/32 bg-[linear-gradient(145deg,rgba(56,189,248,0.15),rgba(251,113,133,0.07))] text-sky-100',
+      icon: 'border-sky-200/24 bg-sky-300/14 text-sky-100',
+      fill: 'bg-[linear-gradient(90deg,#38bdf8_0%,#fb7185_100%)]',
+      tier: 'Blue',
+      label: 'Needs reps',
+      marker: <Activity className="h-4 w-4" />,
     },
     empty: {
-      ring: 'border-slate-300/22 bg-slate-300/[0.07] text-slate-100',
-      icon: 'bg-slate-300/12 text-slate-100',
-      progress: 'blue' as const,
+      ring: 'border-slate-300/18 bg-slate-300/[0.055] text-slate-100',
+      icon: 'border-slate-300/14 bg-slate-300/10 text-slate-200/72',
+      fill: 'bg-slate-300/24',
+      tier: 'Locked',
       label: 'No signal',
+      marker: <LockKeyhole className="h-4 w-4" />,
     },
   }
+  const categoryAccentThemes = [
+    {
+      match: ['management', 'leadership'],
+      icon: <HeartPulse className="h-4 w-4" />,
+      surface: 'border-cyan-200/22 bg-cyan-300/[0.07]',
+      iconClass: 'border-cyan-200/30 bg-cyan-300/14 text-cyan-100',
+      line: 'bg-cyan-300',
+      fill: 'bg-[linear-gradient(90deg,#22d3ee_0%,#60a5fa_100%)]',
+    },
+    {
+      match: ['safety', 'infection'],
+      icon: <ShieldCheck className="h-4 w-4" />,
+      surface: 'border-emerald-200/22 bg-emerald-300/[0.07]',
+      iconClass: 'border-emerald-200/30 bg-emerald-300/14 text-emerald-100',
+      line: 'bg-emerald-300',
+      fill: 'bg-[linear-gradient(90deg,#34d399_0%,#a3e635_100%)]',
+    },
+    {
+      match: ['health', 'promotion', 'maintenance'],
+      icon: <Zap className="h-4 w-4" />,
+      surface: 'border-amber-200/22 bg-amber-300/[0.07]',
+      iconClass: 'border-amber-200/30 bg-amber-300/14 text-amber-100',
+      line: 'bg-amber-300',
+      fill: 'bg-[linear-gradient(90deg,#fbbf24_0%,#fb923c_100%)]',
+    },
+    {
+      match: ['psychosocial', 'integrity'],
+      icon: <BrainCircuit className="h-4 w-4" />,
+      surface: 'border-fuchsia-200/20 bg-fuchsia-300/[0.07]',
+      iconClass: 'border-fuchsia-200/28 bg-fuchsia-300/14 text-fuchsia-100',
+      line: 'bg-fuchsia-300',
+      fill: 'bg-[linear-gradient(90deg,#c084fc_0%,#f472b6_100%)]',
+    },
+  ]
+  const fallbackCategoryAccent = {
+    icon: <BookOpen className="h-4 w-4" />,
+    surface: 'border-sky-200/18 bg-sky-300/[0.055]',
+    iconClass: 'border-sky-200/24 bg-sky-300/12 text-sky-100',
+    line: 'bg-sky-300',
+    fill: 'bg-[linear-gradient(90deg,#38bdf8_0%,#94a3b8_100%)]',
+  }
+  const getCategoryAccent = (category: string, index = 0) => {
+    const normalized = category.toLowerCase()
+    return categoryAccentThemes.find((theme) => theme.match.some((match) => normalized.includes(match)))
+      ?? categoryAccentThemes[index % categoryAccentThemes.length]
+      ?? fallbackCategoryAccent
+  }
+  const normalizedReadinessScore = Math.max(0, Math.min(1, readinessScore))
+  const readinessCircleSize = 124
+  const readinessCircleStroke = 9
+  const readinessCircleRadius = (readinessCircleSize - readinessCircleStroke) / 2
+  const readinessCircleCircumference = 2 * Math.PI * readinessCircleRadius
+  const readinessCircleOffset =
+    readinessCircleCircumference - normalizedReadinessScore * readinessCircleCircumference
+  const readinessTheme = {
+    emerald: {
+      card: 'border-emerald-200/30 bg-emerald-300/[0.08]',
+      stroke: 'stroke-emerald-300',
+      label: 'text-emerald-100',
+    },
+    cyan: {
+      card: 'border-cyan-200/30 bg-cyan-300/[0.08]',
+      stroke: 'stroke-cyan-300',
+      label: 'text-cyan-100',
+    },
+    amber: {
+      card: 'border-amber-200/30 bg-amber-300/[0.08]',
+      stroke: 'stroke-amber-300',
+      label: 'text-amber-100',
+    },
+    slate: {
+      card: 'border-slate-200/18 bg-slate-300/[0.065]',
+      stroke: 'stroke-slate-300',
+      label: 'text-slate-100',
+    },
+  }[readinessTone]
   const masteryBadges = getExamCategories(activeExamTrack.id)
     .slice(0, 4)
     .map((category, index) => {
       const stat = analytics.categoryStats.find((item) => item.category === category)
       const tone = stat && stat.attemptCount > 0 ? stat.masteryLevel : 'empty'
       const progress = stat && stat.attemptCount > 0 ? stat.accuracy : 0
-      const icon =
-        index % 3 === 0 ? (
-          <HeartPulse className="h-4 w-4" />
-        ) : index % 3 === 1 ? (
-          <BrainCircuit className="h-4 w-4" />
-        ) : (
-          <ShieldCheck className="h-4 w-4" />
-        )
+      const visual = getCategoryAccent(category, index)
 
       return {
         category,
@@ -984,7 +1089,7 @@ export function DashboardPage() {
         progress,
         attempts: stat?.attemptCount ?? 0,
         theme: badgeToneClasses[tone],
-        icon,
+        visual,
       }
     })
   const supportActions = planItems.slice(1, 4)
@@ -992,80 +1097,132 @@ export function DashboardPage() {
   return (
     <PageStack className="space-y-4 md:space-y-5">
       <FocusPanel>
-        <div className="bg-[linear-gradient(135deg,#06294a_0%,#0c3c52_58%,#12375a_100%)] p-5 text-white md:p-6">
-          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-center">
-            <div>
+        <div className="relative overflow-hidden bg-[#061c31] p-4 text-white sm:p-5 md:p-6">
+          <div className="pointer-events-none absolute inset-0 opacity-35 [background-image:linear-gradient(rgba(125,211,252,0.12)_1px,transparent_1px),linear-gradient(90deg,rgba(125,211,252,0.09)_1px,transparent_1px)] [background-size:38px_38px]" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,#22d3ee_0%,#34d399_36%,#fbbf24_70%,#f472b6_100%)]" />
+          <div className="relative grid gap-5 lg:grid-cols-[minmax(0,1fr)_250px] lg:items-stretch">
+            <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full border border-cyan-200/24 bg-cyan-300/10 px-3 py-1 text-xs font-black uppercase text-cyan-100">
+                <span className="inline-flex items-center gap-2 rounded-lg border border-cyan-200/26 bg-cyan-300/10 px-3 py-1.5 text-xs font-black uppercase text-cyan-100">
+                  <BadgeCheck className="h-3.5 w-3.5" />
                   {activeExamTrack.shortName}
                 </span>
-                <span className="rounded-full border border-white/14 bg-white/8 px-3 py-1 text-xs font-black uppercase text-sky-100/70">
+                <span className="inline-flex items-center gap-2 rounded-lg border border-white/14 bg-white/8 px-3 py-1.5 text-xs font-black uppercase text-sky-100/72">
+                  <CalendarClock className="h-3.5 w-3.5" />
                   Exam in {daysUntilExam}d
                 </span>
-                <span className="rounded-full border border-emerald-200/24 bg-emerald-300/10 px-3 py-1 text-xs font-black uppercase text-emerald-100">
-                  {repairQueueCount} repairs
+                <span className="inline-flex items-center gap-2 rounded-lg border border-amber-200/22 bg-amber-300/10 px-3 py-1.5 text-xs font-black uppercase text-amber-100">
+                  <Zap className="h-3.5 w-3.5" />
+                  {missionReason}
                 </span>
+                {repairQueueCount ? (
+                  <span className="inline-flex items-center gap-2 rounded-lg border border-emerald-200/24 bg-emerald-300/10 px-3 py-1.5 text-xs font-black uppercase text-emerald-100">
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                    {repairQueueCount} repairs
+                  </span>
+                ) : null}
               </div>
-              <p className="mt-5 text-sm font-black uppercase text-cyan-100/72">Today&apos;s mission</p>
-              <h2 className="mt-2 max-w-3xl text-3xl font-black leading-tight text-white md:text-4xl">
+
+              <p className="mt-5 text-sm font-black uppercase text-cyan-100/78">Today&apos;s mission</p>
+              <h2 className="mt-2 max-w-3xl text-[2rem] font-black leading-[1.08] text-white sm:text-3xl md:text-4xl">
                 {missionTitle}
               </h2>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-sky-100/74">
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-sky-100/78">
                 {missionCopy}
               </p>
               <p className="mt-3 max-w-2xl text-xs font-semibold uppercase tracking-[0.14em] text-sky-100/52">
                 Engine pattern: {engineWeakPatternLabel}
               </p>
-              <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <div className="mt-4 flex flex-wrap gap-2">
+                <span className="inline-flex items-center gap-2 rounded-lg border border-emerald-200/24 bg-emerald-300/10 px-3 py-1.5 text-xs font-black text-emerald-100">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  Practice evidence only
+                </span>
+                <span className="inline-flex items-center gap-2 rounded-lg border border-sky-200/18 bg-white/[0.055] px-3 py-1.5 text-xs font-black text-sky-100/70">
+                  <Activity className="h-3.5 w-3.5" />
+                  {readinessPercent}% readiness signal
+                </span>
+              </div>
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <button
                   type="button"
                   onClick={planItems[0].onSelect}
-                  className="nclex-btn-primary inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-cyan-100/45 bg-[linear-gradient(180deg,#24b8ff_0%,#0b83d6_100%)] px-6 py-3 text-sm font-black text-white shadow-[0_12px_34px_rgba(14,165,233,0.28)] transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-cyan-200/55"
                 >
-                  {planItems[0].actionLabel}
+                  Start now
                   <ArrowRight className="h-4 w-4" />
                 </button>
                 <button
                   type="button"
                   onClick={() => navigate('/study-plan')}
-                  className="nclex-btn-secondary inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-sky-200/22 bg-white/[0.06] px-5 py-3 text-sm font-black text-sky-100 transition hover:border-sky-200/45 hover:bg-white/[0.09]"
                 >
                   View plan
                   <CalendarClock className="h-4 w-4" />
                 </button>
               </div>
             </div>
-            <div className="flex items-center justify-between gap-4 rounded-[1rem] border border-white/14 bg-white/[0.075] p-4 lg:block">
-              <div>
-                <p className="text-xs font-black uppercase text-sky-100/62">Readiness badge</p>
-                <p className="mt-2 max-w-36 text-xs leading-5 text-sky-100/60 lg:mt-3">
-                  {readinessSnapshot.trustedAttemptCount} trusted / {readinessSnapshot.practiceAttemptCount} practice attempts.
-                </p>
-              </div>
-              <div
-                className={clsx(
-                  'flex h-24 w-24 shrink-0 items-center justify-center rounded-full border text-center shadow-[0_0_28px_rgba(125,211,252,0.14)] lg:mt-3 lg:h-28 lg:w-28',
-                  readinessTone === 'emerald' && 'border-emerald-200/45 bg-emerald-300/12',
-                  readinessTone === 'cyan' && 'border-cyan-200/45 bg-cyan-300/12',
-                  readinessTone === 'amber' && 'border-amber-200/45 bg-amber-300/12',
-                  readinessTone === 'slate' && 'border-slate-200/25 bg-slate-300/10',
-                )}
-              >
+            <div className={clsx('rounded-[1rem] border p-4', readinessTheme.card)}>
+              <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-3xl font-black text-white">{readinessPercent}%</p>
-                  <p className="mt-1 text-xs font-black uppercase text-sky-100/62">{readinessBadge}</p>
+                  <p className="text-xs font-black uppercase text-sky-100/64">Readiness badge</p>
+                  <p className="mt-2 max-w-40 text-xs leading-5 text-sky-100/62">
+                    Practice evidence only, not a licensure prediction. {readinessSnapshot.trustedAttemptCount} trusted / {readinessSnapshot.practiceAttemptCount} practice attempts.
+                  </p>
+                </div>
+                <span className={clsx('rounded-lg border border-white/12 bg-white/8 px-2.5 py-1 text-[0.68rem] font-black uppercase', readinessTheme.label)}>
+                  {readinessBadge}
+                </span>
+              </div>
+              <div className="mt-4 flex items-center justify-center">
+                <div className="relative h-[124px] w-[124px]" aria-label={`Readiness signal ${readinessPercent}%`}>
+                  <svg viewBox={`0 0 ${readinessCircleSize} ${readinessCircleSize}`} className="h-full w-full -rotate-90">
+                    <circle
+                      cx={readinessCircleSize / 2}
+                      cy={readinessCircleSize / 2}
+                      r={readinessCircleRadius}
+                      stroke="rgba(226,232,240,0.14)"
+                      strokeWidth={readinessCircleStroke}
+                      fill="none"
+                    />
+                    <circle
+                      cx={readinessCircleSize / 2}
+                      cy={readinessCircleSize / 2}
+                      r={readinessCircleRadius}
+                      className={clsx('transition-[stroke-dashoffset] duration-700 ease-out', readinessTheme.stroke)}
+                      strokeWidth={readinessCircleStroke}
+                      strokeLinecap="round"
+                      fill="none"
+                      style={{
+                        strokeDasharray: readinessCircleCircumference,
+                        strokeDashoffset: readinessCircleOffset,
+                      }}
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                    <p className="text-3xl font-black text-white">{readinessPercent}%</p>
+                    <p className="mt-1 text-[0.68rem] font-black uppercase text-sky-100/60">signal</p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-          <div className="mt-5 grid grid-cols-3 gap-2 border-t border-white/10 pt-4">
+
+          <div className="relative mt-5 grid gap-2 border-t border-white/10 pt-4 sm:grid-cols-3">
             {missionStats.map((stat) => (
-              <div key={stat.label} className="min-w-0">
-                <p className="truncate text-xs font-black uppercase text-sky-100/54">{stat.label}</p>
-                <div className="mt-1">
-                  <p className="text-lg font-black leading-tight text-white sm:text-xl">{stat.value}</p>
-                  <p className="mt-1 text-xs font-semibold leading-snug text-sky-100/55">{stat.detail}</p>
+              <div
+                key={stat.label}
+                className={clsx(
+                  'min-w-0 rounded-xl border px-3 py-3',
+                  missionStatToneClasses[stat.tone as keyof typeof missionStatToneClasses],
+                )}
+              >
+                <div className="flex items-center gap-2 text-xs font-black uppercase">
+                  {stat.icon}
+                  <span className="truncate">{stat.label}</span>
                 </div>
+                <p className="mt-2 truncate text-2xl font-black text-white">{stat.value}</p>
+                <p className="truncate text-xs font-semibold text-sky-100/58">{stat.detail}</p>
               </div>
             ))}
           </div>
@@ -1076,8 +1233,9 @@ export function DashboardPage() {
         <div className="mb-3 flex items-end justify-between gap-3">
           <div>
             <p className="text-xs font-black uppercase text-sky-100/56">Badge board</p>
-            <h3 className="mt-1 text-2xl font-black text-white">Mastery signals</h3>
-            <p className="mt-1 text-sm font-semibold text-sky-100/58">
+            <h3 className="mt-1 text-2xl font-black text-white">Mastery badges</h3>
+            <p className="mt-1 text-sm leading-6 text-sky-100/62">
+              Gold, silver, blue, and locked states move with practice evidence.{' '}
               {primaryConfidenceRisk
                 ? `Confidence risk: ${confidenceRiskLabel}`
                 : primaryCoverageGap
@@ -1091,26 +1249,43 @@ export function DashboardPage() {
         </div>
         <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
           {masteryBadges.map((badge) => (
-            <div key={badge.category} className={clsx('rounded-[1rem] border p-3 sm:p-4', badge.theme.ring)}>
+            <div key={badge.category} className={clsx('relative overflow-hidden rounded-[1rem] border p-3.5 sm:p-4', badge.theme.ring)}>
+              <span className={clsx('absolute inset-x-0 top-0 h-1', badge.visual.line)} />
               <div className="flex items-start justify-between gap-2">
                 <div className="flex min-w-0 items-center gap-2.5">
-                  <span className={clsx('inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl', badge.theme.icon)}>
-                    {badge.icon}
+                  <span className={clsx('inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border', badge.theme.icon)}>
+                    {badge.theme.marker}
                   </span>
                   <div className="min-w-0">
                     <p className="truncate text-sm font-black text-white">{badge.label}</p>
                     <p className="mt-1 text-xs font-semibold text-sky-100/58">{badge.attempts} attempts</p>
                   </div>
                 </div>
-                <span className="rounded-full border border-white/12 bg-white/8 px-2 py-1 text-[0.68rem] font-black text-sky-100">
-                  {badge.theme.label}
+                <span className="rounded-lg border border-white/12 bg-white/8 px-2 py-1 text-[0.68rem] font-black uppercase text-sky-100">
+                  {badge.theme.tier}
                 </span>
               </div>
-              <div className="mt-4">
-                <ProgressBar value={badge.progress} tone={badge.theme.progress} />
+              <div className="mt-4 flex items-center gap-2.5">
+                <span className={clsx('inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border', badge.visual.iconClass)}>
+                  {badge.visual.icon}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                    <div
+                      className={clsx('h-full rounded-full transition-all duration-700', badge.attempts ? badge.visual.fill : badge.theme.fill)}
+                      style={{ width: badge.attempts ? `${Math.max(8, Math.round(badge.progress * 100))}%` : '10%' }}
+                    />
+                  </div>
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    <p className="truncate text-xs font-black text-sky-100">{badge.theme.label}</p>
+                    <p className="shrink-0 text-xs font-black text-white">
+                      {badge.attempts ? `${Math.round(badge.progress * 100)}%` : '0%'}
+                    </p>
+                  </div>
+                </div>
               </div>
               <p className="mt-2 text-xs font-semibold text-sky-100/55">
-                {badge.attempts ? `${Math.round(badge.progress * 100)}% current accuracy` : 'Complete practice to unlock.'}
+                {badge.attempts ? 'Current accuracy in this category.' : 'Complete practice to unlock.'}
               </p>
             </div>
           ))}
@@ -1160,18 +1335,30 @@ export function DashboardPage() {
           <div className="mt-5 grid gap-3 md:grid-cols-2">
             {dashboard.weakestCategories.slice(0, 2).map((area, index) => {
               const actionVerb = index === 0 ? 'Train' : 'Review'
+              const visual = getCategoryAccent(area.category, index)
+              const areaPercent = Math.round(area.accuracy * 100)
               return (
-                <div key={area.category} className="rounded-[1rem] border border-cyan-200/15 bg-sky-300/[0.055] p-4">
+                <div key={area.category} className={clsx('relative overflow-hidden rounded-[1rem] border p-4', visual.surface)}>
+                  <span className={clsx('absolute inset-y-0 left-0 w-1', visual.line)} />
                   <div className="flex items-start justify-between gap-3">
-                    <p className="font-black text-white">{shortCategoryLabel(area.category)}</p>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className={clsx('inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border', visual.iconClass)}>
+                        {visual.icon}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate font-black text-white">{shortCategoryLabel(area.category)}</p>
+                        <p className="mt-1 text-xs font-semibold text-sky-100/55">{areaPercent}% practice accuracy</p>
+                      </div>
+                    </div>
                     <MasteryPill mastery={area.masteryLevel} />
                   </div>
                   <p className="mt-2 text-sm leading-6 text-sky-100/62">{area.suggestedAction}</p>
-                  <ProgressBar
-                    value={area.accuracy}
-                    className="mt-4"
-                    tone={area.masteryLevel === 'strong' ? 'green' : area.masteryLevel === 'developing' ? 'amber' : 'red'}
-                  />
+                  <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-white/10">
+                    <div
+                      className={clsx('h-full rounded-full transition-all duration-700', visual.fill)}
+                      style={{ width: `${Math.max(8, areaPercent)}%` }}
+                    />
+                  </div>
                   <div className="mt-4 grid grid-cols-2 gap-2">
                     <div className="rounded-xl border border-cyan-200/12 bg-[#03101f]/36 p-3">
                       <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-sky-100/50">Mismatch</p>
@@ -1188,7 +1375,7 @@ export function DashboardPage() {
                       startQuickStudy(area.category)
                       navigate('/quick-study')
                     }}
-                    className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-cyan-200/25 bg-cyan-300/10 px-4 py-2.5 text-sm font-black text-cyan-100 transition hover:border-cyan-200/50 hover:bg-cyan-300/16"
+                    className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-cyan-200/25 bg-cyan-300/10 px-4 py-2.5 text-sm font-black text-cyan-100 transition hover:border-cyan-200/50 hover:bg-cyan-300/16 focus:outline-none focus:ring-2 focus:ring-cyan-200/45"
                   >
                     {actionVerb} {shortCategoryLabel(area.category)}
                     <ArrowRight className="h-4 w-4" />
@@ -1260,18 +1447,24 @@ export function PracticeQuestionsPage() {
       title: 'Adaptive practice',
       description: 'Mixed questions from the selected track and filters.',
       action: 'Recommended',
+      tone: 'cyan' as const,
+      icon: <Target className="h-5 w-5" />,
       config: {},
     },
     {
       title: 'Repair missed questions',
       description: 'Five missed items for a short remediation loop.',
       action: 'Repair misses',
+      tone: 'rose' as const,
+      icon: <TrendingDown className="h-5 w-5" />,
       config: { category: priorityCategory, questionStatus: 'incorrect' as const, questionCount: 5 },
     },
     {
       title: 'New questions only',
       description: 'Unused items for a cleaner read on readiness.',
       action: 'Fresh set',
+      tone: 'emerald' as const,
+      icon: <Sparkles className="h-5 w-5" />,
       config: { questionStatus: 'unused' as const, questionCount: 10 },
     },
   ]
@@ -1289,61 +1482,82 @@ export function PracticeQuestionsPage() {
 
   return (
     <PageStack>
-      <PageHeader
-        eyebrow="Question Bank"
-        title="Choose the next practice set."
-        description={`Build a ${activeTrack.shortName} set from the bank. Use Quick Study for a short weak-area sprint.`}
-        action={
-          <button
-            type="button"
-            onClick={() => launchPracticeSession()}
-            className="nclex-btn-primary inline-flex min-h-[48px] items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold"
-          >
-            {isPending ? 'Building set...' : 'Start focused set'}
-            <ArrowRight className="h-4 w-4" />
-          </button>
+      <CommandPageIntro
+        title={category === 'All' ? 'Build a focused practice set.' : `Train ${shortCategoryLabel(category)}.`}
+        description={`${questionCount} questions, ${difficulty === 'adaptive' ? 'adaptive difficulty' : `${difficulty} difficulty`}, ${format === 'mixed' ? 'mixed formats' : format.replaceAll('-', ' ')}. Keep the defaults for a clean practice signal or tune the bank below.`}
+        badges={
+          <>
+            <CommandBadge tone="cyan" icon={<BadgeCheck className="h-3.5 w-3.5" />}>
+              {activeTrack.shortName}
+            </CommandBadge>
+            <CommandBadge tone="emerald" icon={<ShieldCheck className="h-3.5 w-3.5" />}>
+              Practice evidence
+            </CommandBadge>
+            <CommandBadge tone="amber" icon={<Clock3 className="h-3.5 w-3.5" />}>
+              Instant rationale
+            </CommandBadge>
+          </>
         }
-      />
-      <FocusPanel className="nclex-dark-panel text-white">
-        <div className="grid gap-5 p-5 md:p-6 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-stretch">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-200">Next practice set</p>
-            <h3 className="mt-3 text-3xl font-black tracking-[-0.04em] text-white md:text-5xl">
-              {category === 'All' ? 'Mixed adaptive set' : category}
-            </h3>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-sky-100/72">
-              {questionCount} questions, {difficulty === 'adaptive' ? 'adaptive difficulty' : `${difficulty} difficulty`}, {format === 'mixed' ? 'mixed formats' : format.replaceAll('-', ' ')}.
-              Start with a preset, then tune the bank only when the session needs a narrower target.
-            </p>
-            <div className="mt-6 grid gap-3 md:grid-cols-3">
-              {practicePresets.map((preset, index) => (
-                <button
-                  key={preset.title}
-                  type="button"
-                  onClick={() => launchPracticeSession(preset.config)}
-                  className={clsx(
-                    'min-h-[9rem] rounded-2xl border p-4 text-left transition active:scale-[0.99]',
-                    index === 0
-                      ? 'border-cyan-200/45 bg-cyan-300/14 shadow-[0_0_30px_rgba(56,189,248,0.16)]'
-                      : 'border-cyan-200/18 bg-white/[0.045] hover:border-cyan-200/42 hover:bg-cyan-300/10',
-                  )}
-                >
-                  <span className="text-xs font-black uppercase tracking-[0.14em] text-cyan-100/72">
-                    {preset.action}
-                  </span>
-                  <span className="mt-3 block text-lg font-black text-white">{preset.title}</span>
-                  <span className="mt-2 block text-sm leading-6 text-sky-100/62">{preset.description}</span>
-                </button>
-              ))}
+        action={
+          <>
+            <button
+              type="button"
+              onClick={() => launchPracticeSession()}
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-cyan-100/45 bg-[linear-gradient(180deg,#24b8ff_0%,#0b83d6_100%)] px-6 py-3 text-sm font-black text-white shadow-[0_12px_34px_rgba(14,165,233,0.28)] transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-cyan-200/55"
+            >
+              {isPending ? 'Building set...' : 'Start focused set'}
+              <ArrowRight className="h-4 w-4" />
+            </button>
+            <Link
+              to="/quick-study"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-sky-200/22 bg-white/[0.06] px-5 py-3 text-sm font-black text-sky-100 transition hover:border-sky-200/45 hover:bg-white/[0.09]"
+            >
+              Quick study
+              <Zap className="h-4 w-4" />
+            </Link>
+          </>
+        }
+        aside={
+          <div className="h-full rounded-[1rem] border border-cyan-200/24 bg-cyan-300/[0.07] p-4">
+            <p className="text-xs font-black uppercase text-sky-100/64">Current set</p>
+            <p className="mt-2 text-3xl font-black text-white">{questionCount}</p>
+            <p className="text-sm font-semibold text-sky-100/70">questions queued</p>
+            <div className="mt-4 space-y-2 text-sm font-semibold text-sky-100/68">
+              <p>{category === 'All' ? 'All categories' : shortCategoryLabel(category)}</p>
+              <p>{system === 'All' ? 'All systems' : system}</p>
+              <p>{questionStatus === 'all' ? 'All statuses' : questionStatus}</p>
             </div>
           </div>
-          <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-            <QuickMetric label="Questions" value={`${questionCount}`} detail="Current custom set length." />
-            <QuickMetric label="Track" value={activeTrack.shortName} detail="Blueprint-aligned bank." />
-            <QuickMetric label="Review" value="Instant" detail="Rationale after every answer." />
-          </div>
+        }
+        stats={
+          <>
+            <CommandStatTile label="Questions" value={`${questionCount}`} detail="Current set length" icon={<ClipboardList className="h-4 w-4" />} tone="cyan" />
+            <CommandStatTile label="Track" value={activeTrack.shortName} detail="Blueprint-aligned bank" icon={<BadgeCheck className="h-4 w-4" />} tone="emerald" />
+            <CommandStatTile label="Review" value="Instant" detail="Rationale after each answer" icon={<BookOpen className="h-4 w-4" />} tone="amber" />
+          </>
+        }
+      />
+
+      <Surface>
+        <SectionHeading
+          title="Start from a preset"
+          description="Three obvious routes cover most practice moments. Fine-tune below when needed."
+        />
+        <div className="mt-5 grid gap-3 md:grid-cols-3">
+          {practicePresets.map((preset) => (
+            <CommandActionCard
+              key={preset.title}
+              title={preset.title}
+              description={preset.description}
+              meta={preset.action}
+              tone={preset.tone}
+              icon={preset.icon}
+              action={<ArrowRight className="h-4 w-4" />}
+              onClick={() => launchPracticeSession(preset.config)}
+            />
+          ))}
         </div>
-      </FocusPanel>
+      </Surface>
 
       <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
         <Surface>
@@ -1428,20 +1642,24 @@ export function PracticeQuestionsPage() {
             description="After a set, missed items move into remediation and performance updates."
           />
           <div className="mt-5 grid gap-3">
-            <Link
+            <CommandActionCard
               to="/weak-areas"
-              className="rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.06] p-4 transition hover:border-cyan-200/55 hover:bg-cyan-300/12"
-            >
-              <p className="text-sm font-black text-white">Open remediation</p>
-              <p className="mt-1 text-sm leading-6 text-sky-100/64">Turn missed categories into a repair queue.</p>
-            </Link>
-            <Link
+              title="Open remediation"
+              description="Turn missed categories into a repair queue."
+              meta="Repair"
+              tone="rose"
+              icon={<Target className="h-5 w-5" />}
+              action={<ArrowRight className="h-4 w-4" />}
+            />
+            <CommandActionCard
               to="/performance-analytics"
-              className="rounded-2xl border border-emerald-300/20 bg-emerald-300/[0.055] p-4 transition hover:border-emerald-200/55 hover:bg-emerald-300/12"
-            >
-              <p className="text-sm font-black text-white">Check performance</p>
-              <p className="mt-1 text-sm leading-6 text-sky-100/64">See whether practice is improving readiness signal.</p>
-            </Link>
+              title="Check performance"
+              description="See whether practice is improving readiness signal."
+              meta="Readout"
+              tone="emerald"
+              icon={<BarChart3 className="h-5 w-5" />}
+              action={<ArrowRight className="h-4 w-4" />}
+            />
             <ChecklistItem label="Answer, confidence, rationale, next action" completed meta="Session loop" />
             <ChecklistItem label="Flag confusing items without leaving the set" completed={false} meta="Optional" />
           </div>
@@ -2093,6 +2311,8 @@ export function PerformanceAnalyticsPage() {
         : readiness.status === 'approaching'
           ? 'Approaching'
           : 'Ready'
+  const readinessPercent = Math.round(readiness.readinessScore * 100)
+  const analyticsScope = profile.preferences.analyticsScope ?? 'selected-track'
   const categoryFocus = [...analytics.categoryStats]
     .sort((left, right) => left.accuracy - right.accuracy || right.confidenceMismatchScore - left.confidenceMismatchScore)
     .slice(0, 3)
@@ -2112,72 +2332,79 @@ export function PerformanceAnalyticsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        eyebrow="Performance Analytics"
+      <CommandPageIntro
         title="One readout. One next move."
-        description={`${activeTrack.shortName} performance should explain what changed, what matters, and where to act next.`}
-        action={
-          <div className="inline-flex rounded-xl border border-cyan-300/20 bg-white/[0.04] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
-            {[
-              { label: 'Selected exam', value: 'selected-track' as const },
-              { label: 'All exams', value: 'all-tracks' as const },
-            ].map((item) => (
-              <button
-                key={item.value}
-                type="button"
-                onClick={() =>
-                  updateProfile({
-                    preferences: {
-                      ...profile.preferences,
-                      analyticsScope: item.value,
-                    },
-                  })
-                }
-                className={clsx(
-                  'rounded-lg px-3 py-2 text-xs font-black transition',
-                  (profile.preferences.analyticsScope ?? 'selected-track') === item.value
-                    ? 'bg-cyan-300 text-[#04101f] shadow-[0_0_18px_rgba(56,189,248,0.28)]'
-                    : 'text-sky-100/62 hover:text-sky-100',
-                )}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
+        description={`${performanceTakeaway} Readiness is practice evidence from Nurse Command activity, not a licensure prediction or official exam guarantee.`}
+        badges={
+          <>
+            <CommandBadge tone="cyan" icon={<BarChart3 className="h-3.5 w-3.5" />}>
+              Performance
+            </CommandBadge>
+            <CommandBadge tone="emerald" icon={<ShieldCheck className="h-3.5 w-3.5" />}>
+              Practice evidence
+            </CommandBadge>
+            <CommandBadge tone="amber" icon={<Target className="h-3.5 w-3.5" />}>
+              {activeTrack.shortName}
+            </CommandBadge>
+          </>
         }
-      />
-
-      <FocusPanel>
-        <div className="grid gap-5 bg-[linear-gradient(135deg,#003b66_0%,#12375a_100%)] px-5 py-5 text-white md:px-6 lg:grid-cols-[minmax(0,1fr)_260px]">
-          <div>
-            <p className="text-sm font-semibold text-sky-100/85">Main takeaway</p>
-            <h3 className="mt-3 font-serif text-3xl leading-tight md:text-[2.15rem]">
-              {performanceTakeaway}
-            </h3>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-sky-100/82">
-              Readiness is practice evidence from your activity in Nurse Command. It is not a licensure prediction, clinical advice, or a substitute for official exam guidance.
-            </p>
-            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <Link
-                to="/weak-areas"
-                className="nclex-btn-primary inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black"
-              >
-                Open remediation
-                <Target className="h-4 w-4" />
-              </Link>
-              <Link
-                to="/practice-questions"
-                className="nclex-btn-secondary inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black"
-              >
-                Start practice
-                <ArrowRight className="h-4 w-4" />
-              </Link>
+        action={
+          <>
+            <div className="inline-flex rounded-xl border border-cyan-300/20 bg-white/[0.04] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+              {[
+                { label: 'Selected exam', value: 'selected-track' as const },
+                { label: 'All exams', value: 'all-tracks' as const },
+              ].map((item) => (
+                <button
+                  key={item.value}
+                  type="button"
+                  onClick={() =>
+                    updateProfile({
+                      preferences: {
+                        ...profile.preferences,
+                        analyticsScope: item.value,
+                      },
+                    })
+                  }
+                  className={clsx(
+                    'rounded-lg px-3 py-2 text-xs font-black transition',
+                    analyticsScope === item.value
+                      ? 'bg-cyan-300 text-[#04101f] shadow-[0_0_18px_rgba(56,189,248,0.28)]'
+                      : 'text-sky-100/62 hover:text-sky-100',
+                  )}
+                >
+                  {item.label}
+                </button>
+              ))}
             </div>
-          </div>
-          <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
-            <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-100/70">Readiness</p>
-            <p className="mt-2 text-3xl font-black">{readinessLabel}</p>
-            <p className="text-sm font-semibold text-sky-100/75">{Math.round(readiness.readinessScore * 100)}% readiness score</p>
+            <Link
+              to="/weak-areas"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-cyan-100/45 bg-[linear-gradient(180deg,#24b8ff_0%,#0b83d6_100%)] px-5 py-3 text-sm font-black text-white shadow-[0_12px_34px_rgba(14,165,233,0.24)] transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-cyan-200/55"
+            >
+              Open remediation
+              <Target className="h-4 w-4" />
+            </Link>
+            <Link
+              to="/practice-questions"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-sky-200/22 bg-white/[0.06] px-5 py-3 text-sm font-black text-sky-100 transition hover:border-sky-200/45 hover:bg-white/[0.09]"
+            >
+              Start practice
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </>
+        }
+        aside={
+          <div className="h-full rounded-[1rem] border border-emerald-200/24 bg-emerald-300/[0.07] p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-100/70">Readiness</p>
+                <p className="mt-2 text-3xl font-black text-white">{readinessLabel}</p>
+                <p className="text-sm font-semibold text-sky-100/75">{readinessPercent}% readiness score</p>
+              </div>
+              <span className="rounded-lg border border-white/12 bg-white/8 px-2.5 py-1 text-[0.68rem] font-black uppercase text-emerald-100">
+                Signal
+              </span>
+            </div>
             <p className="mt-2 text-xs font-bold uppercase tracking-[0.14em] text-sky-100/60">
               Practice evidence only
             </p>
@@ -2188,8 +2415,33 @@ export function PerformanceAnalyticsPage() {
               />
             </div>
           </div>
-        </div>
-      </FocusPanel>
+        }
+        stats={
+          <>
+            <CommandStatTile
+              label="Accuracy"
+              value={`${Math.round(readiness.practiceAccuracy * 100)}%`}
+              detail={`${analytics.questionsCompleted} questions completed`}
+              icon={<Activity className="h-4 w-4" />}
+              tone={readiness.practiceAccuracy >= 0.75 ? 'emerald' : 'amber'}
+            />
+            <CommandStatTile
+              label="Trusted"
+              value={`${readiness.trustedAttemptCount}`}
+              detail={`${readiness.practiceAttemptCount} practice attempts`}
+              icon={<BadgeCheck className="h-4 w-4" />}
+              tone={readiness.status === 'ready' ? 'emerald' : 'cyan'}
+            />
+            <CommandStatTile
+              label="Repair"
+              value={`${repairQueueCount}`}
+              detail="Transfer proof needed"
+              icon={<Target className="h-4 w-4" />}
+              tone={repairQueueCount ? 'rose' : 'emerald'}
+            />
+          </>
+        }
+      />
 
       <div className="grid gap-5 md:grid-cols-3">
         <StatCard
@@ -2714,6 +2966,7 @@ export function MyMaterialsPage() {
   const startMaterialQuiz = useStudySystemStore((state) => state.startMaterialQuiz)
   const saveNote = useStudySystemStore((state) => state.saveNote)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const materialReviewRef = useRef<HTMLDivElement | null>(null)
   const [selectedMaterialId, setSelectedMaterialId] = useState<string | null>(null)
   const [dragActive, setDragActive] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
@@ -2729,6 +2982,10 @@ export function MyMaterialsPage() {
   const selectedQuestionCount = selectedMaterial?.generatedQuestionIds.length ?? 0
   const selectedPendingFlashcardCount = selectedMaterial?.pendingFlashcards?.length ?? 0
   const selectedPendingQuestionCount = selectedMaterial?.pendingQuestions?.length ?? 0
+  const selectedPendingTotal = selectedPendingFlashcardCount + selectedPendingQuestionCount
+  const selectedIsPendingReview = selectedMaterial?.reviewStatus === 'pending-review'
+  const selectedIsApproved = selectedMaterial?.reviewStatus === 'approved'
+  const selectedHasApprovedTools = selectedFlashcardCount + selectedQuestionCount > 0
   const selectedPreviewText = selectedMaterial
     ? selectedMaterial.assets
         .slice(0, previewExpanded ? selectedMaterial.assets.length : 4)
@@ -2742,6 +2999,7 @@ export function MyMaterialsPage() {
 
   const readyCount = materials.filter((item) => item.extractionStatus === 'ready').length
   const errorCount = materials.filter((item) => item.extractionStatus === 'error').length
+  const pendingReviewCount = materials.filter((item) => item.reviewStatus === 'pending-review').length
   const totalGeneratedCards = materialFlashcards.length
 
   const handleFiles = async (incoming: File[] | FileList) => {
@@ -2754,9 +3012,8 @@ export function MyMaterialsPage() {
       try {
         await importStudyMaterial(file)
       } catch (error) {
-        setUploadMessage(
-          error instanceof Error ? error.message : 'We could not import that file.',
-        )
+        reportSafeError('material-file-import', error)
+        setUploadMessage(getSafeErrorCopy('material-file-import'))
       }
     }
 
@@ -2773,9 +3030,8 @@ export function MyMaterialsPage() {
       setMaterialUrl('')
       setUploadMessage('Link imported. Review the generated study tools before saving them to your deck.')
     } catch (error) {
-      setUploadMessage(
-        error instanceof Error ? error.message : 'We could not import that link.',
-      )
+      reportSafeError('material-link-import', error)
+      setUploadMessage(getSafeErrorCopy('material-link-import'))
     }
 
     setIsUploading(false)
@@ -2799,25 +3055,77 @@ export function MyMaterialsPage() {
     navigate('/notes')
   }
 
+  const openStudyGuide = () => {
+    if (!selectedMaterial?.assets.length) return
+    setStudyGuideOpen((current) => !current)
+  }
+
+  const startSelectedMaterialFlashcards = () => {
+    if (!selectedMaterial || !selectedFlashcardCount) return
+    startMaterialFlashcards(selectedMaterial.id)
+    navigate(`/flashcards?materialId=${encodeURIComponent(selectedMaterial.id)}`)
+  }
+
+  const startSelectedMaterialQuiz = () => {
+    if (!selectedMaterial || !selectedQuestionCount) return
+    startMaterialQuiz(selectedMaterial.id, {
+      questionCount: Math.min(5, selectedQuestionCount),
+      title: `Study from ${selectedMaterial.displayTitle}`,
+    })
+  }
+
+  const scrollToMaterialReview = () => {
+    materialReviewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
   if (activeMaterialQuizSession) {
     return <MaterialQuizRunner />
   }
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        eyebrow="My Materials"
-        title="Bring your own study guides into the system."
-        description="Upload PDFs, DOCX files, or text notes. We extract the content locally, generate proposed study tools, then let you review and approve them before they enter your deck."
+      <CommandPageIntro
+        title="Turn materials into reviewed study tools."
+        description="Upload PDFs, DOCX files, links, or text notes. Nurse Command extracts the content, proposes flashcards and quiz items, then keeps them in review until you approve them."
+        badges={
+          <>
+            <CommandBadge tone="cyan" icon={<UploadCloud className="h-3.5 w-3.5" />}>
+              Uploads
+            </CommandBadge>
+            <CommandBadge tone="emerald" icon={<ShieldCheck className="h-3.5 w-3.5" />}>
+              Review before save
+            </CommandBadge>
+            <CommandBadge tone="amber" icon={<FolderOpen className="h-3.5 w-3.5" />}>
+              {materials.length} files
+            </CommandBadge>
+          </>
+        }
         action={
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="nclex-btn-primary inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold"
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-cyan-100/45 bg-[linear-gradient(180deg,#24b8ff_0%,#0b83d6_100%)] px-6 py-3 text-sm font-black text-white shadow-[0_12px_34px_rgba(14,165,233,0.28)] transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-cyan-200/55"
           >
             <Upload className="h-4 w-4" />
             Upload material
           </button>
+        }
+        aside={
+          <div className="h-full rounded-[1rem] border border-amber-200/24 bg-amber-300/[0.07] p-4">
+            <p className="text-xs font-black uppercase text-sky-100/64">Review gate</p>
+            <p className="mt-2 text-3xl font-black text-white">{pendingReviewCount}</p>
+            <p className="text-sm font-semibold text-sky-100/70">materials waiting</p>
+            <p className="mt-4 text-sm leading-6 text-sky-100/62">
+              Nothing enters the deck until generated tools are checked and approved.
+            </p>
+          </div>
+        }
+        stats={
+          <>
+            <CommandStatTile label="Library" value={`${materials.length}`} detail="Study files" icon={<FolderOpen className="h-4 w-4" />} tone="cyan" />
+            <CommandStatTile label="Ready" value={`${readyCount}`} detail="Parsed cleanly" icon={<CheckCircle2 className="h-4 w-4" />} tone="emerald" />
+            <CommandStatTile label="Approved" value={`${totalGeneratedCards}`} detail="Cards saved to decks" icon={<SquareStack className="h-4 w-4" />} tone="amber" />
+          </>
         }
       />
 
@@ -2922,56 +3230,74 @@ export function MyMaterialsPage() {
 
             <div className="mt-5 space-y-3">
               {materialsHydrated && materials.length ? (
-                materials.map((material) => (
-                  <button
-                    key={material.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedMaterialId(material.id)
-                      setPreviewExpanded(false)
-                      setStudyGuideOpen(false)
-                    }}
-                    className={clsx(
-                      'w-full rounded-[18px] border p-4 text-left transition',
-                      selectedMaterial?.id === material.id
-                        ? 'border-[#c9dbef] bg-[var(--nclex-blue-soft)]'
-                        : 'border-[var(--nclex-border)] bg-white hover:border-[#c9dbef]',
-                    )}
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="nclex-chip nclex-chip-info">{material.fileType.toUpperCase()}</span>
-                          <span className={materialStatusClass(material.extractionStatus)}>
-                            {material.extractionStatus === 'error'
-                              ? 'Needs attention'
-                              : material.extractionStatus === 'extracting'
-                                ? 'Extracting'
-                                : 'Ready'}
+                materials.map((material) => {
+                  const materialPendingTotal = (material.pendingFlashcards?.length ?? 0) + (material.pendingQuestions?.length ?? 0)
+                  const materialApprovedTotal = material.generatedFlashcardIds.length + material.generatedQuestionIds.length
+                  const materialActionLabel =
+                    material.extractionStatus === 'error'
+                      ? 'Fix source'
+                      : material.extractionStatus === 'extracting'
+                        ? 'Processing'
+                        : material.reviewStatus === 'pending-review'
+                          ? 'Review generated tools'
+                          : materialApprovedTotal
+                            ? 'Ready to study'
+                            : 'Open material'
+
+                  return (
+                    <button
+                      key={material.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedMaterialId(material.id)
+                        setPreviewExpanded(false)
+                        setStudyGuideOpen(false)
+                      }}
+                      className={clsx(
+                        'w-full rounded-[18px] border p-4 text-left transition',
+                        selectedMaterial?.id === material.id
+                          ? 'border-[#c9dbef] bg-[var(--nclex-blue-soft)]'
+                          : 'border-[var(--nclex-border)] bg-white hover:border-[#c9dbef]',
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="nclex-chip nclex-chip-info">{material.fileType.toUpperCase()}</span>
+                            <span className={materialStatusClass(material.extractionStatus)}>
+                              {material.extractionStatus === 'error'
+                                ? 'Needs attention'
+                                : material.extractionStatus === 'extracting'
+                                  ? 'Extracting'
+                                  : 'Ready'}
+                            </span>
+                          </div>
+                          <p className="mt-3 truncate text-base font-semibold text-[var(--nclex-text)]">
+                            {material.displayTitle}
+                          </p>
+                          <p className="mt-1 text-sm text-[var(--nclex-text-muted)]">
+                            Imported {formatImportDate(material.importedAt)}
+                          </p>
+                          <span className="mt-3 inline-flex min-h-8 items-center rounded-lg border border-[#bfdbfe] bg-white px-3 py-1 text-xs font-semibold text-[var(--nclex-blue)]">
+                            {materialActionLabel}
                           </span>
                         </div>
-                        <p className="mt-3 truncate text-base font-semibold text-[var(--nclex-text)]">
-                          {material.displayTitle}
-                        </p>
-                        <p className="mt-1 text-sm text-[var(--nclex-text-muted)]">
-                          Imported {formatImportDate(material.importedAt)}
-                        </p>
+                        <div className="shrink-0 text-right">
+                          <p className="text-sm font-semibold text-[var(--nclex-text)]">
+                            {material.reviewStatus === 'pending-review'
+                              ? `${materialPendingTotal} pending`
+                              : `${material.generatedFlashcardIds.length} cards`}
+                          </p>
+                          <p className="mt-1 text-xs text-[var(--nclex-text-muted)]">
+                            {material.reviewStatus === 'pending-review'
+                              ? 'Approve first'
+                              : `${material.generatedQuestionIds.length} quiz items`}
+                          </p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm font-semibold text-[var(--nclex-text)]">
-                          {material.reviewStatus === 'pending-review'
-                            ? `${material.pendingFlashcards?.length ?? 0} pending`
-                            : `${material.generatedFlashcardIds.length} cards`}
-                        </p>
-                        <p className="mt-1 text-xs text-[var(--nclex-text-muted)]">
-                          {material.reviewStatus === 'pending-review'
-                            ? 'Needs review'
-                            : `${material.generatedQuestionIds.length} quiz items`}
-                        </p>
-                      </div>
-                    </div>
-                  </button>
-                ))
+                    </button>
+                  )
+                })
               ) : (
                 <EmptyState
                   title="Your materials library is empty."
@@ -3010,19 +3336,112 @@ export function MyMaterialsPage() {
                   <MetricChip label="Flashcards" value={`${selectedFlashcardCount}`} />
                   <MetricChip label="Quiz items" value={`${selectedQuestionCount}`} />
                   {selectedMaterial.reviewStatus === 'pending-review' ? (
-                    <MetricChip label="Pending" value={`${selectedPendingFlashcardCount + selectedPendingQuestionCount}`} />
+                    <MetricChip label="Pending" value={`${selectedPendingTotal}`} />
                   ) : null}
                 </div>
               </div>
 
+              <div className="rounded-[18px] border border-cyan-200/18 bg-[#061c31] p-4 text-white">
+                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <h4 className="text-xl font-black text-white">What this upload can do</h4>
+                    <p className="mt-2 max-w-3xl text-sm leading-6 text-sky-100/66">
+                      Work from left to right: review generated tools, open a guide, drill flashcards, or run a quiz from this material.
+                    </p>
+                  </div>
+                  <span
+                    className={clsx(
+                      'inline-flex min-h-8 items-center rounded-lg border px-3 py-1 text-xs font-black',
+                      selectedMaterial.extractionStatus === 'error'
+                        ? 'border-rose-200/28 bg-rose-300/10 text-rose-100'
+                        : selectedIsPendingReview
+                          ? 'border-amber-200/28 bg-amber-300/10 text-amber-100'
+                          : selectedIsApproved || selectedHasApprovedTools
+                            ? 'border-emerald-200/28 bg-emerald-300/10 text-emerald-100'
+                            : 'border-sky-200/20 bg-white/[0.055] text-sky-100/70',
+                    )}
+                  >
+                    {selectedMaterial.extractionStatus === 'error'
+                      ? 'Needs attention'
+                      : selectedIsPendingReview
+                        ? 'Review needed'
+                        : selectedIsApproved || selectedHasApprovedTools
+                          ? 'Ready to study'
+                          : 'Processing'}
+                  </span>
+                </div>
+
+                <div className="mt-4 grid gap-3 lg:grid-cols-4">
+                  <MaterialToolCard
+                    icon={<ShieldCheck className="h-5 w-5" />}
+                    title="Review tools"
+                    detail={
+                      selectedIsPendingReview
+                        ? `${selectedPendingTotal} proposed items waiting. Approve them before they enter your decks.`
+                        : selectedIsApproved || selectedHasApprovedTools
+                          ? 'Generated tools are approved and saved.'
+                          : 'Tools appear here after the material is parsed.'
+                    }
+                    status={selectedIsPendingReview ? 'Next step' : selectedIsApproved || selectedHasApprovedTools ? 'Done' : 'Waiting'}
+                    tone={selectedIsPendingReview ? 'amber' : selectedIsApproved || selectedHasApprovedTools ? 'green' : 'blue'}
+                    actionLabel={selectedIsPendingReview ? 'Review now' : undefined}
+                    onAction={selectedIsPendingReview ? scrollToMaterialReview : undefined}
+                  />
+                  <MaterialToolCard
+                    icon={<BookOpen className="h-5 w-5" />}
+                    title="Study guide"
+                    detail="Open a clean summary, outline, and key terms from the uploaded content."
+                    status={selectedMaterial.assets.length ? 'Available' : 'No text'}
+                    tone="blue"
+                    actionLabel={studyGuideOpen ? 'Hide guide' : 'Open guide'}
+                    onAction={selectedMaterial.assets.length ? openStudyGuide : undefined}
+                    disabled={!selectedMaterial.assets.length}
+                  />
+                  <MaterialToolCard
+                    icon={<Sparkles className="h-5 w-5" />}
+                    title="Flashcards"
+                    detail={
+                      selectedFlashcardCount
+                        ? `${selectedFlashcardCount} approved cards ready for spaced review.`
+                        : selectedIsPendingReview
+                          ? 'Approve proposed flashcards first.'
+                          : 'No flashcards saved yet.'
+                    }
+                    status={selectedFlashcardCount ? 'Ready' : selectedIsPendingReview ? 'Approve first' : 'Empty'}
+                    tone={selectedFlashcardCount ? 'green' : 'slate'}
+                    actionLabel="Study cards"
+                    onAction={selectedFlashcardCount ? startSelectedMaterialFlashcards : undefined}
+                    disabled={!selectedFlashcardCount}
+                  />
+                  <MaterialToolCard
+                    icon={<ClipboardList className="h-5 w-5" />}
+                    title="Quiz"
+                    detail={
+                      selectedQuestionCount
+                        ? `${selectedQuestionCount} approved quiz items ready for a short drill.`
+                        : selectedIsPendingReview
+                          ? 'Approve proposed quiz items first.'
+                          : 'No quiz items saved yet.'
+                    }
+                    status={selectedQuestionCount ? 'Ready' : selectedIsPendingReview ? 'Approve first' : 'Empty'}
+                    tone={selectedQuestionCount ? 'green' : 'slate'}
+                    actionLabel="Start quiz"
+                    onAction={selectedQuestionCount ? startSelectedMaterialQuiz : undefined}
+                    disabled={!selectedQuestionCount}
+                  />
+                </div>
+              </div>
+
               {selectedMaterial.reviewStatus === 'pending-review' ? (
-                <MaterialReviewPanel
-                  key={`${selectedMaterial.id}-${selectedPendingFlashcardCount}-${selectedPendingQuestionCount}`}
-                  material={selectedMaterial}
-                  onApprove={(flashcardDrafts, questionDrafts) =>
-                    approveMaterialStudyTools(selectedMaterial.id, flashcardDrafts, questionDrafts)
-                  }
-                />
+                <div ref={materialReviewRef} className="scroll-mt-24">
+                  <MaterialReviewPanel
+                    key={`${selectedMaterial.id}-${selectedPendingFlashcardCount}-${selectedPendingQuestionCount}`}
+                    material={selectedMaterial}
+                    onApprove={(flashcardDrafts, questionDrafts) =>
+                      approveMaterialStudyTools(selectedMaterial.id, flashcardDrafts, questionDrafts)
+                    }
+                  />
+                </div>
               ) : null}
 
               <div className="grid gap-4 md:grid-cols-[0.9fr_1.1fr]">
@@ -3072,48 +3491,16 @@ export function MyMaterialsPage() {
 
                 <Surface className="nclex-surface-muted p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]">
-                    Actions
+                    Manage material
                   </p>
-                  <div className="mt-4 flex flex-wrap gap-3">
-                    <button
-                      type="button"
-                      disabled={!selectedMaterial.assets.length}
-                      onClick={() => setStudyGuideOpen((current) => !current)}
-                      className="nclex-btn-primary inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <BookOpen className="h-4 w-4" />
-                      Turn lecture into study guide
-                    </button>
-                    <button
-                      type="button"
-                      disabled={!selectedFlashcardCount}
-                      onClick={() => {
-                        startMaterialFlashcards(selectedMaterial.id)
-                        navigate(`/flashcards?materialId=${encodeURIComponent(selectedMaterial.id)}`)
-                      }}
-                      className="nclex-btn-primary inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <Sparkles className="h-4 w-4" />
-                      Create flashcards
-                    </button>
-                    <button
-                      type="button"
-                      disabled={!selectedQuestionCount}
-                      onClick={() =>
-                        startMaterialQuiz(selectedMaterial.id, {
-                          questionCount: Math.min(5, selectedQuestionCount),
-                          title: `Study from ${selectedMaterial.displayTitle}`,
-                        })
-                      }
-                      className="nclex-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <ArrowRight className="h-4 w-4" />
-                      Start quiz
-                    </button>
+                  <p className="mt-2 text-sm leading-6 text-[var(--nclex-text-muted)]">
+                    Keep study actions in the workspace above. Use these when you want to move, rebuild, or remove the source.
+                  </p>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
                     <button
                       type="button"
                       onClick={sendToNotes}
-                      className="nclex-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold"
+                      className="nclex-btn-secondary inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold"
                     >
                       <FileText className="h-4 w-4" />
                       Send to Notes
@@ -3122,7 +3509,7 @@ export function MyMaterialsPage() {
                       type="button"
                       disabled={selectedMaterial.extractionStatus !== 'ready'}
                       onClick={() => void regenerateMaterialStudyTools(selectedMaterial.id)}
-                      className="inline-flex items-center gap-2 rounded-xl border border-[var(--nclex-border)] bg-white px-4 py-3 text-sm font-semibold text-[var(--nclex-text-secondary)] disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[var(--nclex-border)] bg-white px-4 py-3 text-sm font-semibold text-[var(--nclex-text-secondary)] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <RefreshCw className="h-4 w-4" />
                       Regenerate
@@ -3130,7 +3517,7 @@ export function MyMaterialsPage() {
                     <button
                       type="button"
                       onClick={() => void deleteStudyMaterial(selectedMaterial.id)}
-                      className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700"
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700 sm:col-span-2"
                     >
                       <Trash2 className="h-4 w-4" />
                       Delete
@@ -3254,6 +3641,97 @@ export function MyMaterialsPage() {
   )
 }
 
+function MaterialToolCard({
+  icon,
+  title,
+  detail,
+  status,
+  tone,
+  actionLabel,
+  onAction,
+  disabled = false,
+}: {
+  icon: React.ReactNode
+  title: string
+  detail: string
+  status: string
+  tone: 'amber' | 'blue' | 'green' | 'slate'
+  actionLabel?: string
+  onAction?: () => void
+  disabled?: boolean
+}) {
+  const styles = {
+    amber: {
+      card: 'border-amber-200/24 bg-amber-300/[0.075]',
+      icon: 'border-amber-200/30 bg-amber-300/12 text-amber-100',
+      status: 'border-amber-200/28 bg-amber-300/10 text-amber-100',
+    },
+    blue: {
+      card: 'border-cyan-200/20 bg-cyan-300/[0.06]',
+      icon: 'border-cyan-200/28 bg-cyan-300/12 text-cyan-100',
+      status: 'border-cyan-200/24 bg-cyan-300/10 text-cyan-100',
+    },
+    green: {
+      card: 'border-emerald-200/22 bg-emerald-300/[0.06]',
+      icon: 'border-emerald-200/28 bg-emerald-300/12 text-emerald-100',
+      status: 'border-emerald-200/24 bg-emerald-300/10 text-emerald-100',
+    },
+    slate: {
+      card: 'border-slate-200/14 bg-white/[0.04]',
+      icon: 'border-slate-200/18 bg-white/[0.055] text-slate-200/78',
+      status: 'border-slate-200/16 bg-white/[0.05] text-slate-100/70',
+    },
+  }[tone]
+
+  return (
+    <div className={clsx('flex min-h-[14rem] flex-col rounded-[14px] border p-4', styles.card)}>
+      <div className="flex items-start justify-between gap-3">
+        <span className={clsx('inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border', styles.icon)}>
+          {icon}
+        </span>
+        <span className={clsx('rounded-lg border px-2.5 py-1 text-[0.68rem] font-black uppercase', styles.status)}>
+          {status}
+        </span>
+      </div>
+      <h5 className="mt-4 text-base font-black text-white">{title}</h5>
+      <p className="mt-2 flex-1 text-sm leading-6 text-sky-100/64">{detail}</p>
+      {actionLabel ? (
+        <button
+          type="button"
+          disabled={disabled || !onAction}
+          onClick={onAction}
+          className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-cyan-200/24 bg-white/[0.055] px-3 py-2 text-sm font-black text-cyan-100 transition hover:border-cyan-200/45 hover:bg-cyan-300/10 disabled:cursor-not-allowed disabled:border-slate-200/10 disabled:text-slate-200/40"
+        >
+          {actionLabel}
+          <ArrowRight className="h-4 w-4" />
+        </button>
+      ) : null}
+    </div>
+  )
+}
+
+function MaterialQualityMessages({ issues }: { issues: MaterialQualityIssue[] }) {
+  if (!issues.length) return null
+
+  return (
+    <div className="mb-3 space-y-2">
+      {issues.map((issue) => (
+        <div
+          key={`${issue.code}-${issue.field ?? 'item'}`}
+          className={clsx(
+            'rounded-xl border px-3 py-2 text-xs font-semibold leading-5',
+            issue.severity === 'blocker'
+              ? 'border-rose-200 bg-rose-50 text-rose-800'
+              : 'border-amber-200 bg-amber-50 text-amber-800',
+          )}
+        >
+          {issue.message}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function MaterialReviewPanel({
   material,
   onApprove,
@@ -3269,6 +3747,20 @@ function MaterialReviewPanel({
   )
   const [isApproving, setIsApproving] = useState(false)
   const totalPending = flashcardDrafts.length + questionDrafts.length
+  const qualitySummary = useMemo(
+    () => summarizeMaterialQuality(flashcardDrafts, questionDrafts),
+    [flashcardDrafts, questionDrafts],
+  )
+  const blockedItemIds = useMemo(
+    () =>
+      new Set(
+        qualitySummary.issues
+          .filter((issue) => issue.severity === 'blocker')
+          .map((issue) => issue.itemId),
+      ),
+    [qualitySummary],
+  )
+  const saveableTotal = totalPending - blockedItemIds.size
 
   const updateFlashcardDraft = (
     id: string,
@@ -3285,6 +3777,29 @@ function MaterialReviewPanel({
   ) => {
     setQuestionDrafts((current) =>
       current.map((question) => (question.id === id ? { ...question, ...updates } : question)),
+    )
+  }
+
+  const updateQuestionChoiceDraft = (questionId: string, choiceId: string, text: string) => {
+    setQuestionDrafts((current) =>
+      current.map((question) =>
+        question.id === questionId
+          ? {
+              ...question,
+              choices: question.choices.map((choice) =>
+                choice.id === choiceId ? { ...choice, text } : choice,
+              ),
+            }
+          : question,
+      ),
+    )
+  }
+
+  const updateQuestionCorrectAnswerDraft = (questionId: string, choiceId: string) => {
+    setQuestionDrafts((current) =>
+      current.map((question) =>
+        question.id === questionId ? { ...question, correctAnswer: [choiceId] } : question,
+      ),
     )
   }
 
@@ -3316,13 +3831,30 @@ function MaterialReviewPanel({
         </div>
         <button
           type="button"
-          disabled={!totalPending || isApproving}
+          disabled={!totalPending || !saveableTotal || isApproving}
           onClick={() => void approveDrafts()}
           className="nclex-btn-primary inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isApproving ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-          Approve and save
+          {qualitySummary.blockerCount ? `Approve ${saveableTotal} ready item${saveableTotal === 1 ? '' : 's'}` : 'Approve and save'}
         </button>
+      </div>
+
+      <div
+        className={clsx(
+          'mt-4 rounded-2xl border px-4 py-3 text-sm font-semibold',
+          qualitySummary.blockerCount
+            ? 'border-rose-200 bg-rose-50 text-rose-800'
+            : qualitySummary.warningCount
+              ? 'border-amber-200 bg-amber-50 text-amber-800'
+              : 'border-emerald-200 bg-emerald-50 text-emerald-800',
+        )}
+      >
+        {qualitySummary.blockerCount
+          ? `${qualitySummary.blockerCount} item issue${qualitySummary.blockerCount === 1 ? '' : 's'} must be fixed or removed before those items save.`
+          : qualitySummary.warningCount
+            ? `${qualitySummary.warningCount} review note${qualitySummary.warningCount === 1 ? '' : 's'} found. You can still approve ready items.`
+            : 'Generated tools passed the review checks and are ready to save.'}
       </div>
 
       <div className="mt-5 grid gap-5 xl:grid-cols-2">
@@ -3354,6 +3886,7 @@ function MaterialReviewPanel({
                       Remove
                     </button>
                   </div>
+                  <MaterialQualityMessages issues={qualitySummary.issuesByItemId[card.id] ?? []} />
                   <Field label="Front">
                     <textarea
                       value={card.front}
@@ -3411,6 +3944,7 @@ function MaterialReviewPanel({
                       Remove
                     </button>
                   </div>
+                  <MaterialQualityMessages issues={qualitySummary.issuesByItemId[question.id] ?? []} />
                   <Field label="Prompt">
                     <textarea
                       value={question.prompt}
@@ -3425,9 +3959,22 @@ function MaterialReviewPanel({
                     </p>
                     <div className="mt-2 space-y-2">
                       {question.choices.map((choice) => (
-                        <p key={choice.id} className="text-sm leading-6 text-[var(--nclex-text-secondary)]">
-                          <span className="font-semibold">{choice.id}.</span> {choice.text}
-                        </p>
+                        <div key={choice.id} className="flex flex-col gap-2 rounded-xl border border-[var(--nclex-border)] bg-[var(--nclex-card-muted)] p-2 sm:flex-row sm:items-center">
+                          <label className="inline-flex min-h-9 shrink-0 items-center gap-2 rounded-lg border border-[var(--nclex-border)] bg-white px-3 text-xs font-semibold text-[var(--nclex-text-secondary)]">
+                            <input
+                              type="radio"
+                              name={`correct-answer-${question.id}`}
+                              checked={question.correctAnswer[0] === choice.id}
+                              onChange={() => updateQuestionCorrectAnswerDraft(question.id, choice.id)}
+                            />
+                            {choice.id}
+                          </label>
+                          <input
+                            value={choice.text}
+                            onChange={(event) => updateQuestionChoiceDraft(question.id, choice.id, event.target.value)}
+                            className="min-h-10 flex-1 rounded-lg border border-[var(--nclex-border)] bg-white px-3 py-2 text-sm text-[var(--nclex-text)] outline-none transition focus:border-[#93c5fd] focus:ring-4 focus:ring-[#dbeafe]"
+                          />
+                        </div>
                       ))}
                     </div>
                   </div>

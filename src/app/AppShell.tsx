@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import {
+  Activity,
   Bell,
   BadgeDollarSign,
   BookOpen,
@@ -21,6 +22,7 @@ import {
   NotebookPen,
   RefreshCw,
   Settings,
+  ShieldCheck,
   SquareStack,
   Target,
   Trophy,
@@ -851,20 +853,31 @@ function BrandLockup({ compact = false }: { compact?: boolean }) {
   return (
     <div className={clsx('rounded-[18px] border border-cyan-300/22 bg-[#071d34]/75 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_24px_rgba(43,148,255,0.14)]', compact && 'p-3')}>
       <div className="flex items-start gap-3">
-        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[16px] border border-cyan-300/35 bg-[linear-gradient(180deg,#0f7aff_0%,#062d63_100%)] text-white shadow-[0_0_26px_rgba(43,148,255,0.34)]">
-          <HeartPulse className="h-7 w-7" />
+        <div className="relative grid h-12 w-12 shrink-0 place-items-center rounded-[16px] border border-cyan-300/35 bg-[#092845] text-white shadow-[0_0_26px_rgba(43,148,255,0.26)]">
+          <ShieldCheck className="h-8 w-8 text-cyan-100" />
+          <Activity className="absolute h-4 w-4 text-emerald-200" />
+          <span className="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-lg border border-amber-200/50 bg-amber-300/20 text-amber-100">
+            <HeartPulse className="h-3 w-3" />
+          </span>
         </div>
         <div className="min-w-0">
-          <p className="text-lg font-black uppercase tracking-[0.16em] text-white drop-shadow-[0_0_12px_rgba(144,204,255,0.45)]">
+          <p className="text-lg font-black uppercase tracking-[0.14em] text-white drop-shadow-[0_0_12px_rgba(144,204,255,0.36)]">
             Nurse Command
           </p>
-          <p className="-mt-0.5 text-[10px] font-bold uppercase tracking-[0.32em] text-sky-100">
+          <p className="-mt-0.5 text-[10px] font-bold uppercase tracking-[0.28em] text-sky-100">
             Study. Practice. Lead.
           </p>
           {!compact ? (
-            <p className="mt-2 text-xs leading-5 text-slate-300">
-              Build confidence for the floor.
-            </p>
+            <div className="mt-3 grid grid-cols-3 gap-1.5">
+              {['RN', 'PN', 'FNP'].map((label) => (
+                <span
+                  key={label}
+                  className="rounded-lg border border-white/10 bg-white/[0.055] px-2 py-1 text-center text-[10px] font-black text-sky-100/70"
+                >
+                  {label}
+                </span>
+              ))}
+            </div>
           ) : null}
         </div>
       </div>
