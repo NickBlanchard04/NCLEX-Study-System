@@ -147,6 +147,8 @@ const launchToneClasses: Record<
     icon: string
     text: string
     meta: string
+    idle: string
+    button: string
     hover: string
     glow: string
   }
@@ -158,7 +160,9 @@ const launchToneClasses: Record<
     icon: 'border-cyan-200/65 bg-cyan-300/24 text-cyan-50 shadow-[0_0_22px_rgba(34,211,238,0.22)]',
     text: 'text-cyan-50',
     meta: 'border-cyan-100/45 bg-cyan-300/22 text-cyan-50',
-    hover: 'hover:border-cyan-100/85 hover:from-cyan-300/[0.32]',
+    idle: 'border-cyan-200/26 from-cyan-400/[0.075] via-[#03101f]/72 to-[#020812]/88',
+    button: 'border-cyan-200/24 bg-cyan-300/[0.07] hover:border-cyan-100/68 hover:bg-cyan-300/14 hover:shadow-[0_0_26px_rgba(34,211,238,0.16)] focus:ring-cyan-300/18',
+    hover: 'hover:border-cyan-100/85 hover:from-cyan-300/[0.32] hover:shadow-[0_0_30px_rgba(34,211,238,0.18)]',
     glow: 'bg-cyan-300/30',
   },
   emerald: {
@@ -168,7 +172,9 @@ const launchToneClasses: Record<
     icon: 'border-emerald-200/60 bg-emerald-300/22 text-emerald-50 shadow-[0_0_22px_rgba(52,211,153,0.2)]',
     text: 'text-emerald-50',
     meta: 'border-emerald-100/42 bg-emerald-300/20 text-emerald-50',
-    hover: 'hover:border-emerald-100/80 hover:from-emerald-300/[0.3]',
+    idle: 'border-emerald-200/24 from-emerald-400/[0.065] via-[#03101f]/72 to-[#020812]/88',
+    button: 'border-emerald-200/22 bg-emerald-300/[0.065] hover:border-emerald-100/64 hover:bg-emerald-300/14 hover:shadow-[0_0_26px_rgba(52,211,153,0.15)] focus:ring-emerald-300/18',
+    hover: 'hover:border-emerald-100/80 hover:from-emerald-300/[0.3] hover:shadow-[0_0_30px_rgba(52,211,153,0.16)]',
     glow: 'bg-emerald-300/28',
   },
   amber: {
@@ -178,7 +184,9 @@ const launchToneClasses: Record<
     icon: 'border-amber-200/62 bg-amber-300/24 text-amber-50 shadow-[0_0_22px_rgba(251,191,36,0.2)]',
     text: 'text-amber-50',
     meta: 'border-amber-100/42 bg-amber-300/22 text-amber-50',
-    hover: 'hover:border-amber-100/80 hover:from-amber-300/[0.32]',
+    idle: 'border-amber-200/24 from-amber-300/[0.07] via-[#03101f]/72 to-[#020812]/88',
+    button: 'border-amber-200/22 bg-amber-300/[0.065] hover:border-amber-100/64 hover:bg-amber-300/14 hover:shadow-[0_0_26px_rgba(251,191,36,0.15)] focus:ring-amber-300/18',
+    hover: 'hover:border-amber-100/80 hover:from-amber-300/[0.32] hover:shadow-[0_0_30px_rgba(251,191,36,0.16)]',
     glow: 'bg-amber-300/28',
   },
   rose: {
@@ -188,7 +196,9 @@ const launchToneClasses: Record<
     icon: 'border-rose-200/58 bg-rose-300/22 text-rose-50 shadow-[0_0_22px_rgba(251,113,133,0.2)]',
     text: 'text-rose-50',
     meta: 'border-rose-100/42 bg-rose-300/20 text-rose-50',
-    hover: 'hover:border-rose-100/78 hover:from-rose-300/[0.3]',
+    idle: 'border-rose-200/22 from-rose-400/[0.065] via-[#03101f]/72 to-[#020812]/88',
+    button: 'border-rose-200/22 bg-rose-300/[0.065] hover:border-rose-100/62 hover:bg-rose-300/14 hover:shadow-[0_0_26px_rgba(251,113,133,0.15)] focus:ring-rose-300/18',
+    hover: 'hover:border-rose-100/78 hover:from-rose-300/[0.3] hover:shadow-[0_0_30px_rgba(251,113,133,0.16)]',
     glow: 'bg-rose-300/26',
   },
   violet: {
@@ -198,7 +208,9 @@ const launchToneClasses: Record<
     icon: 'border-violet-200/62 bg-violet-300/22 text-violet-50 shadow-[0_0_22px_rgba(167,139,250,0.2)]',
     text: 'text-violet-50',
     meta: 'border-violet-100/42 bg-violet-300/21 text-violet-50',
-    hover: 'hover:border-violet-100/80 hover:from-violet-300/[0.31]',
+    idle: 'border-violet-200/24 from-violet-400/[0.07] via-[#03101f]/72 to-[#020812]/88',
+    button: 'border-violet-200/22 bg-violet-300/[0.065] hover:border-violet-100/64 hover:bg-violet-300/14 hover:shadow-[0_0_26px_rgba(167,139,250,0.15)] focus:ring-violet-300/18',
+    hover: 'hover:border-violet-100/80 hover:from-violet-300/[0.31] hover:shadow-[0_0_30px_rgba(167,139,250,0.17)]',
     glow: 'bg-violet-300/28',
   },
 }
@@ -250,8 +262,8 @@ export function StudyMenuPage() {
     () => [
       {
         title: 'Start Today',
-        eyebrow: 'Plan',
-        description: "Today's plan",
+        eyebrow: 'Start',
+        description: 'Next best action',
         action: 'Open dashboard',
         route: '/dashboard',
         featured: true,
@@ -262,7 +274,7 @@ export function StudyMenuPage() {
       {
         title: 'Quick Study',
         eyebrow: 'Practice',
-        description: '10 min drill',
+        description: 'Fast drill',
         action: 'Start drill',
         route: '/quick-study',
         icon: <Zap className="h-5 w-5" />,
@@ -281,7 +293,7 @@ export function StudyMenuPage() {
       },
       {
         title: 'Question Bank',
-        eyebrow: 'Practice',
+        eyebrow: 'Bank',
         description: 'Question sets',
         action: 'Open bank',
         route: '/practice-questions',
@@ -291,13 +303,13 @@ export function StudyMenuPage() {
       },
       {
         title: 'Performance',
-        eyebrow: 'Progress',
+        eyebrow: 'Insight',
         description: 'Signals and trends',
         action: 'Read signals',
         route: '/performance-analytics',
         icon: <BarChart3 className="h-5 w-5" />,
         status: Math.max(1, accuracyPct) + '% accuracy',
-        tone: 'emerald',
+        tone: 'violet',
       },
       {
         title: 'Nurse Lab',
@@ -577,19 +589,20 @@ export function StudyMenuPage() {
                       onFocus={() => setActiveMenuIndex(index)}
                       onMouseEnter={() => setActiveMenuIndex(index)}
                       className={clsx(
-                        'group flex min-h-[4rem] w-full min-w-0 items-center gap-3 rounded-xl border bg-gradient-to-br px-3 py-2.5 text-left transition focus:outline-none focus:ring-4 focus:ring-cyan-300/20 sm:px-4',
+                        'group relative flex min-h-[4rem] w-full min-w-0 items-center gap-3 overflow-hidden rounded-xl border bg-gradient-to-br px-3 py-2.5 pl-4 text-left transition focus:outline-none focus:ring-4 sm:px-4 sm:pl-5',
                         isActive
                           ? clsx(selectedTaskClasses.border, selectedTaskClasses.surface, selectedTaskClasses.glow)
-                          : clsx('border-sky-200/14 from-sky-300/[0.035] via-[#03101f]/68 to-[#020812]/88 hover:shadow-[0_0_28px_rgba(56,189,248,0.14)]', tone.hover),
+                          : clsx(tone.idle, tone.hover, 'focus:ring-cyan-300/16'),
                       )}
                     >
-                      <span className={clsx('grid h-11 w-11 shrink-0 place-items-center rounded-lg border transition', isActive ? selectedTaskClasses.icon : clsx('border-sky-200/18 bg-sky-300/8 text-sky-100/62 group-hover:border-current group-hover:bg-white/10 group-hover:text-white'))}>
+                      <span className={clsx('pointer-events-none absolute inset-y-2 left-0 w-1 rounded-r-full transition', isActive ? selectedTaskClasses.accent : tone.accent)} />
+                      <span className={clsx('grid h-11 w-11 shrink-0 place-items-center rounded-lg border transition', isActive ? selectedTaskClasses.icon : tone.icon)}>
                         {item.icon}
                       </span>
                       <span className="grid min-w-0 flex-1 gap-1 sm:grid-cols-[minmax(0,0.95fr)_minmax(0,0.75fr)] sm:items-center">
                         <span className="flex min-w-0 items-center gap-2">
                           <span className="text-lg font-black text-white">{item.title}</span>
-                          <span className={clsx('hidden rounded-md border px-2 py-1 text-xs font-black sm:inline-flex', isActive ? selectedTaskClasses.meta : 'border-sky-200/18 bg-sky-300/8 text-sky-100/58')}>
+                          <span className={clsx('hidden rounded-md border px-2 py-1 text-xs font-black sm:inline-flex', isActive ? selectedTaskClasses.meta : tone.meta)}>
                             {item.status}
                           </span>
                         </span>
@@ -597,7 +610,7 @@ export function StudyMenuPage() {
                           {item.eyebrow} · {item.description}
                         </span>
                       </span>
-                      <ArrowRight className={clsx('h-5 w-5 shrink-0 transition group-hover:translate-x-1', isActive ? selectedTaskClasses.text : 'text-sky-100/42')} />
+                      <ArrowRight className={clsx('h-5 w-5 shrink-0 transition group-hover:translate-x-1', isActive ? selectedTaskClasses.text : tone.text)} />
                     </button>
                   )
                 })}
@@ -687,8 +700,12 @@ export function StudyMenuPage() {
                       key={tool.route}
                       type="button"
                       onClick={() => navigate(tool.route)}
-                      className="flex min-h-[4.25rem] w-full min-w-0 items-start gap-3 overflow-hidden rounded-lg border border-sky-200/14 bg-sky-300/[0.05] px-3 py-3 text-left transition hover:border-cyan-200/40 hover:bg-cyan-300/10 focus:outline-none focus:ring-4 focus:ring-sky-300/16 sm:min-h-16"
+                      className={clsx(
+                        'group relative flex min-h-[4.25rem] w-full min-w-0 items-start gap-3 overflow-hidden rounded-lg border px-3 py-3 pl-4 text-left transition focus:outline-none focus:ring-4 sm:min-h-16',
+                        launchToneClasses[tool.tone].button,
+                      )}
                     >
+                      <span className={clsx('pointer-events-none absolute inset-y-2 left-0 w-1 rounded-r-full opacity-70 transition group-hover:opacity-100', launchToneClasses[tool.tone].accent)} />
                       <span className={clsx('grid h-8 w-8 shrink-0 place-items-center rounded-md border', launchToneClasses[tool.tone].icon)}>
                         {tool.icon}
                       </span>
@@ -696,7 +713,7 @@ export function StudyMenuPage() {
                         <span className="block text-sm font-bold text-white">{tool.title}</span>
                         <span className="block whitespace-normal break-words text-xs leading-4 text-sky-50/58">{tool.description}</span>
                       </span>
-                      <ArrowRight className={clsx('mt-2 h-4 w-4 shrink-0', launchToneClasses[tool.tone].text)} />
+                      <ArrowRight className={clsx('mt-2 h-4 w-4 shrink-0 transition group-hover:translate-x-0.5', launchToneClasses[tool.tone].text)} />
                     </button>
                   ))}
                 </div>
