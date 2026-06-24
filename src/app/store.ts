@@ -311,6 +311,25 @@ const isSeedProfile = (profile: UserProfile | null | undefined) =>
   profile.nursingSchool === initialProfile.nursingSchool &&
   profile.examTrack === initialProfile.examTrack
 
+const findRunnableMaterialQuizSession = (
+  sessions: MaterialQuizSession[],
+  materials: StudyMaterial[],
+  questions: MaterialQuestion[],
+) => {
+  const materialIds = new Set(materials.map((material) => material.id))
+  const questionIds = new Set(questions.map((question) => question.id))
+
+  return (
+    sessions.find((session) => {
+      if (!materialIds.has(session.materialId)) return false
+      if (session.endedAt) return true
+
+      const currentQuestionId = session.questionIds[session.currentIndex]
+      return Boolean(currentQuestionId && questionIds.has(currentQuestionId))
+    }) ?? null
+  )
+}
+
 const baseState = {
   authUser: null as AuthUser | null,
   authSession: null as AuthSession | null,
@@ -624,7 +643,11 @@ export const useStudySystemStore = create<StudySystemState>()(
             materials: cloud.materials,
             materialFlashcards: cloud.materialFlashcards,
             materialQuestions: cloud.materialQuestions,
-            activeMaterialQuizSession: cloud.materialQuizSessions[0] ?? null,
+            activeMaterialQuizSession: findRunnableMaterialQuizSession(
+              cloud.materialQuizSessions,
+              cloud.materials,
+              cloud.materialQuestions,
+            ),
             passwordRecoveryRequired: state.passwordRecoveryRequired,
             syncStatus: 'idle',
             syncError: null,
@@ -1241,7 +1264,10 @@ export const useStudySystemStore = create<StudySystemState>()(
         })
         void get().syncNow()
       },
-      abandonMaterialQuiz: () => set({ activeMaterialQuizSession: null }),
+      abandonMaterialQuiz: () => {
+        set({ activeMaterialQuizSession: null })
+        void get().syncNow()
+      },
       saveNote: (note) => {
         const stampedNote = {
           ...note,

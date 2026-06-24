@@ -2955,6 +2955,7 @@ export function MyMaterialsPage() {
   const materialsHydrated = useStudySystemStore((state) => state.materialsHydrated)
   const materials = useStudySystemStore((state) => state.materials)
   const materialFlashcards = useStudySystemStore((state) => state.materialFlashcards)
+  const materialQuestions = useStudySystemStore((state) => state.materialQuestions)
   const activeMaterialQuizSession = useStudySystemStore((state) => state.activeMaterialQuizSession)
   const importStudyMaterial = useStudySystemStore((state) => state.importStudyMaterial)
   const importStudyMaterialFromUrl = useStudySystemStore((state) => state.importStudyMaterialFromUrl)
@@ -2964,6 +2965,7 @@ export function MyMaterialsPage() {
   const approveMaterialStudyTools = useStudySystemStore((state) => state.approveMaterialStudyTools)
   const startMaterialFlashcards = useStudySystemStore((state) => state.startMaterialFlashcards)
   const startMaterialQuiz = useStudySystemStore((state) => state.startMaterialQuiz)
+  const abandonMaterialQuiz = useStudySystemStore((state) => state.abandonMaterialQuiz)
   const saveNote = useStudySystemStore((state) => state.saveNote)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const materialReviewRef = useRef<HTMLDivElement | null>(null)
@@ -2996,6 +2998,14 @@ export function MyMaterialsPage() {
     () => (selectedMaterial ? buildMaterialStudyGuide(selectedMaterial) : null),
     [selectedMaterial],
   )
+  const activeMaterialQuizIsRunnable = useMemo(() => {
+    if (!activeMaterialQuizSession) return false
+    if (!materials.some((material) => material.id === activeMaterialQuizSession.materialId)) return false
+    if (activeMaterialQuizSession.endedAt) return true
+
+    const currentQuestionId = activeMaterialQuizSession.questionIds[activeMaterialQuizSession.currentIndex]
+    return Boolean(currentQuestionId && materialQuestions.some((question) => question.id === currentQuestionId))
+  }, [activeMaterialQuizSession, materialQuestions, materials])
 
   const readyCount = materials.filter((item) => item.extractionStatus === 'ready').length
   const errorCount = materials.filter((item) => item.extractionStatus === 'error').length
@@ -3078,7 +3088,12 @@ export function MyMaterialsPage() {
     materialReviewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
-  if (activeMaterialQuizSession) {
+  useEffect(() => {
+    if (!materialsHydrated || !activeMaterialQuizSession || activeMaterialQuizIsRunnable) return
+    abandonMaterialQuiz()
+  }, [abandonMaterialQuiz, activeMaterialQuizIsRunnable, activeMaterialQuizSession, materialsHydrated])
+
+  if (activeMaterialQuizSession && activeMaterialQuizIsRunnable) {
     return <MaterialQuizRunner />
   }
 
