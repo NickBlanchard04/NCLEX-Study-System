@@ -22,11 +22,29 @@ export interface MaterialQualitySummary {
 }
 
 const sourceArtifactPattern =
-  /\b(?:https?:\/\/|www\.|doi\b|pmid\b|issn\b|copyright|all rights reserved|nursingcenter\.com|frontiersin\.org)\b/i
+  /\b(?:https?:\/\/|www\.|doi\b|pmid\b|issn\b|copyright|all rights reserved|github\.com|raw\.githubusercontent\.com|nursingcenter\.com|frontiersin\.org)\b/i
 const genericFragmentPattern =
-  /\b(?:what should you know about (?:result|results|value|source)|best matches this point|uploaded nursing concept|this study material|june\s+\d{4})\b/i
+  /\b(?:what should you know about (?:result|results|value|source)|best matches this point|uploaded nursing concept|this study material|smoke material|june\s+\d{4})\b/i
 
 const clean = (value: string) => value.replace(/\s+/g, ' ').trim()
+
+export const hasCodeLikeStudyArtifact = (value: string) => {
+  const normalized = clean(value)
+  if (!normalized) return false
+
+  const markerHits = [
+    /\b(?:const|let|var|function|return|export|import|interface|type|class|async|await)\b/i,
+    /\b(?:describe|it|expect|vi\.mock|test)\s*\(/i,
+    /\b(?:correctAnswer|whyCorrect|whyOthers|makeChoices|className|sourceMaterialId)\b/i,
+    /(?:=>|<\/?[A-Z][A-Za-z]*|from ['"][../])/,
+    /[{};]/,
+  ].filter((pattern) => pattern.test(normalized)).length
+
+  const codePunctuationCount = normalized.match(/[{}[\]();=<>]/g)?.length ?? 0
+  const wordCount = normalized.split(/\s+/).filter(Boolean).length || 1
+
+  return markerHits >= 2 || (markerHits >= 1 && codePunctuationCount / wordCount > 0.22)
+}
 
 const makeIssue = (
   item: MaterialFlashcard | MaterialQuestion,
@@ -130,6 +148,16 @@ export function inspectMaterialFlashcard(
       makeIssue(card, 'flashcard', itemLabel, {
         code: 'flashcard_source_noise',
         message: 'Remove copied source metadata or raw extraction fragments.',
+        severity: 'blocker',
+      }),
+    )
+  }
+
+  if (hasCodeLikeStudyArtifact(`${front} ${back}`)) {
+    issues.push(
+      makeIssue(card, 'flashcard', itemLabel, {
+        code: 'flashcard_code_artifact',
+        message: 'This looks like app code, not nursing study content.',
         severity: 'blocker',
       }),
     )
@@ -257,6 +285,16 @@ export function inspectMaterialQuestion(
       makeIssue(question, 'question', itemLabel, {
         code: 'question_source_noise',
         message: 'Remove copied source metadata or raw extraction fragments.',
+        severity: 'blocker',
+      }),
+    )
+  }
+
+  if (hasCodeLikeStudyArtifact(`${prompt} ${choiceTexts.join(' ')} ${rationale}`)) {
+    issues.push(
+      makeIssue(question, 'question', itemLabel, {
+        code: 'question_code_artifact',
+        message: 'This looks like app code, not nursing study content.',
         severity: 'blocker',
       }),
     )

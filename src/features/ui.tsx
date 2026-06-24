@@ -80,13 +80,15 @@ export function SectionHeading({
 
 export function Surface({
   className,
+  style,
   children,
 }: {
   className?: string
+  style?: React.CSSProperties
   children: React.ReactNode
 }) {
   return (
-    <section className={clsx('nclex-surface rounded-[1.15rem] p-5 md:p-6', className)}>
+    <section className={clsx('nclex-surface rounded-[1.15rem] p-5 md:p-6', className)} style={style}>
       {children}
     </section>
   )
@@ -104,12 +106,14 @@ export function PageStack({
 
 export function FocusPanel({
   className,
+  style,
   children,
 }: {
   className?: string
+  style?: React.CSSProperties
   children: React.ReactNode
 }) {
-  return <Surface className={clsx('overflow-hidden p-0', className)}>{children}</Surface>
+  return <Surface className={clsx('overflow-hidden p-0', className)} style={style}>{children}</Surface>
 }
 
 type CommandTone = 'cyan' | 'emerald' | 'amber' | 'rose' | 'slate' | 'violet'

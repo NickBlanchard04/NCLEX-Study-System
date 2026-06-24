@@ -92,6 +92,35 @@ describe('material quality gates', () => {
     )
   })
 
+  it('blocks source-code shaped cards and questions before approval', () => {
+    const summary = summarizeMaterialQuality(
+      [
+        makeCard({
+          front: 'What does const makeChoices = () => { return choices } do?',
+          back: 'export function buildQuestionPrompt(point) { return point.statement }',
+        }),
+      ],
+      [
+        makeQuestion({
+          prompt: 'A nurse is reviewing sourceMaterialId. Which statement best matches correctAnswer?',
+          choices: [
+            { id: 'A', text: 'const choices = makeChoices(correctAnswer);' },
+            { id: 'B', text: 'return { prompt, choices, whyCorrect };' },
+            { id: 'C', text: 'export interface MaterialQuestion { rationale: string }' },
+            { id: 'D', text: 'className="rounded-xl border border-cyan-200/20"' },
+          ],
+          correctAnswer: ['A'],
+          rationale:
+            'The correct answer appears to describe TypeScript application code rather than nursing study content, so it should be rejected before approval.',
+        }),
+      ],
+    )
+
+    expect(summary.issues.map((issue) => issue.code)).toEqual(
+      expect.arrayContaining(['flashcard_code_artifact', 'question_code_artifact']),
+    )
+  })
+
   it('filters blocker items before they are saved', () => {
     const goodCard = makeCard({ id: 'good-card' })
     const badCard = makeCard({

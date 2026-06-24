@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { StudyMaterial } from '../../app/types'
 import {
   cleanExtractedStudyText,
+  extractMaterialTextFromUrl,
   generateCleanFlashcardsFromMaterial,
   generateCleanQuestionsFromMaterial,
 } from '../material-pipeline'
@@ -155,5 +156,29 @@ describe('material pipeline local generation', () => {
 
     expect(generatedText).toMatch(/thrombocytopenia|bleeding risk/i)
     expect(generatedText).not.toMatch(/smoke material|uploaded nursing concept/i)
+  })
+
+  it('rejects code-like links before material generation', async () => {
+    await expect(
+      extractMaterialTextFromUrl('https://github.com/example/project/blob/main/src/questions.ts'),
+    ).rejects.toThrow(/source code|software page/i)
+  })
+
+  it('rejects readable links that do not look like nursing study material', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(
+          'This page describes a software dashboard with routes, components, props, settings, and build scripts for a web application.',
+          { headers: { 'content-type': 'text/plain' }, status: 200 },
+        ),
+      ),
+    )
+
+    await expect(
+      extractMaterialTextFromUrl('https://example.com/dashboard-notes'),
+    ).rejects.toThrow(/nursing study material/i)
+
+    vi.unstubAllGlobals()
   })
 })
