@@ -28,8 +28,10 @@ import {
 import { useEffect, useMemo, useState } from 'react'
 import {
   getAdminDataAccessStatus,
+  loadAdminProfiles,
   loadRecentAdminEvents,
   type AdminDataAccessStatus,
+  type AdminProfileSummary,
 } from '../services/admin-analytics'
 import { getLocalAppEvents, type StoredAppEvent } from '../services/analytics-client'
 
@@ -107,9 +109,12 @@ interface UserRow {
   id: string
   label: string
   displayId: string
+  displayName: string
   examTrack: ExamFilter
   source: SourceFilter
   status: string
+  presence: 'Online' | 'Idle' | 'Offline'
+  currentPage: string
   events: number
   sessions: number
   sessionSeconds: number
@@ -130,6 +135,7 @@ interface CategoryRow {
 interface DashboardModel {
   events: StoredAppEvent[]
   users: UserRow[]
+  profileCount: number
   totalUsers: number
   totalSessions: number
   totalEvents: number
@@ -474,6 +480,35 @@ const formatRelative = (timestamp: number | null) => {
   return `${Math.round(hours / 24)}d ago`
 }
 
+const formatPageName = (pagePath: string | null | undefined, featureName: string | null | undefined) => {
+  if (featureName?.trim()) return featureName.trim()
+  if (!pagePath || pagePath === '/') return 'Study Menu'
+  return pagePath
+    .split('/')
+    .filter(Boolean)
+    .map((part) =>
+      part
+        .split('-')
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' '),
+    )
+    .join(' / ')
+}
+
+const formatPresence = (lastActive: number | null) => {
+  if (!lastActive) return 'Offline'
+  const minutes = Math.max(0, Math.round((Date.now() - lastActive) / 60000))
+  if (minutes <= 5) return 'Online'
+  if (minutes <= 30) return 'Idle'
+  return 'Offline'
+}
+
+const formatCurrentPage = (pagePath: string | null | undefined, featureName: string | null | undefined) => {
+  const label = formatPageName(pagePath, featureName)
+  const path = pagePath?.trim() || '/'
+  return `${label} (${path})`
+}
+
 const sessionSecondsForEvents = (events: StoredAppEvent[]) => {
   const times = events.map(eventTime).filter(Boolean)
   const spanSeconds =
@@ -618,7 +653,7 @@ const buildJourney = (userGroups: Map<string, StoredAppEvent[]>, returningUsers:
   })
 }
 
-const buildModel = (events: StoredAppEvent[]): DashboardModel => {
+const buildModel = (events: StoredAppEvent[], profilesById: Map<string, AdminProfileSummary>): DashboardModel => {
   const sortedEvents = [...events].sort((a, b) => eventTime(b) - eventTime(a))
   const userGroups = groupBy(sortedEvents, actorKey)
   const sessionGroups = groupBy(sortedEvents, (event) => event.session_id)
@@ -641,6 +676,10 @@ const buildModel = (events: StoredAppEvent[]): DashboardModel => {
       const firstSeen = Math.min(...userEvents.map(eventTime))
       const lastActive = Math.max(...userEvents.map(eventTime))
       const sessions = new Set(userEvents.map((event) => event.session_id))
+      const profile = profilesById.get(key)
+      const displayName =
+        profile?.name?.trim() ||
+        `Learner ${index + 1}`
       const activatedSteps = [
         userEvents.some((event) => ['demo_started', 'signup_started', 'signup_completed'].includes(event.event_name)),
         userEvents.some((event) =>
@@ -653,13 +692,17 @@ const buildModel = (events: StoredAppEvent[]): DashboardModel => {
       const firstSource = classifySource(userEvents[userEvents.length - 1]?.source ?? null)
       const firstTrack =
         userEvents.find((event) => event.exam_track)?.exam_track ?? userEvents[userEvents.length - 1]?.exam_track ?? null
+      const mostRecent = userEvents[0]
       return {
         id: key,
-        label: `Anonymous ${index + 1}`,
+        label: displayName,
         displayId: cleanDisplayId(key),
+        displayName,
         examTrack: formatExamTrack(firstTrack),
         source: firstSource,
         status: userStatus(userEvents),
+        presence: formatPresence(lastActive),
+        currentPage: formatCurrentPage(mostRecent?.page_path, mostRecent?.feature_name),
         events: userEvents.length,
         sessions: sessions.size,
         sessionSeconds: sessionSecondsForEvents(userEvents),
@@ -756,6 +799,7 @@ const buildModel = (events: StoredAppEvent[]): DashboardModel => {
   return {
     events: sortedEvents,
     users,
+    profileCount: profilesById.size,
     totalUsers,
     totalSessions,
     totalEvents,
@@ -1357,7 +1401,7 @@ function UsersPage({ model, section }: { model: DashboardModel; section: AdminSe
 
   return (
     <div className="grid gap-5 xl:grid-cols-[1fr_1.05fr]">
-      <Panel title="Anonymous Users" subtitle="Real users are identified by user_id or anonymous browser ID." icon={Users} section={section}>
+      <Panel title="Learners" subtitle={`${model.profileCount} named profiles linked from the live app.`} icon={Users} section={section}>
         <label className="mb-4 flex items-center gap-3 rounded-2xl border border-white/10 bg-[#020d1b] px-4 py-3">
           <Search className="h-4 w-4 text-slate-500" />
           <input
@@ -1383,16 +1427,31 @@ function UsersPage({ model, section }: { model: DashboardModel; section: AdminSe
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <p className="font-black text-white">{user.label}</p>
-                    <p className="mt-1 text-xs font-bold text-slate-500">ID ending {user.displayId}</p>
+                    <p className="font-black text-white">{user.displayName}</p>
+                    <p className="mt-1 text-xs font-bold text-slate-500">
+                      {user.examTrack} · ID ending {user.displayId}
+                    </p>
                   </div>
-                  <span className="rounded-full border border-amber-200/25 bg-amber-300/10 px-3 py-1 text-xs font-black text-amber-100">
-                    {user.status}
-                  </span>
+                  <div className="flex flex-col items-end gap-2">
+                    <span
+                      className={`rounded-full border px-3 py-1 text-xs font-black ${
+                        user.presence === 'Online'
+                          ? 'border-emerald-200/30 bg-emerald-300/12 text-emerald-100'
+                          : user.presence === 'Idle'
+                            ? 'border-amber-200/30 bg-amber-300/12 text-amber-100'
+                            : 'border-slate-400/25 bg-slate-500/10 text-slate-200'
+                      }`}
+                    >
+                      {user.presence}
+                    </span>
+                    <span className="rounded-full border border-amber-200/25 bg-amber-300/10 px-3 py-1 text-xs font-black text-amber-100">
+                      {user.status}
+                    </span>
+                  </div>
                 </div>
                 <div className="mt-4 grid grid-cols-2 gap-2 text-xs font-bold text-slate-400 sm:grid-cols-4">
                   <span>{user.source}</span>
-                  <span>{user.examTrack}</span>
+                  <span>Current: {user.currentPage}</span>
                   <span>{user.events} events</span>
                   <span>{formatRelative(user.lastActive)}</span>
                 </div>
@@ -1404,14 +1463,23 @@ function UsersPage({ model, section }: { model: DashboardModel; section: AdminSe
         )}
       </Panel>
 
-      <Panel title={selectedUser ? `${selectedUser.label} Timeline` : 'User Timeline'} subtitle="Behavior only. Private content is excluded." icon={Eye} section={section}>
+      <Panel title={selectedUser ? `${selectedUser.displayName} Timeline` : 'User Timeline'} subtitle="Behavior only. Private content is excluded." icon={Eye} section={section}>
         {selectedUser ? (
           <div>
-            <div className="mb-4 grid gap-3 sm:grid-cols-4">
+            <div className="mb-4 grid gap-3 sm:grid-cols-5">
               <MiniStat label="Events" value={selectedUser.events.toString()} />
               <MiniStat label="Sessions" value={selectedUser.sessions.toString()} />
               <MiniStat label="Time" value={formatDuration(selectedUser.sessionSeconds)} />
-              <MiniStat label="Steps" value={`${selectedUser.journeySteps}/5`} />
+              <MiniStat label="Status" value={selectedUser.presence} />
+              <MiniStat label="Current page" value={selectedUser.currentPage} />
+            </div>
+
+            <div className="mb-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">Learner</p>
+              <p className="mt-1 text-lg font-black text-white">{selectedUser.displayName}</p>
+              <p className="mt-1 text-sm font-bold text-slate-400">
+                {selectedUser.examTrack} · {selectedUser.source} · last active {formatRelative(selectedUser.lastActive)}
+              </p>
             </div>
 
             <div className="space-y-3">
@@ -1707,6 +1775,7 @@ export function AdminMonitorPage() {
   const [activeSectionId, setActiveSectionId] = useState<AdminSectionId>(() => sectionFromLocation())
   const [remoteEvents, setRemoteEvents] = useState<StoredAppEvent[]>([])
   const [localEvents, setLocalEvents] = useState<StoredAppEvent[]>([])
+  const [profilesById, setProfilesById] = useState<Map<string, AdminProfileSummary>>(new Map())
   const [dataAccess, setDataAccess] = useState<AdminDataAccessStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null)
@@ -1738,9 +1807,12 @@ export function AdminMonitorPage() {
         getAdminDataAccessStatus(),
         loadRecentAdminEvents(2000),
       ])
+      const nextUserIds = [...new Set(nextRemote.map((event) => event.user_id).filter((value): value is string => Boolean(value)))]
+      const nextProfiles = await loadAdminProfiles(nextUserIds)
       setDataAccess(nextAccess)
       setRemoteEvents(nextRemote)
       setLocalEvents(getLocalAppEvents())
+      setProfilesById(new Map(nextProfiles.map((profile) => [profile.id, profile])))
       setLastRefresh(new Date())
     } finally {
       setLoading(false)
@@ -1764,7 +1836,10 @@ export function AdminMonitorPage() {
     window.scrollTo({ top: 0, left: 0, behavior: 'smooth' })
   }
 
-  const model = useMemo(() => buildModel(filterEvents(rawEvents, range, source, track)), [rawEvents, range, source, track])
+  const model = useMemo(
+    () => buildModel(filterEvents(rawEvents, range, source, track), profilesById),
+    [rawEvents, range, source, track, profilesById],
+  )
 
   return (
     <AdminPanelShell

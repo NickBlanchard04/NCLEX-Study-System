@@ -21,6 +21,16 @@ export interface AdminDataAccessStatus {
   error: string | null
 }
 
+export interface AdminProfileSummary {
+  id: string
+  name: string
+  member_number: number | null
+  exam_track: string | null
+  nursing_school: string | null
+  profile_state: string | null
+  updated_at: string
+}
+
 export const isLocalAdminPreview = () =>
   import.meta.env.DEV &&
   typeof window !== 'undefined' &&
@@ -80,6 +90,20 @@ export async function loadRecentAdminEvents(limit = 500): Promise<StoredAppEvent
 
   if (error || !data) return []
   return data as StoredAppEvent[]
+}
+
+export async function loadAdminProfiles(userIds: string[] = []): Promise<AdminProfileSummary[]> {
+  if (!isSupabaseConfigured || !supabase) return []
+
+  const uniqueUserIds = [...new Set(userIds.filter(Boolean))]
+  if (!uniqueUserIds.length) return []
+
+  const { data, error } = await supabase.rpc('admin_profile_directory', {
+    user_ids: uniqueUserIds,
+  })
+
+  if (error || !data) return []
+  return data as AdminProfileSummary[]
 }
 
 export async function getAdminDataAccessStatus(): Promise<AdminDataAccessStatus> {
