@@ -124,7 +124,7 @@ function AuthLanding() {
         <motion.section
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="order-2 min-w-0 text-center lg:order-1 lg:text-left"
+          className="min-w-0 text-center lg:text-left"
         >
           <img
             src={nursingCommandLogo}
@@ -159,7 +159,7 @@ function AuthLanding() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.08 }}
-          className="order-1 rounded-[28px] border border-cyan-200/20 bg-[#071d34]/88 p-6 shadow-[0_28px_80px_rgba(0,0,0,0.34),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur md:p-7 lg:order-2"
+          className="rounded-[28px] border border-cyan-200/20 bg-[#071d34]/88 p-6 shadow-[0_28px_80px_rgba(0,0,0,0.34),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur md:p-7"
         >
           <div className="flex items-center justify-between gap-3">
             <div>
