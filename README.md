@@ -1,4 +1,4 @@
-# NCLEX Study System
+# Nurse Command
 
 A premium adaptive study platform for NCLEX-RN, NCLEX-PN, FNP, and CCMA exam prep.
 
@@ -9,7 +9,7 @@ This app is configured for GitHub Pages through GitHub Actions.
 Expected production URL:
 
 ```text
-https://nickblanchard04.github.io/NCLEX-Study-System/
+https://nursecommand.com/
 ```
 
 ## Local Development

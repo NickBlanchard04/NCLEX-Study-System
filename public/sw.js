@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'nclex-study-system-v1'
+const CACHE_VERSION = 'nurse-command-v2'
 
 const getBasePath = () => new URL(self.registration.scope).pathname
 
@@ -12,9 +12,7 @@ const APP_SHELL = () => [
   appUrl('index.html'),
   appUrl('offline.html'),
   appUrl('manifest.webmanifest'),
-  appUrl('favicon.svg'),
-  appUrl('app-icon.svg'),
-  appUrl('maskable-icon.svg'),
+  appUrl('nursing-command-logo.png'),
 ]
 
 self.addEventListener('install', (event) => {

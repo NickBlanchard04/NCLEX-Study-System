@@ -1,7 +1,7 @@
 {
-  "name": "NCLEX Study System",
-  "short_name": "NCLEX Study",
-  "description": "A premium adaptive study system for NCLEX, FNP, and CCMA exam prep.",
+  "name": "Nurse Command",
+  "short_name": "Nurse Command",
+  "description": "A premium adaptive study system for nursing readiness and exam prep.",
   "id": ".",
   "start_url": ".?source=pwa",
   "scope": ".",
@@ -13,15 +13,15 @@
   "categories": ["education", "medical", "productivity"],
   "icons": [
     {
-      "src": "app-icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "nursing-command-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "maskable-icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "nursing-command-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "maskable"
     }
   ],
@@ -31,21 +31,21 @@
       "short_name": "Quick Study",
       "description": "Start a fast focused question session.",
       "url": "quick-study?source=pwa-shortcut",
-      "icons": [{ "src": "app-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+      "icons": [{ "src": "nursing-command-logo.png", "sizes": "512x512", "type": "image/png" }]
     },
     {
       "name": "My Materials",
       "short_name": "Materials",
       "description": "Open uploaded study materials.",
       "url": "my-materials?source=pwa-shortcut",
-      "icons": [{ "src": "app-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+      "icons": [{ "src": "nursing-command-logo.png", "sizes": "512x512", "type": "image/png" }]
     },
     {
       "name": "Flashcards",
       "short_name": "Cards",
       "description": "Review due flashcards.",
       "url": "flashcards?source=pwa-shortcut",
-      "icons": [{ "src": "app-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+      "icons": [{ "src": "nursing-command-logo.png", "sizes": "512x512", "type": "image/png" }]
     }
   ]
 }

@@ -1284,7 +1284,7 @@ export function ShiftSimulatorGame() {
             <Link
               to="/"
               className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/8 text-slate-200 transition hover:bg-white/12"
-              aria-label="Back to NCLEX Study System"
+              aria-label="Back to Nurse Command"
             >
               <ArrowLeft className="h-5 w-5" />
             </Link>
