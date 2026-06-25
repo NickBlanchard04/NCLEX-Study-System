@@ -5149,7 +5149,7 @@ export function SettingsPage() {
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             <FeatureCallout title="Privacy" description="Cloud accounts store your email and synced study activity. Do not upload protected health information or patient-identifying material." />
             <FeatureCallout title="Terms" description="Nurse Command is practice study support only. Readiness and adaptive signals are practice evidence, not clinical advice or licensure guarantees." />
-            <FeatureCallout title="Support" description="For account, email, or study-material issues, contact support@cosmicgames.info." />
+            <FeatureCallout title="Support" description="For account, email, or study-material issues, contact support@nursecommand.com." />
           </div>
           <button
             type="button"

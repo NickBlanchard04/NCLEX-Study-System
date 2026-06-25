@@ -16,7 +16,7 @@ Beta access is personal to the account holder. Users may not copy, scrape, rever
 Cloud accounts store email and synced study activity. Users should not upload protected health information, patient-identifying data, or clinical records.
 
 5. Changes and support
-These beta terms may be updated as Nurse Command evolves. For account, privacy, or support questions, contact support@cosmicgames.info.`
+These beta terms may be updated as Nurse Command evolves. For account, privacy, or support questions, contact support@nursecommand.com.`
 
 export interface BetaTermsConsent {
   acceptedAt: string

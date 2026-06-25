@@ -157,7 +157,6 @@ site_url = "https://nursecommand.com/"
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
 additional_redirect_urls = [
   "https://nursecommand.com/**",
-  "https://nickblanchard04.github.io/NCLEX-Study-System/**",
 ]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600

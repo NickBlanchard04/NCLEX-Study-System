@@ -46,7 +46,7 @@ function AuthLanding() {
   const [passwordVisible, setPasswordVisible] = useState(false)
   const [name, setName] = useState('')
   const [nursingSchool, setNursingSchool] = useState('')
-  const [examTrack, setExamTrack] = useState<ExamTrackId>('nclex-rn')
+  const [examTrack, setExamTrack] = useState<ExamTrackId | 'na'>('na')
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
   const [termsAccepted, setTermsAccepted] = useState(false)
@@ -85,7 +85,7 @@ function AuthLanding() {
         await signUp(email, password, {
           name: trimmedName,
           nursingSchool: trimmedSchool,
-          examTrack,
+          examTrack: examTrack === 'na' ? undefined : examTrack,
         }, createBetaTermsConsent(termsCopyRequested))
         setMessage(
           termsCopyRequested
@@ -124,12 +124,12 @@ function AuthLanding() {
         <motion.section
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="min-w-0 text-center lg:text-left"
+          className="order-2 min-w-0 text-center lg:order-1 lg:text-left"
         >
           <img
             src={nursingCommandLogo}
             alt="Nursing Command"
-            className="mx-auto w-[min(18rem,78vw)] rounded-[28px] shadow-[0_30px_80px_rgba(0,0,0,0.42)] lg:mx-0 lg:w-[24rem]"
+            className="mx-auto w-[min(18rem,78vw)] object-contain drop-shadow-[0_30px_80px_rgba(0,0,0,0.42)] lg:mx-0 lg:w-[24rem]"
           />
           <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-lime-200/32 bg-lime-300/10 px-4 py-2 text-xs font-black uppercase tracking-normal text-lime-100">
             <ShieldCheck className="h-4 w-4" />
@@ -139,7 +139,7 @@ function AuthLanding() {
             Welcome to Nurse Command.
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-base leading-8 text-sky-50/76 lg:mx-0">
-            A premium nursing study command center for focused practice, weak-area repair, performance signals, and study materials in one place.
+            A free timesaving nursing study command center for focused practice, weak-area repair, performance signals, and study materials in one place.
           </p>
           <div id="beta-terms" className="mx-auto mt-7 max-w-2xl rounded-2xl border border-cyan-200/18 bg-[#071d34]/68 p-5 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] lg:mx-0">
             <p className="text-sm font-black text-white">Open beta notice</p>
@@ -159,7 +159,7 @@ function AuthLanding() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.08 }}
-          className="rounded-[28px] border border-cyan-200/20 bg-[#071d34]/88 p-6 shadow-[0_28px_80px_rgba(0,0,0,0.34),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur md:p-7"
+          className="order-1 rounded-[28px] border border-cyan-200/20 bg-[#071d34]/88 p-6 shadow-[0_28px_80px_rgba(0,0,0,0.34),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur md:p-7 lg:order-2"
         >
           <div className="flex items-center justify-between gap-3">
             <div>
@@ -218,17 +218,15 @@ function AuthLanding() {
                     className={inputClass}
                     placeholder="Your college or nursing program"
                   />
-                  <p className="mt-2 text-xs leading-5 text-sky-100/46">
-                    This helps the admin view and your profile reflect the school or program you actually use.
-                  </p>
                 </label>
                 <label className="block">
                   <span className="text-xs font-black uppercase tracking-normal text-sky-100/58">Exam track</span>
                   <select
                     value={examTrack}
-                    onChange={(event) => setExamTrack(event.target.value as ExamTrackId)}
+                    onChange={(event) => setExamTrack(event.target.value as ExamTrackId | 'na')}
                     className={inputClass}
                   >
+                    <option value="na">N/A / just exploring</option>
                     {examTracks.map((track) => (
                       <option key={track.id} value={track.id}>
                         {track.shortName}
@@ -317,7 +315,7 @@ function AuthLanding() {
               Terms: beta access is personal. Do not copy, scrape, reverse engineer, redistribute, resell, or train competing systems from Nurse Command content, interfaces, or study logic.
             </p>
             <p className="mt-2">
-              Support: <a className="font-semibold text-cyan-200" href="mailto:support@cosmicgames.info">support@cosmicgames.info</a>.
+              Support: <a className="font-semibold text-cyan-200" href="mailto:support@nursecommand.com">support@nursecommand.com</a>.
             </p>
           </div>
         </motion.section>

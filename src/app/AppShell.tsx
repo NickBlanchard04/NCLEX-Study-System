@@ -1,6 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import {
-  Activity,
   Bell,
   BadgeDollarSign,
   BookOpen,
@@ -23,7 +22,6 @@ import {
   NotebookPen,
   RefreshCw,
   Settings,
-  ShieldCheck,
   SquareStack,
   Target,
   Trophy,
@@ -35,6 +33,7 @@ import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-d
 import { clsx } from 'clsx'
 import { PwaInstallPrompt } from '../features/PwaInstallPrompt'
 import { SocialPage } from '../features/SocialPage'
+import nursingCommandLogo from '../assets/brand/nursing-command-logo.png'
 import {
   DashboardPage,
   ClinicalSimulatorPage,
@@ -1140,12 +1139,8 @@ function BrandLockup({ compact = false }: { compact?: boolean }) {
   return (
     <div className={clsx('rounded-[18px] border border-cyan-300/22 bg-[#071d34]/75 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_24px_rgba(43,148,255,0.14)]', compact && 'p-3')}>
       <div className="flex items-start gap-3">
-        <div className="relative grid h-12 w-12 shrink-0 place-items-center rounded-[16px] border border-cyan-300/35 bg-[#092845] text-white shadow-[0_0_26px_rgba(43,148,255,0.26)]">
-          <ShieldCheck className="h-8 w-8 text-cyan-100" />
-          <Activity className="absolute h-4 w-4 text-emerald-200" />
-          <span className="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-lg border border-amber-200/50 bg-amber-300/20 text-amber-100">
-            <HeartPulse className="h-3 w-3" />
-          </span>
+        <div className="relative grid h-12 w-12 shrink-0 place-items-center rounded-[16px] border border-cyan-300/35 bg-[#092845] shadow-[0_0_26px_rgba(43,148,255,0.26)]">
+          <img src={nursingCommandLogo} alt="Nurse Command logo" className="h-10 w-10 object-contain" />
         </div>
         <div className="min-w-0">
           <p className="text-lg font-black uppercase tracking-[0.14em] text-white drop-shadow-[0_0_12px_rgba(144,204,255,0.36)]">
@@ -1225,7 +1220,7 @@ function SupportSheet({ open, onClose }: { open: boolean; onClose: () => void })
               ))}
               <div className="grid gap-3 sm:grid-cols-2">
                 <a
-                  href="mailto:support@cosmicgames.info?subject=Nurse%20Command%20beta%20feedback"
+                  href="mailto:support@nursecommand.com?subject=Nurse%20Command%20beta%20feedback"
                   className="rounded-2xl border border-emerald-300/24 bg-emerald-300/10 px-4 py-3 text-sm font-semibold text-emerald-100 transition hover:border-emerald-200/48"
                 >
                   Send beta feedback

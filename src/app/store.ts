@@ -111,7 +111,7 @@ interface StudySystemState {
   signUp: (
     email: string,
     password: string,
-    profile: Pick<UserProfile, 'name' | 'nursingSchool' | 'examTrack'>,
+    profile: Pick<UserProfile, 'name' | 'nursingSchool'> & { examTrack?: UserProfile['examTrack'] },
     betaTermsConsent?: BetaTermsConsent,
   ) => Promise<void>
   signOut: () => Promise<void>
