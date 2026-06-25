@@ -68,6 +68,12 @@ function AuthLanding() {
       setMessage('Please accept the beta terms, privacy notice, and study-support limitations before continuing.')
       return
     }
+    const trimmedName = name.trim()
+    const trimmedSchool = nursingSchool.trim()
+    if (mode === 'signup' && !trimmedSchool) {
+      setMessage('Please enter your name and the college or nursing program you are in before continuing.')
+      return
+    }
     setBusy(true)
     try {
       if (mode === 'reset') {
@@ -77,8 +83,8 @@ function AuthLanding() {
         await signIn(email, password)
       } else {
         await signUp(email, password, {
-          name,
-          nursingSchool: nursingSchool || undefined,
+          name: trimmedName,
+          nursingSchool: trimmedSchool,
           examTrack,
         }, createBetaTermsConsent(termsCopyRequested))
         setMessage(
@@ -202,15 +208,19 @@ function AuthLanding() {
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs font-black uppercase tracking-normal text-sky-100/58">School</span>
+                  <span className="text-xs font-black uppercase tracking-normal text-sky-100/58">College / nursing program</span>
                   <input
                     type="text"
+                    required
                     autoComplete="organization"
                     value={nursingSchool}
                     onChange={(event) => setNursingSchool(event.target.value)}
                     className={inputClass}
-                    placeholder="Optional"
+                    placeholder="Your college or nursing program"
                   />
+                  <p className="mt-2 text-xs leading-5 text-sky-100/46">
+                    This helps the admin view and your profile reflect the school or program you actually use.
+                  </p>
                 </label>
                 <label className="block">
                   <span className="text-xs font-black uppercase tracking-normal text-sky-100/58">Exam track</span>
