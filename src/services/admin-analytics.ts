@@ -13,6 +13,14 @@ const previewPasskeyHash = ((import.meta.env.VITE_ADMIN_PREVIEW_PASSKEY_SHA256 a
 
 const passkeyStorageKey = 'nurse-command-admin-preview-passkey'
 
+export interface AdminDataAccessStatus {
+  configured: boolean
+  signedIn: boolean
+  isAdmin: boolean
+  email: string | null
+  error: string | null
+}
+
 export const isLocalAdminPreview = () =>
   import.meta.env.DEV &&
   typeof window !== 'undefined' &&
@@ -72,4 +80,49 @@ export async function loadRecentAdminEvents(limit = 500): Promise<StoredAppEvent
 
   if (error || !data) return []
   return data as StoredAppEvent[]
+}
+
+export async function getAdminDataAccessStatus(): Promise<AdminDataAccessStatus> {
+  if (!isSupabaseConfigured || !supabase) {
+    return {
+      configured: false,
+      signedIn: false,
+      isAdmin: false,
+      email: null,
+      error: 'Supabase is not configured for this build.',
+    }
+  }
+
+  const { data, error } = await supabase.auth.getUser()
+  const email = data.user?.email?.toLowerCase() ?? null
+
+  if (error || !data.user || !email) {
+    return {
+      configured: true,
+      signedIn: false,
+      isAdmin: false,
+      email,
+      error: error?.message ?? null,
+    }
+  }
+
+  if (envAdminEmails.includes(email)) {
+    return {
+      configured: true,
+      signedIn: true,
+      isAdmin: true,
+      email,
+      error: null,
+    }
+  }
+
+  const { data: isAdmin, error: adminError } = await supabase.rpc('is_admin_user')
+
+  return {
+    configured: true,
+    signedIn: true,
+    isAdmin: isAdmin === true,
+    email,
+    error: adminError?.message ?? null,
+  }
 }

@@ -26,7 +26,11 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { loadRecentAdminEvents } from '../services/admin-analytics'
+import {
+  getAdminDataAccessStatus,
+  loadRecentAdminEvents,
+  type AdminDataAccessStatus,
+} from '../services/admin-analytics'
 import { getLocalAppEvents, type StoredAppEvent } from '../services/analytics-client'
 
 type RangeFilter = 'Today' | '7 days' | '30 days' | '90 days'
@@ -844,11 +848,11 @@ function AdminPanelShell({
           <div className="mt-5 rounded-3xl border border-emerald-300/20 bg-emerald-300/10 p-4">
             <div className="flex items-center gap-2 text-emerald-100">
               <Database className="h-4 w-4" />
-              <p className="text-xs font-black uppercase tracking-[0.14em]">Data Mode</p>
-            </div>
-            <p className="mt-2 text-sm font-black text-white">{dataMode}</p>
-            <p className="mt-1 text-xs font-bold text-emerald-100/65">{totalEvents} live events loaded</p>
+            <p className="text-xs font-black uppercase tracking-[0.14em]">Data Mode</p>
           </div>
+          <p className="mt-2 text-sm font-black text-white">{dataMode}</p>
+          <p className="mt-1 text-xs font-bold text-emerald-100/65">{totalEvents} event rows visible</p>
+        </div>
         </aside>
 
         <section className="min-w-0 flex-1 px-4 py-5 sm:px-6 lg:px-8">
@@ -1051,7 +1055,15 @@ function Meter({ value, color = 'bg-cyan-300' }: { value: number; color?: string
   )
 }
 
-function OverviewPage({ model, section }: { model: DashboardModel; section: AdminSection }) {
+function OverviewPage({
+  model,
+  section,
+  dataAccess,
+}: {
+  model: DashboardModel
+  section: AdminSection
+  dataAccess: AdminDataAccessStatus | null
+}) {
   return (
     <div className="space-y-5">
       <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-4">
@@ -1143,9 +1155,23 @@ function OverviewPage({ model, section }: { model: DashboardModel; section: Admi
         <Panel title="Live Truth" subtitle="What the panel knows right now." icon={Activity} section={section}>
           <div className="space-y-3">
             <StatusCard
-              tone={model.totalEvents ? 'good' : 'watch'}
-              title={model.totalEvents ? 'Live events loaded' : 'No live events in this filter'}
-              body={`${model.totalEvents} event rows, ${model.totalSessions} sessions, ${model.totalUsers} users.`}
+              tone={!dataAccess?.signedIn || dataAccess?.isAdmin === false ? 'watch' : model.totalEvents ? 'good' : 'muted'}
+              title={
+                !dataAccess?.signedIn
+                  ? 'Admin sign-in needed for live rows'
+                  : dataAccess.isAdmin === false
+                    ? 'Admin role needed for live rows'
+                  : model.totalEvents
+                    ? 'Live events loaded'
+                    : 'No live events in this filter'
+              }
+              body={
+                !dataAccess?.signedIn
+                  ? 'The pass key opens the cockpit, but Supabase only releases app_events to a signed-in admin session.'
+                  : dataAccess.isAdmin === false
+                    ? `${dataAccess.email ?? 'This account'} is signed in, but Supabase does not report an active admin role.`
+                  : `${model.totalEvents} event rows, ${model.totalSessions} sessions, ${model.totalUsers} users.`
+              }
             />
             <StatusCard
               tone="info"
@@ -1572,11 +1598,13 @@ function SecurityPage({
   section,
   dataMode,
   usingLocalFallback,
+  dataAccess,
 }: {
   model: DashboardModel
   section: AdminSection
   dataMode: string
   usingLocalFallback: boolean
+  dataAccess: AdminDataAccessStatus | null
 }) {
   return (
     <div className="grid gap-5 xl:grid-cols-[1fr_1fr]">
@@ -1591,6 +1619,17 @@ function SecurityPage({
             tone={usingLocalFallback ? 'watch' : model.totalEvents ? 'good' : 'muted'}
             title={dataMode}
             body={`${model.totalEvents} event rows are currently feeding the dashboard after filters.`}
+          />
+          <StatusCard
+            tone={dataAccess?.signedIn && dataAccess?.isAdmin ? 'good' : 'watch'}
+            title="Supabase app_events access"
+            body={
+              dataAccess?.signedIn && dataAccess?.isAdmin
+                ? `${dataAccess.email ?? 'Signed-in admin'} can read live app_events.`
+                : dataAccess?.signedIn
+                  ? `${dataAccess.email ?? 'This account'} is signed in but is not authorized for app_events.`
+                  : 'The pass key opens the cockpit. Sign into the main app with the admin account to let Supabase RLS return live rows.'
+            }
           />
           <StatusCard
             tone="good"
@@ -1668,6 +1707,7 @@ export function AdminMonitorPage() {
   const [activeSectionId, setActiveSectionId] = useState<AdminSectionId>(() => sectionFromLocation())
   const [remoteEvents, setRemoteEvents] = useState<StoredAppEvent[]>([])
   const [localEvents, setLocalEvents] = useState<StoredAppEvent[]>([])
+  const [dataAccess, setDataAccess] = useState<AdminDataAccessStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null)
   const [range, setRange] = useState<RangeFilter>('7 days')
@@ -1679,14 +1719,26 @@ export function AdminMonitorPage() {
   const rawEvents = usingLocalFallback ? localEvents : remoteEvents
   const dataMode = usingLocalFallback
     ? 'Local browser events'
-    : remoteEvents.length
-      ? 'Live Supabase app_events'
-      : 'No live events loaded'
+    : !dataAccess
+      ? 'Checking live data access'
+      : !dataAccess.configured
+        ? 'Supabase not configured'
+        : !dataAccess.signedIn
+          ? 'Admin sign-in needed'
+          : !dataAccess.isAdmin
+            ? 'Admin role needed'
+            : remoteEvents.length
+              ? 'Live Supabase app_events'
+              : 'No live events recorded'
 
   const loadEvents = async () => {
     setLoading(true)
     try {
-      const [nextRemote] = await Promise.all([loadRecentAdminEvents(2000)])
+      const [nextAccess, nextRemote] = await Promise.all([
+        getAdminDataAccessStatus(),
+        loadRecentAdminEvents(2000),
+      ])
+      setDataAccess(nextAccess)
       setRemoteEvents(nextRemote)
       setLocalEvents(getLocalAppEvents())
       setLastRefresh(new Date())
@@ -1726,7 +1778,9 @@ export function AdminMonitorPage() {
     >
       <FilterBar range={range} setRange={setRange} source={source} setSource={setSource} track={track} setTrack={setTrack} />
 
-      {activeSection.id === 'overview' ? <OverviewPage model={model} section={activeSection} /> : null}
+      {activeSection.id === 'overview' ? (
+        <OverviewPage model={model} section={activeSection} dataAccess={dataAccess} />
+      ) : null}
       {activeSection.id === 'acquisition' ? <AcquisitionPage model={model} section={activeSection} /> : null}
       {activeSection.id === 'activation' ? <ActivationPage model={model} section={activeSection} /> : null}
       {activeSection.id === 'users' ? <UsersPage model={model} section={activeSection} /> : null}
@@ -1734,7 +1788,13 @@ export function AdminMonitorPage() {
       {activeSection.id === 'retention' ? <RetentionPage model={model} section={activeSection} /> : null}
       {activeSection.id === 'content-quality' ? <ContentQualityPage model={model} section={activeSection} /> : null}
       {activeSection.id === 'security' ? (
-        <SecurityPage model={model} section={activeSection} dataMode={dataMode} usingLocalFallback={usingLocalFallback} />
+        <SecurityPage
+          model={model}
+          section={activeSection}
+          dataMode={dataMode}
+          usingLocalFallback={usingLocalFallback}
+          dataAccess={dataAccess}
+        />
       ) : null}
     </AdminPanelShell>
   )
