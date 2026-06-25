@@ -1,21 +1,26 @@
-<div style="margin:0;padding:32px;background:#f3f7fb;font-family:Arial,Helvetica,sans-serif;color:#102033;">
-  <div style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #dbe7f3;border-radius:18px;overflow:hidden;">
-    <div style="background:#063257;padding:24px 28px;color:#ffffff;">
-      <img src="https://nursecommand.com/nursing-command-logo.png" alt="Nurse Command" width="148" style="display:block;width:148px;max-width:70%;height:auto;margin:0 0 16px;border:0;border-radius:14px;">
+<div style="margin:0;padding:24px;background:#03111f;font-family:Arial,Helvetica,sans-serif;color:#102033;">
+  <div style="max-width:540px;margin:0 auto;background:#ffffff;border:1px solid #dbe7f3;border-radius:22px;overflow:hidden;box-shadow:0 24px 70px rgba(5,16,31,0.18);">
+    <div style="background:#063257;padding:28px 24px 24px;color:#ffffff;text-align:center;">
+      <img src="https://nursecommand.com/nursing-command-logo.png" alt="Nurse Command" width="132" style="display:block;width:132px;max-width:56%;height:auto;margin:0 auto 16px;border:0;background:transparent;">
       <div style="font-size:12px;letter-spacing:0.16em;text-transform:uppercase;font-weight:700;color:#b9e5ff;">Nurse Command</div>
-      <h1 style="margin:8px 0 0;font-size:24px;line-height:1.25;">Reset your password</h1>
+      <h1 style="margin:8px 0 0;font-size:28px;line-height:1.2;">Reset your password</h1>
     </div>
-    <div style="padding:28px;">
-      <p style="margin:0 0 16px;font-size:16px;line-height:1.6;">We received a request to reset your NCLEX study account password.</p>
-      <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#52657a;">Use the secure button below to choose a new password. If you did not request this, you can ignore this email.</p>
-      <p style="margin:0 0 24px;"><a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#0b6bd3;color:#ffffff;text-decoration:none;font-size:15px;font-weight:800;padding:14px 22px;border-radius:12px;">Reset password</a></p>
-      <div style="margin:0 0 24px;padding:18px;border:1px solid #b7ebff;border-radius:14px;background:#eefaff;">
-        <p style="margin:0 0 8px;font-size:14px;font-weight:800;color:#102033;">About this email</p>
-        <p style="margin:0;font-size:13px;line-height:1.6;color:#52657a;">Nurse Command sends password emails only for account access and security. The reset link is time limited. For help with account access, contact support@cosmicgames.info.</p>
+    <div style="padding:28px 24px 24px;text-align:center;">
+      <p style="margin:0 auto 16px;max-width:420px;font-size:16px;line-height:1.7;">We received a request to change your Nurse Command account password.</p>
+      <p style="margin:0 auto 24px;max-width:420px;font-size:15px;line-height:1.7;color:#52657a;">Use the secure button below to choose a new password. If you did not make this request, contact <a href="mailto:support@cosmicgames.info" style="color:#0b6bd3;font-weight:800;text-decoration:none;">support@cosmicgames.info</a> right away.</p>
+      <p style="margin:0 auto 24px;max-width:260px;"><a href="{{ .ConfirmationURL }}" style="display:block;background:#0b6bd3;color:#ffffff;text-decoration:none;font-size:15px;font-weight:800;padding:15px 22px;border-radius:14px;text-align:center;">Reset password</a></p>
+      <div style="margin:0 auto 24px;max-width:420px;padding:18px 18px 16px;border:1px solid #dbe7f3;border-radius:16px;background:#f7fbff;text-align:center;">
+        <p style="margin:0 0 8px;font-size:14px;font-weight:800;color:#102033;">Need help?</p>
+        <p style="margin:0;font-size:13px;line-height:1.7;color:#52657a;">This reset link is time limited. For account access help, email <a href="mailto:support@cosmicgames.info" style="color:#0b6bd3;font-weight:800;text-decoration:none;">support@cosmicgames.info</a>.</p>
+      </div>
+      <div style="margin:0 auto 24px;max-width:420px;padding:18px 18px 16px;border:1px solid #dbe7f3;border-radius:16px;background:#f7fbff;text-align:center;">
+        <p style="margin:0 0 8px;font-size:14px;font-weight:800;color:#102033;">Invite a student or educator</p>
+        <p style="margin:0 0 14px;font-size:13px;line-height:1.7;color:#52657a;">Know another nursing student or educator who should try Nurse Command? Share the open beta link and invite them to join today.</p>
+        <p style="margin:0 auto;max-width:240px;"><a href="mailto:?subject=Join%20Nurse%20Command%20open%20beta&body=Try%20Nurse%20Command%20with%20me:%20{{ .SiteURL }}" style="display:block;background:#063257;color:#ffffff;text-decoration:none;font-size:13px;font-weight:800;padding:12px 16px;border-radius:12px;text-align:center;">Invite them now</a></p>
       </div>
       <p style="margin:0 0 8px;font-size:12px;line-height:1.5;color:#70849b;">Button not working? Copy and paste this link into your browser:</p>
       <p style="margin:0;word-break:break-all;font-size:12px;line-height:1.5;"><a href="{{ .ConfirmationURL }}" style="color:#0b6bd3;">{{ .ConfirmationURL }}</a></p>
     </div>
-    <div style="border-top:1px solid #e4edf6;padding:18px 28px;background:#fbfdff;font-size:12px;line-height:1.5;color:#70849b;">This security email was sent to {{ .Email }} by Nurse Command. If you did not request it, ignore this email and keep your current password.</div>
+    <div style="border-top:1px solid #e4edf6;padding:16px 24px;background:#fbfdff;font-size:12px;line-height:1.6;color:#70849b;text-align:center;">This security email was sent to {{ .Email }} by Nurse Command. If you need help, contact support@cosmicgames.info.</div>
   </div>
 </div>
