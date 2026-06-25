@@ -110,6 +110,7 @@ interface UserRow {
   label: string
   displayId: string
   displayName: string
+  email: string | null
   examTrack: ExamFilter
   source: SourceFilter
   status: string
@@ -677,8 +678,10 @@ const buildModel = (events: StoredAppEvent[], profilesById: Map<string, AdminPro
       const lastActive = Math.max(...userEvents.map(eventTime))
       const sessions = new Set(userEvents.map((event) => event.session_id))
       const profile = profilesById.get(key)
+      const email = profile?.email?.trim() || null
       const displayName =
         profile?.name?.trim() ||
+        email ||
         `Learner ${index + 1}`
       const activatedSteps = [
         userEvents.some((event) => ['demo_started', 'signup_started', 'signup_completed'].includes(event.event_name)),
@@ -698,6 +701,7 @@ const buildModel = (events: StoredAppEvent[], profilesById: Map<string, AdminPro
         label: displayName,
         displayId: cleanDisplayId(key),
         displayName,
+        email,
         examTrack: formatExamTrack(firstTrack),
         source: firstSource,
         status: userStatus(userEvents),
@@ -1387,7 +1391,7 @@ function UsersPage({ model, section }: { model: DashboardModel; section: AdminSe
     const needle = search.trim().toLowerCase()
     if (!needle) return model.users
     return model.users.filter((user) =>
-      [user.label, user.displayId, user.source, user.examTrack, user.status]
+      [user.label, user.displayName, user.email ?? '', user.displayId, user.source, user.examTrack, user.status]
         .join(' ')
         .toLowerCase()
         .includes(needle),
@@ -1431,6 +1435,7 @@ function UsersPage({ model, section }: { model: DashboardModel; section: AdminSe
                     <p className="mt-1 text-xs font-bold text-slate-500">
                       {user.examTrack} · ID ending {user.displayId}
                     </p>
+                    {user.email ? <p className="mt-1 text-xs font-bold text-cyan-100/75">{user.email}</p> : null}
                   </div>
                   <div className="flex flex-col items-end gap-2">
                     <span
@@ -1455,6 +1460,7 @@ function UsersPage({ model, section }: { model: DashboardModel; section: AdminSe
                   <span>{user.events} events</span>
                   <span>{formatRelative(user.lastActive)}</span>
                 </div>
+                <p className="mt-3 text-[11px] font-bold text-slate-500">{user.email ? `Email: ${user.email}` : 'No email stored for this account yet.'}</p>
               </button>
             ))}
           </div>
@@ -1479,6 +1485,9 @@ function UsersPage({ model, section }: { model: DashboardModel; section: AdminSe
               <p className="mt-1 text-lg font-black text-white">{selectedUser.displayName}</p>
               <p className="mt-1 text-sm font-bold text-slate-400">
                 {selectedUser.examTrack} · {selectedUser.source} · last active {formatRelative(selectedUser.lastActive)}
+              </p>
+              <p className="mt-1 text-sm font-bold text-cyan-100/80">
+                {selectedUser.email ? selectedUser.email : 'No email stored for this account yet.'}
               </p>
             </div>
 

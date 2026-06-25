@@ -23,6 +23,7 @@ export interface AdminDataAccessStatus {
 
 export interface AdminProfileSummary {
   id: string
+  email: string | null
   name: string
   member_number: number | null
   exam_track: string | null

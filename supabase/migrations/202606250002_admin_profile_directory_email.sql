@@ -1,3 +1,5 @@
+drop function if exists public.admin_profile_directory(uuid[]);
+
 create or replace function public.admin_profile_directory(user_ids uuid[] default null)
 returns table (
   id uuid,
