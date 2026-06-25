@@ -6,6 +6,13 @@ const indexFile = join(distDir, 'index.html')
 
 const appRoutes = [
   'admin',
+  'admin/acquisition',
+  'admin/activation',
+  'admin/users',
+  'admin/feature-usage',
+  'admin/retention',
+  'admin/content-quality',
+  'admin/security',
   'dashboard',
   'exam-prep',
   'practice-questions',

@@ -18,838 +18,1012 @@ import {
   RefreshCw,
   Search,
   ShieldCheck,
-  Sparkles,
   Target,
   TimerReset,
   TrendingDown,
-  TrendingUp,
-  UploadCloud,
   Users,
   Zap,
+  type LucideIcon,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { loadRecentAdminEvents } from '../services/admin-analytics'
 import { getLocalAppEvents, type StoredAppEvent } from '../services/analytics-client'
 
 type RangeFilter = 'Today' | '7 days' | '30 days' | '90 days'
-type SourceFilter = 'All' | 'Google Ads' | 'LinkedIn' | 'Direct' | 'Email' | 'Organic'
-type ExamFilter = 'All' | 'NCLEX-RN' | 'NCLEX-PN' | 'TEAS' | 'FNP' | 'CCMA'
-type StatusTone = 'good' | 'watch' | 'critical' | 'info'
+type SourceFilter = 'All' | 'Google Ads' | 'LinkedIn' | 'Direct' | 'Email' | 'Organic' | 'Other'
+type ExamFilter = 'All' | 'NCLEX-RN' | 'NCLEX-PN' | 'TEAS' | 'FNP' | 'CCMA' | 'Unknown'
+type StatusTone = 'good' | 'watch' | 'critical' | 'info' | 'muted'
+type AdminSectionId =
+  | 'overview'
+  | 'acquisition'
+  | 'activation'
+  | 'users'
+  | 'feature-usage'
+  | 'retention'
+  | 'content-quality'
+  | 'security'
 
-interface JourneyNode {
-  id: string
+interface AdminSection {
+  id: AdminSectionId
   label: string
-  users: number
-  conversion: number
-  dropOff: number
-  avgTime: string
-  source: SourceFilter
-  tone: StatusTone
-  action: string
+  segment: string
+  icon: LucideIcon
+  color: string
+  description: string
 }
 
-interface FeatureRow {
-  feature: string
-  opens: number
-  uniqueUsers: number
-  completion: number
-  returnRate: number
-  feedback: number
-  interest: number
-  recommendation: string
+interface JourneyStep {
+  id: string
+  label: string
+  description: string
+  users: number
+  previousUsers: number
+  conversion: number | null
+  dropOff: number | null
+  tone: StatusTone
+}
+
+interface SourceRow {
+  source: SourceFilter
+  users: number
+  sessions: number
+  events: number
+  percentage: number
+  lastSeen: number
+}
+
+interface CampaignRow {
+  campaign: string
+  source: SourceFilter
+  users: number
+  events: number
+  lastSeen: number
 }
 
 interface PageRow {
   page: string
+  users: number
   views: number
-  avgTime: string
-  exitRate: number
-  nextAction: string
-  interest: number
+  events: number
+  avgSeconds: number
+  lastSeen: number
 }
 
-interface TimelineEvent {
-  time: string
-  event: string
-  detail: string
-  tone: StatusTone
+interface FeatureRow {
+  feature: string
+  users: number
+  events: number
+  starts: number
+  completions: number
+  failures: number
+  lastSeen: number
 }
 
-interface AdminUserRow {
+interface UserRow {
   id: string
   label: string
+  displayId: string
   examTrack: ExamFilter
   source: SourceFilter
   status: string
-  createdAt: string
-  lastActive: string
-  sessionMinutes: number
-  activationScore: number
-  timeline: TimelineEvent[]
+  events: number
+  sessions: number
+  sessionSeconds: number
+  firstSeen: number
+  lastActive: number
+  journeySteps: number
+  timeline: StoredAppEvent[]
+}
+
+interface CategoryRow {
+  category: string
+  answered: number
+  correct: number
+  incorrect: number
+  highConfidenceMisses: number
+}
+
+interface DashboardModel {
+  events: StoredAppEvent[]
+  users: UserRow[]
+  totalUsers: number
+  totalSessions: number
+  totalEvents: number
+  activatedUsers: number
+  activationRate: number
+  avgSessionSeconds: number
+  returningUsers: number
+  returnRate: number
+  highConfidenceMisses: number
+  firstEvent: number | null
+  lastEvent: number | null
+  sourceRows: SourceRow[]
+  campaignRows: CampaignRow[]
+  journeySteps: JourneyStep[]
+  pageRows: PageRow[]
+  featureRows: FeatureRow[]
+  categoryRows: CategoryRow[]
+  questionAnswered: number
+  correctAnswers: number
+  incorrectAnswers: number
 }
 
 const dateRanges: RangeFilter[] = ['Today', '7 days', '30 days', '90 days']
-const sources: SourceFilter[] = ['All', 'Google Ads', 'LinkedIn', 'Direct', 'Email', 'Organic']
-const examTracks: ExamFilter[] = ['All', 'NCLEX-RN', 'NCLEX-PN', 'TEAS', 'FNP', 'CCMA']
+const sources: SourceFilter[] = ['All', 'Google Ads', 'LinkedIn', 'Direct', 'Email', 'Organic', 'Other']
+const examTracks: ExamFilter[] = ['All', 'NCLEX-RN', 'NCLEX-PN', 'TEAS', 'FNP', 'CCMA', 'Unknown']
 
-const journeyNodes: JourneyNode[] = [
+const adminSections: AdminSection[] = [
   {
-    id: 'traffic',
-    label: 'Traffic source',
-    users: 1420,
-    conversion: 100,
-    dropOff: 0,
-    avgTime: '0:00',
-    source: 'Google Ads',
-    tone: 'info',
-    action: 'Judge ads by activated users, not clicks.',
+    id: 'overview',
+    label: 'Overview',
+    segment: '',
+    icon: BarChart3,
+    color: 'cyan',
+    description: 'Real live-event summary',
   },
   {
-    id: 'landing',
-    label: 'Landing page',
-    users: 1036,
-    conversion: 73,
-    dropOff: 27,
-    avgTime: '0:41',
-    source: 'Direct',
-    tone: 'watch',
-    action: 'Clarify free beta value above the fold.',
+    id: 'acquisition',
+    label: 'Acquisition',
+    segment: 'acquisition',
+    icon: MousePointer2,
+    color: 'violet',
+    description: 'Sources, campaigns, first visits',
   },
   {
-    id: 'signup',
-    label: 'Demo or signup started',
-    users: 548,
-    conversion: 53,
-    dropOff: 47,
-    avgTime: '1:12',
-    source: 'LinkedIn',
-    tone: 'watch',
-    action: 'Reduce account friction before first study action.',
+    id: 'activation',
+    label: 'Activation',
+    segment: 'activation',
+    icon: Zap,
+    color: 'emerald',
+    description: 'First value and study actions',
   },
   {
-    id: 'onboarding',
-    label: 'Onboarding completed',
-    users: 388,
-    conversion: 71,
-    dropOff: 29,
-    avgTime: '2:36',
-    source: 'LinkedIn',
-    tone: 'good',
-    action: 'Keep exam-track setup short and guided.',
+    id: 'users',
+    label: 'Users',
+    segment: 'users',
+    icon: Users,
+    color: 'amber',
+    description: 'Anonymous behavior timelines',
   },
   {
-    id: 'study',
-    label: 'First study action',
-    users: 291,
-    conversion: 75,
-    dropOff: 25,
-    avgTime: '3:08',
-    source: 'Organic',
-    tone: 'good',
-    action: 'Push Quick Study immediately after onboarding.',
+    id: 'feature-usage',
+    label: 'Feature Usage',
+    segment: 'feature-usage',
+    icon: Layers3,
+    color: 'sky',
+    description: 'Feature opens and completions',
   },
   {
-    id: 'quiz',
-    label: 'Quiz completed',
-    users: 188,
-    conversion: 65,
-    dropOff: 35,
-    avgTime: '8:44',
-    source: 'Direct',
-    tone: 'watch',
-    action: 'Add progress reassurance inside the quiz.',
+    id: 'retention',
+    label: 'Retention',
+    segment: 'retention',
+    icon: TimerReset,
+    color: 'teal',
+    description: 'Return visits and repeat sessions',
   },
   {
-    id: 'remediation',
-    label: 'Remediation opened',
-    users: 79,
-    conversion: 42,
-    dropOff: 58,
-    avgTime: '1:09',
-    source: 'Email',
-    tone: 'critical',
-    action: 'Make weak-area repair feel like the next step, not a separate page.',
+    id: 'content-quality',
+    label: 'Content Quality',
+    segment: 'content-quality',
+    icon: FileQuestion,
+    color: 'rose',
+    description: 'Question outcomes and confidence misses',
   },
   {
-    id: 'return',
-    label: 'Returned later',
-    users: 52,
-    conversion: 66,
-    dropOff: 34,
-    avgTime: '1 day',
-    source: 'LinkedIn',
-    tone: 'watch',
-    action: 'Add weekly readiness report and streak protection.',
+    id: 'security',
+    label: 'Security',
+    segment: 'security',
+    icon: LockKeyhole,
+    color: 'lime',
+    description: 'Access, privacy, and data mode',
   },
 ]
 
-const featureRows: FeatureRow[] = [
+const sectionStyles: Record<
+  string,
   {
-    feature: 'Quick Study',
-    opens: 486,
-    uniqueUsers: 221,
-    completion: 78,
-    returnRate: 42,
-    feedback: 12,
-    interest: 92,
-    recommendation: 'Make this the default first action.',
+    nav: string
+    panel: string
+    text: string
+    icon: string
+    ring: string
+    soft: string
+  }
+> = {
+  cyan: {
+    nav: 'border-cyan-200/75 bg-cyan-300/12 text-cyan-50 shadow-[0_0_28px_rgba(103,232,249,0.14)]',
+    panel: 'border-cyan-300/24 bg-cyan-300/10',
+    text: 'text-cyan-100',
+    icon: 'border-cyan-300/40 bg-cyan-300/12 text-cyan-100',
+    ring: 'ring-cyan-300/35',
+    soft: 'bg-cyan-300/10 text-cyan-100',
   },
-  {
-    feature: 'Question Bank',
-    opens: 392,
-    uniqueUsers: 188,
-    completion: 64,
-    returnRate: 37,
-    feedback: 9,
-    interest: 81,
-    recommendation: 'Keep rationales and confidence prompt tight.',
+  violet: {
+    nav: 'border-violet-200/75 bg-violet-400/12 text-violet-50 shadow-[0_0_28px_rgba(167,139,250,0.14)]',
+    panel: 'border-violet-300/24 bg-violet-400/10',
+    text: 'text-violet-100',
+    icon: 'border-violet-300/40 bg-violet-400/12 text-violet-100',
+    ring: 'ring-violet-300/35',
+    soft: 'bg-violet-400/10 text-violet-100',
   },
-  {
-    feature: 'Weak Areas',
-    opens: 126,
-    uniqueUsers: 71,
-    completion: 31,
-    returnRate: 18,
-    feedback: 15,
-    interest: 66,
-    recommendation: 'Needs clearer next action after misses.',
+  emerald: {
+    nav: 'border-emerald-200/75 bg-emerald-400/12 text-emerald-50 shadow-[0_0_28px_rgba(52,211,153,0.14)]',
+    panel: 'border-emerald-300/24 bg-emerald-400/10',
+    text: 'text-emerald-100',
+    icon: 'border-emerald-300/40 bg-emerald-400/12 text-emerald-100',
+    ring: 'ring-emerald-300/35',
+    soft: 'bg-emerald-400/10 text-emerald-100',
   },
-  {
-    feature: 'Material Upload',
-    opens: 74,
-    uniqueUsers: 39,
-    completion: 22,
-    returnRate: 11,
-    feedback: 18,
-    interest: 58,
-    recommendation: 'High curiosity, high friction. Improve upload confidence copy.',
+  amber: {
+    nav: 'border-amber-200/75 bg-amber-300/12 text-amber-50 shadow-[0_0_28px_rgba(252,211,77,0.14)]',
+    panel: 'border-amber-300/24 bg-amber-300/10',
+    text: 'text-amber-100',
+    icon: 'border-amber-300/40 bg-amber-300/12 text-amber-100',
+    ring: 'ring-amber-300/35',
+    soft: 'bg-amber-300/10 text-amber-100',
   },
-  {
-    feature: 'Flashcards',
-    opens: 91,
-    uniqueUsers: 44,
-    completion: 49,
-    returnRate: 12,
-    feedback: 4,
-    interest: 43,
-    recommendation: 'Package as review loop after missed questions.',
+  sky: {
+    nav: 'border-sky-200/75 bg-sky-400/12 text-sky-50 shadow-[0_0_28px_rgba(56,189,248,0.14)]',
+    panel: 'border-sky-300/24 bg-sky-400/10',
+    text: 'text-sky-100',
+    icon: 'border-sky-300/40 bg-sky-400/12 text-sky-100',
+    ring: 'ring-sky-300/35',
+    soft: 'bg-sky-400/10 text-sky-100',
   },
-]
-
-const pageRows: PageRow[] = [
-  { page: '/quick-study', views: 632, avgTime: '9:12', exitRate: 18, nextAction: 'quiz_completed', interest: 91 },
-  { page: '/practice-questions', views: 514, avgTime: '7:45', exitRate: 24, nextAction: 'question_answered', interest: 84 },
-  { page: '/weak-areas', views: 166, avgTime: '2:38', exitRate: 46, nextAction: 'remediation_opened', interest: 59 },
-  { page: '/my-materials', views: 118, avgTime: '1:51', exitRate: 52, nextAction: 'material_upload_started', interest: 48 },
-  { page: '/social', views: 73, avgTime: '0:49', exitRate: 63, nextAction: 'profile_viewed', interest: 28 },
-]
-
-const seededUsers: AdminUserRow[] = [
-  {
-    id: 'anon-1842',
-    label: 'User 1842',
-    examTrack: 'NCLEX-RN',
-    source: 'LinkedIn',
-    status: 'Activated, needs remediation nudge',
-    createdAt: 'Today 9:08 AM',
-    lastActive: '11 min ago',
-    sessionMinutes: 18,
-    activationScore: 82,
-    timeline: [
-      { time: '9:08 AM', event: 'Account created', detail: 'Entered NCLEX-RN track from LinkedIn', tone: 'info' },
-      { time: '9:11 AM', event: 'Onboarding completed', detail: 'Selected Adult Health as weak area', tone: 'good' },
-      { time: '9:13 AM', event: 'Quick Study started', detail: '10-question focused session', tone: 'good' },
-      { time: '9:22 AM', event: 'Quiz completed', detail: '6/10 correct, 3 high-confidence misses', tone: 'watch' },
-      { time: '9:24 AM', event: 'Remediation ignored', detail: 'Left after rationale view', tone: 'critical' },
-    ],
+  teal: {
+    nav: 'border-teal-200/75 bg-teal-300/12 text-teal-50 shadow-[0_0_28px_rgba(45,212,191,0.14)]',
+    panel: 'border-teal-300/24 bg-teal-300/10',
+    text: 'text-teal-100',
+    icon: 'border-teal-300/40 bg-teal-300/12 text-teal-100',
+    ring: 'ring-teal-300/35',
+    soft: 'bg-teal-300/10 text-teal-100',
   },
-  {
-    id: 'anon-2219',
-    label: 'User 2219',
-    examTrack: 'NCLEX-PN',
-    source: 'Google Ads',
-    status: 'Dropped during account setup',
-    createdAt: 'Today 8:42 AM',
-    lastActive: '1 hr ago',
-    sessionMinutes: 4,
-    activationScore: 34,
-    timeline: [
-      { time: '8:42 AM', event: 'Landing page viewed', detail: 'Campaign nclex_free_beta', tone: 'info' },
-      { time: '8:43 AM', event: 'Signup opened', detail: 'Beta terms viewed', tone: 'info' },
-      { time: '8:44 AM', event: 'Signup abandoned', detail: 'No first study action', tone: 'critical' },
-    ],
+  rose: {
+    nav: 'border-rose-200/75 bg-rose-400/12 text-rose-50 shadow-[0_0_28px_rgba(251,113,133,0.14)]',
+    panel: 'border-rose-300/24 bg-rose-400/10',
+    text: 'text-rose-100',
+    icon: 'border-rose-300/40 bg-rose-400/12 text-rose-100',
+    ring: 'ring-rose-300/35',
+    soft: 'bg-rose-400/10 text-rose-100',
   },
-  {
-    id: 'anon-3091',
-    label: 'User 3091',
-    examTrack: 'NCLEX-RN',
-    source: 'Direct',
-    status: 'Power user',
-    createdAt: 'Yesterday',
-    lastActive: '26 min ago',
-    sessionMinutes: 34,
-    activationScore: 94,
-    timeline: [
-      { time: '10:04 AM', event: 'Returned later', detail: 'Second session in 24 hours', tone: 'good' },
-      { time: '10:06 AM', event: 'Question Bank opened', detail: 'Mixed adult health set', tone: 'good' },
-      { time: '10:19 AM', event: 'Question answered', detail: 'High confidence incorrect in prioritization', tone: 'watch' },
-      { time: '10:21 AM', event: 'Weak Areas opened', detail: 'Reviewed prioritization plan', tone: 'good' },
-      { time: '10:38 AM', event: 'Note created', detail: 'Stored count only; note body not visible in admin', tone: 'info' },
-    ],
+  lime: {
+    nav: 'border-lime-200/75 bg-lime-300/12 text-lime-50 shadow-[0_0_28px_rgba(190,242,100,0.14)]',
+    panel: 'border-lime-300/24 bg-lime-300/10',
+    text: 'text-lime-100',
+    icon: 'border-lime-300/40 bg-lime-300/12 text-lime-100',
+    ring: 'ring-lime-300/35',
+    soft: 'bg-lime-300/10 text-lime-100',
   },
-  {
-    id: 'anon-4170',
-    label: 'User 4170',
-    examTrack: 'TEAS',
-    source: 'Organic',
-    status: 'Wrong segment signal',
-    createdAt: 'Yesterday',
-    lastActive: '20 hrs ago',
-    sessionMinutes: 6,
-    activationScore: 38,
-    timeline: [
-      { time: '3:16 PM', event: 'Exam track selected', detail: 'TEAS selected', tone: 'watch' },
-      { time: '3:17 PM', event: 'Dashboard opened', detail: 'Looked for pre-nursing material', tone: 'watch' },
-      { time: '3:21 PM', event: 'Exited', detail: 'No quiz started', tone: 'critical' },
-    ],
-  },
-]
-
-const buildPriorities = [
-  {
-    label: 'Remediation next-step prompts',
-    score: 94,
-    reason: 'High-confidence misses are visible but users do not always enter repair mode.',
-    tone: 'critical' as StatusTone,
-  },
-  {
-    label: 'First-study shortcut after onboarding',
-    score: 87,
-    reason: 'First study action is the strongest activation milestone.',
-    tone: 'good' as StatusTone,
-  },
-  {
-    label: 'Material upload trust copy',
-    score: 73,
-    reason: 'Users open upload but abandon before completion.',
-    tone: 'watch' as StatusTone,
-  },
-]
-
-const toneClass: Record<StatusTone, string> = {
-  good: 'border-emerald-300/35 bg-emerald-300/12 text-emerald-100',
-  watch: 'border-amber-300/35 bg-amber-300/12 text-amber-100',
-  critical: 'border-rose-300/35 bg-rose-300/12 text-rose-100',
-  info: 'border-cyan-300/30 bg-cyan-300/12 text-cyan-100',
 }
 
-const toneDotClass: Record<StatusTone, string> = {
-  good: 'bg-emerald-300 shadow-[0_0_18px_rgba(110,231,183,0.38)]',
-  watch: 'bg-amber-300 shadow-[0_0_18px_rgba(252,211,77,0.34)]',
-  critical: 'bg-rose-300 shadow-[0_0_18px_rgba(253,164,175,0.34)]',
-  info: 'bg-cyan-300 shadow-[0_0_18px_rgba(103,232,249,0.32)]',
+const toneStyles: Record<StatusTone, string> = {
+  good: 'border-emerald-300/30 bg-emerald-400/10 text-emerald-100',
+  watch: 'border-amber-300/30 bg-amber-300/10 text-amber-100',
+  critical: 'border-rose-300/35 bg-rose-400/12 text-rose-100',
+  info: 'border-cyan-300/30 bg-cyan-300/10 text-cyan-100',
+  muted: 'border-slate-500/30 bg-slate-500/10 text-slate-200',
 }
 
-const formatPercent = (value: number) => `${Math.round(value)}%`
+const activationEvents = new Set<string>([
+  'signup_completed',
+  'onboarding_completed',
+  'quiz_started',
+  'question_answered',
+  'quiz_completed',
+  'weak_area_opened',
+  'study_plan_opened',
+  'flashcard_reviewed',
+  'material_upload_completed',
+])
 
-const eventLabel = (eventName: string) =>
+const studyEvents = new Set<string>([
+  'quiz_started',
+  'question_answered',
+  'confidence_selected',
+  'rationale_opened',
+  'quiz_completed',
+  'weak_area_opened',
+  'study_plan_opened',
+  'flashcard_reviewed',
+])
+
+const eventLabels: Record<string, string> = {
+  page_view: 'Page viewed',
+  demo_started: 'Demo started',
+  signup_started: 'Signup started',
+  signup_completed: 'Account created',
+  onboarding_started: 'Onboarding started',
+  onboarding_completed: 'Onboarding completed',
+  exam_track_selected: 'Exam track selected',
+  feature_opened: 'Feature opened',
+  quiz_started: 'Quiz started',
+  question_answered: 'Question answered',
+  confidence_selected: 'Confidence selected',
+  rationale_opened: 'Rationale opened',
+  quiz_completed: 'Quiz completed',
+  weak_area_opened: 'Weak area opened',
+  study_plan_opened: 'Study plan opened',
+  flashcard_reviewed: 'Flashcard reviewed',
+  material_upload_started: 'Material upload started',
+  material_upload_completed: 'Material upload completed',
+  material_upload_failed: 'Material upload failed',
+  note_created: 'Note created',
+  feedback_opened: 'Feedback opened',
+  feedback_submitted: 'Feedback submitted',
+  pricing_viewed: 'Pricing viewed',
+  external_cta_clicked: 'External CTA clicked',
+}
+
+const routeBasePath = () => {
+  const base = import.meta.env.BASE_URL.replace(/\/$/, '')
+  return `${base}/admin`
+}
+
+const sectionFromLocation = () => {
+  if (typeof window === 'undefined') return 'overview' as AdminSectionId
+  const parts = window.location.pathname.split('/').filter(Boolean)
+  const adminIndex = parts.indexOf('admin')
+  const segment = adminIndex >= 0 ? parts[adminIndex + 1] ?? '' : ''
+  return adminSections.find((section) => section.segment === segment)?.id ?? 'overview'
+}
+
+const sectionPath = (section: AdminSection) => {
+  const base = routeBasePath()
+  return section.segment ? `${base}/${section.segment}` : `${base}/`
+}
+
+const eventTime = (event: StoredAppEvent) => {
+  const timestamp = new Date(event.created_at).getTime()
+  return Number.isFinite(timestamp) ? timestamp : 0
+}
+
+const groupBy = <T,>(items: T[], getKey: (item: T) => string) => {
+  const groups = new Map<string, T[]>()
+  for (const item of items) {
+    const key = getKey(item)
+    groups.set(key, [...(groups.get(key) ?? []), item])
+  }
+  return groups
+}
+
+const actorKey = (event: StoredAppEvent) => event.user_id ?? event.anonymous_user_id ?? event.session_id
+
+const cleanDisplayId = (value: string) => {
+  const compact = value.replace(/^anon_/, '').replace(/^session_/, '')
+  return compact.length > 10 ? compact.slice(0, 10) : compact
+}
+
+const formatExamTrack = (track: StoredAppEvent['exam_track']): ExamFilter => {
+  if (!track) return 'Unknown'
+  const normalized = track.toLowerCase()
+  if (normalized === 'nclex-rn') return 'NCLEX-RN'
+  if (normalized === 'nclex-pn') return 'NCLEX-PN'
+  if (normalized === 'teas') return 'TEAS'
+  if (normalized === 'fnp') return 'FNP'
+  if (normalized === 'ccma') return 'CCMA'
+  return 'Unknown'
+}
+
+const classifySource = (source: string | null): SourceFilter => {
+  const value = (source ?? '').trim().toLowerCase()
+  if (!value) return 'Direct'
+  if (value.includes('google') || value.includes('gads') || value.includes('paid')) return 'Google Ads'
+  if (value.includes('linkedin') || value.includes('linked in')) return 'LinkedIn'
+  if (value.includes('email') || value.includes('gmail') || value.includes('newsletter')) return 'Email'
+  if (value.includes('organic') || value.includes('search')) return 'Organic'
+  if (value.includes('direct')) return 'Direct'
+  return 'Other'
+}
+
+const featureFromEvent = (event: StoredAppEvent) => {
+  if (event.feature_name) return event.feature_name
+  if (event.page_path === '/') return 'Study Menu'
+  return event.page_path
+    .split('/')
+    .filter(Boolean)
+    .map((part) =>
+      part
+        .split('-')
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' '),
+    )
+    .join(' / ') || 'Unknown feature'
+}
+
+const formatEventLabel = (eventName: string) =>
+  eventLabels[eventName] ??
   eventName
     .split('_')
-    .map((part) => part[0]?.toUpperCase() + part.slice(1))
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ')
 
-const featureFromPath = (path: string) => {
-  if (path.includes('quick-study')) return 'Quick Study'
-  if (path.includes('practice-questions')) return 'Question Bank'
-  if (path.includes('weak-areas')) return 'Weak Areas'
-  if (path.includes('my-materials')) return 'Material Upload'
-  if (path.includes('flashcards')) return 'Flashcards'
-  if (path.includes('study-plan')) return 'Study Plan'
-  return 'App Navigation'
+const safePercent = (part: number, total: number) => (total > 0 ? Math.round((part / total) * 100) : 0)
+
+const formatDuration = (seconds: number) => {
+  if (!Number.isFinite(seconds) || seconds <= 0) return '0m'
+  if (seconds < 60) return `${Math.round(seconds)}s`
+  const minutes = Math.round(seconds / 60)
+  if (minutes < 60) return `${minutes}m`
+  const hours = Math.floor(minutes / 60)
+  const remaining = minutes % 60
+  return remaining ? `${hours}h ${remaining}m` : `${hours}h`
 }
 
-function usersFromEvents(events: StoredAppEvent[]): AdminUserRow[] {
-  if (!events.length) return []
-  const grouped = new Map<string, StoredAppEvent[]>()
-  for (const event of events) {
-    const key = event.user_id ?? event.anonymous_user_id
-    grouped.set(key, [...(grouped.get(key) ?? []), event])
-  }
+const formatClock = (timestamp: number | null) => {
+  if (!timestamp) return 'Not recorded'
+  return new Intl.DateTimeFormat(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(timestamp))
+}
 
-  return [...grouped.entries()].slice(0, 8).map(([id, rows], index) => {
-    const sorted = [...rows].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    const first = sorted[sorted.length - 1]
-    const latest = sorted[0]
-    const quizCompleted = sorted.some((event) => event.event_name === 'quiz_completed')
-    const onboarding = sorted.some((event) => event.event_name === 'onboarding_completed')
-    const activationScore = Math.min(100, 28 + sorted.length * 8 + (quizCompleted ? 22 : 0) + (onboarding ? 14 : 0))
+const formatRelative = (timestamp: number | null) => {
+  if (!timestamp) return 'Not recorded'
+  const diffSeconds = Math.max(0, Math.round((Date.now() - timestamp) / 1000))
+  if (diffSeconds < 60) return `${diffSeconds}s ago`
+  const minutes = Math.round(diffSeconds / 60)
+  if (minutes < 60) return `${minutes}m ago`
+  const hours = Math.round(minutes / 60)
+  if (hours < 48) return `${hours}h ago`
+  return `${Math.round(hours / 24)}d ago`
+}
+
+const sessionSecondsForEvents = (events: StoredAppEvent[]) => {
+  const times = events.map(eventTime).filter(Boolean)
+  const spanSeconds =
+    times.length > 1 ? Math.max(0, (Math.max(...times) - Math.min(...times)) / 1000) : 0
+  const explicitSeconds = events.reduce((sum, event) => sum + (event.time_spent_seconds ?? 0), 0)
+  return Math.max(spanSeconds, explicitSeconds)
+}
+
+const getRangeStart = (range: RangeFilter) => {
+  const now = new Date()
+  if (range === 'Today') {
+    const start = new Date(now)
+    start.setHours(0, 0, 0, 0)
+    return start.getTime()
+  }
+  const days = range === '7 days' ? 7 : range === '30 days' ? 30 : 90
+  return now.getTime() - days * 24 * 60 * 60 * 1000
+}
+
+const filterEvents = (
+  events: StoredAppEvent[],
+  range: RangeFilter,
+  sourceFilter: SourceFilter,
+  examFilter: ExamFilter,
+) => {
+  const rangeStart = getRangeStart(range)
+  return events
+    .filter((event) => eventTime(event) >= rangeStart)
+    .filter((event) => !event.page_path.includes('/admin'))
+    .filter((event) => sourceFilter === 'All' || classifySource(event.source) === sourceFilter)
+    .filter((event) => examFilter === 'All' || formatExamTrack(event.exam_track) === examFilter)
+}
+
+const userStatus = (events: StoredAppEvent[]) => {
+  const names = new Set(events.map((event) => event.event_name))
+  if (names.has('quiz_completed')) return 'Quiz completed'
+  if (names.has('question_answered')) return 'Answered questions'
+  if (names.has('material_upload_completed')) return 'Uploaded material'
+  if (names.has('onboarding_completed')) return 'Onboarded'
+  if (names.has('signup_completed')) return 'Account created'
+  if (events.some((event) => studyEvents.has(event.event_name))) return 'Started studying'
+  if (names.has('feature_opened')) return 'Browsing features'
+  return 'Visited'
+}
+
+const eventDetail = (event: StoredAppEvent) => {
+  const parts = [
+    event.feature_name,
+    event.question_category,
+    event.question_result ? `Result: ${event.question_result}` : null,
+    event.confidence_level ? `Confidence: ${event.confidence_level}` : null,
+    event.page_path ? `Path: ${event.page_path}` : null,
+    event.source ? `Source: ${classifySource(event.source)}` : null,
+  ].filter(Boolean)
+  return parts.join(' | ') || 'No extra event fields'
+}
+
+const eventTone = (event: StoredAppEvent): StatusTone => {
+  if (event.event_name.includes('failed')) return 'critical'
+  if (event.question_result === 'incorrect' && event.confidence_level === 'high') return 'critical'
+  if (event.event_name.includes('completed') || event.question_result === 'correct') return 'good'
+  if (event.event_name.includes('started')) return 'watch'
+  return 'info'
+}
+
+const buildJourney = (userGroups: Map<string, StoredAppEvent[]>, returningUsers: Set<string>) => {
+  const countUsers = (match: (event: StoredAppEvent, userEvents: StoredAppEvent[]) => boolean) =>
+    Array.from(userGroups.entries()).filter(([, userEvents]) =>
+      userEvents.some((event) => match(event, userEvents)),
+    ).length
+
+  const definitions = [
+    {
+      id: 'traffic',
+      label: 'Tracked visit',
+      description: 'Any non-admin app event from the live website.',
+      users: userGroups.size,
+    },
+    {
+      id: 'landing',
+      label: 'Page viewed',
+      description: 'At least one page_view event.',
+      users: countUsers((event) => event.event_name === 'page_view'),
+    },
+    {
+      id: 'signup',
+      label: 'Signup or demo',
+      description: 'Started demo, signup, or account creation.',
+      users: countUsers((event) =>
+        ['demo_started', 'signup_started', 'signup_completed'].includes(event.event_name),
+      ),
+    },
+    {
+      id: 'onboarding',
+      label: 'Onboarding',
+      description: 'Started or completed exam/profile setup.',
+      users: countUsers((event) =>
+        ['onboarding_started', 'onboarding_completed', 'exam_track_selected'].includes(event.event_name),
+      ),
+    },
+    {
+      id: 'study',
+      label: 'First study action',
+      description: 'Quiz, question, flashcard, plan, or weak-area action.',
+      users: countUsers((event) => studyEvents.has(event.event_name)),
+    },
+    {
+      id: 'quiz',
+      label: 'Quiz completed',
+      description: 'Completed at least one quiz or practice session.',
+      users: countUsers((event) => event.event_name === 'quiz_completed'),
+    },
+    {
+      id: 'remediation',
+      label: 'Remediation opened',
+      description: 'Opened weak areas, rationales, or study plan after learning signal.',
+      users: countUsers((event) =>
+        ['weak_area_opened', 'rationale_opened', 'study_plan_opened'].includes(event.event_name),
+      ),
+    },
+    {
+      id: 'return',
+      label: 'Returned later',
+      description: 'Same anonymous/user key appeared in more than one session.',
+      users: returningUsers.size,
+    },
+  ]
+
+  return definitions.map<JourneyStep>((step, index) => {
+    const previousUsers = index === 0 ? step.users : definitions[index - 1].users
+    const conversion = index === 0 ? 100 : previousUsers > 0 ? safePercent(step.users, previousUsers) : null
+    const dropOff = conversion === null ? null : 100 - conversion
+    const tone: StatusTone =
+      step.users === 0 ? 'muted' : conversion === null ? 'muted' : conversion >= 70 ? 'good' : conversion >= 35 ? 'watch' : 'critical'
     return {
-      id,
-      label: latest.user_id ? `Account ${index + 1}` : `Anonymous ${index + 1}`,
-      examTrack: ((latest.exam_track ?? 'nclex-rn').toUpperCase() as ExamFilter).replace('NCLEX-', 'NCLEX-') as ExamFilter,
-      source: ((latest.source ?? 'Direct') as SourceFilter) || 'Direct',
-      status: quizCompleted ? 'Activated' : onboarding ? 'Onboarded, no completed quiz' : 'Browsing',
-      createdAt: new Date(first.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
-      lastActive: new Date(latest.created_at).toLocaleString([], { hour: 'numeric', minute: '2-digit' }),
-      sessionMinutes: Math.max(1, Math.round(sorted.reduce((sum, event) => sum + (event.time_spent_seconds ?? 45), 0) / 60)),
-      activationScore,
-      timeline: sorted.slice(0, 10).map((event) => ({
-        time: new Date(event.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
-        event: eventLabel(event.event_name),
-        detail: event.feature_name ?? event.question_category ?? event.page_path,
-        tone: event.event_name.includes('failed') ? 'critical' : event.event_name.includes('completed') ? 'good' : 'info',
-      })),
+      ...step,
+      previousUsers,
+      conversion,
+      dropOff,
+      tone,
     }
   })
 }
 
-function aggregateFeatureRows(events: StoredAppEvent[]): FeatureRow[] {
-  if (!events.length) return featureRows
-  const grouped = new Map<string, StoredAppEvent[]>()
-  for (const event of events) {
-    const feature = event.feature_name ?? featureFromPath(event.page_path)
-    grouped.set(feature, [...(grouped.get(feature) ?? []), event])
-  }
+const buildModel = (events: StoredAppEvent[]): DashboardModel => {
+  const sortedEvents = [...events].sort((a, b) => eventTime(b) - eventTime(a))
+  const userGroups = groupBy(sortedEvents, actorKey)
+  const sessionGroups = groupBy(sortedEvents, (event) => event.session_id)
+  const totalUsers = userGroups.size
+  const totalSessions = sessionGroups.size
+  const totalEvents = sortedEvents.length
+  const sessionSeconds = Array.from(sessionGroups.values()).map(sessionSecondsForEvents)
+  const avgSessionSeconds =
+    sessionSeconds.length > 0 ? sessionSeconds.reduce((sum, seconds) => sum + seconds, 0) / sessionSeconds.length : 0
 
-  const rows = [...grouped.entries()].map(([feature, rows]) => {
-    const uniqueUsers = new Set(rows.map((row) => row.user_id ?? row.anonymous_user_id)).size
-    const completed = rows.filter((row) => row.event_name.includes('completed')).length
-    const feedback = rows.filter((row) => row.event_name.includes('feedback')).length
-    const completion = rows.length ? Math.min(100, (completed / rows.length) * 160) : 0
-    const returnRate = Math.min(100, uniqueUsers > 0 ? (rows.length / uniqueUsers) * 12 : 0)
-    return {
-      feature,
-      opens: rows.length,
-      uniqueUsers,
-      completion,
-      returnRate,
-      feedback,
-      interest: Math.min(100, rows.length * 6 + completion * 0.35 + returnRate * 0.25 + feedback * 4),
-      recommendation:
-        completion < 30
-          ? 'High friction. Inspect the user timeline around this action.'
-          : returnRate > 35
-            ? 'Strong repeat signal. Consider packaging as a retention loop.'
-            : 'Watch for more volume before prioritizing.',
-    }
-  })
-
-  return rows.sort((a, b) => b.interest - a.interest).slice(0, 6)
-}
-
-function aggregatePageRows(events: StoredAppEvent[]): PageRow[] {
-  if (!events.length) return pageRows
-  const grouped = new Map<string, StoredAppEvent[]>()
-  for (const event of events) {
-    grouped.set(event.page_path, [...(grouped.get(event.page_path) ?? []), event])
-  }
-  return [...grouped.entries()].map(([page, rows]) => ({
-    page,
-    views: rows.length,
-    avgTime: `${Math.max(1, Math.round(rows.reduce((sum, row) => sum + (row.time_spent_seconds ?? 42), 0) / rows.length / 60))}m`,
-    exitRate: Math.max(12, 68 - rows.length * 2),
-    nextAction: rows.find((row) => row.event_name !== 'page_view')?.event_name ?? 'page_view',
-    interest: Math.min(100, rows.length * 8),
-  })).sort((a, b) => b.interest - a.interest).slice(0, 6)
-}
-
-export function AdminMonitorPage() {
-  const [range, setRange] = useState<RangeFilter>('7 days')
-  const [source, setSource] = useState<SourceFilter>('All')
-  const [examTrack, setExamTrack] = useState<ExamFilter>('All')
-  const [selectedNodeId, setSelectedNodeId] = useState('study')
-  const [query, setQuery] = useState('')
-  const [remoteEvents, setRemoteEvents] = useState<StoredAppEvent[]>([])
-  const [localEvents, setLocalEvents] = useState<StoredAppEvent[]>(() => getLocalAppEvents())
-
-  useEffect(() => {
-    let cancelled = false
-    void loadRecentAdminEvents().then((events) => {
-      if (!cancelled) setRemoteEvents(events)
-    })
-
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  const refreshData = () => {
-    setLocalEvents(getLocalAppEvents())
-    void loadRecentAdminEvents().then(setRemoteEvents)
-  }
-
-  const eventRows = remoteEvents.length ? remoteEvents : localEvents
-  const liveUsers = usersFromEvents(eventRows)
-  const userRows = liveUsers.length ? liveUsers : seededUsers
-  const selectedNode = journeyNodes.find((node) => node.id === selectedNodeId) ?? journeyNodes[4]
-  const dashboardFeatureRows = aggregateFeatureRows(eventRows)
-  const dashboardPageRows = aggregatePageRows(eventRows)
-
-  const filteredUsers = useMemo(
-    () =>
-      userRows.filter((user) => {
-        const matchesSource = source === 'All' || user.source === source
-        const matchesExam = examTrack === 'All' || user.examTrack === examTrack
-        const matchesQuery =
-          !query ||
-          user.label.toLowerCase().includes(query.toLowerCase()) ||
-          user.status.toLowerCase().includes(query.toLowerCase())
-        return matchesSource && matchesExam && matchesQuery
-      }),
-    [examTrack, query, source, userRows],
+  const returningUserKeys = new Set(
+    Array.from(userGroups.entries())
+      .filter(([, rows]) => new Set(rows.map((event) => event.session_id)).size > 1)
+      .map(([key]) => key),
   )
 
-  const [selectedUserId, setSelectedUserId] = useState(userRows[0]?.id ?? seededUsers[0].id)
-  const selectedUser = filteredUsers.find((user) => user.id === selectedUserId) ?? filteredUsers[0] ?? userRows[0]
+  const users = Array.from(userGroups.entries())
+    .map<UserRow>(([key, rows], index) => {
+      const userEvents = [...rows].sort((a, b) => eventTime(b) - eventTime(a))
+      const firstSeen = Math.min(...userEvents.map(eventTime))
+      const lastActive = Math.max(...userEvents.map(eventTime))
+      const sessions = new Set(userEvents.map((event) => event.session_id))
+      const activatedSteps = [
+        userEvents.some((event) => ['demo_started', 'signup_started', 'signup_completed'].includes(event.event_name)),
+        userEvents.some((event) =>
+          ['onboarding_started', 'onboarding_completed', 'exam_track_selected'].includes(event.event_name),
+        ),
+        userEvents.some((event) => studyEvents.has(event.event_name)),
+        userEvents.some((event) => event.event_name === 'quiz_completed'),
+        returningUserKeys.has(key),
+      ].filter(Boolean).length
+      const firstSource = classifySource(userEvents[userEvents.length - 1]?.source ?? null)
+      const firstTrack =
+        userEvents.find((event) => event.exam_track)?.exam_track ?? userEvents[userEvents.length - 1]?.exam_track ?? null
+      return {
+        id: key,
+        label: `Anonymous ${index + 1}`,
+        displayId: cleanDisplayId(key),
+        examTrack: formatExamTrack(firstTrack),
+        source: firstSource,
+        status: userStatus(userEvents),
+        events: userEvents.length,
+        sessions: sessions.size,
+        sessionSeconds: sessionSecondsForEvents(userEvents),
+        firstSeen,
+        lastActive,
+        journeySteps: activatedSteps,
+        timeline: userEvents,
+      }
+    })
+    .sort((a, b) => b.lastActive - a.lastActive)
 
-  const totalUsers = filteredUsers.reduce((sum, user) => sum + user.activationScore, 0)
-  const averageActivation = filteredUsers.length ? totalUsers / filteredUsers.length : 0
-  const activatedCount = filteredUsers.filter((user) => user.activationScore >= 70).length
-  const weakSpots = dashboardFeatureRows.filter((row) => row.completion < 40).length
+  const activatedUsers = users.filter((user) =>
+    user.timeline.some((event) => activationEvents.has(event.event_name)),
+  ).length
+
+  const sourceRows = Array.from(groupBy(sortedEvents, (event) => classifySource(event.source)).entries())
+    .map<SourceRow>(([source, rows]) => ({
+      source: source as SourceFilter,
+      users: new Set(rows.map(actorKey)).size,
+      sessions: new Set(rows.map((event) => event.session_id)).size,
+      events: rows.length,
+      percentage: safePercent(new Set(rows.map(actorKey)).size, Math.max(1, totalUsers)),
+      lastSeen: Math.max(...rows.map(eventTime)),
+    }))
+    .sort((a, b) => b.users - a.users || b.events - a.events)
+
+  const campaignRows = Array.from(
+    groupBy(
+      sortedEvents.filter((event) => event.campaign),
+      (event) => event.campaign ?? 'Unlabeled campaign',
+    ).entries(),
+  )
+    .map<CampaignRow>(([campaign, rows]) => ({
+      campaign,
+      source: classifySource(rows[0]?.source ?? null),
+      users: new Set(rows.map(actorKey)).size,
+      events: rows.length,
+      lastSeen: Math.max(...rows.map(eventTime)),
+    }))
+    .sort((a, b) => b.users - a.users || b.events - a.events)
+
+  const pageRows = Array.from(groupBy(sortedEvents, (event) => event.page_path || '/').entries())
+    .map<PageRow>(([page, rows]) => {
+      const explicitSeconds = rows
+        .map((event) => event.time_spent_seconds ?? 0)
+        .filter((seconds) => seconds > 0)
+      return {
+        page,
+        users: new Set(rows.map(actorKey)).size,
+        views: rows.filter((event) => event.event_name === 'page_view').length,
+        events: rows.length,
+        avgSeconds:
+          explicitSeconds.length > 0
+            ? explicitSeconds.reduce((sum, seconds) => sum + seconds, 0) / explicitSeconds.length
+            : 0,
+        lastSeen: Math.max(...rows.map(eventTime)),
+      }
+    })
+    .sort((a, b) => b.events - a.events)
+
+  const featureRows = Array.from(groupBy(sortedEvents, featureFromEvent).entries())
+    .map<FeatureRow>(([feature, rows]) => ({
+      feature,
+      users: new Set(rows.map(actorKey)).size,
+      events: rows.length,
+      starts: rows.filter((event) => event.event_name.includes('started')).length,
+      completions: rows.filter((event) => event.event_name.includes('completed')).length,
+      failures: rows.filter((event) => event.event_name.includes('failed')).length,
+      lastSeen: Math.max(...rows.map(eventTime)),
+    }))
+    .sort((a, b) => b.users - a.users || b.events - a.events)
+
+  const questionEvents = sortedEvents.filter((event) => event.event_name === 'question_answered')
+  const categoryRows = Array.from(
+    groupBy(questionEvents, (event) => event.question_category ?? 'Uncategorized').entries(),
+  )
+    .map<CategoryRow>(([category, rows]) => ({
+      category,
+      answered: rows.length,
+      correct: rows.filter((event) => event.question_result === 'correct').length,
+      incorrect: rows.filter((event) => event.question_result === 'incorrect').length,
+      highConfidenceMisses: rows.filter(
+        (event) => event.question_result === 'incorrect' && event.confidence_level === 'high',
+      ).length,
+    }))
+    .sort((a, b) => b.highConfidenceMisses - a.highConfidenceMisses || b.answered - a.answered)
+
+  const firstEvent = sortedEvents.length ? Math.min(...sortedEvents.map(eventTime)) : null
+  const lastEvent = sortedEvents.length ? Math.max(...sortedEvents.map(eventTime)) : null
+  const highConfidenceMisses = questionEvents.filter(
+    (event) => event.question_result === 'incorrect' && event.confidence_level === 'high',
+  ).length
+
+  return {
+    events: sortedEvents,
+    users,
+    totalUsers,
+    totalSessions,
+    totalEvents,
+    activatedUsers,
+    activationRate: safePercent(activatedUsers, totalUsers),
+    avgSessionSeconds,
+    returningUsers: returningUserKeys.size,
+    returnRate: safePercent(returningUserKeys.size, totalUsers),
+    highConfidenceMisses,
+    firstEvent,
+    lastEvent,
+    sourceRows,
+    campaignRows,
+    journeySteps: buildJourney(userGroups, returningUserKeys),
+    pageRows,
+    featureRows,
+    categoryRows,
+    questionAnswered: questionEvents.length,
+    correctAnswers: questionEvents.filter((event) => event.question_result === 'correct').length,
+    incorrectAnswers: questionEvents.filter((event) => event.question_result === 'incorrect').length,
+  }
+}
+
+function AdminPanelShell({
+  children,
+  activeSection,
+  setActiveSection,
+  dataMode,
+  totalEvents,
+  loading,
+  refresh,
+  lastRefresh,
+}: {
+  children: React.ReactNode
+  activeSection: AdminSection
+  setActiveSection: (sectionId: AdminSectionId) => void
+  dataMode: string
+  totalEvents: number
+  loading: boolean
+  refresh: () => void
+  lastRefresh: Date | null
+}) {
+  const activeStyle = sectionStyles[activeSection.color]
 
   return (
-    <div className="min-h-screen overflow-hidden bg-[#020812] text-white">
-      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_20%_12%,rgba(34,211,238,0.18),transparent_30%),radial-gradient(circle_at_86%_14%,rgba(16,185,129,0.10),transparent_24%),linear-gradient(135deg,#04101f_0%,#061b2d_38%,#020812_100%)]" />
-      <div className="pointer-events-none fixed inset-0 bg-[linear-gradient(90deg,rgba(125,211,252,0.06)_1px,transparent_1px),linear-gradient(180deg,rgba(125,211,252,0.045)_1px,transparent_1px)] bg-[length:64px_64px] opacity-45" />
-
-      <div className="relative z-10 flex min-h-screen">
-        <aside className="hidden w-[260px] shrink-0 border-r border-cyan-200/12 bg-[#04101f]/76 px-4 py-5 backdrop-blur-xl lg:block">
-          <div className="rounded-[18px] border border-cyan-300/24 bg-cyan-300/8 p-4">
+    <main className="min-h-screen overflow-hidden bg-[#030c18] text-white">
+      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_16%_12%,rgba(34,211,238,0.12),transparent_32%),radial-gradient(circle_at_82%_0%,rgba(167,139,250,0.1),transparent_28%),linear-gradient(135deg,rgba(5,28,47,0.95),rgba(3,12,24,1)_52%,rgba(1,8,18,1))]" />
+      <div className="relative flex min-h-screen">
+        <aside className="hidden w-[260px] shrink-0 border-r border-cyan-200/10 bg-[#02101f]/92 px-4 py-5 xl:block">
+          <div className="mb-5 rounded-3xl border border-cyan-300/24 bg-cyan-300/10 p-4">
             <div className="flex items-center gap-3">
-              <div className="grid h-11 w-11 place-items-center rounded-2xl border border-cyan-200/30 bg-cyan-300/12">
-                <ShieldCheck className="h-6 w-6 text-cyan-100" />
+              <div className="grid h-12 w-12 place-items-center rounded-2xl border border-cyan-200/30 bg-cyan-200/10 text-cyan-100">
+                <ShieldCheck className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-sm font-black uppercase tracking-[0.14em]">Admin</p>
-                <p className="text-xs text-cyan-100/58">Nurse Command</p>
+                <p className="text-sm font-black uppercase tracking-[0.14em] text-white">Admin</p>
+                <p className="text-xs font-bold text-cyan-100/70">Nurse Command</p>
               </div>
             </div>
           </div>
-          <nav className="mt-6 space-y-1.5 text-sm">
-            {[
-              ['Overview', BarChart3],
-              ['Acquisition', MousePointer2],
-              ['Activation', Target],
-              ['Users', Users],
-              ['Feature Usage', Layers3],
-              ['Retention', TimerReset],
-              ['Content Quality', FileQuestion],
-              ['Security', LockKeyhole],
-            ].map(([label, Icon]) => (
-              <button
-                key={label as string}
-                type="button"
-                className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left font-semibold text-sky-100/68 transition hover:bg-white/7 hover:text-white"
-              >
-                <Icon className="h-4 w-4" />
-                {label as string}
-              </button>
-            ))}
+
+          <nav className="space-y-2">
+            {adminSections.map((section) => {
+              const Icon = section.icon
+              const isActive = activeSection.id === section.id
+              const style = sectionStyles[section.color]
+              return (
+                <button
+                  key={section.id}
+                  type="button"
+                  onClick={() => setActiveSection(section.id)}
+                  className={`group flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition ${
+                    isActive
+                      ? style.nav
+                      : 'border-transparent bg-transparent text-slate-400 hover:border-white/10 hover:bg-white/[0.04] hover:text-white'
+                  }`}
+                >
+                  <Icon className={`h-4 w-4 ${isActive ? style.text : 'text-slate-500 group-hover:text-white'}`} />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-extrabold">{section.label}</span>
+                    <span className="block truncate text-[11px] font-bold text-current/55">
+                      {section.description}
+                    </span>
+                  </span>
+                </button>
+              )
+            })}
           </nav>
-          <div className="mt-6 rounded-[18px] border border-emerald-300/20 bg-emerald-300/8 p-4 text-sm text-emerald-50/76">
-            <div className="mb-2 flex items-center gap-2 font-black text-emerald-100">
+
+          <div className="mt-5 rounded-3xl border border-emerald-300/20 bg-emerald-300/10 p-4">
+            <div className="flex items-center gap-2 text-emerald-100">
               <Database className="h-4 w-4" />
-              Data Mode
+              <p className="text-xs font-black uppercase tracking-[0.14em]">Data Mode</p>
             </div>
-            {remoteEvents.length ? 'Live Supabase app_events' : localEvents.length ? 'Local event buffer' : 'Seeded preview data'}
+            <p className="mt-2 text-sm font-black text-white">{dataMode}</p>
+            <p className="mt-1 text-xs font-bold text-emerald-100/65">{totalEvents} live events loaded</p>
           </div>
         </aside>
 
-        <main className="min-w-0 flex-1 px-4 py-4 md:px-6 lg:px-7">
-          <header className="rounded-[24px] border border-cyan-200/16 bg-[#071d34]/72 p-4 shadow-[0_24px_70px_rgba(0,0,0,0.26)] backdrop-blur-xl">
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+        <section className="min-w-0 flex-1 px-4 py-5 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-[1720px]">
+            <div className="mb-5 flex flex-col gap-4 rounded-[28px] border border-cyan-200/12 bg-[#041628]/80 p-4 shadow-2xl shadow-black/30 backdrop-blur lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <div className="flex flex-wrap items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-cyan-100/64">
-                  <span>Admin Cockpit</span>
-                  <span className="h-1 w-1 rounded-full bg-cyan-200/50" />
-                  <span>Aggregate + User Activity</span>
-                </div>
-                <h1 className="mt-2 text-2xl font-black md:text-4xl">Public beta behavior monitor</h1>
+                <p className={`text-xs font-black uppercase tracking-[0.22em] ${activeStyle.text}`}>
+                  Admin cockpit / {activeSection.label}
+                </p>
+                <h1 className="mt-2 text-3xl font-black tracking-normal text-white sm:text-4xl">
+                  Public beta behavior monitor
+                </h1>
+                <p className="mt-2 max-w-3xl text-sm font-bold leading-6 text-slate-300">
+                  Real analytics only. Empty panels mean the live website has not produced that event yet.
+                </p>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <FilterGroup label="Range" value={range} items={dateRanges} onChange={setRange} />
-                <FilterGroup label="Source" value={source} items={sources} onChange={setSource} />
-                <FilterGroup label="Track" value={examTrack} items={examTracks} onChange={setExamTrack} />
+              <div className="flex flex-wrap items-center gap-3">
+                <span className={`rounded-2xl border px-4 py-3 text-sm font-black ${activeStyle.panel}`}>
+                  {dataMode}
+                </span>
                 <button
                   type="button"
-                  onClick={refreshData}
-                  className="inline-flex h-10 items-center gap-2 rounded-xl border border-cyan-200/20 bg-cyan-300/10 px-3 text-sm font-bold text-cyan-100"
+                  onClick={refresh}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-cyan-200/20 bg-cyan-300/10 px-4 py-3 text-sm font-black text-cyan-50 transition hover:border-cyan-200/55 hover:bg-cyan-300/18"
                 >
-                  <RefreshCw className="h-4 w-4" />
+                  <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                   Refresh
                 </button>
               </div>
             </div>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <MetricCard icon={Users} label="Tracked users" value={String(filteredUsers.length)} detail={`${activatedCount} activated`} tone="info" />
-              <MetricCard icon={Gauge} label="Avg activation" value={formatPercent(averageActivation)} detail="Onboarding + first value" tone="good" />
-              <MetricCard icon={Clock3} label="Useful session" value="8-15m" detail={`${range} benchmark`} tone="watch" />
-              <MetricCard icon={AlertTriangle} label="Weak spots" value={String(weakSpots)} detail="Completion below 40%" tone={weakSpots ? 'critical' : 'good'} />
+
+            <div className="mb-5 flex flex-col gap-3 rounded-[24px] border border-white/10 bg-[#061628]/70 p-3 lg:hidden">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {adminSections.map((section) => {
+                  const Icon = section.icon
+                  const isActive = activeSection.id === section.id
+                  const style = sectionStyles[section.color]
+                  return (
+                    <button
+                      key={section.id}
+                      type="button"
+                      onClick={() => setActiveSection(section.id)}
+                      className={`flex items-center gap-2 rounded-2xl border px-3 py-3 text-sm font-black transition ${
+                        isActive
+                          ? style.nav
+                          : 'border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.06]'
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {section.label}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
-          </header>
 
-          <section className="mt-4 grid gap-4 2xl:grid-cols-[minmax(280px,0.78fr)_minmax(520px,1.36fr)_minmax(280px,0.72fr)]">
-            <Panel title="Acquisition Radar" icon={MousePointer2}>
-              <div className="grid gap-3">
-                {[
-                  ['LinkedIn', 38, 'best feedback quality', 'good' as StatusTone],
-                  ['Direct', 24, 'warm referrals', 'info' as StatusTone],
-                  ['Google Ads', 19, 'watch activation cost', 'watch' as StatusTone],
-                  ['Email', 11, 'paused: deliverability hold', 'critical' as StatusTone],
-                  ['Organic', 8, 'small but engaged', 'info' as StatusTone],
-                ].map(([label, value, detail, tone]) => (
-                  <div key={label as string} className="rounded-2xl border border-sky-200/12 bg-white/[0.035] p-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="font-bold">{label as string}</p>
-                        <p className="text-xs text-sky-100/54">{detail as string}</p>
-                      </div>
-                      <StatusPill tone={tone as StatusTone}>{value as number}%</StatusPill>
-                    </div>
-                    <ProgressBar value={value as number} tone={tone as StatusTone} />
-                  </div>
-                ))}
-              </div>
-            </Panel>
+            <div className="mb-5 flex flex-wrap items-center gap-2 text-xs font-bold text-slate-400">
+              <span>Last refresh: {lastRefresh ? lastRefresh.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'not loaded'}</span>
+              <span className="text-slate-600">/</span>
+              <span>Source: Supabase app_events</span>
+              <span className="text-slate-600">/</span>
+              <span>No seeded preview data</span>
+            </div>
 
-            <Panel title="Learner Journey Map" icon={LineChart} action={selectedNode.action}>
-              <div className="grid gap-3 md:grid-cols-4">
-                {journeyNodes.map((node, index) => (
-                  <button
-                    key={node.id}
-                    type="button"
-                    onClick={() => setSelectedNodeId(node.id)}
-                    className={`relative min-h-[132px] rounded-[18px] border p-3 text-left transition ${
-                      selectedNodeId === node.id
-                        ? 'border-cyan-200/70 bg-cyan-300/14 shadow-[0_0_32px_rgba(34,211,238,0.16)]'
-                        : 'border-sky-200/12 bg-white/[0.035] hover:border-cyan-200/35'
-                    }`}
-                  >
-                    <div className={`mb-3 h-2.5 w-2.5 rounded-full ${toneDotClass[node.tone]}`} />
-                    <p className="min-h-[40px] text-sm font-black leading-5">{node.label}</p>
-                    <div className="mt-3 flex items-end justify-between gap-2">
-                      <div>
-                        <p className="text-2xl font-black">{node.users}</p>
-                        <p className="text-[11px] uppercase tracking-[0.14em] text-sky-100/45">users</p>
-                      </div>
-                      <StatusPill tone={node.tone}>{formatPercent(node.conversion)}</StatusPill>
-                    </div>
-                    {index < journeyNodes.length - 1 ? (
-                      <ArrowRight className="absolute -right-3 top-1/2 hidden h-5 w-5 -translate-y-1/2 text-cyan-100/44 md:block" />
-                    ) : null}
-                  </button>
-                ))}
-              </div>
-              <div className="mt-4 grid gap-3 rounded-[18px] border border-cyan-200/14 bg-[#04101f]/52 p-4 md:grid-cols-4">
-                <DetailStat label="Selected step" value={selectedNode.label} />
-                <DetailStat label="Drop-off" value={formatPercent(selectedNode.dropOff)} />
-                <DetailStat label="Avg time" value={selectedNode.avgTime} />
-                <DetailStat label="Strong source" value={selectedNode.source} />
-              </div>
-            </Panel>
-
-            <Panel title="Live Ops Queue" icon={Activity}>
-              <div className="space-y-3">
-                {[
-                  ['Deliverability hold active', 'Do not restart cold email until reset plan is complete.', 'critical' as StatusTone, AlertTriangle],
-                  ['Privacy mode', 'Admin timeline excludes note body and uploaded document text.', 'good' as StatusTone, ShieldCheck],
-                  ['GA4 later', 'Use GA4 for ads and aggregates, not user timelines.', 'info' as StatusTone, Sparkles],
-                  ['Material upload friction', 'High curiosity but low completion signal.', 'watch' as StatusTone, UploadCloud],
-                ].map(([title, detail, tone, Icon]) => (
-                  <div key={title as string} className={`rounded-2xl border p-3 ${toneClass[tone as StatusTone]}`}>
-                    <div className="flex gap-3">
-                      <Icon className="mt-0.5 h-4 w-4 shrink-0" />
-                      <div>
-                        <p className="text-sm font-black">{title as string}</p>
-                        <p className="mt-1 text-xs leading-5 opacity-75">{detail as string}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Panel>
-          </section>
-
-          <section className="mt-4 grid gap-4 xl:grid-cols-[minmax(320px,0.85fr)_minmax(520px,1.15fr)]">
-            <Panel title="User Activity Timeline" icon={Eye}>
-              <div className="mb-3 flex items-center gap-2 rounded-2xl border border-sky-200/14 bg-[#04101f]/58 px-3 py-2">
-                <Search className="h-4 w-4 text-sky-100/48" />
-                <input
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search users or status"
-                  className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-sky-100/38"
-                />
-              </div>
-              <div className="grid gap-2">
-                {filteredUsers.map((user) => (
-                  <button
-                    key={user.id}
-                    type="button"
-                    onClick={() => setSelectedUserId(user.id)}
-                    className={`rounded-2xl border p-3 text-left transition ${
-                      selectedUser?.id === user.id
-                        ? 'border-cyan-200/60 bg-cyan-300/12'
-                        : 'border-sky-200/12 bg-white/[0.035] hover:border-cyan-200/30'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="font-black">{user.label}</p>
-                        <p className="text-xs text-sky-100/56">{user.status}</p>
-                      </div>
-                      <StatusPill tone={user.activationScore >= 70 ? 'good' : user.activationScore >= 45 ? 'watch' : 'critical'}>
-                        {user.activationScore}
-                      </StatusPill>
-                    </div>
-                    <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-sky-100/58">
-                      <span>{user.examTrack}</span>
-                      <span>{user.source}</span>
-                      <span>{user.lastActive}</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </Panel>
-
-            <Panel
-              title={selectedUser ? `${selectedUser.label} Session Detail` : 'Session Detail'}
-              icon={Brain}
-              action="Exact product behavior, with private notes/uploads excluded."
-            >
-              {selectedUser ? (
-                <>
-                  <div className="grid gap-3 md:grid-cols-4">
-                    <DetailStat label="Exam track" value={selectedUser.examTrack} />
-                    <DetailStat label="Source" value={selectedUser.source} />
-                    <DetailStat label="Session time" value={`${selectedUser.sessionMinutes}m`} />
-                    <DetailStat label="Last active" value={selectedUser.lastActive} />
-                  </div>
-                  <div className="mt-4 space-y-3">
-                    {selectedUser.timeline.map((item, index) => (
-                      <div key={`${item.time}-${item.event}-${index}`} className="grid grid-cols-[86px_18px_minmax(0,1fr)] gap-3">
-                        <p className="pt-1 text-xs font-bold text-sky-100/50">{item.time}</p>
-                        <div className="flex flex-col items-center">
-                          <span className={`mt-1 h-3 w-3 rounded-full ${toneDotClass[item.tone]}`} />
-                          {index < selectedUser.timeline.length - 1 ? <span className="mt-1 h-full w-px bg-sky-200/14" /> : null}
-                        </div>
-                        <div className="rounded-2xl border border-sky-200/12 bg-white/[0.035] p-3">
-                          <p className="font-black">{item.event}</p>
-                          <p className="mt-1 text-sm text-sky-100/62">{item.detail}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <p className="text-sm text-sky-100/60">No users match the current filters.</p>
-              )}
-            </Panel>
-          </section>
-
-          <section className="mt-4 grid gap-4 2xl:grid-cols-3">
-            <Panel title="Feature Interest" icon={Zap}>
-              <div className="space-y-3">
-                {dashboardFeatureRows.map((row) => (
-                  <div key={row.feature} className="rounded-2xl border border-sky-200/12 bg-white/[0.035] p-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="font-black">{row.feature}</p>
-                        <p className="text-xs text-sky-100/54">{row.recommendation}</p>
-                      </div>
-                      <p className="text-xl font-black">{Math.round(row.interest)}</p>
-                    </div>
-                    <div className="mt-3 grid grid-cols-4 gap-2 text-center text-xs text-sky-100/62">
-                      <MiniMetric label="opens" value={row.opens} />
-                      <MiniMetric label="users" value={row.uniqueUsers} />
-                      <MiniMetric label="done" value={`${Math.round(row.completion)}%`} />
-                      <MiniMetric label="return" value={`${Math.round(row.returnRate)}%`} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Panel>
-
-            <Panel title="Page Interest + Drop-Offs" icon={TrendingDown}>
-              <div className="space-y-3">
-                {dashboardPageRows.map((row) => (
-                  <div key={row.page} className="rounded-2xl border border-sky-200/12 bg-white/[0.035] p-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate font-black">{row.page}</p>
-                        <p className="text-xs text-sky-100/54">Next: {row.nextAction}</p>
-                      </div>
-                      <StatusPill tone={row.exitRate > 50 ? 'critical' : row.exitRate > 35 ? 'watch' : 'good'}>
-                        {row.exitRate}% exit
-                      </StatusPill>
-                    </div>
-                    <ProgressBar value={row.interest} tone={row.exitRate > 50 ? 'critical' : 'info'} />
-                  </div>
-                ))}
-              </div>
-            </Panel>
-
-            <Panel title="Build Priority" icon={TrendingUp}>
-              <div className="space-y-3">
-                {buildPriorities.map((priority) => (
-                  <div key={priority.label} className={`rounded-2xl border p-3 ${toneClass[priority.tone]}`}>
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="font-black">{priority.label}</p>
-                      <p className="text-2xl font-black">{priority.score}</p>
-                    </div>
-                    <p className="mt-2 text-sm leading-6 opacity-75">{priority.reason}</p>
-                  </div>
-                ))}
-              </div>
-            </Panel>
-          </section>
-
-          <section className="mt-4 grid gap-4 xl:grid-cols-3">
-            <Panel title="Launch Benchmarks" icon={Target}>
-              <Benchmark label="Onboarding + first action" value={42} target="40%+" tone="good" />
-              <Benchmark label="Quiz starter completion" value={64} target="50%+" tone="good" />
-              <Benchmark label="Weekly return" value={26} target="25-30%" tone="good" />
-              <Benchmark label="Material upload adoption" value={7} target="10%+" tone="watch" />
-            </Panel>
-            <Panel title="Content Behavior" icon={BookOpenCheck}>
-              <QueueRow label="High-confidence miss questions" value="18" detail="Prioritization and safety lead" tone="watch" />
-              <QueueRow label="Flagged rationales" value="6" detail="Needs SME review before claims" tone="critical" />
-              <QueueRow label="Rationale open rate" value="71%" detail="Good learning signal" tone="good" />
-            </Panel>
-            <Panel title="Security Status" icon={LockKeyhole}>
-              <QueueRow label="Admin access" value="Gated" detail="Local preview or admin account required" tone="good" />
-              <QueueRow label="Personal content" value="Excluded" detail="No note body or uploaded text in events" tone="good" />
-              <QueueRow label="GA4" value="Later" detail="Use only aggregate events for ads" tone="info" />
-            </Panel>
-          </section>
-        </main>
+            {children}
+          </div>
+        </section>
       </div>
+    </main>
+  )
+}
+
+function FilterBar({
+  range,
+  setRange,
+  source,
+  setSource,
+  track,
+  setTrack,
+}: {
+  range: RangeFilter
+  setRange: (value: RangeFilter) => void
+  source: SourceFilter
+  setSource: (value: SourceFilter) => void
+  track: ExamFilter
+  setTrack: (value: ExamFilter) => void
+}) {
+  return (
+    <div className="mb-5 grid gap-3 rounded-[24px] border border-cyan-200/12 bg-[#041628]/76 p-3 sm:grid-cols-3">
+      <FilterSelect label="Range" value={range} options={dateRanges} onChange={(value) => setRange(value as RangeFilter)} />
+      <FilterSelect label="Source" value={source} options={sources} onChange={(value) => setSource(value as SourceFilter)} />
+      <FilterSelect label="Track" value={track} options={examTracks} onChange={(value) => setTrack(value as ExamFilter)} />
     </div>
+  )
+}
+
+function FilterSelect({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string
+  value: string
+  options: string[]
+  onChange: (value: string) => void
+}) {
+  return (
+    <label className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#020d1b] px-4 py-3">
+      <span className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">{label}</span>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="min-w-0 flex-1 bg-transparent text-right text-sm font-black text-white outline-none"
+      >
+        {options.map((option) => (
+          <option key={option} value={option} className="bg-[#04101f] text-white">
+            {option}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
+}
+
+function KpiCard({
+  icon: Icon,
+  title,
+  value,
+  detail,
+  tone,
+}: {
+  icon: LucideIcon
+  title: string
+  value: string
+  detail: string
+  tone: StatusTone
+}) {
+  return (
+    <article className={`rounded-[24px] border p-4 ${toneStyles[tone]}`}>
+      <div className="flex items-start justify-between gap-4">
+        <Icon className="h-5 w-5 shrink-0 opacity-90" />
+        <p className="text-3xl font-black leading-none text-white">{value}</p>
+      </div>
+      <p className="mt-5 text-sm font-black text-white">{title}</p>
+      <p className="mt-1 text-xs font-bold leading-5 text-current/70">{detail}</p>
+    </article>
   )
 }
 
 function Panel({
   title,
+  subtitle,
   icon: Icon,
-  action,
+  section,
   children,
+  className = '',
 }: {
   title: string
-  icon: React.ComponentType<{ className?: string }>
-  action?: string
+  subtitle?: string
+  icon: LucideIcon
+  section: AdminSection
   children: React.ReactNode
+  className?: string
 }) {
+  const style = sectionStyles[section.color]
   return (
-    <section className="rounded-[24px] border border-cyan-200/14 bg-[#071d34]/72 p-4 shadow-[0_24px_70px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl">
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-cyan-200/24 bg-cyan-300/10 text-cyan-100">
-            <Icon className="h-5 w-5" />
-          </div>
-          <div className="min-w-0">
-            <h2 className="truncate text-lg font-black">{title}</h2>
-            {action ? <p className="mt-1 text-xs leading-5 text-sky-100/54">{action}</p> : null}
-          </div>
+    <section className={`rounded-[28px] border border-cyan-200/12 bg-[#041628]/86 p-4 shadow-xl shadow-black/20 ${className}`}>
+      <div className="mb-4 flex items-start gap-3">
+        <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-2xl border ${style.icon}`}>
+          <Icon className="h-5 w-5" />
+        </div>
+        <div>
+          <h2 className="text-xl font-black text-white">{title}</h2>
+          {subtitle ? <p className="mt-1 text-sm font-bold text-slate-400">{subtitle}</p> : null}
         </div>
       </div>
       {children}
@@ -857,134 +1031,711 @@ function Panel({
   )
 }
 
-function FilterGroup<T extends string>({
-  label,
-  value,
-  items,
-  onChange,
+function EmptyState({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="rounded-3xl border border-dashed border-slate-500/35 bg-slate-950/30 p-6 text-center">
+      <div className="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-2xl border border-slate-500/30 bg-slate-500/10 text-slate-300">
+        <Database className="h-5 w-5" />
+      </div>
+      <p className="text-base font-black text-white">{title}</p>
+      <p className="mt-2 text-sm font-bold leading-6 text-slate-400">{body}</p>
+    </div>
+  )
+}
+
+function Meter({ value, color = 'bg-cyan-300' }: { value: number; color?: string }) {
+  return (
+    <div className="h-2 overflow-hidden rounded-full bg-slate-800">
+      <div className={`h-full rounded-full ${color}`} style={{ width: `${Math.max(0, Math.min(100, value))}%` }} />
+    </div>
+  )
+}
+
+function OverviewPage({ model, section }: { model: DashboardModel; section: AdminSection }) {
+  return (
+    <div className="space-y-5">
+      <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-4">
+        <KpiCard
+          icon={Users}
+          title="Tracked users"
+          value={model.totalUsers.toString()}
+          detail={`${model.activatedUsers} activated from live events`}
+          tone={model.totalUsers ? 'info' : 'muted'}
+        />
+        <KpiCard
+          icon={Gauge}
+          title="Activation rate"
+          value={`${model.activationRate}%`}
+          detail="Activated means study, onboarding, account, or remediation event"
+          tone={model.activationRate >= 40 ? 'good' : model.totalUsers ? 'watch' : 'muted'}
+        />
+        <KpiCard
+          icon={Clock3}
+          title="Avg session"
+          value={formatDuration(model.avgSessionSeconds)}
+          detail="Computed from session span or explicit time_spent_seconds"
+          tone={model.avgSessionSeconds >= 480 ? 'good' : model.totalSessions ? 'watch' : 'muted'}
+        />
+        <KpiCard
+          icon={AlertTriangle}
+          title="High-confidence misses"
+          value={model.highConfidenceMisses.toString()}
+          detail="Incorrect answers where confidence was high"
+          tone={model.highConfidenceMisses ? 'critical' : model.questionAnswered ? 'good' : 'muted'}
+        />
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-[0.9fr_1.4fr_0.8fr]">
+        <Panel title="Acquisition Reality" subtitle="Actual source values from app_events." icon={MousePointer2} section={section}>
+          {model.sourceRows.length ? (
+            <div className="space-y-3">
+              {model.sourceRows.slice(0, 6).map((row) => (
+                <div key={row.source} className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="font-black text-white">{row.source}</p>
+                      <p className="text-xs font-bold text-slate-400">
+                        {row.users} users / {row.events} events
+                      </p>
+                    </div>
+                    <span className="rounded-full border border-cyan-200/20 bg-cyan-300/10 px-3 py-1 text-xs font-black text-cyan-100">
+                      {row.percentage}%
+                    </span>
+                  </div>
+                  <Meter value={row.percentage} color="bg-cyan-300" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState title="No acquisition events yet" body="When someone visits the live website, the source mix will appear here." />
+          )}
+        </Panel>
+
+        <Panel title="Learner Journey Map" subtitle="Each step is counted from live user/session events." icon={LineChart} section={section}>
+          {model.journeySteps.length ? (
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              {model.journeySteps.map((step) => (
+                <div key={step.id} className={`rounded-3xl border p-4 ${toneStyles[step.tone]}`}>
+                  <div className="mb-4 flex items-start justify-between gap-3">
+                    <span className="h-2.5 w-2.5 rounded-full bg-current" />
+                    {step.conversion !== null ? (
+                      <span className="rounded-full border border-white/15 bg-black/20 px-2 py-1 text-xs font-black">
+                        {step.conversion}%
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="text-sm font-black text-white">{step.label}</p>
+                  <p className="mt-3 text-3xl font-black text-white">{step.users}</p>
+                  <p className="text-[11px] font-black uppercase tracking-[0.14em] text-current/55">users</p>
+                  <p className="mt-3 min-h-[40px] text-xs font-bold leading-5 text-current/70">{step.description}</p>
+                  <div className="mt-3 flex items-center gap-2 text-xs font-bold text-current/65">
+                    <TrendingDown className="h-3.5 w-3.5" />
+                    <span>{step.dropOff === null ? 'No previous step' : `${step.dropOff}% drop-off from prior step`}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState title="No journey yet" body="The app has not recorded any live user behavior inside this filter." />
+          )}
+        </Panel>
+
+        <Panel title="Live Truth" subtitle="What the panel knows right now." icon={Activity} section={section}>
+          <div className="space-y-3">
+            <StatusCard
+              tone={model.totalEvents ? 'good' : 'watch'}
+              title={model.totalEvents ? 'Live events loaded' : 'No live events in this filter'}
+              body={`${model.totalEvents} event rows, ${model.totalSessions} sessions, ${model.totalUsers} users.`}
+            />
+            <StatusCard
+              tone="info"
+              title="No seeded data"
+              body="Hard-coded dashboard numbers have been removed from this admin panel."
+            />
+            <StatusCard
+              tone="good"
+              title="Private content excluded"
+              body="Timeline details show behavior fields only, not notes, uploads, passwords, or emails."
+            />
+            <StatusCard
+              tone={model.lastEvent ? 'info' : 'muted'}
+              title="Latest event"
+              body={model.lastEvent ? `${formatClock(model.lastEvent)} (${formatRelative(model.lastEvent)})` : 'Not recorded yet.'}
+            />
+          </div>
+        </Panel>
+      </div>
+    </div>
+  )
+}
+
+function StatusCard({ tone, title, body }: { tone: StatusTone; title: string; body: string }) {
+  return (
+    <div className={`rounded-2xl border p-4 ${toneStyles[tone]}`}>
+      <p className="text-sm font-black text-white">{title}</p>
+      <p className="mt-1 text-xs font-bold leading-5 text-current/70">{body}</p>
+    </div>
+  )
+}
+
+function AcquisitionPage({ model, section }: { model: DashboardModel; section: AdminSection }) {
+  return (
+    <div className="grid gap-5 xl:grid-cols-[1fr_1.2fr]">
+      <Panel title="Sources" subtitle="Grouped by utm_source/source captured in app_events." icon={MousePointer2} section={section}>
+        {model.sourceRows.length ? (
+          <div className="space-y-3">
+            {model.sourceRows.map((row) => (
+              <div key={row.source} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-lg font-black text-white">{row.source}</p>
+                    <p className="mt-1 text-sm font-bold text-slate-400">
+                      {row.users} users, {row.sessions} sessions, {row.events} events
+                    </p>
+                  </div>
+                  <span className="rounded-full border border-violet-200/25 bg-violet-400/10 px-3 py-1 text-sm font-black text-violet-100">
+                    {row.percentage}%
+                  </span>
+                </div>
+                <div className="mt-4">
+                  <Meter value={row.percentage} color="bg-violet-300" />
+                </div>
+                <p className="mt-3 text-xs font-bold text-slate-500">Last seen {formatRelative(row.lastSeen)}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState title="No source data yet" body="Open the public app from a live URL and this will populate from real events." />
+        )}
+      </Panel>
+
+      <div className="space-y-5">
+        <Panel title="Campaigns" subtitle="Only real campaign values appear here." icon={Target} section={section}>
+          {model.campaignRows.length ? (
+            <DataTable
+              columns={['Campaign', 'Source', 'Users', 'Events', 'Last seen']}
+              rows={model.campaignRows.map((row) => [
+                row.campaign,
+                row.source,
+                row.users.toString(),
+                row.events.toString(),
+                formatRelative(row.lastSeen),
+              ])}
+            />
+          ) : (
+            <EmptyState title="No campaign data yet" body="Add UTM campaign links when ads or posts go live, then this table becomes useful." />
+          )}
+        </Panel>
+
+        <Panel title="Landing Pages" subtitle="Page paths and page_view counts from live events." icon={Eye} section={section}>
+          {model.pageRows.length ? (
+            <DataTable
+              columns={['Page', 'Users', 'Views', 'Events', 'Avg time']}
+              rows={model.pageRows.slice(0, 12).map((row) => [
+                row.page,
+                row.users.toString(),
+                row.views.toString(),
+                row.events.toString(),
+                formatDuration(row.avgSeconds),
+              ])}
+            />
+          ) : (
+            <EmptyState title="No page behavior yet" body="No page_view events were found for this filter." />
+          )}
+        </Panel>
+      </div>
+    </div>
+  )
+}
+
+function ActivationPage({ model, section }: { model: DashboardModel; section: AdminSection }) {
+  return (
+    <div className="space-y-5">
+      <div className="grid gap-3 md:grid-cols-3">
+        <KpiCard
+          icon={Zap}
+          title="Activated users"
+          value={model.activatedUsers.toString()}
+          detail="A real study, onboarding, account, or remediation event"
+          tone={model.activatedUsers ? 'good' : 'muted'}
+        />
+        <KpiCard
+          icon={BookOpenCheck}
+          title="Question answers"
+          value={model.questionAnswered.toString()}
+          detail="Actual question_answered event rows"
+          tone={model.questionAnswered ? 'info' : 'muted'}
+        />
+        <KpiCard
+          icon={CheckCircle2}
+          title="Quiz completions"
+          value={model.events.filter((event) => event.event_name === 'quiz_completed').length.toString()}
+          detail="Actual quiz_completed event rows"
+          tone={model.events.some((event) => event.event_name === 'quiz_completed') ? 'good' : 'muted'}
+        />
+      </div>
+
+      <Panel title="Activation Journey" subtitle="Live user counts by behavioral step." icon={LineChart} section={section}>
+        {model.journeySteps.length ? (
+          <div className="space-y-3">
+            {model.journeySteps.map((step, index) => (
+              <div key={step.id} className="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 lg:grid-cols-[1fr_auto_1fr] lg:items-center">
+                <div>
+                  <p className="font-black text-white">{step.label}</p>
+                  <p className="mt-1 text-sm font-bold text-slate-400">{step.description}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className={`rounded-full border px-3 py-1 text-sm font-black ${toneStyles[step.tone]}`}>
+                    {step.users} users
+                  </span>
+                  {index < model.journeySteps.length - 1 ? <ArrowRight className="hidden h-4 w-4 text-slate-500 lg:block" /> : null}
+                </div>
+                <div>
+                  <div className="flex items-center justify-between text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                    <span>Conversion</span>
+                    <span>{step.conversion === null ? 'n/a' : `${step.conversion}%`}</span>
+                  </div>
+                  <div className="mt-2">
+                    <Meter value={step.conversion ?? 0} color="bg-emerald-300" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState title="No activation data yet" body="The live app has not recorded activation events for this filter." />
+        )}
+      </Panel>
+    </div>
+  )
+}
+
+function UsersPage({ model, section }: { model: DashboardModel; section: AdminSection }) {
+  const [search, setSearch] = useState('')
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
+  const filteredUsers = useMemo(() => {
+    const needle = search.trim().toLowerCase()
+    if (!needle) return model.users
+    return model.users.filter((user) =>
+      [user.label, user.displayId, user.source, user.examTrack, user.status]
+        .join(' ')
+        .toLowerCase()
+        .includes(needle),
+    )
+  }, [model.users, search])
+  const selectedUser = filteredUsers.find((user) => user.id === selectedUserId) ?? filteredUsers[0] ?? null
+
+  useEffect(() => {
+    if (!selectedUserId && filteredUsers[0]) setSelectedUserId(filteredUsers[0].id)
+  }, [filteredUsers, selectedUserId])
+
+  return (
+    <div className="grid gap-5 xl:grid-cols-[1fr_1.05fr]">
+      <Panel title="Anonymous Users" subtitle="Real users are identified by user_id or anonymous browser ID." icon={Users} section={section}>
+        <label className="mb-4 flex items-center gap-3 rounded-2xl border border-white/10 bg-[#020d1b] px-4 py-3">
+          <Search className="h-4 w-4 text-slate-500" />
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search users, source, track, status"
+            className="min-w-0 flex-1 bg-transparent text-sm font-bold text-white outline-none placeholder:text-slate-500"
+          />
+        </label>
+
+        {filteredUsers.length ? (
+          <div className="space-y-3">
+            {filteredUsers.map((user) => (
+              <button
+                key={user.id}
+                type="button"
+                onClick={() => setSelectedUserId(user.id)}
+                className={`w-full rounded-2xl border p-4 text-left transition ${
+                  selectedUser?.id === user.id
+                    ? 'border-amber-200/70 bg-amber-300/10'
+                    : 'border-white/10 bg-white/[0.03] hover:border-amber-200/35 hover:bg-white/[0.055]'
+                }`}
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="font-black text-white">{user.label}</p>
+                    <p className="mt-1 text-xs font-bold text-slate-500">ID ending {user.displayId}</p>
+                  </div>
+                  <span className="rounded-full border border-amber-200/25 bg-amber-300/10 px-3 py-1 text-xs font-black text-amber-100">
+                    {user.status}
+                  </span>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-2 text-xs font-bold text-slate-400 sm:grid-cols-4">
+                  <span>{user.source}</span>
+                  <span>{user.examTrack}</span>
+                  <span>{user.events} events</span>
+                  <span>{formatRelative(user.lastActive)}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <EmptyState title="No users yet" body="No live user/session events match this filter." />
+        )}
+      </Panel>
+
+      <Panel title={selectedUser ? `${selectedUser.label} Timeline` : 'User Timeline'} subtitle="Behavior only. Private content is excluded." icon={Eye} section={section}>
+        {selectedUser ? (
+          <div>
+            <div className="mb-4 grid gap-3 sm:grid-cols-4">
+              <MiniStat label="Events" value={selectedUser.events.toString()} />
+              <MiniStat label="Sessions" value={selectedUser.sessions.toString()} />
+              <MiniStat label="Time" value={formatDuration(selectedUser.sessionSeconds)} />
+              <MiniStat label="Steps" value={`${selectedUser.journeySteps}/5`} />
+            </div>
+
+            <div className="space-y-3">
+              {selectedUser.timeline.map((event) => (
+                <div key={event.id} className={`rounded-2xl border p-4 ${toneStyles[eventTone(event)]}`}>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="font-black text-white">{formatEventLabel(event.event_name)}</p>
+                      <p className="mt-1 text-xs font-bold leading-5 text-current/70">{eventDetail(event)}</p>
+                    </div>
+                    <span className="text-xs font-black text-current/70">{formatClock(eventTime(event))}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <EmptyState title="No selected user" body="Once live users exist, click one to inspect their behavior timeline." />
+        )}
+      </Panel>
+    </div>
+  )
+}
+
+function FeatureUsagePage({ model, section }: { model: DashboardModel; section: AdminSection }) {
+  return (
+    <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+      <Panel title="Feature Usage" subtitle="Feature rows are built from feature_name or page_path." icon={Layers3} section={section}>
+        {model.featureRows.length ? (
+          <div className="space-y-3">
+            {model.featureRows.map((row) => (
+              <div key={row.feature} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-lg font-black text-white">{row.feature}</p>
+                    <p className="mt-1 text-sm font-bold text-slate-400">
+                      {row.users} users / {row.events} events
+                    </p>
+                  </div>
+                  <span className="rounded-full border border-sky-200/25 bg-sky-400/10 px-3 py-1 text-xs font-black text-sky-100">
+                    {formatRelative(row.lastSeen)}
+                  </span>
+                </div>
+                <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                  <MiniStat label="Starts" value={row.starts.toString()} />
+                  <MiniStat label="Completions" value={row.completions.toString()} />
+                  <MiniStat label="Failures" value={row.failures.toString()} />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState title="No feature events yet" body="Feature opens, quiz starts, uploads, and other interactions will appear here." />
+        )}
+      </Panel>
+
+      <Panel title="Page Interest" subtitle="A true page ranking from live events." icon={Eye} section={section}>
+        {model.pageRows.length ? (
+          <DataTable
+            columns={['Page', 'Users', 'Events', 'Avg time']}
+            rows={model.pageRows.slice(0, 14).map((row) => [
+              row.page,
+              row.users.toString(),
+              row.events.toString(),
+              formatDuration(row.avgSeconds),
+            ])}
+          />
+        ) : (
+          <EmptyState title="No page rows yet" body="There are no live page events for this filter." />
+        )}
+      </Panel>
+    </div>
+  )
+}
+
+function RetentionPage({ model, section }: { model: DashboardModel; section: AdminSection }) {
+  const returning = model.users.filter((user) => user.sessions > 1)
+
+  return (
+    <div className="space-y-5">
+      <div className="grid gap-3 md:grid-cols-3">
+        <KpiCard
+          icon={TimerReset}
+          title="Returning users"
+          value={model.returningUsers.toString()}
+          detail="Same user or anonymous ID with more than one session"
+          tone={model.returningUsers ? 'good' : 'muted'}
+        />
+        <KpiCard
+          icon={Gauge}
+          title="Return rate"
+          value={`${model.returnRate}%`}
+          detail="Returning users divided by tracked users"
+          tone={model.returnRate >= 25 ? 'good' : model.totalUsers ? 'watch' : 'muted'}
+        />
+        <KpiCard
+          icon={Clock3}
+          title="Avg session"
+          value={formatDuration(model.avgSessionSeconds)}
+          detail="Session time is sparse until events include time_spent_seconds"
+          tone={model.avgSessionSeconds ? 'info' : 'muted'}
+        />
+      </div>
+
+      <Panel title="Return Behavior" subtitle="No estimates. Only repeat sessions recorded in app_events." icon={TimerReset} section={section}>
+        {returning.length ? (
+          <DataTable
+            columns={['User', 'Sessions', 'Events', 'First seen', 'Last active', 'Source']}
+            rows={returning.map((user) => [
+              user.label,
+              user.sessions.toString(),
+              user.events.toString(),
+              formatClock(user.firstSeen),
+              formatRelative(user.lastActive),
+              user.source,
+            ])}
+          />
+        ) : (
+          <EmptyState title="No returning users yet" body="This is expected early. Once a live visitor returns in a new session, they will show up here." />
+        )}
+      </Panel>
+    </div>
+  )
+}
+
+function ContentQualityPage({ model, section }: { model: DashboardModel; section: AdminSection }) {
+  const answerRate = safePercent(model.correctAnswers, model.questionAnswered)
+
+  return (
+    <div className="space-y-5">
+      <div className="grid gap-3 md:grid-cols-4">
+        <KpiCard
+          icon={FileQuestion}
+          title="Questions answered"
+          value={model.questionAnswered.toString()}
+          detail="Actual question_answered events"
+          tone={model.questionAnswered ? 'info' : 'muted'}
+        />
+        <KpiCard
+          icon={CheckCircle2}
+          title="Correct answers"
+          value={model.correctAnswers.toString()}
+          detail={`${answerRate}% of answered questions`}
+          tone={model.correctAnswers ? 'good' : 'muted'}
+        />
+        <KpiCard
+          icon={AlertTriangle}
+          title="Incorrect answers"
+          value={model.incorrectAnswers.toString()}
+          detail="Actual incorrect result events"
+          tone={model.incorrectAnswers ? 'watch' : 'muted'}
+        />
+        <KpiCard
+          icon={Brain}
+          title="Confidence mismatch"
+          value={model.highConfidenceMisses.toString()}
+          detail="High-confidence incorrect answers"
+          tone={model.highConfidenceMisses ? 'critical' : model.questionAnswered ? 'good' : 'muted'}
+        />
+      </div>
+
+      <Panel title="Question Categories" subtitle="Category performance from question_answered events." icon={FileQuestion} section={section}>
+        {model.categoryRows.length ? (
+          <DataTable
+            columns={['Category', 'Answered', 'Correct', 'Incorrect', 'High-confidence misses']}
+            rows={model.categoryRows.map((row) => [
+              row.category,
+              row.answered.toString(),
+              row.correct.toString(),
+              row.incorrect.toString(),
+              row.highConfidenceMisses.toString(),
+            ])}
+          />
+        ) : (
+          <EmptyState title="No question outcomes yet" body="When live users answer practice questions, category and confidence signals will appear here." />
+        )}
+      </Panel>
+    </div>
+  )
+}
+
+function SecurityPage({
+  model,
+  section,
+  dataMode,
+  usingLocalFallback,
 }: {
-  label: string
-  value: T
-  items: T[]
-  onChange: (value: T) => void
+  model: DashboardModel
+  section: AdminSection
+  dataMode: string
+  usingLocalFallback: boolean
 }) {
   return (
-    <div className="flex items-center gap-1 rounded-xl border border-cyan-200/14 bg-[#04101f]/54 p-1">
-      <span className="hidden px-2 text-[11px] font-black uppercase tracking-[0.12em] text-sky-100/42 sm:inline">
-        {label}
-      </span>
-      <select
-        value={value}
-        onChange={(event) => onChange(event.target.value as T)}
-        className="h-8 rounded-lg border-0 bg-transparent px-2 text-sm font-bold text-cyan-50 outline-none"
-      >
-        {items.map((item) => (
-          <option key={item} value={item} className="bg-[#04101f] text-white">
-            {item}
-          </option>
-        ))}
-      </select>
-    </div>
-  )
-}
-
-function MetricCard({
-  icon: Icon,
-  label,
-  value,
-  detail,
-  tone,
-}: {
-  icon: React.ComponentType<{ className?: string }>
-  label: string
-  value: string
-  detail: string
-  tone: StatusTone
-}) {
-  return (
-    <div className={`rounded-[18px] border p-3 ${toneClass[tone]}`}>
-      <div className="flex items-center justify-between gap-3">
-        <Icon className="h-5 w-5 opacity-80" />
-        <p className="text-2xl font-black">{value}</p>
-      </div>
-      <p className="mt-2 text-sm font-black">{label}</p>
-      <p className="mt-1 text-xs opacity-70">{detail}</p>
-    </div>
-  )
-}
-
-function StatusPill({ tone, children }: { tone: StatusTone; children: React.ReactNode }) {
-  return (
-    <span className={`inline-flex shrink-0 items-center rounded-full border px-2.5 py-1 text-xs font-black ${toneClass[tone]}`}>
-      {children}
-    </span>
-  )
-}
-
-function ProgressBar({ value, tone }: { value: number; tone: StatusTone }) {
-  const fillClass =
-    tone === 'good'
-      ? 'bg-emerald-300'
-      : tone === 'watch'
-        ? 'bg-amber-300'
-        : tone === 'critical'
-          ? 'bg-rose-300'
-          : 'bg-cyan-300'
-
-  return (
-    <div className="mt-3 h-2 overflow-hidden rounded-full bg-sky-950/70">
-      <div className={`h-full rounded-full ${fillClass}`} style={{ width: `${Math.max(4, Math.min(100, value))}%` }} />
-    </div>
-  )
-}
-
-function DetailStat({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div>
-      <p className="text-[11px] font-black uppercase tracking-[0.14em] text-sky-100/42">{label}</p>
-      <p className="mt-1 truncate text-sm font-black text-white">{value}</p>
-    </div>
-  )
-}
-
-function MiniMetric({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="rounded-xl border border-sky-200/10 bg-[#04101f]/44 px-2 py-2">
-      <p className="font-black text-white">{value}</p>
-      <p className="mt-1 uppercase tracking-[0.12em]">{label}</p>
-    </div>
-  )
-}
-
-function Benchmark({ label, value, target, tone }: { label: string; value: number; target: string; tone: StatusTone }) {
-  return (
-    <div className="mb-3 rounded-2xl border border-sky-200/12 bg-white/[0.035] p-3 last:mb-0">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="font-black">{label}</p>
-          <p className="text-xs text-sky-100/54">Target {target}</p>
+    <div className="grid gap-5 xl:grid-cols-[1fr_1fr]">
+      <Panel title="Access And Data Mode" subtitle="What is live, protected, and visible." icon={LockKeyhole} section={section}>
+        <div className="space-y-3">
+          <StatusCard
+            tone="good"
+            title="Admin route is gated"
+            body="The public admin panel requires admin access or the temporary pass key before it renders."
+          />
+          <StatusCard
+            tone={usingLocalFallback ? 'watch' : model.totalEvents ? 'good' : 'muted'}
+            title={dataMode}
+            body={`${model.totalEvents} event rows are currently feeding the dashboard after filters.`}
+          />
+          <StatusCard
+            tone="good"
+            title="Seeded preview data removed"
+            body="The panel no longer uses fake source, journey, feature, or user rows."
+          />
+          <StatusCard
+            tone="info"
+            title="Admin is not self-counted"
+            body="Events whose page_path includes /admin are filtered out of the behavior model."
+          />
         </div>
-        <StatusPill tone={tone}>{value}%</StatusPill>
-      </div>
-      <ProgressBar value={value} tone={tone} />
+      </Panel>
+
+      <Panel title="Privacy Guardrails" subtitle="Behavior analytics without private study content." icon={ShieldCheck} section={section}>
+        <div className="grid gap-3">
+          {[
+            ['Allowed', 'Page path, source, campaign, feature, exam track, quiz outcome, confidence, timestamps, anonymous IDs.'],
+            ['Blocked', 'Emails, names, passwords, tokens, note body, upload text, filenames, patient/PHI-looking fields.'],
+            ['User timeline', 'Shows exact app behavior and sequence, but not private notes or uploaded document text.'],
+            ['Next security step', 'Move temporary pass key to owner-only auth once beta traffic grows.'],
+          ].map(([title, body]) => (
+            <div key={title} className="rounded-2xl border border-lime-300/20 bg-lime-300/8 p-4">
+              <p className="text-sm font-black text-white">{title}</p>
+              <p className="mt-1 text-xs font-bold leading-5 text-lime-100/70">{body}</p>
+            </div>
+          ))}
+        </div>
+      </Panel>
     </div>
   )
 }
 
-function QueueRow({ label, value, detail, tone }: { label: string; value: string; detail: string; tone: StatusTone }) {
-  const Icon = tone === 'good' ? CheckCircle2 : tone === 'critical' ? AlertTriangle : tone === 'watch' ? Clock3 : Activity
+function MiniStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="mb-3 flex items-center gap-3 rounded-2xl border border-sky-200/12 bg-white/[0.035] p-3 last:mb-0">
-      <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-2xl border ${toneClass[tone]}`}>
-        <Icon className="h-4 w-4" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between gap-3">
-          <p className="truncate font-black">{label}</p>
-          <p className="text-sm font-black text-cyan-100">{value}</p>
-        </div>
-        <p className="mt-1 text-xs text-sky-100/54">{detail}</p>
+    <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">{label}</p>
+      <p className="mt-1 text-lg font-black text-white">{value}</p>
+    </div>
+  )
+}
+
+function DataTable({ columns, rows }: { columns: string[]; rows: string[][] }) {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-white/10">
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-white/10 text-left">
+          <thead className="bg-white/[0.04]">
+            <tr>
+              {columns.map((column) => (
+                <th key={column} className="px-4 py-3 text-[11px] font-black uppercase tracking-[0.16em] text-slate-500">
+                  {column}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/8">
+            {rows.map((row, index) => (
+              <tr key={`${row.join('-')}-${index}`} className="bg-white/[0.015]">
+                {row.map((cell, cellIndex) => (
+                  <td key={`${cell}-${cellIndex}`} className="max-w-[280px] truncate px-4 py-3 text-sm font-bold text-slate-200">
+                    {cell}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
+  )
+}
+
+export function AdminMonitorPage() {
+  const [activeSectionId, setActiveSectionId] = useState<AdminSectionId>(() => sectionFromLocation())
+  const [remoteEvents, setRemoteEvents] = useState<StoredAppEvent[]>([])
+  const [localEvents, setLocalEvents] = useState<StoredAppEvent[]>([])
+  const [loading, setLoading] = useState(true)
+  const [lastRefresh, setLastRefresh] = useState<Date | null>(null)
+  const [range, setRange] = useState<RangeFilter>('7 days')
+  const [source, setSource] = useState<SourceFilter>('All')
+  const [track, setTrack] = useState<ExamFilter>('All')
+
+  const activeSection = adminSections.find((section) => section.id === activeSectionId) ?? adminSections[0]
+  const usingLocalFallback = remoteEvents.length === 0 && import.meta.env.DEV && localEvents.length > 0
+  const rawEvents = usingLocalFallback ? localEvents : remoteEvents
+  const dataMode = usingLocalFallback
+    ? 'Local browser events'
+    : remoteEvents.length
+      ? 'Live Supabase app_events'
+      : 'No live events loaded'
+
+  const loadEvents = async () => {
+    setLoading(true)
+    try {
+      const [nextRemote] = await Promise.all([loadRecentAdminEvents(2000)])
+      setRemoteEvents(nextRemote)
+      setLocalEvents(getLocalAppEvents())
+      setLastRefresh(new Date())
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    void loadEvents()
+  }, [])
+
+  useEffect(() => {
+    const handlePopState = () => setActiveSectionId(sectionFromLocation())
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
+
+  const navigateSection = (sectionId: AdminSectionId) => {
+    const section = adminSections.find((item) => item.id === sectionId) ?? adminSections[0]
+    setActiveSectionId(section.id)
+    window.history.pushState(null, '', sectionPath(section))
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' })
+  }
+
+  const model = useMemo(() => buildModel(filterEvents(rawEvents, range, source, track)), [rawEvents, range, source, track])
+
+  return (
+    <AdminPanelShell
+      activeSection={activeSection}
+      setActiveSection={navigateSection}
+      dataMode={dataMode}
+      totalEvents={model.totalEvents}
+      loading={loading}
+      refresh={loadEvents}
+      lastRefresh={lastRefresh}
+    >
+      <FilterBar range={range} setRange={setRange} source={source} setSource={setSource} track={track} setTrack={setTrack} />
+
+      {activeSection.id === 'overview' ? <OverviewPage model={model} section={activeSection} /> : null}
+      {activeSection.id === 'acquisition' ? <AcquisitionPage model={model} section={activeSection} /> : null}
+      {activeSection.id === 'activation' ? <ActivationPage model={model} section={activeSection} /> : null}
+      {activeSection.id === 'users' ? <UsersPage model={model} section={activeSection} /> : null}
+      {activeSection.id === 'feature-usage' ? <FeatureUsagePage model={model} section={activeSection} /> : null}
+      {activeSection.id === 'retention' ? <RetentionPage model={model} section={activeSection} /> : null}
+      {activeSection.id === 'content-quality' ? <ContentQualityPage model={model} section={activeSection} /> : null}
+      {activeSection.id === 'security' ? (
+        <SecurityPage model={model} section={activeSection} dataMode={dataMode} usingLocalFallback={usingLocalFallback} />
+      ) : null}
+    </AdminPanelShell>
   )
 }
