@@ -18,6 +18,7 @@ import {
   HelpCircle,
   HeartPulse,
   LayoutGrid,
+  LockKeyhole,
   Menu,
   NotebookPen,
   RefreshCw,
@@ -29,7 +30,7 @@ import {
   Users,
   X,
 } from 'lucide-react'
-import { lazy, Suspense, useEffect, useMemo, useState, type ComponentType, type ReactNode } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState, type ComponentType, type FormEvent, type ReactNode } from 'react'
 import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { clsx } from 'clsx'
 import { PwaInstallPrompt } from '../features/PwaInstallPrompt'
@@ -55,6 +56,15 @@ import {
 import { getExamTrack } from '../data/exam-tracks'
 import { useStudySystemStore } from './store'
 import { AuthGate } from './AuthGate'
+import {
+  checkAdminAccess,
+  hasStoredAdminPreviewPasskeyAccess,
+  isAdminPanelEnabled,
+  isAdminPreviewPasskeyEnabled,
+  isLocalAdminPreview,
+  verifyAdminPreviewPasskey,
+} from '../services/admin-analytics'
+import { trackAppEvent } from '../services/analytics-client'
 
 type NavigationItem = {
   label: string
@@ -172,6 +182,11 @@ const NurseTycoonGame = lazy(() =>
     default: module.NurseTycoonGame,
   })),
 )
+const AdminMonitorPage = lazy(() =>
+  import('../features/AdminMonitorPage').then((module) => ({
+    default: module.AdminMonitorPage,
+  })),
+)
 
 function RouteLoadingScreen({ label = 'Loading module' }: { label?: string }) {
   return (
@@ -200,6 +215,16 @@ function LazyRoute({
 
 export function AppShell() {
   const location = useLocation()
+
+  if (location.pathname.startsWith('/admin')) {
+    return (
+      <AdminAccessGate>
+        <LazyRoute label="Loading admin cockpit">
+          <AdminMonitorPage />
+        </LazyRoute>
+      </AdminAccessGate>
+    )
+  }
 
   if (location.pathname.startsWith('/medical-command-center')) {
     return (
@@ -268,6 +293,33 @@ function NclexAppShell() {
   useEffect(() => {
     window.scrollTo({ left: 0, top: 0, behavior: 'auto' })
   }, [location.pathname])
+
+  useEffect(() => {
+    const featureName = getFeatureNameFromPath(location.pathname)
+    const context = { userId: authUser?.id, isDemoUser: isDemoMode }
+    void trackAppEvent(
+      'page_view',
+      {
+        page_path: location.pathname,
+        exam_track: profile.examTrack ?? 'nclex-rn',
+        feature_name: featureName,
+        is_demo_user: isDemoMode,
+      },
+      context,
+    )
+    if (featureName) {
+      void trackAppEvent(
+        featureName === 'Weak Areas' ? 'weak_area_opened' : featureName === 'Study Plan' ? 'study_plan_opened' : 'feature_opened',
+        {
+          page_path: location.pathname,
+          exam_track: profile.examTrack ?? 'nclex-rn',
+          feature_name: featureName,
+          is_demo_user: isDemoMode,
+        },
+        context,
+      )
+    }
+  }, [authUser?.id, isDemoMode, location.pathname, profile.examTrack])
 
   const pageMeta = useMemo(() => {
     const match = pageMetaNavigation.find((item) => isNavigationItemActive(location.pathname, item))
@@ -728,6 +780,194 @@ function NclexAppShell() {
       <SupportSheet open={supportOpen} onClose={() => setSupportOpen(false)} />
     </div>
     </AuthGate>
+  )
+}
+
+function getFeatureNameFromPath(pathname: string) {
+  if (pathname === '/') return 'Study Menu'
+  if (pathname.startsWith('/dashboard')) return 'Dashboard'
+  if (pathname.startsWith('/study-plan')) return 'Study Plan'
+  if (pathname.startsWith('/practice-questions')) return 'Question Bank'
+  if (pathname.startsWith('/quick-study')) return 'Quick Study'
+  if (pathname.startsWith('/weak-areas')) return 'Weak Areas'
+  if (pathname.startsWith('/performance-analytics')) return 'Performance Analytics'
+  if (pathname.startsWith('/flashcards')) return 'Flashcards'
+  if (pathname.startsWith('/notes')) return 'Notes'
+  if (pathname.startsWith('/my-materials')) return 'Material Upload'
+  if (pathname.startsWith('/exam-prep')) return 'Exam Prep'
+  if (pathname.startsWith('/test-mode')) return 'Test Mode'
+  if (pathname.startsWith('/clinical-simulator')) return 'Clinical Simulator'
+  if (pathname.startsWith('/social')) return 'Social'
+  if (pathname.startsWith('/settings')) return 'Settings'
+  return undefined
+}
+
+function AdminAccessGate({ children }: { children: ReactNode }) {
+  const authInitialized = useStudySystemStore((state) => state.authInitialized)
+  const authConfigured = useStudySystemStore((state) => state.authConfigured)
+  const authUser = useStudySystemStore((state) => state.authUser)
+  const initializeAuth = useStudySystemStore((state) => state.initializeAuth)
+  const localPreview = isLocalAdminPreview()
+  const passkeyEnabled = isAdminPreviewPasskeyEnabled()
+  const enabled = isAdminPanelEnabled()
+  const [passkeyAllowed, setPasskeyAllowed] = useState(() => hasStoredAdminPreviewPasskeyAccess())
+  const [allowed, setAllowed] = useState(localPreview || passkeyAllowed)
+  const [checking, setChecking] = useState(!localPreview && !passkeyAllowed)
+
+  useEffect(() => {
+    if (localPreview || passkeyAllowed || !enabled) return
+    void initializeAuth()
+  }, [enabled, initializeAuth, localPreview, passkeyAllowed])
+
+  useEffect(() => {
+    if (localPreview || passkeyAllowed) return
+    if (!enabled) return
+    if (!authInitialized) return
+
+    let cancelled = false
+    void Promise.resolve().then(async () => {
+      if (cancelled) return
+      setChecking(true)
+      const nextAllowed = await checkAdminAccess(authUser)
+      if (cancelled) return
+      setAllowed(nextAllowed)
+      setChecking(false)
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [authInitialized, authUser, enabled, localPreview, passkeyAllowed])
+
+  if (!enabled) {
+    return (
+      <AdminAccessState
+        title="Admin panel disabled"
+        detail="Set VITE_ENABLE_ADMIN_PANEL=true only for environments where admin access should exist."
+      />
+    )
+  }
+
+  if (localPreview || passkeyAllowed || allowed) return children
+
+  if (passkeyEnabled) {
+    return (
+      <AdminPasskeyState
+        onVerified={() => {
+          setPasskeyAllowed(true)
+          setAllowed(true)
+          setChecking(false)
+        }}
+      />
+    )
+  }
+
+  if (!authConfigured) {
+    return (
+      <AdminAccessState
+        title="Admin auth unavailable"
+        detail="Supabase must be configured before the public admin panel can verify admin accounts."
+      />
+    )
+  }
+
+  if (!authUser) {
+    return (
+      <AuthGate>
+        <AdminAccessState
+          title="Checking admin access"
+          detail="Sign-in completed. Verifying admin role before loading the cockpit."
+        />
+      </AuthGate>
+    )
+  }
+
+  if (checking || !authInitialized) {
+    return <RouteLoadingScreen label="Verifying admin access" />
+  }
+
+  if (!allowed) {
+    return (
+      <AdminAccessState
+        title="Admin access required"
+        detail="This account is signed in but is not listed as a Nurse Command admin."
+      />
+    )
+  }
+
+  return children
+}
+
+function AdminPasskeyState({ onVerified }: { onVerified: () => void }) {
+  const [value, setValue] = useState('')
+  const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  const submitPasskey = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setSubmitting(true)
+    setError('')
+    const verified = await verifyAdminPreviewPasskey(value)
+    setSubmitting(false)
+    if (!verified) {
+      setError('Pass key did not match.')
+      return
+    }
+    onVerified()
+  }
+
+  return (
+    <div className="grid min-h-screen place-items-center bg-[#020812] px-6 text-white">
+      <form
+        onSubmit={submitPasskey}
+        className="w-full max-w-[460px] rounded-[28px] border border-cyan-200/18 bg-[#071d34]/88 p-7 shadow-[0_24px_80px_rgba(0,0,0,0.38)]"
+      >
+        <div className="grid h-14 w-14 place-items-center rounded-2xl border border-cyan-200/24 bg-cyan-300/10 text-cyan-100">
+          <LockKeyhole className="h-6 w-6" />
+        </div>
+        <p className="mt-5 text-xs font-black uppercase tracking-[0.18em] text-cyan-200/74">Admin preview access</p>
+        <h1 className="mt-2 text-2xl font-black">Enter command pass key</h1>
+        <p className="mt-3 text-sm leading-6 text-sky-100/64">
+          This unlocks the live cockpit preview. Remote user analytics still require Supabase admin access.
+        </p>
+        <label
+          className="mt-6 block text-xs font-black uppercase tracking-[0.14em] text-sky-100/56"
+          htmlFor="admin-passkey"
+        >
+          Pass key
+        </label>
+        <input
+          id="admin-passkey"
+          type="password"
+          value={value}
+          onChange={(event) => setValue(event.target.value)}
+          autoComplete="off"
+          className="mt-2 h-12 w-full rounded-2xl border border-cyan-200/24 bg-[#020b17] px-4 text-base font-bold text-white outline-none transition focus:border-cyan-200/70 focus:ring-2 focus:ring-cyan-300/20"
+        />
+        {error ? <p className="mt-3 text-sm font-bold text-rose-200">{error}</p> : null}
+        <button
+          type="submit"
+          disabled={submitting || !value.trim()}
+          className="mt-5 inline-flex h-12 w-full items-center justify-center rounded-2xl border border-cyan-200/24 bg-cyan-300/14 px-4 text-sm font-black uppercase tracking-[0.14em] text-cyan-50 transition hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-45"
+        >
+          {submitting ? 'Checking' : 'Unlock admin'}
+        </button>
+      </form>
+    </div>
+  )
+}
+
+function AdminAccessState({ title, detail }: { title: string; detail: string }) {
+  return (
+    <div className="grid min-h-screen place-items-center bg-[#020812] px-6 text-center text-white">
+      <div className="w-full max-w-[440px] rounded-[28px] border border-cyan-200/18 bg-[#071d34]/84 p-7 shadow-[0_24px_80px_rgba(0,0,0,0.38)]">
+        <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-cyan-200/24 bg-cyan-300/10 text-cyan-100">
+          <LockKeyhole className="h-6 w-6" />
+        </div>
+        <h1 className="mt-5 text-2xl font-black">{title}</h1>
+        <p className="mt-3 text-sm leading-6 text-sky-100/64">{detail}</p>
+      </div>
+    </div>
   )
 }
 

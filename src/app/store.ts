@@ -67,6 +67,7 @@ import {
   saveSyncEvents,
   uploadMaterialFile,
 } from '../services/cloud-repositories'
+import { trackAppEvent } from '../services/analytics-client'
 import { isSupabaseConfigured } from '../services/supabase'
 import { getSafeErrorCopy, reportSafeError } from '../services/safe-errors'
 import {
@@ -503,6 +504,15 @@ export const useStudySystemStore = create<StudySystemState>()(
         })
         try {
           const snapshot = await signUpWithPassword(email, password, freshProfile, betaTermsConsent)
+          void trackAppEvent(
+            'signup_completed',
+            {
+              page_path: '/',
+              exam_track: freshProfile.examTrack,
+              feature_name: 'Beta Account',
+            },
+            { userId: snapshot.user?.id, isDemoUser: false },
+          )
           if (!snapshot.user || !snapshot.session) {
             set({
               ...createCleanAccountState(freshProfile),
@@ -592,6 +602,17 @@ export const useStudySystemStore = create<StudySystemState>()(
         }
       },
       continueAsDemo: () => {
+        const state = get()
+        void trackAppEvent(
+          'demo_started',
+          {
+            page_path: '/',
+            exam_track: state.profile.examTrack ?? 'nclex-rn',
+            feature_name: 'Local Demo',
+            is_demo_user: true,
+          },
+          { userId: state.authUser?.id, isDemoUser: true },
+        )
         set({
           authInitialized: true,
           authConfigured: isSupabaseConfigured,
@@ -768,22 +789,78 @@ export const useStudySystemStore = create<StudySystemState>()(
           materialsHydrated: true,
         })
       },
-      startQuickStudy: (category) =>
+      startQuickStudy: (category) => {
+        const state = get()
+        void trackAppEvent(
+          'quiz_started',
+          {
+            page_path: '/quick-study',
+            feature_name: 'Quick Study',
+            exam_track: state.profile.examTrack ?? 'nclex-rn',
+            question_category: category,
+            is_demo_user: state.isDemoMode,
+          },
+          { userId: state.authUser?.id, isDemoUser: state.isDemoMode },
+        )
         set((state) => ({
           activeSession: generateQuickStudySession(state.attempts, state.profile.examTrack ?? 'nclex-rn', category),
-        })),
-      startPracticeSession: (filters) =>
+        }))
+      },
+      startPracticeSession: (filters) => {
+        const state = get()
+        void trackAppEvent(
+          'quiz_started',
+          {
+            page_path: '/practice-questions',
+            feature_name: 'Question Bank',
+            exam_track: state.profile.examTrack ?? 'nclex-rn',
+            question_category: typeof filters.category === 'string' ? filters.category : undefined,
+            is_demo_user: state.isDemoMode,
+          },
+          { userId: state.authUser?.id, isDemoUser: state.isDemoMode },
+        )
         set((state) => ({
           activeSession: generatePracticeSet(state.attempts, state.profile.examTrack ?? 'nclex-rn', filters),
-        })),
-      startTestSession: (config) =>
+        }))
+      },
+      startTestSession: (config) => {
+        const state = get()
+        void trackAppEvent(
+          'quiz_started',
+          {
+            page_path: '/test-mode',
+            feature_name: 'Test Mode',
+            exam_track: state.profile.examTrack ?? 'nclex-rn',
+            is_demo_user: state.isDemoMode,
+            metadata: {
+              question_count: config.questionCount,
+              timed: config.timed,
+              no_backtracking: config.noBacktracking,
+            },
+          },
+          { userId: state.authUser?.id, isDemoUser: state.isDemoMode },
+        )
         set((state) => ({
           activeSession: generateTestSession(state.attempts, state.profile.examTrack ?? 'nclex-rn', config),
-        })),
-      startClinicalThinking: (focus) =>
+        }))
+      },
+      startClinicalThinking: (focus) => {
+        const state = get()
+        void trackAppEvent(
+          'quiz_started',
+          {
+            page_path: '/clinical-simulator',
+            feature_name: 'Clinical Thinking',
+            exam_track: state.profile.examTrack ?? 'nclex-rn',
+            question_category: focus,
+            is_demo_user: state.isDemoMode,
+          },
+          { userId: state.authUser?.id, isDemoUser: state.isDemoMode },
+        )
         set((state) => ({
           activeSession: generateClinicalThinkingSession(state.attempts, state.profile.examTrack ?? 'nclex-rn', focus),
-        })),
+        }))
+      },
       goToSessionQuestion: (index) =>
         set((state) =>
           state.activeSession
@@ -796,6 +873,12 @@ export const useStudySystemStore = create<StudySystemState>()(
             : state,
         ),
       submitCurrentResponse: ({ selectedAnswer, confidence, flagged, timeSpentSec }) => {
+        const currentSession = get().activeSession
+        const currentQuestionId = currentSession?.questionIds[currentSession.currentIndex]
+        if (!currentSession || !currentQuestionId) return
+        if (currentSession.responses.some((entry) => entry.questionId === currentQuestionId)) return
+        const analyticsQuestion = questionLookup[currentQuestionId]
+        const analyticsIsCorrect = getQuestionResult(currentQuestionId, selectedAnswer)
         set((state) => {
           if (!state.activeSession) return state
           const questionId = state.activeSession.questionIds[state.activeSession.currentIndex]
@@ -851,6 +934,35 @@ export const useStudySystemStore = create<StudySystemState>()(
             },
           }
         })
+        const state = get()
+        void trackAppEvent(
+          'question_answered',
+          {
+            page_path: state.activeSession?.mode === 'quick-study' ? '/quick-study' : '/practice-questions',
+            feature_name: state.activeSession?.mode === 'quick-study' ? 'Quick Study' : state.activeSession?.mode === 'test' ? 'Test Mode' : 'Question Bank',
+            exam_track: state.profile.examTrack ?? 'nclex-rn',
+            question_category: analyticsQuestion?.category,
+            question_result: analyticsIsCorrect ? 'correct' : 'incorrect',
+            confidence_level: confidence,
+            time_spent_seconds: timeSpentSec,
+            is_demo_user: state.isDemoMode,
+          },
+          { userId: state.authUser?.id, isDemoUser: state.isDemoMode },
+        )
+        void trackAppEvent(
+          'confidence_selected',
+          {
+            page_path: state.activeSession?.mode === 'quick-study' ? '/quick-study' : '/practice-questions',
+            feature_name: 'Confidence Tracking',
+            exam_track: state.profile.examTrack ?? 'nclex-rn',
+            question_category: analyticsQuestion?.category,
+            question_result: analyticsIsCorrect ? 'correct' : 'incorrect',
+            confidence_level: confidence,
+            time_spent_seconds: timeSpentSec,
+            is_demo_user: state.isDemoMode,
+          },
+          { userId: state.authUser?.id, isDemoUser: state.isDemoMode },
+        )
         void get().syncNow()
       },
       nextQuestion: () =>
@@ -876,7 +988,31 @@ export const useStudySystemStore = create<StudySystemState>()(
             },
           }
         }),
-      finishSession: () =>
+      finishSession: () => {
+        const currentSession = get().activeSession
+        if (currentSession) {
+          const score =
+            currentSession.responses.length === 0
+              ? 0
+              : currentSession.responses.filter((response) => response.isCorrect).length / currentSession.responses.length
+          const state = get()
+          void trackAppEvent(
+            'quiz_completed',
+            {
+              page_path: currentSession.mode === 'quick-study' ? '/quick-study' : currentSession.mode === 'test' ? '/test-mode' : '/practice-questions',
+              feature_name: currentSession.mode === 'quick-study' ? 'Quick Study' : currentSession.mode === 'test' ? 'Test Mode' : 'Question Bank',
+              exam_track: state.profile.examTrack ?? 'nclex-rn',
+              time_spent_seconds: Math.max(0, Math.round((Date.now() - new Date(currentSession.startedAt).getTime()) / 1000)),
+              is_demo_user: state.isDemoMode,
+              metadata: {
+                question_count: currentSession.questionIds.length,
+                response_count: currentSession.responses.length,
+                score_percent: Math.round(score * 100),
+              },
+            },
+            { userId: state.authUser?.id, isDemoUser: state.isDemoMode },
+          )
+        }
         set((state) =>
           state.activeSession
             ? {
@@ -891,9 +1027,22 @@ export const useStudySystemStore = create<StudySystemState>()(
                 },
               }
             : state,
-        ),
+        )
+      },
       abandonSession: () => set({ activeSession: null }),
       updateFlashcardStatus: (id, status) => {
+        const state = get()
+        void trackAppEvent(
+          'flashcard_reviewed',
+          {
+            page_path: '/flashcards',
+            feature_name: 'Flashcards',
+            exam_track: state.profile.examTrack ?? 'nclex-rn',
+            is_demo_user: state.isDemoMode,
+            metadata: { review_status: status },
+          },
+          { userId: state.authUser?.id, isDemoUser: state.isDemoMode },
+        )
         set((state) => ({
           flashcardProgress: {
             ...state.flashcardProgress,
@@ -910,6 +1059,19 @@ export const useStudySystemStore = create<StudySystemState>()(
       updateMaterialFlashcardStatus: async (id, status) => {
         const updated = await updateMaterialFlashcard(id, { status })
         if (!updated) return
+        const currentState = get()
+        void trackAppEvent(
+          'flashcard_reviewed',
+          {
+            page_path: '/my-materials',
+            feature_name: 'Material Flashcards',
+            exam_track: currentState.profile.examTrack ?? 'nclex-rn',
+            question_category: updated.category,
+            is_demo_user: currentState.isDemoMode,
+            metadata: { review_status: status },
+          },
+          { userId: currentState.authUser?.id, isDemoUser: currentState.isDemoMode },
+        )
         set((state) => ({
           materialFlashcards: state.materialFlashcards.map((item) =>
             item.id === id ? updated : item,
@@ -923,6 +1085,18 @@ export const useStudySystemStore = create<StudySystemState>()(
         void get().syncNow()
       },
       importStudyMaterial: async (file) => {
+        const importStartedAt = Date.now()
+        const startingState = get()
+        void trackAppEvent(
+          'material_upload_started',
+          {
+            page_path: '/my-materials',
+            feature_name: 'Material Upload',
+            exam_track: startingState.profile.examTrack ?? 'nclex-rn',
+            is_demo_user: startingState.isDemoMode,
+          },
+          { userId: startingState.authUser?.id, isDemoUser: startingState.isDemoMode },
+        )
         const {
           createErroredMaterial,
           createPendingStudyMaterial,
@@ -976,9 +1150,38 @@ export const useStudySystemStore = create<StudySystemState>()(
             materials: [nextMaterial, ...state.materials.filter((item) => item.id !== pending.id)],
             syncEvents: [...state.syncEvents, makeSyncEvent('material', nextMaterial.id, 'upsert', nextMaterial)],
           }))
+          const completedState = get()
+          void trackAppEvent(
+            'material_upload_completed',
+            {
+              page_path: '/my-materials',
+              feature_name: 'Material Upload',
+              exam_track: completedState.profile.examTrack ?? 'nclex-rn',
+              time_spent_seconds: Math.round((Date.now() - importStartedAt) / 1000),
+              is_demo_user: completedState.isDemoMode,
+              metadata: {
+                generated_flashcards: flashcards.length,
+                generated_questions: questions.length,
+              },
+            },
+            { userId: completedState.authUser?.id, isDemoUser: completedState.isDemoMode },
+          )
           void get().syncNow()
         } catch (error) {
           reportSafeError('material-file-import', error)
+          const failedState = get()
+          void trackAppEvent(
+            'material_upload_failed',
+            {
+              page_path: '/my-materials',
+              feature_name: 'Material Upload',
+              exam_track: failedState.profile.examTrack ?? 'nclex-rn',
+              time_spent_seconds: Math.round((Date.now() - importStartedAt) / 1000),
+              is_demo_user: failedState.isDemoMode,
+              metadata: { error_category: 'file_import' },
+            },
+            { userId: failedState.authUser?.id, isDemoUser: failedState.isDemoMode },
+          )
           const failure = createErroredMaterial(
             pending,
             getSafeErrorCopy('material-file-import'),
@@ -992,6 +1195,18 @@ export const useStudySystemStore = create<StudySystemState>()(
         }
       },
       importStudyMaterialFromUrl: async (url) => {
+        const importStartedAt = Date.now()
+        const startingState = get()
+        void trackAppEvent(
+          'material_upload_started',
+          {
+            page_path: '/my-materials',
+            feature_name: 'Material Link Import',
+            exam_track: startingState.profile.examTrack ?? 'nclex-rn',
+            is_demo_user: startingState.isDemoMode,
+          },
+          { userId: startingState.authUser?.id, isDemoUser: startingState.isDemoMode },
+        )
         const {
           createErroredMaterial,
           createPendingStudyMaterialFromUrl,
@@ -1031,9 +1246,38 @@ export const useStudySystemStore = create<StudySystemState>()(
             materials: [nextMaterial, ...state.materials.filter((item) => item.id !== pending.id)],
             syncEvents: [...state.syncEvents, makeSyncEvent('material', nextMaterial.id, 'upsert', nextMaterial)],
           }))
+          const completedState = get()
+          void trackAppEvent(
+            'material_upload_completed',
+            {
+              page_path: '/my-materials',
+              feature_name: 'Material Link Import',
+              exam_track: completedState.profile.examTrack ?? 'nclex-rn',
+              time_spent_seconds: Math.round((Date.now() - importStartedAt) / 1000),
+              is_demo_user: completedState.isDemoMode,
+              metadata: {
+                generated_flashcards: flashcards.length,
+                generated_questions: questions.length,
+              },
+            },
+            { userId: completedState.authUser?.id, isDemoUser: completedState.isDemoMode },
+          )
           void get().syncNow()
         } catch (error) {
           reportSafeError('material-link-import', error)
+          const failedState = get()
+          void trackAppEvent(
+            'material_upload_failed',
+            {
+              page_path: '/my-materials',
+              feature_name: 'Material Link Import',
+              exam_track: failedState.profile.examTrack ?? 'nclex-rn',
+              time_spent_seconds: Math.round((Date.now() - importStartedAt) / 1000),
+              is_demo_user: failedState.isDemoMode,
+              metadata: { error_category: 'link_import' },
+            },
+            { userId: failedState.authUser?.id, isDemoUser: failedState.isDemoMode },
+          )
           const message = getSafeErrorCopy('material-link-import')
           const failure = createErroredMaterial(
             pending,
@@ -1169,7 +1413,23 @@ export const useStudySystemStore = create<StudySystemState>()(
       },
       startMaterialFlashcards: (materialId) => set({ preferredMaterialFlashcardsId: materialId }),
       clearMaterialFlashcardsPreference: () => set({ preferredMaterialFlashcardsId: null }),
-      startMaterialQuiz: (materialId, config) =>
+      startMaterialQuiz: (materialId, config) => {
+        const state = get()
+        const material = state.materials.find((item) => item.id === materialId)
+        void trackAppEvent(
+          'quiz_started',
+          {
+            page_path: '/my-materials',
+            feature_name: 'Material Quiz',
+            exam_track: state.profile.examTrack ?? 'nclex-rn',
+            is_demo_user: state.isDemoMode,
+            metadata: {
+              question_count: config?.questionCount ?? 5,
+              has_material: Boolean(material),
+            },
+          },
+          { userId: state.authUser?.id, isDemoUser: state.isDemoMode },
+        )
         set((state) => {
           const material = state.materials.find((item) => item.id === materialId)
           const questions = state.materialQuestions.filter((item) => item.sourceMaterialId === materialId)
@@ -1187,8 +1447,15 @@ export const useStudySystemStore = create<StudySystemState>()(
               responses: [],
             },
           }
-        }),
+        })
+      },
       submitMaterialQuizResponse: (questionId, selectedAnswer) => {
+        const currentState = get()
+        const currentQuestion = currentState.materialQuestions.find((item) => item.id === questionId)
+        if (!currentState.activeMaterialQuizSession || !currentQuestion) return
+        if (currentState.activeMaterialQuizSession.responses.some((item) => item.questionId === questionId)) return
+        const analyticsIsCorrect =
+          [...selectedAnswer].sort().join('|') === [...currentQuestion.correctAnswer].sort().join('|')
         set((state) => {
           if (!state.activeMaterialQuizSession) return state
           const question = state.materialQuestions.find((item) => item.id === questionId)
@@ -1219,6 +1486,19 @@ export const useStudySystemStore = create<StudySystemState>()(
             ],
           }
         })
+        const nextState = get()
+        void trackAppEvent(
+          'question_answered',
+          {
+            page_path: '/my-materials',
+            feature_name: 'Material Quiz',
+            exam_track: nextState.profile.examTrack ?? 'nclex-rn',
+            question_category: currentQuestion.sourceTitle,
+            question_result: analyticsIsCorrect ? 'correct' : 'incorrect',
+            is_demo_user: nextState.isDemoMode,
+          },
+          { userId: nextState.authUser?.id, isDemoUser: nextState.isDemoMode },
+        )
         void get().syncNow()
       },
       nextMaterialQuizQuestion: () =>
@@ -1245,6 +1525,8 @@ export const useStudySystemStore = create<StudySystemState>()(
           }
         }),
       finishMaterialQuiz: () => {
+        const currentSession = get().activeMaterialQuizSession
+        const startedAt = currentSession?.startedAt ? new Date(currentSession.startedAt).getTime() : Date.now()
         set((state) => {
           if (!state.activeMaterialQuizSession) return state
           const responses = state.activeMaterialQuizSession.responses
@@ -1262,6 +1544,28 @@ export const useStudySystemStore = create<StudySystemState>()(
             ],
           }
         })
+        if (currentSession) {
+          const state = get()
+          const responses = currentSession.responses
+          void trackAppEvent(
+            'quiz_completed',
+            {
+              page_path: '/my-materials',
+              feature_name: 'Material Quiz',
+              exam_track: state.profile.examTrack ?? 'nclex-rn',
+              time_spent_seconds: Math.max(0, Math.round((Date.now() - startedAt) / 1000)),
+              is_demo_user: state.isDemoMode,
+              metadata: {
+                question_count: currentSession.questionIds.length,
+                response_count: responses.length,
+                score_percent: responses.length
+                  ? Math.round((responses.filter((item) => item.isCorrect).length / responses.length) * 100)
+                  : 0,
+              },
+            },
+            { userId: state.authUser?.id, isDemoUser: state.isDemoMode },
+          )
+        }
         void get().syncNow()
       },
       abandonMaterialQuiz: () => {
@@ -1269,6 +1573,7 @@ export const useStudySystemStore = create<StudySystemState>()(
         void get().syncNow()
       },
       saveNote: (note) => {
+        const existingNote = get().notes.some((item) => item.id === note.id)
         const stampedNote = {
           ...note,
           updatedAt: new Date().toISOString(),
@@ -1280,6 +1585,19 @@ export const useStudySystemStore = create<StudySystemState>()(
           }),
           syncEvents: [...state.syncEvents, makeSyncEvent('note', stampedNote.id, 'upsert', stampedNote)],
         }))
+        if (!existingNote) {
+          const state = get()
+          void trackAppEvent(
+            'note_created',
+            {
+              page_path: '/notes',
+              feature_name: 'Notes',
+              exam_track: state.profile.examTrack ?? 'nclex-rn',
+              is_demo_user: state.isDemoMode,
+            },
+            { userId: state.authUser?.id, isDemoUser: state.isDemoMode },
+          )
+        }
         void get().syncNow()
       },
       deleteNote: (id) => {
@@ -1290,6 +1608,7 @@ export const useStudySystemStore = create<StudySystemState>()(
         void get().syncNow()
       },
       updateProfile: (updates) => {
+        const previousTrack = get().profile.examTrack
         set((state) => ({
           profile: {
             ...state.profile,
@@ -1304,6 +1623,19 @@ export const useStudySystemStore = create<StudySystemState>()(
           },
           syncEvents: [...state.syncEvents, makeSyncEvent('profile', state.authUser?.id ?? 'local-profile')],
         }))
+        if (updates.examTrack && updates.examTrack !== previousTrack) {
+          const state = get()
+          void trackAppEvent(
+            'exam_track_selected',
+            {
+              page_path: '/settings',
+              feature_name: 'Exam Track',
+              exam_track: updates.examTrack,
+              is_demo_user: state.isDemoMode,
+            },
+            { userId: state.authUser?.id, isDemoUser: state.isDemoMode },
+          )
+        }
         void get().syncNow()
       },
       setExamDate: (examDate) => {

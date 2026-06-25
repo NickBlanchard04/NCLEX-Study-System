@@ -36,6 +36,11 @@ jobs:
           VITE_APP_BASE: /NCLEX-Study-System/
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_ENABLE_ANALYTICS: true
+          VITE_ENABLE_ADMIN_PANEL: true
+          VITE_ADMIN_EMAILS: ${{ secrets.VITE_ADMIN_EMAILS }}
+          VITE_ADMIN_PREVIEW_PASSKEY_SHA256: ${{ secrets.VITE_ADMIN_PREVIEW_PASSKEY_SHA256 }}
+          VITE_DEBUG_ANALYTICS: false
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
