@@ -5,6 +5,7 @@ const distDir = join(process.cwd(), 'dist')
 const indexFile = join(distDir, 'index.html')
 
 const appRoutes = [
+  'admin',
   'dashboard',
   'exam-prep',
   'practice-questions',
