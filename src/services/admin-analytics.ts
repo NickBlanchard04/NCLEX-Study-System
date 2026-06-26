@@ -98,11 +98,11 @@ export async function loadAdminProfiles(userIds: string[] = []): Promise<AdminPr
   if (!isSupabaseConfigured || !supabase) return []
 
   const uniqueUserIds = [...new Set(userIds.filter(Boolean))]
-  if (!uniqueUserIds.length) return []
-
-  const { data, error } = await supabase.rpc('admin_profile_directory', {
-    user_ids: uniqueUserIds,
-  })
+  const { data, error } = uniqueUserIds.length
+    ? await supabase.rpc('admin_profile_directory', {
+        user_ids: uniqueUserIds,
+      })
+    : await supabase.rpc('admin_profile_directory')
 
   if (error || !data) return []
   return data as AdminProfileSummary[]

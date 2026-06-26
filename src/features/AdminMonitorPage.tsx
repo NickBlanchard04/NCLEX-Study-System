@@ -139,6 +139,7 @@ interface DashboardModel {
   users: UserRow[]
   profileCount: number
   totalUsers: number
+  eventUserCount: number
   totalSessions: number
   totalEvents: number
   activatedUsers: number
@@ -687,8 +688,12 @@ const buildModel = (events: StoredAppEvent[], profilesById: Map<string, AdminPro
   const cohortMode = verifiedSignupGroups.length > 0 ? 'verified_signup' : 'signup_fallback'
   const signupCandidates = signupCompletedGroups.length
   const verifiedCandidates = verifiedSignupGroups.length
+  const eventUserCount = activeSignedInEventGroups.length
   const signedInSessionGroups = groupBy(signedInEvents, (event) => event.session_id)
-  const totalUsers = activeSignedInEventGroups.length
+  const profileUserCount = Array.from(profilesById.values()).filter((profile) =>
+    Boolean(profile.name?.trim() || profile.email?.trim()),
+  ).length
+  const totalUsers = Math.max(eventUserCount, profileUserCount)
   const totalSessions = signedInSessionGroups.size
   const totalEvents = sortedEvents.length
   const sessionSeconds = Array.from(signedInSessionGroups.values()).map(sessionSecondsForEvents)
@@ -701,11 +706,21 @@ const buildModel = (events: StoredAppEvent[], profilesById: Map<string, AdminPro
       .map(([key]) => key),
   )
 
-  const users = activeSignedInEventGroups
-    .map<UserRow>(([key, rows], index) => {
+  const profileKeys = Array.from(
+    new Set(
+      Array.from(profilesById.entries())
+        .filter(([, profile]) => Boolean(profile.name?.trim() || profile.email?.trim()))
+        .map(([key]) => key),
+    ),
+  )
+  const userKeys = Array.from(new Set([...profileKeys, ...activeSignedInEventGroups.map(([key]) => key)]))
+
+  const users = userKeys
+    .map<UserRow>((key, index) => {
+      const rows = userGroups.get(key) ?? []
       const userEvents = [...rows].sort((a, b) => eventTime(b) - eventTime(a))
-      const firstSeen = Math.min(...userEvents.map(eventTime))
-      const lastActive = Math.max(...userEvents.map(eventTime))
+      const firstSeen = userEvents.length ? Math.min(...userEvents.map(eventTime)) : 0
+      const lastActive = userEvents.length ? Math.max(...userEvents.map(eventTime)) : 0
       const sessions = new Set(userEvents.map((event) => event.session_id))
       const profile = profilesById.get(key)
       const email = profile?.email?.trim() || null
@@ -764,7 +779,7 @@ const buildModel = (events: StoredAppEvent[], profilesById: Map<string, AdminPro
       events: rows.length,
       percentage: safePercent(
         new Set(rows.filter((event) => event.user_id && !event.is_demo_user).map((event) => event.user_id!)).size,
-        Math.max(1, totalUsers),
+        Math.max(1, eventUserCount),
       ),
       lastSeen: Math.max(...rows.map(eventTime)),
     }))
@@ -842,6 +857,7 @@ const buildModel = (events: StoredAppEvent[], profilesById: Map<string, AdminPro
     users,
     profileCount: namedUsers.length,
     totalUsers,
+    eventUserCount,
     totalSessions,
     totalEvents,
     activatedUsers,
