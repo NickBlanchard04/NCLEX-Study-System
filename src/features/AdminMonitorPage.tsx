@@ -110,6 +110,7 @@ interface UserRow {
   label: string
   displayId: string
   displayName: string
+  namedProfile: boolean
   email: string | null
   examTrack: ExamFilter
   source: SourceFilter
@@ -404,6 +405,13 @@ const cleanDisplayId = (value: string) => {
   return compact.length > 10 ? compact.slice(0, 10) : compact
 }
 
+const isPlaceholderProfileName = (value: string) => {
+  const trimmed = value.trim().toLowerCase()
+  if (!trimmed) return true
+  if (/^(learner|anonymous)\s*\d+$/i.test(trimmed)) return true
+  return ['learner', 'anonymous', 'student', 'test', 'demo'].includes(trimmed)
+}
+
 const formatExamTrack = (track: StoredAppEvent['exam_track']): ExamFilter => {
   if (!track) return 'Unknown'
   const normalized = track.toLowerCase()
@@ -585,13 +593,13 @@ const buildJourney = (userGroups: Map<string, StoredAppEvent[]>, returningUsers:
     {
       id: 'traffic',
       label: 'Tracked visit',
-      description: 'Any non-admin app event from the live website.',
+      description: 'Any live account event from the website.',
       users: userGroups.size,
     },
     {
       id: 'landing',
       label: 'Page viewed',
-      description: 'At least one page_view event.',
+      description: 'At least one page_view event from a signed-in account.',
       users: countUsers((event) => event.event_name === 'page_view'),
     },
     {
@@ -633,7 +641,7 @@ const buildJourney = (userGroups: Map<string, StoredAppEvent[]>, returningUsers:
     {
       id: 'return',
       label: 'Returned later',
-      description: 'Same anonymous/user key appeared in more than one session.',
+      description: 'Same account key appeared in more than one session.',
       users: returningUsers.size,
     },
   ]
@@ -657,21 +665,35 @@ const buildJourney = (userGroups: Map<string, StoredAppEvent[]>, returningUsers:
 const buildModel = (events: StoredAppEvent[], profilesById: Map<string, AdminProfileSummary>): DashboardModel => {
   const sortedEvents = [...events].sort((a, b) => eventTime(b) - eventTime(a))
   const userGroups = groupBy(sortedEvents, actorKey)
-  const sessionGroups = groupBy(sortedEvents, (event) => event.session_id)
-  const totalUsers = userGroups.size
-  const totalSessions = sessionGroups.size
+  const signedInEventGroups = Array.from(userGroups.entries()).filter(([, rows]) =>
+    rows.some((event) => event.user_id && !event.is_demo_user),
+  )
+  const signedInEvents = sortedEvents.filter((event) => event.user_id && !event.is_demo_user)
+  const hasSignupCompleted = (rows: StoredAppEvent[]) =>
+    rows.some((event) => event.event_name === 'signup_completed')
+  const hasVerifiedEmail = (rows: StoredAppEvent[]) => {
+    const userId = rows.find((event) => event.user_id)?.user_id
+    if (!userId) return false
+    const profile = profilesById.get(userId)
+    return Boolean(profile?.email_confirmed_at)
+  }
+  const hasVerifiedSignup = (rows: StoredAppEvent[]) => hasSignupCompleted(rows) && hasVerifiedEmail(rows)
+  const activeSignedInEventGroups = signedInEventGroups.filter(([, rows]) => hasVerifiedSignup(rows))
+  const signedInSessionGroups = groupBy(signedInEvents, (event) => event.session_id)
+  const totalUsers = activeSignedInEventGroups.length
+  const totalSessions = signedInSessionGroups.size
   const totalEvents = sortedEvents.length
-  const sessionSeconds = Array.from(sessionGroups.values()).map(sessionSecondsForEvents)
+  const sessionSeconds = Array.from(signedInSessionGroups.values()).map(sessionSecondsForEvents)
   const avgSessionSeconds =
     sessionSeconds.length > 0 ? sessionSeconds.reduce((sum, seconds) => sum + seconds, 0) / sessionSeconds.length : 0
 
   const returningUserKeys = new Set(
-    Array.from(userGroups.entries())
-      .filter(([, rows]) => new Set(rows.map((event) => event.session_id)).size > 1)
+    activeSignedInEventGroups
+      .filter(([, rows]) => new Set(rows.filter((event) => event.user_id).map((event) => event.session_id)).size > 1)
       .map(([key]) => key),
   )
 
-  const users = Array.from(userGroups.entries())
+  const users = activeSignedInEventGroups
     .map<UserRow>(([key, rows], index) => {
       const userEvents = [...rows].sort((a, b) => eventTime(b) - eventTime(a))
       const firstSeen = Math.min(...userEvents.map(eventTime))
@@ -679,8 +701,10 @@ const buildModel = (events: StoredAppEvent[], profilesById: Map<string, AdminPro
       const sessions = new Set(userEvents.map((event) => event.session_id))
       const profile = profilesById.get(key)
       const email = profile?.email?.trim() || null
+      const profileName = profile?.name?.trim() || ''
+      const namedProfile = Boolean((profileName && !isPlaceholderProfileName(profileName)) || email)
       const displayName =
-        profile?.name?.trim() ||
+        (profileName && !isPlaceholderProfileName(profileName) ? profileName : null) ||
         email ||
         `Learner ${index + 1}`
       const activatedSteps = [
@@ -701,6 +725,7 @@ const buildModel = (events: StoredAppEvent[], profilesById: Map<string, AdminPro
         label: displayName,
         displayId: cleanDisplayId(key),
         displayName,
+        namedProfile,
         email,
         examTrack: formatExamTrack(firstTrack),
         source: firstSource,
@@ -718,17 +743,21 @@ const buildModel = (events: StoredAppEvent[], profilesById: Map<string, AdminPro
     })
     .sort((a, b) => b.lastActive - a.lastActive)
 
-  const activatedUsers = users.filter((user) =>
+  const namedUsers = users.filter((user) => user.namedProfile)
+  const activatedUsers = namedUsers.filter((user) =>
     user.timeline.some((event) => activationEvents.has(event.event_name)),
   ).length
 
   const sourceRows = Array.from(groupBy(sortedEvents, (event) => classifySource(event.source)).entries())
     .map<SourceRow>(([source, rows]) => ({
       source: source as SourceFilter,
-      users: new Set(rows.map(actorKey)).size,
+      users: new Set(rows.filter((event) => event.user_id && !event.is_demo_user).map((event) => event.user_id!)).size,
       sessions: new Set(rows.map((event) => event.session_id)).size,
       events: rows.length,
-      percentage: safePercent(new Set(rows.map(actorKey)).size, Math.max(1, totalUsers)),
+      percentage: safePercent(
+        new Set(rows.filter((event) => event.user_id && !event.is_demo_user).map((event) => event.user_id!)).size,
+        Math.max(1, totalUsers),
+      ),
       lastSeen: Math.max(...rows.map(eventTime)),
     }))
     .sort((a, b) => b.users - a.users || b.events - a.events)
@@ -742,7 +771,7 @@ const buildModel = (events: StoredAppEvent[], profilesById: Map<string, AdminPro
     .map<CampaignRow>(([campaign, rows]) => ({
       campaign,
       source: classifySource(rows[0]?.source ?? null),
-      users: new Set(rows.map(actorKey)).size,
+      users: new Set(rows.filter((event) => event.user_id && !event.is_demo_user).map((event) => event.user_id!)).size,
       events: rows.length,
       lastSeen: Math.max(...rows.map(eventTime)),
     }))
@@ -755,7 +784,7 @@ const buildModel = (events: StoredAppEvent[], profilesById: Map<string, AdminPro
         .filter((seconds) => seconds > 0)
       return {
         page,
-        users: new Set(rows.map(actorKey)).size,
+        users: new Set(rows.filter((event) => event.user_id && !event.is_demo_user).map((event) => event.user_id!)).size,
         views: rows.filter((event) => event.event_name === 'page_view').length,
         events: rows.length,
         avgSeconds:
@@ -770,7 +799,7 @@ const buildModel = (events: StoredAppEvent[], profilesById: Map<string, AdminPro
   const featureRows = Array.from(groupBy(sortedEvents, featureFromEvent).entries())
     .map<FeatureRow>(([feature, rows]) => ({
       feature,
-      users: new Set(rows.map(actorKey)).size,
+      users: new Set(rows.filter((event) => event.user_id && !event.is_demo_user).map((event) => event.user_id!)).size,
       events: rows.length,
       starts: rows.filter((event) => event.event_name.includes('started')).length,
       completions: rows.filter((event) => event.event_name.includes('completed')).length,
@@ -803,21 +832,21 @@ const buildModel = (events: StoredAppEvent[], profilesById: Map<string, AdminPro
   return {
     events: sortedEvents,
     users,
-    profileCount: profilesById.size,
+    profileCount: namedUsers.length,
     totalUsers,
     totalSessions,
     totalEvents,
     activatedUsers,
-    activationRate: safePercent(activatedUsers, totalUsers),
+    activationRate: safePercent(activatedUsers, Math.max(1, namedUsers.length)),
     avgSessionSeconds,
-    returningUsers: returningUserKeys.size,
-    returnRate: safePercent(returningUserKeys.size, totalUsers),
+    returningUsers: namedUsers.filter((user) => user.sessions > 1).length,
+    returnRate: safePercent(namedUsers.filter((user) => user.sessions > 1).length, Math.max(1, namedUsers.length)),
     highConfidenceMisses,
     firstEvent,
     lastEvent,
     sourceRows,
     campaignRows,
-    journeySteps: buildJourney(userGroups, returningUserKeys),
+    journeySteps: buildJourney(new Map(activeSignedInEventGroups), returningUserKeys),
     pageRows,
     featureRows,
     categoryRows,
@@ -1117,17 +1146,17 @@ function OverviewPage({
       <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-4">
         <KpiCard
           icon={Users}
-          title="Tracked users"
-          value={model.totalUsers.toString()}
-          detail={`${model.activatedUsers} activated from live events`}
-          tone={model.totalUsers ? 'info' : 'muted'}
+          title="Tracked accounts"
+          value={model.profileCount.toString()}
+        detail={`${model.activatedUsers} verified signups with account confirmation`}
+          tone={model.profileCount ? 'info' : 'muted'}
         />
         <KpiCard
           icon={Gauge}
           title="Activation rate"
           value={`${model.activationRate}%`}
           detail="Activated means study, onboarding, account, or remediation event"
-          tone={model.activationRate >= 40 ? 'good' : model.totalUsers ? 'watch' : 'muted'}
+          tone={model.activationRate >= 40 ? 'good' : model.profileCount ? 'watch' : 'muted'}
         />
         <KpiCard
           icon={Clock3}
@@ -1387,16 +1416,17 @@ function ActivationPage({ model, section }: { model: DashboardModel; section: Ad
 function UsersPage({ model, section }: { model: DashboardModel; section: AdminSection }) {
   const [search, setSearch] = useState('')
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
+  const namedUsers = useMemo(() => model.users.filter((user) => user.namedProfile), [model.users])
   const filteredUsers = useMemo(() => {
     const needle = search.trim().toLowerCase()
-    if (!needle) return model.users
-    return model.users.filter((user) =>
+    if (!needle) return namedUsers
+    return namedUsers.filter((user) =>
       [user.label, user.displayName, user.email ?? '', user.displayId, user.source, user.examTrack, user.status]
         .join(' ')
         .toLowerCase()
         .includes(needle),
     )
-  }, [model.users, search])
+  }, [namedUsers, search])
   const selectedUser = filteredUsers.find((user) => user.id === selectedUserId) ?? filteredUsers[0] ?? null
 
   useEffect(() => {
@@ -1405,7 +1435,7 @@ function UsersPage({ model, section }: { model: DashboardModel; section: AdminSe
 
   return (
     <div className="grid gap-5 xl:grid-cols-[1fr_1.05fr]">
-      <Panel title="Learners" subtitle={`${model.profileCount} named profiles linked from the live app.`} icon={Users} section={section}>
+      <Panel title="Learners" subtitle={`${namedUsers.length} real accounts linked from the live app.`} icon={Users} section={section}>
         <label className="mb-4 flex items-center gap-3 rounded-2xl border border-white/10 bg-[#020d1b] px-4 py-3">
           <Search className="h-4 w-4 text-slate-500" />
           <input
@@ -1416,9 +1446,9 @@ function UsersPage({ model, section }: { model: DashboardModel; section: AdminSe
           />
         </label>
 
-        {filteredUsers.length ? (
+        {filteredUsers.filter((user) => user.namedProfile).length ? (
           <div className="space-y-3">
-            {filteredUsers.map((user) => (
+            {filteredUsers.filter((user) => user.namedProfile).map((user) => (
               <button
                 key={user.id}
                 type="button"
@@ -1465,12 +1495,12 @@ function UsersPage({ model, section }: { model: DashboardModel; section: AdminSe
             ))}
           </div>
         ) : (
-          <EmptyState title="No users yet" body="No live user/session events match this filter." />
+          <EmptyState title="No named users yet" body="Only accounts with a registered name or email are shown here." />
         )}
       </Panel>
 
       <Panel title={selectedUser ? `${selectedUser.displayName} Timeline` : 'User Timeline'} subtitle="Behavior only. Private content is excluded." icon={Eye} section={section}>
-        {selectedUser ? (
+        {selectedUser && selectedUser.namedProfile ? (
           <div>
             <div className="mb-4 grid gap-3 sm:grid-cols-5">
               <MiniStat label="Events" value={selectedUser.events.toString()} />
@@ -1506,7 +1536,7 @@ function UsersPage({ model, section }: { model: DashboardModel; section: AdminSe
             </div>
           </div>
         ) : (
-          <EmptyState title="No selected user" body="Once live users exist, click one to inspect their behavior timeline." />
+          <EmptyState title="No selected account" body="Once a named account exists, click one to inspect its behavior timeline." />
         )}
       </Panel>
     </div>
@@ -1565,7 +1595,7 @@ function FeatureUsagePage({ model, section }: { model: DashboardModel; section: 
 }
 
 function RetentionPage({ model, section }: { model: DashboardModel; section: AdminSection }) {
-  const returning = model.users.filter((user) => user.sessions > 1)
+  const returning = model.users.filter((user) => user.namedProfile && user.sessions > 1)
 
   return (
     <div className="space-y-5">
@@ -1574,15 +1604,15 @@ function RetentionPage({ model, section }: { model: DashboardModel; section: Adm
           icon={TimerReset}
           title="Returning users"
           value={model.returningUsers.toString()}
-          detail="Same user or anonymous ID with more than one session"
+          detail="Same named account with more than one session"
           tone={model.returningUsers ? 'good' : 'muted'}
         />
         <KpiCard
           icon={Gauge}
           title="Return rate"
           value={`${model.returnRate}%`}
-          detail="Returning users divided by tracked users"
-          tone={model.returnRate >= 25 ? 'good' : model.totalUsers ? 'watch' : 'muted'}
+          detail="Returning named accounts divided by tracked accounts"
+          tone={model.returnRate >= 25 ? 'good' : model.profileCount ? 'watch' : 'muted'}
         />
         <KpiCard
           icon={Clock3}
@@ -1607,7 +1637,7 @@ function RetentionPage({ model, section }: { model: DashboardModel; section: Adm
             ])}
           />
         ) : (
-          <EmptyState title="No returning users yet" body="This is expected early. Once a live visitor returns in a new session, they will show up here." />
+          <EmptyState title="No returning users yet" body="This is expected early. Once a named account returns in a new session, it will show up here." />
         )}
       </Panel>
     </div>
@@ -1724,7 +1754,7 @@ function SecurityPage({
       <Panel title="Privacy Guardrails" subtitle="Behavior analytics without private study content." icon={ShieldCheck} section={section}>
         <div className="grid gap-3">
           {[
-            ['Allowed', 'Page path, source, campaign, feature, exam track, quiz outcome, confidence, timestamps, anonymous IDs.'],
+            ['Allowed', 'Page path, source, campaign, feature, exam track, quiz outcome, confidence, timestamps, signed-in account IDs.'],
             ['Blocked', 'Emails, names, passwords, tokens, note body, upload text, filenames, patient/PHI-looking fields.'],
             ['User timeline', 'Shows exact app behavior and sequence, but not private notes or uploaded document text.'],
             ['Next security step', 'Move temporary pass key to owner-only auth once beta traffic grows.'],

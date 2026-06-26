@@ -29,6 +29,7 @@ export interface AdminProfileSummary {
   exam_track: string | null
   nursing_school: string | null
   profile_state: string | null
+  email_confirmed_at: string | null
   updated_at: string
 }
 
