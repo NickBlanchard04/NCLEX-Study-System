@@ -158,6 +158,9 @@ interface DashboardModel {
   questionAnswered: number
   correctAnswers: number
   incorrectAnswers: number
+  cohortMode: 'verified_signup' | 'signup_fallback'
+  signupCandidates: number
+  verifiedCandidates: number
 }
 
 const dateRanges: RangeFilter[] = ['Today', '7 days', '30 days', '90 days']
@@ -677,8 +680,13 @@ const buildModel = (events: StoredAppEvent[], profilesById: Map<string, AdminPro
     const profile = profilesById.get(userId)
     return Boolean(profile?.email_confirmed_at)
   }
-  const hasVerifiedSignup = (rows: StoredAppEvent[]) => hasSignupCompleted(rows) && hasVerifiedEmail(rows)
-  const activeSignedInEventGroups = signedInEventGroups.filter(([, rows]) => hasVerifiedSignup(rows))
+  const signupCompletedGroups = signedInEventGroups.filter(([, rows]) => hasSignupCompleted(rows))
+  const verifiedSignupGroups = signupCompletedGroups.filter(([, rows]) => hasVerifiedEmail(rows))
+  const activeSignedInEventGroups =
+    verifiedSignupGroups.length > 0 ? verifiedSignupGroups : signupCompletedGroups
+  const cohortMode = verifiedSignupGroups.length > 0 ? 'verified_signup' : 'signup_fallback'
+  const signupCandidates = signupCompletedGroups.length
+  const verifiedCandidates = verifiedSignupGroups.length
   const signedInSessionGroups = groupBy(signedInEvents, (event) => event.session_id)
   const totalUsers = activeSignedInEventGroups.length
   const totalSessions = signedInSessionGroups.size
@@ -853,6 +861,9 @@ const buildModel = (events: StoredAppEvent[], profilesById: Map<string, AdminPro
     questionAnswered: questionEvents.length,
     correctAnswers: questionEvents.filter((event) => event.question_result === 'correct').length,
     incorrectAnswers: questionEvents.filter((event) => event.question_result === 'incorrect').length,
+    cohortMode,
+    signupCandidates,
+    verifiedCandidates,
   }
 }
 
@@ -1141,6 +1152,10 @@ function OverviewPage({
   section: AdminSection
   dataAccess: AdminDataAccessStatus | null
 }) {
+  const accountKpiDetail =
+    model.cohortMode === 'verified_signup'
+      ? `${model.activatedUsers} verified signups with account confirmation`
+      : `${model.activatedUsers} signups with completed signup (email confirmation unavailable, temporary fallback active)`
   return (
     <div className="space-y-5">
       <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-4">
@@ -1148,7 +1163,7 @@ function OverviewPage({
           icon={Users}
           title="Tracked accounts"
           value={model.profileCount.toString()}
-        detail={`${model.activatedUsers} verified signups with account confirmation`}
+          detail={accountKpiDetail}
           tone={model.profileCount ? 'info' : 'muted'}
         />
         <KpiCard
@@ -1173,6 +1188,15 @@ function OverviewPage({
           tone={model.highConfidenceMisses ? 'critical' : model.questionAnswered ? 'good' : 'muted'}
         />
       </div>
+      {model.cohortMode === 'signup_fallback' ? (
+        <div className="rounded-2xl border border-amber-300/30 bg-amber-300/12 p-4">
+          <p className="text-sm font-black text-white">User visibility fallback is active</p>
+          <p className="mt-1 text-xs font-bold leading-5 text-amber-100/80">
+            We did not find any completed-signup users with email_confirmed_at populated, so the panel is using signup-completed
+            users only. This prevents the panel from going blank while we re-verify confirmation settings.
+          </p>
+        </div>
+      ) : null}
 
       <div className="grid gap-5 xl:grid-cols-[0.9fr_1.4fr_0.8fr]">
         <Panel title="Acquisition Reality" subtitle="Actual source values from app_events." icon={MousePointer2} section={section}>
