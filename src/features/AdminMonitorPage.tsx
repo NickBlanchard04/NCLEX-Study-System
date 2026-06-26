@@ -1192,8 +1192,9 @@ function OverviewPage({
         <div className="rounded-2xl border border-amber-300/30 bg-amber-300/12 p-4">
           <p className="text-sm font-black text-white">User visibility fallback is active</p>
           <p className="mt-1 text-xs font-bold leading-5 text-amber-100/80">
-            We did not find any completed-signup users with email_confirmed_at populated, so the panel is using signup-completed
-            users only. This prevents the panel from going blank while we re-verify confirmation settings.
+            We did not find any completed-signup users with email_confirmed_at populated, so the panel is using signup-completed users only.
+            This prevents the panel from going blank: {model.signupCandidates} signup candidates found, {model.verifiedCandidates} currently verified.
+            This temporarily relaxes gating while we verify your confirmation settings.
           </p>
         </div>
       ) : null}
