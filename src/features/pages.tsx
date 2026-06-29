@@ -104,7 +104,6 @@ import {
   Surface,
 } from './ui'
 import {
-  CommandMetricCard,
   CommandProgress,
   MaterialUploadAsset,
   NurseCommandBackdrop,
@@ -1849,8 +1848,8 @@ export function ExamPrepPage() {
     <div className="space-y-6">
       <PageHeader
         eyebrow="Exam Prep"
-        title="Support multiple nursing and clinical certification tracks."
-        description="The app now separates NCLEX-RN, NCLEX-PN, FNP, and Certified Clinical Medical Assistant prep so each exam can have its own blueprint, question formats, reports, and resources."
+        title="Choose your exam lane."
+        description="Pick the credential you are preparing for, then start a high-yield review or practice block without digging through a long document page."
         action={
           <button
             type="button"
@@ -1863,16 +1862,16 @@ export function ExamPrepPage() {
         }
       />
 
-      <Surface>
+      <Surface className="border-cyan-200/18 bg-[#061426]">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-blue)]">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-100/68">
               Current Track
             </p>
-            <h3 className="mt-2 nc-section-title text-3xl text-[var(--nclex-text)]">
+            <h3 className="mt-2 nc-section-title text-3xl text-white">
               {activeTrack.title}
             </h3>
-            <p className="mt-2 max-w-3xl text-sm leading-7 text-[var(--nclex-text-muted)]">
+            <p className="mt-2 max-w-3xl text-sm leading-7 text-sky-100/64">
               {activeTrack.subtitle}
             </p>
           </div>
@@ -1883,10 +1882,10 @@ export function ExamPrepPage() {
       </Surface>
 
       <div className="grid gap-6 xl:grid-cols-[0.82fr_1.18fr]">
-        <Surface>
+        <Surface className="border-cyan-200/18 bg-cyan-300/[0.045]">
           <SectionHeading
             title="Choose exam"
-            description="Pick the prep product the student is studying for."
+            description="Cyan is navigation: choose the prep path before building a session."
           />
           <div className="mt-5 grid gap-3">
             {examTracks.map((track) => (
@@ -1898,16 +1897,16 @@ export function ExamPrepPage() {
                   setCreatedTest(false)
                 }}
                 className={clsx(
-                  'rounded-[18px] border p-4 text-left transition',
+                  'rounded-[18px] border p-4 text-left transition hover:-translate-y-0.5',
                   selectedTrack.id === track.id
-                    ? 'border-[#bfdbfe] bg-[var(--nclex-blue-soft)]'
-                    : 'border-[var(--nclex-border)] bg-white hover:border-[#c9dbef]',
+                    ? 'border-amber-200/50 bg-amber-300/[0.09] shadow-[0_0_24px_rgba(251,191,36,0.12)]'
+                    : 'border-cyan-200/18 bg-white/[0.045] hover:border-cyan-100/38 hover:bg-cyan-300/[0.07]',
                 )}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="font-semibold text-[var(--nclex-text)]">{track.shortName}</p>
-                    <p className="mt-1 text-sm leading-6 text-[var(--nclex-text-muted)]">
+                    <p className="font-semibold text-white">{track.shortName}</p>
+                    <p className="mt-1 text-sm leading-6 text-sky-100/64">
                       {track.title}
                     </p>
                   </div>
@@ -1920,7 +1919,7 @@ export function ExamPrepPage() {
           </div>
         </Surface>
 
-        <Surface className="overflow-hidden p-0">
+        <Surface className="overflow-hidden border-violet-200/18 bg-[#061426] p-0">
           <div className="bg-[linear-gradient(135deg,#003b66_0%,#12375a_100%)] px-5 py-6 text-white md:px-6">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-100">
               {selectedTrack.shortName} Product Blueprint
@@ -1939,8 +1938,8 @@ export function ExamPrepPage() {
           </div>
 
           <div className="grid gap-5 p-5 md:grid-cols-2 md:p-6">
-            <div className="rounded-[18px] border border-[var(--nclex-border)] bg-[var(--nclex-card-muted)] p-4 md:col-span-2">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-blue)]">
+            <div className="rounded-[18px] border border-violet-200/18 bg-white/[0.045] p-4 md:col-span-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-100/70">
                 Content quality pass
               </p>
               <div className="mt-4 grid gap-3 md:grid-cols-4">
@@ -1949,7 +1948,7 @@ export function ExamPrepPage() {
                 <MetricChip label="SME reviewed" value={`${qualitySummary.smeReviewed}`} />
                 <MetricChip label="Starter fill" value={`${qualitySummary.generatedStarter}`} />
               </div>
-              <p className="mt-4 text-sm leading-6 text-[var(--nclex-text-muted)]">
+              <p className="mt-4 text-sm leading-6 text-sky-100/64">
                 Review-ready items are higher-quality clinical-editor drafts prepared for SME validation. The app does not label content as SME-authored until a real reviewer marks it reviewed.
               </p>
             </div>
@@ -1963,10 +1962,10 @@ export function ExamPrepPage() {
 
       {isFnp ? (
         <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-          <Surface>
+          <Surface className="border-amber-200/20 bg-amber-300/[0.055]">
             <SectionHeading
               title="FNP product: Create test"
-              description="Mirrors the workflow you requested: FNP product > Create test > Select unused > Select cardiology > Create test."
+              description="Gold is the next action: build the test block, then move into practice."
             />
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <Field label="Board blueprint">
@@ -2018,43 +2017,43 @@ export function ExamPrepPage() {
               <ArrowRight className="h-4 w-4" />
             </button>
             {createdTest ? (
-              <div className="mt-5 rounded-[18px] border border-[#c8eddc] bg-[var(--nclex-success-soft)] p-4 text-sm leading-6 text-[var(--nclex-success)]">
+              <div className="mt-5 rounded-[18px] border border-emerald-200/24 bg-emerald-300/[0.08] p-4 text-sm leading-6 text-emerald-100">
                 Created a {testMode} {fnpBoard} FNP practice test using {questionStatus} questions in {fnpSystem}. In the next content pass, this connects to the FNP QBank and question status history.
               </div>
             ) : null}
           </Surface>
 
-          <Surface>
+          <Surface className="border-violet-200/18 bg-violet-300/[0.045]">
             <SectionHeading
               title="FNP feature coverage"
-              description="Product requirements mapped into the current app layout."
+              description="Violet is strategy and mastery: what this exam lane needs to support."
             />
             <div className="mt-5 grid gap-3 md:grid-cols-2">
               {fnpCoverage.map((item) => (
-                <div key={item} className="rounded-[16px] border border-[var(--nclex-border)] bg-[var(--nclex-card-muted)] p-4">
+                <div key={item} className="rounded-[16px] border border-violet-200/16 bg-white/[0.045] p-4">
                   <div className="flex items-start gap-3">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[var(--nclex-success)]" />
-                    <p className="text-sm font-semibold leading-6 text-[var(--nclex-text-secondary)]">{item}</p>
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-200" />
+                    <p className="text-sm font-semibold leading-6 text-sky-100/74">{item}</p>
                   </div>
                 </div>
               ))}
             </div>
           </Surface>
 
-          <Surface className="xl:col-span-2">
+          <Surface className="border-violet-200/18 bg-[#061426] xl:col-span-2">
             <SectionHeading
               title="FNP diagnostic report preview"
               description="Breaks results down by AANP/ANCC blueprint, domain, body system, mode, and question status."
             />
             <div className="mt-5 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
               {reportRows.map((row) => (
-                <div key={row.label} className="rounded-[18px] border border-[var(--nclex-border)] bg-white p-4">
-                  <p className="font-semibold text-[var(--nclex-text)]">{row.label}</p>
-                  <p className="mt-2 text-sm leading-6 text-[var(--nclex-text-muted)]">{row.detail}</p>
+                <div key={row.label} className="rounded-[18px] border border-violet-200/16 bg-white/[0.045] p-4">
+                  <p className="font-semibold text-white">{row.label}</p>
+                  <p className="mt-2 text-sm leading-6 text-sky-100/64">{row.detail}</p>
                   <div className="mt-4">
                     <ProgressBar value={row.value} tone={row.tone} />
                   </div>
-                  <p className="mt-2 text-sm font-semibold text-[var(--nclex-text)]">
+                  <p className="mt-2 text-sm font-semibold text-sky-100">
                     {Math.round(row.value * 100)}%
                   </p>
                 </div>
@@ -2228,43 +2227,134 @@ export function TestModePage() {
     )
   }
 
+  const examMode = timed ? (noBacktracking ? 'Timed' : 'Readiness') : 'Tutor'
+  const modeOptions = [
+    {
+      label: 'Timed',
+      detail: 'Pressure practice',
+      active: examMode === 'Timed',
+      onSelect: () => {
+        setTimed(true)
+        setNoBacktracking(true)
+      },
+    },
+    {
+      label: 'Tutor',
+      detail: 'Learn as you go',
+      active: examMode === 'Tutor',
+      onSelect: () => {
+        setTimed(false)
+        setNoBacktracking(false)
+      },
+    },
+    {
+      label: 'Readiness',
+      detail: 'Balanced check',
+      active: examMode === 'Readiness',
+      onSelect: () => {
+        setTimed(true)
+        setNoBacktracking(false)
+      },
+    },
+  ]
+
   return (
-    <div className="space-y-6">
+    <PageStack>
       <PageHeader
         eyebrow="Exam Simulation"
-        title={`Practice ${activeTrack.shortName} pressure before test day.`}
-        description={`This exam mode pulls from the ${activeTrack.shortName} bank and uses that track's domains, systems, and blueprint emphasis.`}
-      />
-      <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-        <Surface>
-          <h3 className="nc-section-title text-3xl text-[#163042]">Build a realistic test</h3>
-          <div className="mt-6 grid gap-5">
-            <Field label="Question count">
-              <input type="range" min={20} max={60} step={5} value={questionCount} onChange={(event) => setQuestionCount(Number(event.target.value))} className="w-full accent-sky-600" />
-              <p className="mt-2 text-sm text-[#7e97aa]">{questionCount} mixed questions</p>
-            </Field>
-            <ToggleRow label="Timed mode" description="Uses a realistic countdown and keeps the interface lean." checked={timed} onChange={setTimed} />
-            <ToggleRow label="No backtracking" description="Once you move forward, you stay forward." checked={noBacktracking} onChange={setNoBacktracking} />
-          </div>
+        title="Start a serious exam block."
+        description={`A calmer ${activeTrack.shortName} test surface: choose the mode, set the count, then review misses without extra noise.`}
+        action={
           <button
             type="button"
             onClick={() => startTransition(() => startTestSession({ questionCount, timed, noBacktracking }))}
-            className="nclex-btn-primary mt-6 inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold"
+            className="inline-flex min-h-[48px] items-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
           >
-            {isPending ? 'Building exam...' : 'Launch test mode'}
+            {isPending ? 'Building exam...' : 'Start exam'}
             <ArrowRight className="h-4 w-4" />
           </button>
-        </Surface>
-        <Surface className="nclex-dark-panel text-white">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-200">End-of-test review</p>
+        }
+      />
+
+      <FocusPanel className="border-amber-200/34 bg-[linear-gradient(135deg,rgba(251,191,36,0.15),rgba(6,28,49,0.92)_42%,rgba(2,8,18,0.94))] text-white shadow-[0_0_38px_rgba(251,191,36,0.12)]">
+        <div className="grid gap-5 p-5 md:p-6 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-end">
+          <div>
+            <div className="flex flex-wrap gap-2">
+              <CommandBadge tone="amber" icon={<Clock3 className="h-3.5 w-3.5" />}>Current mode</CommandBadge>
+              <CommandBadge tone="cyan" icon={<BadgeCheck className="h-3.5 w-3.5" />}>{activeTrack.shortName}</CommandBadge>
+            </div>
+            <h3 className="mt-4 max-w-3xl text-3xl font-bold tracking-normal text-white md:text-5xl">
+              {examMode} exam block
+            </h3>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-sky-100/72">
+              {questionCount} mixed questions with a clean result screen after you finish. Advanced settings stay below so starting the test is the obvious action.
+            </p>
+            <div className="mt-6 grid gap-2 sm:grid-cols-3">
+              {modeOptions.map((mode) => (
+                <button
+                  key={mode.label}
+                  type="button"
+                  onClick={mode.onSelect}
+                  className={clsx(
+                    'min-h-[58px] rounded-2xl border px-4 py-3 text-left transition focus:outline-none focus:ring-4',
+                    mode.active
+                      ? 'border-amber-100/55 bg-amber-300/18 text-white shadow-[0_0_26px_rgba(251,191,36,0.16)] focus:ring-amber-300/20'
+                      : 'border-cyan-200/18 bg-white/[0.045] text-sky-100/74 hover:border-cyan-100/42 hover:bg-cyan-300/[0.08] focus:ring-cyan-300/18',
+                  )}
+                >
+                  <span className="block text-sm font-bold">{mode.label}</span>
+                  <span className="mt-1 block text-xs font-semibold text-sky-100/58">{mode.detail}</span>
+                </button>
+              ))}
+            </div>
+            <div className="mt-6">
+              <Field label="Question count">
+                <input
+                  type="range"
+                  min={20}
+                  max={60}
+                  step={5}
+                  value={questionCount}
+                  onChange={(event) => setQuestionCount(Number(event.target.value))}
+                  className="w-full accent-amber-300"
+                />
+                <p className="mt-2 text-sm font-semibold text-sky-100/70">{questionCount} mixed questions</p>
+              </Field>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-3 xl:grid-cols-1">
+            <CommandStatTile label="Count" value={`${questionCount}`} detail="questions" tone="amber" icon={<ClipboardList className="h-4 w-4" />} />
+            <CommandStatTile label="Mode" value={examMode} detail="exam setup" tone="cyan" icon={<Clock3 className="h-4 w-4" />} />
+            <CommandStatTile label="Review" value="After" detail="miss queue" tone="violet" icon={<BarChart3 className="h-4 w-4" />} />
+          </div>
+        </div>
+      </FocusPanel>
+
+      <DetailGrid>
+        <Surface className="border-violet-200/22 bg-violet-300/[0.055]">
+          <SectionHeading
+            title="Results preview"
+            description="One verdict first, then category signal and review queue."
+          />
           <div className="mt-5 space-y-4">
             <ReviewRow icon={<CheckCircle2 className="h-4 w-4" />} title="Score + category breakdown" detail="See what held up under mixed exam pressure and where accuracy dropped." />
             <ReviewRow icon={<TrendingDown className="h-4 w-4" />} title="Missed questions review" detail="Review weak clinical decisions while the reasoning is still active in memory." />
-            <ReviewRow icon={<Sparkles className="h-4 w-4" />} title="Encouraging summary" detail="Close each test with clear next steps instead of a vague score report." />
+            <ReviewRow icon={<Sparkles className="h-4 w-4" />} title="Next prep move" detail="Close each test with a concrete follow-up instead of a vague score report." />
           </div>
         </Surface>
-      </div>
-    </div>
+
+        <Surface>
+          <SectionHeading
+            title="Advanced settings"
+            description="Useful controls, parked below the start action."
+          />
+          <div className="mt-5 grid gap-4">
+            <ToggleRow label="Timed mode" description="Uses a realistic countdown and keeps the interface lean." checked={timed} onChange={setTimed} />
+            <ToggleRow label="No backtracking" description="Once you move forward, you stay forward." checked={noBacktracking} onChange={setNoBacktracking} />
+          </div>
+        </Surface>
+      </DetailGrid>
+    </PageStack>
   )
 }
 
@@ -3322,17 +3412,17 @@ export function MyMaterialsPage() {
   return (
     <div className="space-y-6">
       <CommandPageIntro
-        title="Turn materials into reviewed study tools."
-        description="Upload PDFs, DOCX files, links, or text notes. Nurse Command extracts the content, proposes flashcards and quiz items, then keeps them in review until you approve them."
+        title="Your Study Library"
+        description="Add class material, review what Nurse Command creates, then study only the tools you approve."
         badges={
           <>
+            <CommandBadge tone="violet" icon={<FolderOpen className="h-3.5 w-3.5" />}>
+              Library
+            </CommandBadge>
+            <CommandBadge tone="amber" icon={<ShieldCheck className="h-3.5 w-3.5" />}>
+              Review gate
+            </CommandBadge>
             <CommandBadge tone="cyan" icon={<UploadCloud className="h-3.5 w-3.5" />}>
-              Uploads
-            </CommandBadge>
-            <CommandBadge tone="emerald" icon={<ShieldCheck className="h-3.5 w-3.5" />}>
-              Review before save
-            </CommandBadge>
-            <CommandBadge tone="amber" icon={<FolderOpen className="h-3.5 w-3.5" />}>
               {materials.length} files
             </CommandBadge>
           </>
@@ -3348,20 +3438,20 @@ export function MyMaterialsPage() {
           </button>
         }
         aside={
-          <div className="h-full rounded-[1rem] border border-amber-200/24 bg-amber-300/[0.07] p-4">
-            <p className="text-xs font-bold uppercase text-sky-100/64">Review gate</p>
-            <p className="mt-2 text-3xl font-bold text-white">{pendingReviewCount}</p>
-            <p className="text-sm font-semibold text-sky-100/70">materials waiting</p>
+          <div className="h-full rounded-[1rem] border border-violet-200/24 bg-violet-300/[0.08] p-4">
+            <p className="text-xs font-bold uppercase text-violet-100/72">Study tools</p>
+            <p className="mt-2 text-3xl font-bold text-white">{totalGeneratedCards + materialQuestions.length}</p>
+            <p className="text-sm font-semibold text-sky-100/70">approved cards + quiz items</p>
             <p className="mt-4 text-sm leading-6 text-sky-100/62">
-              Nothing enters the deck until generated tools are checked and approved.
+              Gold marks anything that needs review before it enters your study flow.
             </p>
           </div>
         }
         stats={
           <>
-            <CommandStatTile label="Library" value={`${materials.length}`} detail="Study files" icon={<FolderOpen className="h-4 w-4" />} tone="cyan" />
-            <CommandStatTile label="Ready" value={`${readyCount}`} detail="Parsed cleanly" icon={<CheckCircle2 className="h-4 w-4" />} tone="emerald" />
-            <CommandStatTile label="Approved" value={`${totalGeneratedCards}`} detail="Cards saved to decks" icon={<SquareStack className="h-4 w-4" />} tone="amber" />
+            <CommandStatTile label="Materials" value={`${materials.length}`} detail="uploaded sources" icon={<FolderOpen className="h-4 w-4" />} tone="violet" />
+            <CommandStatTile label="Needs review" value={`${pendingReviewCount}`} detail="approve first" icon={<ShieldCheck className="h-4 w-4" />} tone="amber" />
+            <CommandStatTile label="Ready" value={`${readyCount}`} detail="clean sources" icon={<CheckCircle2 className="h-4 w-4" />} tone="emerald" />
           </>
         }
       />
@@ -3444,25 +3534,25 @@ export function MyMaterialsPage() {
                 {uploadMessage}
               </div>
             ) : null}
-            <div className="mt-5 grid gap-3 md:grid-cols-3">
-                <CommandMetricCard label="Library" value={`${materials.length}`} detail="Study files" icon={<FolderOpen className="h-4 w-4" />} />
-                <CommandMetricCard label="Ready" value={`${readyCount}`} detail="Parsed cleanly" icon={<CheckCircle2 className="h-4 w-4" />} tone="green" />
-                <CommandMetricCard label="Approved cards" value={`${totalGeneratedCards}`} detail="Saved to decks" icon={<SquareStack className="h-4 w-4" />} tone="amber" />
+            <div className="mt-5 rounded-2xl border border-violet-200/20 bg-violet-300/[0.06] p-4">
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-violet-100/70">User-added material total</p>
+                <p className="mt-2 text-3xl font-bold text-white">{materials.length}</p>
+                <p className="text-sm font-semibold text-sky-100/66">uploaded files and links in your library</p>
             </div>
             </div>
           </NurseCommandBackdrop>
 
-          <Surface>
+          <Surface className="border-violet-200/18 bg-violet-300/[0.045]">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h3 className="nc-section-title text-2xl text-[var(--nclex-text)]">Materials library</h3>
-                <p className="mt-1 text-sm text-[var(--nclex-text-muted)]">
+                <h3 className="nc-section-title text-2xl text-white">Materials library</h3>
+                <p className="mt-1 text-sm text-sky-100/64">
                   {errorCount
                     ? `${errorCount} item${errorCount === 1 ? '' : 's'} need attention.`
-                    : 'Every upload stays separate from your core NCLEX bank.'}
+                    : 'Every upload stays separate until you approve the study tools.'}
                 </p>
               </div>
-              <span className="nclex-chip nclex-chip-info">{materials.length} files</span>
+              <CommandBadge tone="violet" icon={<FolderOpen className="h-3.5 w-3.5" />}>{materials.length} files</CommandBadge>
             </div>
 
             <div className="mt-5 space-y-3">
@@ -3491,10 +3581,10 @@ export function MyMaterialsPage() {
                         setStudyGuideOpen(false)
                       }}
                       className={clsx(
-                        'w-full rounded-[18px] border p-4 text-left transition',
+                        'w-full rounded-[18px] border p-4 text-left transition hover:-translate-y-0.5',
                         selectedMaterial?.id === material.id
-                          ? 'border-[#c9dbef] bg-[var(--nclex-blue-soft)]'
-                          : 'border-[var(--nclex-border)] bg-white hover:border-[#c9dbef]',
+                          ? 'border-amber-200/50 bg-amber-300/[0.09] shadow-[0_0_24px_rgba(251,191,36,0.12)]'
+                          : 'border-violet-200/18 bg-white/[0.045] hover:border-violet-100/38 hover:bg-violet-300/[0.07]',
                       )}
                     >
                       <div className="flex items-start justify-between gap-4">
@@ -3509,23 +3599,23 @@ export function MyMaterialsPage() {
                                   : 'Ready'}
                             </span>
                           </div>
-                          <p className="mt-3 truncate text-base font-semibold text-[var(--nclex-text)]">
+                          <p className="mt-3 truncate text-base font-semibold text-white">
                             {material.displayTitle}
                           </p>
-                          <p className="mt-1 text-sm text-[var(--nclex-text-muted)]">
+                          <p className="mt-1 text-sm text-sky-100/58">
                             Imported {formatImportDate(material.importedAt)}
                           </p>
-                          <span className="mt-3 inline-flex min-h-8 items-center rounded-lg border border-[#bfdbfe] bg-white px-3 py-1 text-xs font-semibold text-[var(--nclex-blue)]">
+                          <span className="mt-3 inline-flex min-h-8 items-center rounded-lg border border-violet-200/24 bg-violet-300/[0.08] px-3 py-1 text-xs font-semibold text-violet-100">
                             {materialActionLabel}
                           </span>
                         </div>
                         <div className="shrink-0 text-right">
-                          <p className="text-sm font-semibold text-[var(--nclex-text)]">
+                          <p className="text-sm font-semibold text-white">
                             {material.reviewStatus === 'pending-review'
                               ? `${materialPendingTotal} pending`
                               : `${material.generatedFlashcardIds.length} cards`}
                           </p>
-                          <p className="mt-1 text-xs text-[var(--nclex-text-muted)]">
+                          <p className="mt-1 text-xs text-sky-100/54">
                             {material.reviewStatus === 'pending-review'
                               ? 'Approve first'
                               : `${material.generatedQuestionIds.length} quiz items`}
@@ -3545,7 +3635,7 @@ export function MyMaterialsPage() {
           </Surface>
         </div>
 
-        <Surface>
+        <Surface className="border-violet-200/18 bg-[#061426]">
           {selectedMaterial ? (
             <div className="space-y-6">
               <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -3560,10 +3650,10 @@ export function MyMaterialsPage() {
                           : 'Study tools ready'}
                     </span>
                   </div>
-                  <h3 className="mt-3 nc-section-title text-3xl text-[var(--nclex-text)]">
+                  <h3 className="mt-3 nc-section-title text-3xl text-white">
                     {selectedMaterial.displayTitle}
                   </h3>
-                  <p className="mt-2 text-sm leading-7 text-[var(--nclex-text-muted)]">
+                  <p className="mt-2 text-sm leading-7 text-sky-100/64">
                     {selectedMaterial.error
                       ? selectedMaterial.error
                       : `${selectedMaterial.textLength.toLocaleString()} characters extracted locally from ${selectedMaterial.filename}.`}
@@ -3682,8 +3772,8 @@ export function MyMaterialsPage() {
               ) : null}
 
               <div className="grid gap-4 md:grid-cols-[0.9fr_1.1fr]">
-                <Surface className="nclex-surface-muted p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]">
+                <Surface className="border-cyan-200/14 bg-white/[0.035] p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-sky-100/58">
                     Material settings
                   </p>
                   <div className="mt-4 grid gap-4">
@@ -3706,7 +3796,7 @@ export function MyMaterialsPage() {
                       </select>
                     </Field>
                     <div>
-                      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]">
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-sky-100/58">
                         Tags
                       </p>
                       <div className="flex flex-wrap gap-2">
@@ -3717,7 +3807,7 @@ export function MyMaterialsPage() {
                             </span>
                           ))
                         ) : (
-                          <span className="text-sm text-[var(--nclex-text-muted)]">
+                          <span className="text-sm text-sky-100/56">
                             No inferred tags yet.
                           </span>
                         )}
@@ -3726,11 +3816,11 @@ export function MyMaterialsPage() {
                   </div>
                 </Surface>
 
-                <Surface className="nclex-surface-muted p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]">
+                <Surface className="border-cyan-200/14 bg-white/[0.035] p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-sky-100/58">
                     Manage material
                   </p>
-                  <p className="mt-2 text-sm leading-6 text-[var(--nclex-text-muted)]">
+                  <p className="mt-2 text-sm leading-6 text-sky-100/60">
                     Keep study actions in the workspace above. Use these when you want to move, rebuild, or remove the source.
                   </p>
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -3746,7 +3836,7 @@ export function MyMaterialsPage() {
                       type="button"
                       disabled={selectedMaterial.extractionStatus !== 'ready'}
                       onClick={() => void regenerateMaterialStudyTools(selectedMaterial.id)}
-                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[var(--nclex-border)] bg-white px-4 py-3 text-sm font-semibold text-[var(--nclex-text-secondary)] disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-cyan-200/20 bg-cyan-300/[0.07] px-4 py-3 text-sm font-semibold text-cyan-100 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <RefreshCw className="h-4 w-4" />
                       Regenerate
@@ -5636,7 +5726,7 @@ function createProfileImageDataUrl(file: File) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]">{label}</p>
+      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-sky-100/62">{label}</p>
       {children}
     </label>
   )
@@ -5654,16 +5744,16 @@ function ToggleRow({
   onChange: (checked: boolean) => void
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 rounded-[18px] border border-[var(--nclex-border)] bg-[var(--nclex-card-muted)] p-4">
+    <div className="flex items-start justify-between gap-4 rounded-[18px] border border-cyan-200/16 bg-white/[0.045] p-4">
       <div>
-        <p className="font-semibold text-[var(--nclex-text)]">{label}</p>
-        <p className="mt-1 text-sm leading-6 text-[var(--nclex-text-muted)]">{description}</p>
+        <p className="font-semibold text-white">{label}</p>
+        <p className="mt-1 text-sm leading-6 text-sky-100/64">{description}</p>
       </div>
       <button
         type="button"
         aria-pressed={checked}
         onClick={() => onChange(!checked)}
-        className={clsx('relative inline-flex h-7 w-12 rounded-full transition', checked ? 'bg-[var(--nclex-blue)]' : 'bg-slate-300')}
+        className={clsx('relative inline-flex h-7 w-12 rounded-full transition', checked ? 'bg-cyan-400' : 'bg-slate-600')}
       >
         <span className={clsx('absolute top-1 h-5 w-5 rounded-full bg-white transition', checked ? 'left-6' : 'left-1')} />
       </button>
@@ -5682,11 +5772,11 @@ function FeatureCallout({ title, description }: { title: string; description: st
 
 function ExamTrackList({ title, items }: { title: string; items: string[] }) {
   return (
-    <div className="rounded-[18px] border border-[var(--nclex-border)] bg-[var(--nclex-card-muted)] p-4">
-      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-blue)]">{title}</p>
+    <div className="rounded-[18px] border border-cyan-200/16 bg-white/[0.045] p-4">
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-cyan-100/68">{title}</p>
       <div className="mt-3 flex flex-wrap gap-2">
         {items.map((item) => (
-          <span key={item} className="rounded-full border border-[#d7e6f7] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--nclex-text-secondary)]">
+          <span key={item} className="rounded-full border border-cyan-200/18 bg-cyan-300/[0.07] px-3 py-1.5 text-xs font-semibold text-sky-100/78">
             {item}
           </span>
         ))}
@@ -5697,9 +5787,9 @@ function ExamTrackList({ title, items }: { title: string; items: string[] }) {
 
 function ReviewRow({ icon, title, detail }: { icon: React.ReactNode; title: string; detail: string }) {
   return (
-    <div className="rounded-[18px] border border-[var(--nclex-border)] bg-white p-4">
-      <div className="flex items-center gap-3 text-[var(--nclex-blue)]">{icon}<p className="font-semibold text-[var(--nclex-text)]">{title}</p></div>
-      <p className="mt-2 text-sm leading-6 text-[var(--nclex-text-muted)]">{detail}</p>
+    <div className="rounded-[18px] border border-violet-200/18 bg-white/[0.045] p-4">
+      <div className="flex items-center gap-3 text-violet-100">{icon}<p className="font-semibold text-white">{title}</p></div>
+      <p className="mt-2 text-sm leading-6 text-sky-100/64">{detail}</p>
     </div>
   )
 }
