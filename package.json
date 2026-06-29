@@ -9,6 +9,7 @@
     "build:nursing-directory": "node scripts/build-nursing-school-directory.mjs",
     "lint": "eslint .",
     "qa:question-engine": "node scripts/question-engine-simulation-report.mjs",
+    "qa:question-formatting": "node scripts/question-render-quality-report.mjs",
     "preview": "vite preview",
     "test": "vitest run"
   },

@@ -25,7 +25,7 @@ import {
   Zap,
   type LucideIcon,
 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   getAdminDataAccessStatus,
   loadAdminProfiles,
@@ -1470,10 +1470,6 @@ function UsersPage({ model, section }: { model: DashboardModel; section: AdminSe
   }, [namedUsers, search])
   const selectedUser = filteredUsers.find((user) => user.id === selectedUserId) ?? filteredUsers[0] ?? null
 
-  useEffect(() => {
-    if (!selectedUserId && filteredUsers[0]) setSelectedUserId(filteredUsers[0].id)
-  }, [filteredUsers, selectedUserId])
-
   return (
     <div className="grid gap-5 xl:grid-cols-[1fr_1.05fr]">
       <Panel title="Learners" subtitle={`${namedUsers.length} real accounts linked from the live app.`} icon={Users} section={section}>
@@ -1880,7 +1876,7 @@ export function AdminMonitorPage() {
               ? 'Live Supabase app_events'
               : 'No live events recorded'
 
-  const loadEvents = async () => {
+  const loadEvents = useCallback(async () => {
     setLoading(true)
     try {
       const [nextAccess, nextRemote] = await Promise.all([
@@ -1897,11 +1893,15 @@ export function AdminMonitorPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
-    void loadEvents()
-  }, [])
+    const timeoutId = window.setTimeout(() => {
+      void loadEvents()
+    }, 0)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [loadEvents])
 
   useEffect(() => {
     const handlePopState = () => setActiveSectionId(sectionFromLocation())

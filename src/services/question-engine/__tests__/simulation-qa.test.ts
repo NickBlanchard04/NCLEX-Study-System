@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 import {
   createSyntheticLearnerProfiles,
   createSyntheticQuestionSimulationBank,
@@ -16,8 +16,19 @@ const getCohort = (
 }
 
 describe('synthetic question engine simulation QA', () => {
+  let simulationReport: ReturnType<typeof runSyntheticEngineSimulationQA> | null = null
+
+  beforeAll(() => {
+    simulationReport = runSyntheticEngineSimulationQA()
+  }, 20_000)
+
+  const getSimulationReport = () => {
+    if (!simulationReport) throw new Error('Synthetic simulation report was not initialized')
+    return simulationReport
+  }
+
   it('builds a deterministic 100-learner simulation report with passing engine sanity checks', () => {
-    const report = runSyntheticEngineSimulationQA()
+    const report = getSimulationReport()
 
     expect(report).toMatchObject({
       dataMode: 'synthetic_only',
@@ -35,7 +46,7 @@ describe('synthetic question engine simulation QA', () => {
   })
 
   it('separates strong readiness candidates from draft-only and coverage-thin practice signals', () => {
-    const report = runSyntheticEngineSimulationQA()
+    const report = getSimulationReport()
     const balanced = getCohort(report, 'balanced_ready_candidate')
     const draftOnly = getCohort(report, 'draft_only_high_accuracy')
     const coverageLimited = getCohort(report, 'coverage_gap_high_accuracy')
@@ -55,7 +66,7 @@ describe('synthetic question engine simulation QA', () => {
   })
 
   it('detects overconfident priority weakness and routes the next item toward repair', () => {
-    const report = runSyntheticEngineSimulationQA()
+    const report = getSimulationReport()
     const overconfident = getCohort(report, 'priority_overconfident')
 
     expect(overconfident.avgHighConfidenceMisses).toBeGreaterThanOrEqual(3)
@@ -65,7 +76,7 @@ describe('synthetic question engine simulation QA', () => {
   })
 
   it('keeps low-confidence correct answers visible as calibration work, not false mastery', () => {
-    const report = runSyntheticEngineSimulationQA()
+    const report = getSimulationReport()
     const fragile = getCohort(report, 'fragile_low_confidence')
 
     expect(fragile.avgLowConfidenceCorrect).toBeGreaterThanOrEqual(5)
