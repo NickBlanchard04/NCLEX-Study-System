@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Nurse Command</title>
     <script>
-      const pathSegmentsToKeep = 1
+      const pathSegmentsToKeep = window.location.hostname.endsWith('.github.io') ? 1 : 0
       const locationPath = window.location.pathname
         .split('/')
         .slice(0, 1 + pathSegmentsToKeep)
