@@ -16,7 +16,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { clsx } from 'clsx'
-import type { ActiveSession, ConfidenceLevel, MasteryLevel } from '../app/types'
+import type { ActiveSession, AnswerChoice, ConfidenceLevel, MasteryLevel, Question } from '../app/types'
 import { useStudySystemStore } from '../app/store'
 import {
   getQuestionCategoryBreakdown,
@@ -614,6 +614,47 @@ const practiceActionButton = {
     'inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl border border-violet-200/30 bg-violet-300/[0.08] px-5 py-3 text-sm font-bold text-violet-100 shadow-[0_12px_28px_rgba(124,58,237,0.12)] transition hover:border-violet-100/56 hover:bg-violet-300/14 focus:outline-none focus:ring-4 focus:ring-violet-300/18',
 }
 
+const generatedDistractorFallback = 'This choice does not best address the priority cue in the stem.'
+const genericDistractorPattern =
+  /The distractors either delay needed action, move outside the role being tested, or skip the assessment and safety logic needed for clinical judgment\./i
+
+const formatContentQuality = (question: Question) =>
+  question.contentQuality?.replaceAll('-', ' ') ?? 'draft item'
+
+const isReviewedReadinessItem = (question: Question) =>
+  Boolean(
+    question.blueprintMapped &&
+      question.sourceBacked &&
+      (question.contentQuality === 'sme-reviewed' || question.contentQuality === 'published'),
+  )
+
+const getLearnerEvidenceLabel = (question: Question) =>
+  isReviewedReadinessItem(question) ? 'Reviewed readiness evidence' : 'Practice evidence only'
+
+const getChoiceFeedback = (question: Question, choice: AnswerChoice) => {
+  const explicit = question.rationale.choices?.[choice.id]?.trim()
+  if (explicit) return explicit
+
+  if (question.correctAnswer.includes(choice.id)) {
+    return question.rationale.whyCorrect
+  }
+
+  const fallback = question.rationale.whyOthers.trim()
+  if (fallback && !genericDistractorPattern.test(fallback)) return fallback
+  return generatedDistractorFallback
+}
+
+const getItemDetailBadges = (question: Question, evidenceLabel: string) =>
+  [
+    question.blueprintMapped ? 'Blueprint mapped' : 'Blueprint not mapped',
+    question.sourceBacked ? 'Source-backed' : 'Practice item',
+    `Status: ${formatContentQuality(question)}`,
+    question.updatedAt ? `Updated: ${question.updatedAt}` : null,
+    evidenceLabel,
+    question.sourceTopic ? `Topic: ${question.sourceTopic}` : null,
+    ...(question.sourceRefs ?? []).map((source) => `Source: ${source}`),
+  ].filter(Boolean) as string[]
+
 export function QuestionSessionRunner({
   session,
   modeLabel,
@@ -953,8 +994,8 @@ export function QuestionSessionRunner({
     : hasPartialSignal
       ? 'border-amber-300/28 bg-[#1f1a0a]'
       : 'border-rose-300/28 bg-[#210f1d]'
-  const evidenceLevel = question.blueprintMapped && question.sourceBacked ? 'Readiness evidence' : 'Practice evidence'
-  const qualityStatus = question.contentQuality?.replaceAll('-', ' ') ?? 'draft item'
+  const evidenceLevel = getLearnerEvidenceLabel(question)
+  const itemDetailBadges = getItemDetailBadges(question, evidenceLevel)
   const reviewState = submitted ? (showRationale ? 'Review open' : 'Review hidden') : 'Answer pending'
   const confidenceState = confidenceChosen ? `Confidence: ${finalResponse?.confidence}` : submitted ? 'Confidence not chosen' : 'Confidence pending'
   const nextActionLabel = !submitted
@@ -972,18 +1013,18 @@ export function QuestionSessionRunner({
     { label: 'Priority', tone: 'blue' as const, icon: <Target className="h-3.5 w-3.5" /> },
     { label: 'Safety', tone: 'green' as const, icon: <ShieldCheck className="h-3.5 w-3.5" /> },
     { label: 'Clinical Judgment', tone: 'blue' as const, icon: <BadgeCheck className="h-3.5 w-3.5" /> },
-    {
-      label: question.sourceBacked ? 'Source-backed' : 'Practice item',
-      tone: question.sourceBacked ? 'green' as const : 'amber' as const,
-      icon: <CheckCircle2 className="h-3.5 w-3.5" />,
-    },
-    {
-      label: evidenceLevel,
-      tone: question.blueprintMapped && question.sourceBacked ? 'green' as const : 'amber' as const,
-      icon: <BadgeCheck className="h-3.5 w-3.5" />,
-    },
   ]
-  const evidenceBadges = [...tutorInsight.trustFlags, `Evidence: ${evidenceLevel}`]
+  const choiceFeedbackRows = question.choices.map((choice) => ({
+    choice,
+    selected: selectedAnswers.includes(choice.id),
+    correct: question.correctAnswer.includes(choice.id),
+    feedback: getChoiceFeedback(question, choice),
+  }))
+  const whyOthersCopy = question.rationale.whyOthers.trim()
+  const showWhyOthersCopy =
+    Boolean(whyOthersCopy) &&
+    whyOthersCopy !== generatedDistractorFallback &&
+    !genericDistractorPattern.test(whyOthersCopy)
 
   return (
     <div className="space-y-6 pb-44 xl:pb-0">
@@ -1248,6 +1289,9 @@ export function QuestionSessionRunner({
                         body={question.rationale.whyCorrect}
                       />
                     </div>
+                    <div className="md:col-span-2">
+                      <ChoiceFeedbackList rows={choiceFeedbackRows} />
+                    </div>
                     {!currentIsCorrect ? (
                       <div className="md:col-span-2">
                         <RationaleCard
@@ -1267,17 +1311,21 @@ export function QuestionSessionRunner({
                         />
                       </div>
                     ) : null}
-                    <RationaleCard
-                      title="Why the other options fall away"
-                      tone="amber"
-                      body={question.rationale.whyOthers}
-                    />
+                    {showWhyOthersCopy ? (
+                      <RationaleCard
+                        title="Why other answers miss"
+                        tone="amber"
+                        body={whyOthersCopy}
+                      />
+                    ) : null}
                     <RationaleCard
                       title="Test-taking cue"
                       tone="violet"
                       body={`${question.nclexTip} ${tutorInsight.reviewTarget}. Watch for: ${tutorInsight.trap}`}
-                      badges={evidenceBadges}
                     />
+                    <div className="md:col-span-2">
+                      <ItemDetailsDisclosure details={itemDetailBadges} />
+                    </div>
                   </div>
                 ) : null}
               </motion.div>
@@ -1310,7 +1358,6 @@ export function QuestionSessionRunner({
                 <StatusMiniCard label="Current streak" value={`${streakCount} correct`} tone={streakCount > 0 ? 'green' : 'blue'} />
                 <StatusMiniCard label="Confidence" value={confidenceState} tone={confidenceChosen ? 'green' : submitted ? 'amber' : 'blue'} />
                 <StatusMiniCard label="Review" value={reviewState} tone={showRationale ? 'green' : 'blue'} />
-                <StatusMiniCard label="Evidence level" value={`${evidenceLevel} / ${qualityStatus}`} tone={question.sourceBacked ? 'green' : 'amber'} />
                 {submitted ? (
                   <StatusMiniCard
                     label="Remediation"
@@ -1525,6 +1572,92 @@ function StatusMiniCard({
       <p className="text-[0.68rem] font-bold uppercase tracking-[0.13em] opacity-65">{label}</p>
       <p className="mt-1 text-sm font-semibold leading-5">{value}</p>
     </div>
+  )
+}
+
+function ChoiceFeedbackList({
+  rows,
+}: {
+  rows: Array<{
+    choice: AnswerChoice
+    selected: boolean
+    correct: boolean
+    feedback: string
+  }>
+}) {
+  return (
+    <div className="rounded-[16px] border border-cyan-300/24 bg-cyan-300/[0.06] p-4 text-cyan-100">
+      <p className="text-xs font-semibold uppercase tracking-[0.16em]">Choice feedback</p>
+      <div className="mt-3 space-y-2.5">
+        {rows.map(({ choice, selected, correct, feedback }) => {
+          const state = correct ? 'Correct answer' : selected ? 'Your selection' : 'Distractor'
+          return (
+            <div
+              key={choice.id}
+              className={clsx(
+                'rounded-xl border bg-white/[0.04] px-3 py-3',
+                correct
+                  ? 'border-emerald-300/28'
+                  : selected
+                    ? 'border-rose-300/30'
+                    : 'border-cyan-300/14',
+              )}
+            >
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex min-w-0 items-start gap-3">
+                  <span
+                    className={clsx(
+                      'grid h-7 w-7 shrink-0 place-items-center rounded-full border text-xs font-black',
+                      correct
+                        ? 'border-emerald-300/42 bg-emerald-300/14 text-emerald-100'
+                        : selected
+                          ? 'border-rose-300/42 bg-rose-300/14 text-rose-100'
+                          : 'border-cyan-300/24 text-cyan-100/70',
+                    )}
+                  >
+                    {choice.id}
+                  </span>
+                  <p className="min-w-0 text-sm font-semibold leading-6 text-sky-100/82">{choice.text}</p>
+                </div>
+                <span
+                  className={clsx(
+                    'shrink-0 rounded-lg border px-2.5 py-1 text-xs font-bold',
+                    correct
+                      ? 'border-emerald-300/34 bg-emerald-300/10 text-emerald-100'
+                      : selected
+                        ? 'border-rose-300/34 bg-rose-300/10 text-rose-100'
+                        : 'border-cyan-300/20 bg-white/[0.04] text-sky-100/62',
+                  )}
+                >
+                  {state}
+                </span>
+              </div>
+              <p className="mt-2 text-sm leading-6 text-sky-100/70">{feedback}</p>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function ItemDetailsDisclosure({ details }: { details: string[] }) {
+  return (
+    <details className="rounded-[14px] border border-sky-300/18 bg-white/[0.035] p-3 text-sky-100/72">
+      <summary className="cursor-pointer select-none text-sm font-bold text-sky-100">
+        Item details
+      </summary>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {details.map((detail) => (
+          <span
+            key={detail}
+            className="rounded-lg border border-sky-300/18 bg-white/[0.04] px-2.5 py-1 text-xs font-semibold leading-5"
+          >
+            {detail}
+          </span>
+        ))}
+      </div>
+    </details>
   )
 }
 

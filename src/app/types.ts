@@ -20,6 +20,7 @@ export type PracticeSessionStatus = 'active' | 'completed' | 'discarded'
 export type MasteryLevel = 'fragile' | 'developing' | 'strong'
 export type FlashcardStatus = 'new' | 'needs-review' | 'known'
 export type StudyMaterialFileType = 'pdf' | 'docx' | 'txt' | 'md' | 'link'
+export type MaterialImportMode = 'full' | 'flashcards' | 'quiz' | 'guide'
 export type MaterialExtractionStatus = 'extracting' | 'ready' | 'error'
 export type MaterialReviewStatus = 'pending-review' | 'approved'
 export type SyncStatus = 'idle' | 'syncing' | 'error' | 'offline'
@@ -110,6 +111,7 @@ export interface Question {
   rationale: {
     whyCorrect: string
     whyOthers: string
+    choices?: Record<string, string>
   }
   nclexTip: string
   clinicalRelevance: string

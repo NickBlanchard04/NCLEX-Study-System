@@ -9,6 +9,7 @@ type SafeErrorContext =
   | 'cloud-file-upload'
   | 'cloud-material-delete'
   | 'material-ai-generation'
+  | 'material-assisted-import'
   | 'material-file-import'
   | 'material-link-import'
 
@@ -23,6 +24,7 @@ const safeErrorCopy: Record<SafeErrorContext, string> = {
   'cloud-file-upload': 'We could not save that file to cloud storage right now.',
   'cloud-material-delete': 'We could not update that cloud material right now.',
   'material-ai-generation': 'AI generation is not available right now. We used local study-tool generation instead.',
+  'material-assisted-import': 'We could not import that pasted study text. Check that it includes nursing terms, definitions, or notes, then try again.',
   'material-file-import': 'We could not import this file. Check the file type and try again.',
   'material-link-import': 'We could not import this link. Check the URL and try again.',
 }

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { StudyMaterial } from '../../app/types'
 import {
   cleanExtractedStudyText,
+  extractMaterialTextFromPastedStudyText,
   extractMaterialTextFromUrl,
   generateCleanFlashcardsFromMaterial,
   generateCleanQuestionsFromMaterial,
@@ -167,17 +168,71 @@ describe('material pipeline local generation', () => {
   it('rejects readable links that do not look like nursing study material', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue(
+      vi.fn().mockImplementation(() => Promise.resolve(
         new Response(
           'This page describes a software dashboard with routes, components, props, settings, and build scripts for a web application.',
           { headers: { 'content-type': 'text/plain' }, status: 200 },
         ),
-      ),
+      )),
     )
 
     await expect(
       extractMaterialTextFromUrl('https://example.com/dashboard-notes'),
     ).rejects.toThrow(/nursing study material/i)
+
+    vi.unstubAllGlobals()
+  })
+
+  it('cleans Quizlet-style pasted decks into medication study assets', () => {
+    const extracted = extractMaterialTextFromPastedStudyText({
+      sourceUrl: 'https://quizlet.com/96216077/140-must-know-nclex-meds-flash-cards/',
+      text: `
+        Quizlet
+        Study with Quizlet and memorize flashcards containing terms like
+        Acetaminophen
+        Monitor total daily dose and teach the client to avoid duplicate products because overdose can cause liver injury.
+        Digoxin
+        Check apical pulse before giving and monitor for toxicity such as nausea, visual halos, and dysrhythmias.
+        Warfarin
+        Monitor INR and bleeding precautions; teach the client to report black stools, hematuria, or unusual bruising.
+        Upgrade
+        Terms in this set (140)
+      `,
+    })
+    const material = makeMaterial(
+      extracted.assets.map((asset) => ({ ...asset, materialId: 'material-lab-values' })),
+    )
+    const flashcards = generateCleanFlashcardsFromMaterial({
+      ...material,
+      displayTitle: extracted.title,
+      fileType: extracted.fileType,
+      sourceUrl: extracted.sourceUrl,
+      preview: extracted.preview,
+    })
+    const questions = generateCleanQuestionsFromMaterial(material, flashcards)
+    const generatedText = [
+      extracted.assets.map((asset) => `${asset.title} ${asset.content}`).join(' '),
+      flashcards.map((card) => `${card.front} ${card.back}`).join(' '),
+      questions.map((question) => `${question.prompt} ${question.choices.map((choice) => choice.text).join(' ')}`).join(' '),
+    ].join(' ')
+
+    expect(extracted.assets.length).toBeGreaterThanOrEqual(3)
+    expect(generatedText).toMatch(/acetaminophen|digoxin|warfarin|bleeding precautions|toxicity/i)
+    expect(generatedText).not.toMatch(/quizlet|upgrade|terms in this set|study with quizlet/i)
+    expect(flashcards.length).toBeGreaterThanOrEqual(3)
+    expect(questions.length).toBeGreaterThan(0)
+    expect(questions.every((question) => question.choices.length === 4)).toBe(true)
+  })
+
+  it('routes blocked Quizlet links to assisted import', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockRejectedValue(new TypeError('Failed to fetch')),
+    )
+
+    await expect(
+      extractMaterialTextFromUrl('https://quizlet.com/96216077/140-must-know-nclex-meds-flash-cards/'),
+    ).rejects.toMatchObject({ name: 'MaterialImportBlockedError' })
 
     vi.unstubAllGlobals()
   })
