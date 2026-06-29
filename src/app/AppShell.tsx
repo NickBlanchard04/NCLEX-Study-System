@@ -31,7 +31,6 @@ import {
 import { lazy, Suspense, useEffect, useMemo, useState, type ComponentType, type FormEvent, type ReactNode } from 'react'
 import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { clsx } from 'clsx'
-import { PwaInstallPrompt } from '../features/PwaInstallPrompt'
 import { SocialPage } from '../features/SocialPage'
 import nursingCommandLogo from '../assets/brand/nursing-command-logo.png'
 import {
@@ -363,9 +362,6 @@ function NclexAppShell() {
       <AuthGate>
         <div className="nurse-command-app min-h-screen bg-[#04101f] text-white">
           <div className="w-full">
-            <div className="lg:hidden">
-              <PwaInstallPrompt />
-            </div>
             {migrationPromptVisible ? (
               <div className="mb-5 rounded-[20px] border border-[#cfe1f7] bg-[linear-gradient(135deg,#ffffff_0%,#eef5ff_100%)] p-4 shadow-sm">
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -552,9 +548,6 @@ function NclexAppShell() {
 
           <main className="page-mobile-pad flex-1 px-4 py-5 md:px-6 lg:px-8 lg:py-8">
             <div className="w-full max-w-none">
-              <div className="lg:hidden">
-                <PwaInstallPrompt />
-              </div>
               {migrationPromptVisible ? (
                 <div className="mb-5 rounded-[20px] border border-sky-300/24 bg-[#071d34]/78 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_16px_34px_rgba(0,0,0,0.18)] backdrop-blur">
                   <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">

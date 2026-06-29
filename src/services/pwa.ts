@@ -1,10 +1,18 @@
-export function registerServiceWorker() {
+export function disableServiceWorkerInstallSupport() {
   if (!('serviceWorker' in navigator) || import.meta.env.DEV) return
 
   window.addEventListener('load', () => {
-    const serviceWorkerUrl = `${import.meta.env.BASE_URL}sw.js`
-    navigator.serviceWorker.register(serviceWorkerUrl, { scope: import.meta.env.BASE_URL }).catch((error) => {
-      console.warn('Nurse Command service worker registration failed.', error)
+    void Promise.all([
+      navigator.serviceWorker.getRegistrations().then((registrations) =>
+        Promise.all(registrations.map((registration) => registration.unregister())),
+      ),
+      'caches' in window
+        ? caches.keys().then((keys) =>
+            Promise.all(keys.filter((key) => key.startsWith('nurse-command')).map((key) => caches.delete(key))),
+          )
+        : Promise.resolve(),
+    ]).catch((error) => {
+      console.warn('Nurse Command install cleanup failed.', error)
     })
   })
 }
