@@ -15,6 +15,9 @@ output
 mockups
 .playwright-cli
 .playwright-mcp
+playwright/.auth/
+playwright-report/
+test-results/
 *.png
 *.local
 .env
