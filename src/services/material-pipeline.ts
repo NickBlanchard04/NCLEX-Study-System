@@ -208,17 +208,30 @@ const normalizeStudyPair = (term: string, definition: string): StudyPair | null 
   }
 }
 
+const hasEmbeddedStudyPairMarker = (definition: string) =>
+  /\b[A-Z][A-Za-z0-9()/% -]{2,64}:\s+\S/.test(definition)
+
 const extractDelimitedStudyPair = (line: string): StudyPair | null => {
+  const spacingPreserved = line.replace(/\u00a0/g, ' ').replace(/^[\sâ€¢*#\d.)-]+/, '').trim()
+  const spacedPair = spacingPreserved.match(/^(.{2,88}?)\s{2,}(.{16,760})$/)
+  if (spacedPair && !hasEmbeddedStudyPairMarker(spacedPair[2])) {
+    return normalizeStudyPair(spacedPair[1], spacedPair[2])
+  }
+
   const cleaned = normalizeDeckLine(line)
   const delimiterMatch = cleaned.match(/^([^:\t|–—-]{2,88})(?:\s*(?:[:\t|]|[-–—]{1,2})\s+)(.{16,760})$/)
   if (!delimiterMatch) return null
+  if (hasEmbeddedStudyPairMarker(delimiterMatch[2])) return null
 
   return normalizeStudyPair(delimiterMatch[1], delimiterMatch[2])
 }
 
 const extractStudyPairsFromLines = (rawLines: string[]) => {
+  const delimitedPairs = rawLines
+    .map((line) => extractDelimitedStudyPair(line))
+    .filter((pair): pair is StudyPair => Boolean(pair))
   const lines = rawLines.map(normalizeDeckLine).filter((line) => line && !isStudyDeckNoiseLine(line))
-  const pairs: StudyPair[] = []
+  const pairs: StudyPair[] = [...delimitedPairs]
   const consumed = new Set<number>()
 
   lines.forEach((line, index) => {
@@ -777,12 +790,50 @@ const clinicalTopicPatterns: Array<{ pattern: RegExp; label: string; kind: Learn
   { pattern: /\bfluid\b|\belectrolyte\b|\bdehydration\b|\bedema\b/i, label: 'fluid and electrolyte balance', kind: 'lab' },
 ]
 
-const fallbackDistractors = [
-  'The nurse should treat the cue as stable without completing a focused assessment.',
-  'The nurse should delay clinical judgment until an unrelated finding appears.',
-  'The priority is to document the topic label before interpreting the client cue.',
-  'The safest response is to choose an intervention unrelated to the current finding.',
-]
+const fallbackDistractorsByKind: Record<LearningPointKind, string[]> = {
+  assessment: [
+    'The nurse should skip focused assessment once a familiar cue appears.',
+    'The nurse should document the finding before comparing it with current client symptoms.',
+    'The nurse should wait for the next scheduled check before reassessing a changing cue.',
+    'The nurse should teach the client first without confirming the assessment finding.',
+  ],
+  causes: [
+    'The finding is explained by normal aging and does not need follow-up.',
+    'The cause pattern is limited to diet history without considering physiologic changes.',
+    'The nurse should focus only on documenting the label instead of identifying the source pattern.',
+    'The cause is best confirmed by repeating the same question without reviewing client data.',
+  ],
+  general: [
+    'The nurse should treat the cue as stable without completing a focused assessment.',
+    'The nurse should delay follow-up until the finding becomes severe.',
+    'The nurse should prioritize documentation before interpreting the client cue.',
+    'The nurse should choose an action that does not address the current finding.',
+  ],
+  lab: [
+    'The nurse should treat one abnormal value as stable without reassessing the client.',
+    'The nurse should wait to compare the lab result with symptoms before reporting a major change.',
+    'The nurse should document the value only and skip trend review.',
+    'The nurse should teach routine diet changes before checking for urgent clinical cues.',
+  ],
+  medication: [
+    'The nurse should give the medication before checking ordered hold parameters.',
+    'The nurse should ignore toxicity cues if the medication is commonly prescribed.',
+    'The nurse should teach routine side effects before assessing for an adverse reaction.',
+    'The nurse should document administration without verifying current safety data.',
+  ],
+  priority: [
+    'The nurse should complete routine teaching before addressing the unstable cue.',
+    'The nurse should delay action until all lower-risk tasks are complete.',
+    'The nurse should focus on documentation before stabilizing the immediate concern.',
+    'The nurse should delegate the priority assessment before collecting key client data.',
+  ],
+  safety: [
+    'The nurse should delay precautions until visible injury occurs.',
+    'The nurse should remove safeguards once the client reports feeling stable.',
+    'The nurse should teach discharge instructions before reducing the immediate risk.',
+    'The nurse should document the safety concern without adding protective measures.',
+  ],
+}
 
 const sentenceCase = (value: string) => {
   const cleaned = cleanSentence(value)
@@ -1004,10 +1055,17 @@ const cleanChoiceText = (value: string) => {
   return cleaned.replace(/\s+/g, ' ').trim()
 }
 
-const buildChoices = (correct: string, distractors: string[]): AnswerChoice[] => {
+const getFallbackDistractors = (point?: Pick<LearningPoint, 'kind'>) =>
+  fallbackDistractorsByKind[point?.kind ?? 'general'] ?? fallbackDistractorsByKind.general
+
+const buildChoices = (
+  correct: string,
+  distractors: string[],
+  point?: Pick<LearningPoint, 'kind'>,
+): AnswerChoice[] => {
   const correctText = cleanChoiceText(correct)
   const options = uniqueByKey(
-    [correctText, ...distractors.map(cleanChoiceText), ...fallbackDistractors.map(cleanChoiceText)].filter(
+    [correctText, ...distractors.map(cleanChoiceText), ...getFallbackDistractors(point).map(cleanChoiceText)].filter(
       (choice) => choice.length >= 18 && !hasBrokenGeneratedShape(choice),
     ),
     (choice) => choice,
@@ -1020,6 +1078,32 @@ const buildChoices = (correct: string, distractors: string[]): AnswerChoice[] =>
     id: String.fromCharCode(65 + index),
     text,
   }))
+}
+
+const buildQuestionRationale = (point: LearningPoint) => {
+  const topic = point.topic === 'uploaded nursing concept' ? point.sourceTitle : point.topic
+  const base = `The correct answer is supported by the uploaded material about ${topic}: ${point.statement}`
+
+  if (point.kind === 'lab') {
+    return `${base} Compare lab cues with the client's current status and prioritize findings that signal risk.`
+  }
+  if (point.kind === 'medication') {
+    return `${base} Medication questions should protect safety by checking ordered parameters, adverse effects, and toxicity cues before routine actions.`
+  }
+  if (point.kind === 'priority') {
+    return `${base} Priority items should address the cue most likely to affect safety or deterioration first.`
+  }
+  if (point.kind === 'safety') {
+    return `${base} Safety items should reduce the immediate client risk before lower-priority teaching or documentation.`
+  }
+  if (point.kind === 'assessment') {
+    return `${base} Assessment items should confirm the relevant cue before moving to teaching, routine documentation, or delayed follow-up.`
+  }
+  if (point.kind === 'causes') {
+    return `${base} Cause-pattern items should match the mechanism described in the source instead of choosing an unrelated clinical concept.`
+  }
+
+  return `${base} The other choices do not best address the priority cue in the stem.`
 }
 
 const buildQuestionPrompt = (point: LearningPoint, index: number) => {
@@ -1357,7 +1441,7 @@ export function generateCleanQuestionsFromMaterial(
       (statement) => statement,
     )
     const correctText = cleanChoiceText(point.statement)
-    const choices = buildChoices(correctText, distractors)
+    const choices = buildChoices(correctText, distractors, point)
     const correctChoice = choices.find((choice) => choice.text === correctText)
 
     return {
@@ -1367,7 +1451,7 @@ export function generateCleanQuestionsFromMaterial(
       prompt: buildQuestionPrompt(point, index),
       choices,
       correctAnswer: correctChoice ? [correctChoice.id] : ['A'],
-      rationale: `The correct answer matches the reviewed material: ${point.statement} The other options are either unsupported by this material or describe a different study point.`,
+      rationale: buildQuestionRationale(point),
       createdAt: new Date().toISOString(),
     }
   })

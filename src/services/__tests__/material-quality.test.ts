@@ -19,14 +19,14 @@ const makeQuestion = (overrides: Partial<MaterialQuestion> = {}): MaterialQuesti
   sourceTitle: 'Lab Values',
   prompt: 'A nurse is reviewing thrombocytopenia. Which statement best explains the cause pattern from the material?',
   choices: [
-    { id: 'A', text: 'The nurse should delay clinical judgment until an unrelated finding appears.' },
+    { id: 'A', text: 'The finding is explained by normal aging and does not need follow-up.' },
     { id: 'B', text: 'Common causes include bone marrow suppression, sepsis, sequestration from an enlarged spleen, increased platelet destruction, or decreased platelet production.' },
     { id: 'C', text: 'Hyperkalemia can cause dysrhythmias and muscle weakness.' },
-    { id: 'D', text: 'The nurse should treat the cue as stable without completing a focused assessment.' },
+    { id: 'D', text: 'The cause pattern is limited to diet history without considering physiologic changes.' },
   ],
   correctAnswer: ['B'],
   rationale:
-    'The correct answer reflects the uploaded concept. The other choices are unsupported by this material or describe a different study point.',
+    'The correct answer reflects the uploaded concept. Cause-pattern items should match the mechanism described in the source.',
   createdAt: '2026-06-23T12:00:00.000Z',
   ...overrides,
 })
@@ -110,6 +110,25 @@ describe('material quality gates', () => {
     expect(summary.issues.map((issue) => issue.code)).toEqual(
       expect.arrayContaining(['flashcard_source_noise', 'question_source_noise']),
     )
+  })
+
+  it('warns on generic fallback distractors before approval', () => {
+    const summary = summarizeMaterialQuality(
+      [],
+      [
+        makeQuestion({
+          choices: [
+            { id: 'A', text: 'The nurse should delay clinical judgment until an unrelated finding appears.' },
+            { id: 'B', text: 'Common causes include bone marrow suppression, sepsis, sequestration from an enlarged spleen, increased platelet destruction, or decreased platelet production.' },
+            { id: 'C', text: 'The priority is to document the topic label before interpreting the client cue.' },
+            { id: 'D', text: 'The safest response is to choose an intervention unrelated to the current finding.' },
+          ],
+          correctAnswer: ['B'],
+        }),
+      ],
+    )
+
+    expect(summary.issues.map((issue) => issue.code)).toContain('question_weak_distractors')
   })
 
   it('blocks source-code shaped cards and questions before approval', () => {

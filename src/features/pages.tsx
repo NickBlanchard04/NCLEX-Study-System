@@ -32,6 +32,7 @@ import {
   FolderOpen,
   Goal,
   HeartPulse,
+  ExternalLink,
   Link2,
   LoaderCircle,
   LockKeyhole,
@@ -1299,16 +1300,27 @@ export function DashboardPage() {
 
           {practiceHistory.length ? (
             <Surface className="border-emerald-300/20 bg-emerald-300/[0.045]">
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-100/70">
                     Recent practice
                   </p>
                   <h3 className="mt-1 text-xl font-bold text-white">Scores and review trail</h3>
                 </div>
-                <Link to="/performance-analytics" className="text-sm font-bold text-cyan-100">
-                  View all
-                </Link>
+                <div className="flex flex-wrap gap-2">
+                  <Link
+                    to="/weak-areas"
+                    className="inline-flex min-h-9 items-center rounded-lg border border-amber-200/20 bg-amber-300/10 px-3 text-sm font-bold text-amber-100 transition hover:bg-amber-300/16"
+                  >
+                    Review missed
+                  </Link>
+                  <Link
+                    to="/performance-analytics"
+                    className="inline-flex min-h-9 items-center rounded-lg border border-cyan-200/18 bg-cyan-300/10 px-3 text-sm font-bold text-cyan-100 transition hover:bg-cyan-300/16"
+                  >
+                    View history
+                  </Link>
+                </div>
               </div>
               <div className="mt-4 grid gap-2">
                 {practiceHistory.map((session) => (
@@ -3273,6 +3285,24 @@ const isBlockedMaterialImport = (error: unknown) => {
   return false
 }
 
+const assistedImportHostPattern = /\b(?:quizlet\.com|chegg\.com|coursehero\.com|studocu\.com)\b/i
+
+const normalizePotentialStudyUrl = (value: string) => {
+  const trimmed = value.trim()
+  if (!trimmed) return null
+
+  try {
+    return new URL(/^[a-z][a-z\d+.-]*:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`)
+  } catch {
+    return null
+  }
+}
+
+const isAssistedImportStudyHost = (value: string) => {
+  const source = normalizePotentialStudyUrl(value)
+  return Boolean(source && assistedImportHostPattern.test(source.hostname))
+}
+
 export function MyMaterialsPage() {
   const navigate = useNavigate()
   const profile = useStudySystemStore((state) => state.profile)
@@ -3302,6 +3332,7 @@ export function MyMaterialsPage() {
   const [assistedImportText, setAssistedImportText] = useState('')
   const [assistedImportMode, setAssistedImportMode] = useState<MaterialImportMode>('full')
   const [assistedSourceUrl, setAssistedSourceUrl] = useState('')
+  const [blockedImportSourceUrl, setBlockedImportSourceUrl] = useState('')
   const [uploadMessage, setUploadMessage] = useState('')
   const [previewExpanded, setPreviewExpanded] = useState(false)
   const [studyGuideOpen, setStudyGuideOpen] = useState(false)
@@ -3340,6 +3371,9 @@ export function MyMaterialsPage() {
   const errorCount = materials.filter((item) => item.extractionStatus === 'error').length
   const pendingReviewCount = materials.filter((item) => item.reviewStatus === 'pending-review').length
   const totalGeneratedCards = materialFlashcards.length
+  const materialUrlNeedsAssistedImport = isAssistedImportStudyHost(materialUrl)
+  const assistedSourceUrlForCopy = blockedImportSourceUrl || assistedSourceUrl || materialUrl
+  const normalizedAssistedSource = normalizePotentialStudyUrl(assistedSourceUrlForCopy)?.toString() ?? ''
 
   const handleFiles = async (incoming: File[] | FileList) => {
     const files = Array.from(incoming)
@@ -3361,13 +3395,26 @@ export function MyMaterialsPage() {
 
   const handleMaterialUrlImport = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    const trimmedUrl = materialUrl.trim()
     setUploadMessage('')
+
+    if (isAssistedImportStudyHost(trimmedUrl)) {
+      setAssistedImportOpen(true)
+      setAssistedSourceUrl(trimmedUrl)
+      setBlockedImportSourceUrl(trimmedUrl)
+      setUploadMessage(
+        'Quizlet-style study sites usually block direct import. Assisted import is open: copy the visible terms and definitions from the set, then paste or read clipboard below.',
+      )
+      return
+    }
+
     setIsUploading(true)
 
     try {
       await importStudyMaterialFromUrl(materialUrl)
       setAssistedImportOpen(false)
       setAssistedSourceUrl('')
+      setBlockedImportSourceUrl('')
       setAssistedImportText('')
       setMaterialUrl('')
       setUploadMessage('Link imported. Review the generated study tools before saving them to your deck.')
@@ -3377,8 +3424,10 @@ export function MyMaterialsPage() {
       if (blocked) {
         setAssistedImportOpen(true)
         setAssistedSourceUrl(materialUrl)
-        setUploadMessage('This site blocks direct import. Copy the visible terms, definitions, or notes from the page, paste them below, and Nurse Command will clean them into editable study tools.')
+        setBlockedImportSourceUrl(materialUrl)
+        setUploadMessage('This site blocks direct import. Assisted import is open: copy the visible terms, definitions, or notes from the page, then paste or read clipboard below.')
       } else {
+        setBlockedImportSourceUrl('')
         setUploadMessage(getSafeErrorCopy('material-link-import'))
       }
     }
@@ -3416,6 +3465,7 @@ export function MyMaterialsPage() {
       setAssistedImportText('')
       setAssistedImportOpen(false)
       setAssistedSourceUrl('')
+      setBlockedImportSourceUrl('')
       setMaterialUrl('')
       setUploadMessage('Study text imported. Review the generated tools before saving them to your deck.')
     } catch (error) {
@@ -3593,18 +3643,21 @@ export function MyMaterialsPage() {
                 </div>
               </Field>
               <p className="mt-3 text-xs leading-5 text-sky-200/60">
-                Works best with public text-heavy study pages. If a site blocks direct import, copy the visible terms or notes and use Assisted import.
+                {materialUrlNeedsAssistedImport
+                  ? 'Quizlet-style sites usually block scraping. We will open Assisted import so you can copy the visible set once and keep moving.'
+                  : 'Works best with public text-heavy study pages. If a site blocks direct import, copy the visible terms or notes and use Assisted import.'}
               </p>
               <button
                 type="button"
                 onClick={() => {
                   setAssistedImportOpen((current) => !current)
                   setAssistedSourceUrl(materialUrl)
+                  setBlockedImportSourceUrl(isAssistedImportStudyHost(materialUrl) ? materialUrl : '')
                 }}
                 className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-xl border border-sky-300/20 bg-white/[0.045] px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-sky-100 transition hover:bg-white/[0.08]"
               >
                 <ClipboardList className="h-4 w-4" />
-                {assistedImportOpen ? 'Hide assisted import' : 'Use assisted import'}
+                {assistedImportOpen ? 'Hide assisted import' : materialUrlNeedsAssistedImport ? 'Open assisted import' : 'Use assisted import'}
               </button>
             </form>
             {assistedImportOpen ? (
@@ -3630,6 +3683,44 @@ export function MyMaterialsPage() {
                     Read clipboard
                   </button>
                 </div>
+
+                {normalizedAssistedSource ? (
+                  <div className="mt-4 rounded-2xl border border-amber-100/25 bg-[#03101f]/54 p-4">
+                    <p className="text-xs font-black uppercase tracking-[0.14em] text-amber-100/76">
+                      Fastest path for this link
+                    </p>
+                    <div className="mt-3 grid gap-3 md:grid-cols-3">
+                      <a
+                        href={normalizedAssistedSource}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-sky-200/22 bg-sky-400/12 px-4 py-2 text-sm font-black text-sky-50 transition hover:bg-sky-400/18"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        Open source set
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => void handleClipboardAssistedImport()}
+                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-amber-100/25 bg-amber-200/12 px-4 py-2 text-sm font-black text-amber-50 transition hover:bg-amber-200/18"
+                      >
+                        <ClipboardList className="h-4 w-4" />
+                        Read copied text
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-violet-100/24 bg-violet-300/12 px-4 py-2 text-sm font-black text-violet-50 transition hover:bg-violet-300/18"
+                      >
+                        <Upload className="h-4 w-4" />
+                        Upload file instead
+                      </button>
+                    </div>
+                    <p className="mt-3 text-sm leading-6 text-sky-100/66">
+                      Copy the visible terms and definitions from the source. Nurse Command will remove page clutter, build editable study tools, and ask you to approve them before saving.
+                    </p>
+                  </div>
+                ) : null}
 
                 <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto]">
                   <Field label="Build">

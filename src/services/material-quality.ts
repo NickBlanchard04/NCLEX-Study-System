@@ -25,6 +25,8 @@ const sourceArtifactPattern =
   /\b(?:https?:\/\/|www\.|doi\b|pmid\b|issn\b|copyright|all rights reserved|github\.com|raw\.githubusercontent\.com|nursingcenter\.com|frontiersin\.org)\b/i
 const genericFragmentPattern =
   /\b(?:what should you know about (?:result|results|value|source)|best matches this point|uploaded nursing concept|this study material|smoke material|june\s+\d{4})\b/i
+const weakGeneratedChoicePattern =
+  /\b(?:unrelated finding|topic label|intervention unrelated|unsupported by this material|different study point)\b/i
 const visibleMetadataPattern = /\b(?:focus area|blueprint)\s*:/i
 
 const clean = (value: string) => value.replace(/\s+/g, ' ').trim()
@@ -260,6 +262,17 @@ export function inspectMaterialQuestion(
         code: 'question_choice_long',
         field: 'choices',
         message: 'Trim oversized answer choices so they are easy to compare.',
+        severity: 'warning',
+      }),
+    )
+  }
+
+  if (choiceTexts.filter((choice) => weakGeneratedChoicePattern.test(choice)).length >= 2) {
+    issues.push(
+      makeIssue(question, 'question', itemLabel, {
+        code: 'question_weak_distractors',
+        field: 'choices',
+        message: 'Replace generic fallback choices with realistic nursing distractors.',
         severity: 'warning',
       }),
     )

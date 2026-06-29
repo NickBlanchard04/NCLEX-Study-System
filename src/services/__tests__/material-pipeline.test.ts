@@ -120,7 +120,7 @@ describe('material pipeline local generation', () => {
       expect(new Set(question.choices.map((choice) => choice.text))).toHaveProperty('size', 4)
       expect(question.choices.every((choice) => choice.text.length <= 190)).toBe(true)
       expect(question.choices.some((choice) => choice.id === question.correctAnswer[0])).toBe(true)
-      expect(question.rationale).toMatch(/reviewed material|unsupported|different study point/i)
+      expect(question.rationale).toMatch(/uploaded material|priority|safety|cause-pattern|lab cues/i)
       expect(question.rationale).not.toMatch(/www\.|june 2025/i)
     })
   })
@@ -222,6 +222,38 @@ describe('material pipeline local generation', () => {
     expect(flashcards.length).toBeGreaterThanOrEqual(3)
     expect(questions.length).toBeGreaterThan(0)
     expect(questions.every((question) => question.choices.length === 4)).toBe(true)
+  })
+
+  it('cleans one-line Quizlet copy into separate study pairs', () => {
+    const extracted = extractMaterialTextFromPastedStudyText({
+      sourceUrl: 'https://quizlet.com/96216077/140-must-know-nclex-meds-flash-cards/',
+      text: `
+        Digoxin    Check apical pulse before giving and monitor for toxicity such as nausea, visual halos, and dysrhythmias.
+        Warfarin    Monitor INR and bleeding precautions; teach the client to report black stools, hematuria, or unusual bruising.
+        Insulin    Monitor blood glucose and watch for hypoglycemia symptoms such as diaphoresis, shakiness, and confusion.
+      `,
+    })
+    const material = makeMaterial(
+      extracted.assets.map((asset) => ({ ...asset, materialId: 'material-lab-values' })),
+    )
+    const flashcards = generateCleanFlashcardsFromMaterial({
+      ...material,
+      displayTitle: extracted.title,
+      fileType: extracted.fileType,
+      sourceUrl: extracted.sourceUrl,
+      preview: extracted.preview,
+    })
+    const questions = generateCleanQuestionsFromMaterial(material, flashcards)
+    const generatedText = [
+      extracted.assets.map((asset) => `${asset.title} ${asset.content}`).join(' '),
+      flashcards.map((card) => `${card.front} ${card.back}`).join(' '),
+      questions.map((question) => `${question.prompt} ${question.choices.map((choice) => choice.text).join(' ')}`).join(' '),
+    ].join(' ')
+
+    expect(extracted.assets).toHaveLength(3)
+    expect(generatedText).toMatch(/digoxin|apical pulse|warfarin|INR|insulin|hypoglycemia/i)
+    expect(generatedText).not.toMatch(/unrelated finding|topic label|intervention unrelated/i)
+    expect(questions.length).toBeGreaterThan(0)
   })
 
   it('routes blocked Quizlet links to assisted import', async () => {

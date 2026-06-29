@@ -382,6 +382,17 @@ const upsertPracticeSession = (
 const findResumablePracticeSession = (sessions: ActiveSession[]) =>
   sessions.find((session) => isUnfinishedPracticeSession(session) && session.questionIds.length > 0) ?? null
 
+const isBlockedMaterialImportError = (error: unknown) => {
+  let current: unknown = error
+
+  while (current && typeof current === 'object') {
+    if ('name' in current && current.name === 'MaterialImportBlockedError') return true
+    current = 'cause' in current ? current.cause : null
+  }
+
+  return false
+}
+
 const baseState = {
   authUser: null as AuthUser | null,
   authSession: null as AuthSession | null,
@@ -1425,6 +1436,7 @@ export const useStudySystemStore = create<StudySystemState>()(
         } catch (error) {
           reportSafeError('material-link-import', error)
           const failedState = get()
+          const blockedImport = isBlockedMaterialImportError(error)
           void trackAppEvent(
             'material_upload_failed',
             {
@@ -1433,10 +1445,16 @@ export const useStudySystemStore = create<StudySystemState>()(
               exam_track: failedState.profile.examTrack ?? 'nclex-rn',
               time_spent_seconds: Math.round((Date.now() - importStartedAt) / 1000),
               is_demo_user: failedState.isDemoMode,
-              metadata: { error_category: 'link_import' },
+              metadata: { error_category: blockedImport ? 'blocked_link' : 'link_import' },
             },
             { userId: failedState.authUser?.id, isDemoUser: failedState.isDemoMode },
           )
+          if (blockedImport) {
+            set((state) => ({
+              materials: state.materials.filter((item) => item.id !== pending.id),
+            }))
+            throw error
+          }
           const message = getSafeErrorCopy('material-link-import')
           const failure = createErroredMaterial(
             pending,

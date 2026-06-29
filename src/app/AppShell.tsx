@@ -96,9 +96,12 @@ const practiceNavigation: NavigationItem[] = [
 const reviewNavigation: NavigationItem[] = [
   { label: 'Remediation', icon: FileText, to: '/weak-areas' },
   { label: 'Performance', icon: Trophy, to: '/performance-analytics' },
+]
+
+const libraryNavigation: NavigationItem[] = [
+  { label: 'My Materials', icon: FolderOpen, to: '/my-materials' },
   { label: 'Flashcards', icon: SquareStack, to: '/flashcards' },
   { label: 'Notes', icon: NotebookPen, to: '/notes' },
-  { label: 'My Materials', icon: FolderOpen, to: '/my-materials' },
   { label: 'Resources', icon: Brain, to: '/strategy-training' },
 ]
 
@@ -122,15 +125,17 @@ const mainNavigation = [
   ...commandNavigation,
   ...practiceNavigation,
   ...reviewNavigation,
+  ...libraryNavigation,
   ...communityNavigation,
 ]
 
-const studyToolsNavigation = [...practiceNavigation, ...reviewNavigation]
+const studyToolsNavigation = [...practiceNavigation, ...reviewNavigation, ...libraryNavigation]
 
 const sidebarNavigationGroups = [
   { title: 'Start', tone: 'cyan' as const, items: commandNavigation },
   { title: 'Practice', tone: 'emerald' as const, items: practiceNavigation },
   { title: 'Review', tone: 'amber' as const, items: reviewNavigation },
+  { title: 'Library', tone: 'rose' as const, items: libraryNavigation },
   { title: 'Connect', tone: 'violet' as const, items: communityNavigation },
 ]
 
@@ -138,7 +143,7 @@ const mobilePrimaryNavigation: NavigationItem[] = [
   { label: 'Today', icon: LayoutGrid, to: '/dashboard' },
   { label: 'Quick', icon: Flashlight, to: '/quick-study' },
   { label: 'Bank', icon: ClipboardList, to: '/practice-questions' },
-  { label: 'Files', icon: FolderOpen, to: '/my-materials' },
+  { label: 'Library', icon: FolderOpen, to: '/my-materials' },
 ]
 
 const mobilePrimaryRoutes = new Set(mobilePrimaryNavigation.map((item) => item.to))
@@ -963,7 +968,7 @@ function AdminAccessState({ title, detail }: { title: string; detail: string }) 
   )
 }
 
-type NavigationTone = 'amber' | 'cyan' | 'emerald' | 'slate' | 'violet'
+type NavigationTone = 'amber' | 'cyan' | 'emerald' | 'rose' | 'slate' | 'violet'
 
 const navigationToneClasses: Record<
   NavigationTone,
@@ -986,6 +991,12 @@ const navigationToneClasses: Record<
     dot: 'bg-emerald-300',
     group: 'text-emerald-100/72',
     icon: 'text-emerald-100',
+  },
+  rose: {
+    active: 'border-rose-200/42 bg-rose-300/12 text-white shadow-[inset_3px_0_0_rgba(251,113,133,0.9)]',
+    dot: 'bg-rose-300',
+    group: 'text-rose-100/72',
+    icon: 'text-rose-100',
   },
   slate: {
     active: 'border-sky-200/34 bg-white/[0.07] text-white shadow-[inset_3px_0_0_rgba(186,230,253,0.7)]',

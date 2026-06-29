@@ -201,12 +201,12 @@ export function CommandStatTile({
 }) {
   return (
     <div className={clsx('min-w-0 rounded-xl border px-2 py-2.5 sm:px-3 sm:py-3', commandToneStyles[tone].stat)}>
-      <div className="nc-metric-label flex items-center gap-1.5 sm:gap-2">
+      <div className="nc-metric-label flex min-w-0 items-start gap-1.5 leading-tight sm:items-center sm:gap-2">
         {icon ? <span className="hidden sm:inline-flex">{icon}</span> : null}
-        <span className="truncate">{label}</span>
+        <span className="min-w-0">{label}</span>
       </div>
       <p className="nc-metric-value mt-1.5 truncate text-xl text-white sm:mt-2 sm:text-2xl">{value}</p>
-      <p className="nc-meta truncate text-sky-100/58">{detail}</p>
+      <p className="nc-meta leading-tight text-sky-100/58">{detail}</p>
     </div>
   )
 }
