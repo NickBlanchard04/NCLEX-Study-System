@@ -10,6 +10,7 @@ export type QuestionRenderIssueCode =
   | 'scenario_prompt_duplicate'
   | 'scenario_prompt_spacing'
   | 'raw_html'
+  | 'internal_metadata_leak'
   | 'unsupported_markup'
   | 'weird_character'
   | 'control_character'
@@ -106,6 +107,7 @@ const emptySeverityCounts: Record<QuestionRenderSeverity, number> = {
 }
 
 const rawHtmlPattern = /<\/?[a-z][\s\S]*>/i
+const internalMetadataLeakPattern = /\b(?:focus\s+area|blueprint):\s*[^.]+\.?/i
 const unsupportedMarkupPattern = /(?:```|#{1,6}\s|\*\*|__|\[[^\]]+\]\([^)]+\))/
 const weirdCharacterPattern =
   /(?:\uFFFD|\u00E2[\u20AC\u2122\u0153\u201C\u201D\u2013]|\u00C3|\u00C2)/
@@ -188,6 +190,7 @@ const getRecommendedActions = (issues: QuestionRenderDiagnostic[]) => {
         actions.add('Block readiness use until the item has the missing display-critical fields.')
         break
       case 'raw_html':
+      case 'internal_metadata_leak':
       case 'unsupported_markup':
         actions.add('Rewrite the affected text as plain display-safe copy.')
         break
@@ -326,6 +329,15 @@ export function diagnoseQuestionRenderQuality(question: Question): QuestionRende
         code: 'raw_html',
         field,
         message: 'Raw HTML appears in learner-visible question copy.',
+        severity: 'review',
+      })
+    }
+
+    if (internalMetadataLeakPattern.test(value)) {
+      pushIssue(issues, {
+        code: 'internal_metadata_leak',
+        field,
+        message: 'Internal topic or blueprint metadata appears in learner-visible question copy.',
         severity: 'review',
       })
     }
