@@ -16,6 +16,7 @@ export type AnalyticsScope = 'selected-track' | 'all-tracks'
 export type ContentQualityStatus = 'generated-starter' | 'authored-draft' | 'editor-reviewed' | 'sme-review-ready' | 'sme-reviewed' | 'published'
 export type ContentAuthorType = 'system-generated' | 'clinical-editor-draft' | 'sme-authored'
 export type SessionMode = 'practice' | 'quick-study' | 'test' | 'clinical-thinking'
+export type PracticeSessionStatus = 'active' | 'completed' | 'discarded'
 export type MasteryLevel = 'fragile' | 'developing' | 'strong'
 export type FlashcardStatus = 'new' | 'needs-review' | 'known'
 export type StudyMaterialFileType = 'pdf' | 'docx' | 'txt' | 'md' | 'link'
@@ -43,6 +44,7 @@ export type SyncEventType =
   | 'material-flashcard'
   | 'material-question'
   | 'material-quiz-session'
+  | 'practice-session'
 
 export interface AuthUser {
   id: string
@@ -88,6 +90,7 @@ export interface Question {
   system?: string
   board?: string
   contentQuality?: ContentQualityStatus
+  contentFingerprint?: string
   authorType?: ContentAuthorType
   sourceRefs?: string[]
   sourceTopic?: string
@@ -124,6 +127,7 @@ export interface QuestionAttempt extends CloudOwnedEntity {
   flagged: boolean
   completedAt: string
   sessionType: SessionMode
+  sessionId?: string
   engineDiagnosis?: AttemptDiagnosis
   engineRemediationEvents?: RemediationEvent[]
 }
@@ -146,15 +150,18 @@ export interface WeakAreaInsight extends CategoryStats {
   suggestedAction: string
 }
 
-export interface StudySession {
+export interface StudySession extends CloudOwnedEntity {
   id: string
   mode: SessionMode
+  examTrack?: ExamTrackId
   title: string
   subtitle: string
   questionIds: string[]
   startedAt: string
   endedAt?: string
   score?: number
+  status?: PracticeSessionStatus
+  lastActivityAt?: string
 }
 
 export interface ActiveSession extends StudySession {

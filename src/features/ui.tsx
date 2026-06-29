@@ -1326,10 +1326,17 @@ export function QuestionSessionRunner({
                 </button>
                 <button
                   type="button"
-                  onClick={onExit}
+                  onClick={() => navigate('/dashboard')}
                   className="nclex-btn-secondary rounded-xl px-4 py-2.5 text-sm font-semibold"
                 >
-                  Exit
+                  Save & leave
+                </button>
+                <button
+                  type="button"
+                  onClick={onExit}
+                  className="rounded-xl border border-rose-200/25 bg-rose-300/[0.08] px-4 py-2.5 text-sm font-semibold text-rose-100 transition hover:bg-rose-300/14"
+                >
+                  Discard
                 </button>
               </div>
             </div>
@@ -1395,10 +1402,17 @@ export function QuestionSessionRunner({
           </button>
           <button
             type="button"
-            onClick={onExit}
+            onClick={() => navigate('/dashboard')}
             className="nclex-btn-secondary inline-flex min-h-[44px] flex-1 items-center justify-center rounded-xl px-4 py-2 text-sm font-black"
           >
-            Exit
+            Save & leave
+          </button>
+          <button
+            type="button"
+            onClick={onExit}
+            className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-xl border border-rose-200/25 bg-rose-300/[0.08] px-4 py-2 text-sm font-black text-rose-100"
+          >
+            Discard
           </button>
         </div>
       </div>

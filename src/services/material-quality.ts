@@ -25,8 +25,15 @@ const sourceArtifactPattern =
   /\b(?:https?:\/\/|www\.|doi\b|pmid\b|issn\b|copyright|all rights reserved|github\.com|raw\.githubusercontent\.com|nursingcenter\.com|frontiersin\.org)\b/i
 const genericFragmentPattern =
   /\b(?:what should you know about (?:result|results|value|source)|best matches this point|uploaded nursing concept|this study material|smoke material|june\s+\d{4})\b/i
+const visibleMetadataPattern = /\b(?:focus area|blueprint)\s*:/i
 
 const clean = (value: string) => value.replace(/\s+/g, ' ').trim()
+const duplicateKey = (value: string) =>
+  clean(value)
+    .toLowerCase()
+    .replace(visibleMetadataPattern, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
 
 export const hasCodeLikeStudyArtifact = (value: string) => {
   const normalized = clean(value)
@@ -61,6 +68,8 @@ const makeIssue = (
 const hasSourceArtifact = (value: string) => sourceArtifactPattern.test(value)
 
 const hasBrokenFragment = (value: string) => genericFragmentPattern.test(value)
+
+const hasVisibleMetadataNoise = (value: string) => visibleMetadataPattern.test(value)
 
 const isLikelyNclexStem = (prompt: string) =>
   /\b(?:nurse|client|patient|priority|most appropriate|best|which statement|which point)\b/i.test(prompt)
@@ -143,7 +152,11 @@ export function inspectMaterialFlashcard(
     )
   }
 
-  if (hasSourceArtifact(`${front} ${back}`) || hasBrokenFragment(`${front} ${back}`)) {
+  if (
+    hasSourceArtifact(`${front} ${back}`) ||
+    hasBrokenFragment(`${front} ${back}`) ||
+    hasVisibleMetadataNoise(`${front} ${back}`)
+  ) {
     issues.push(
       makeIssue(card, 'flashcard', itemLabel, {
         code: 'flashcard_source_noise',
@@ -279,7 +292,8 @@ export function inspectMaterialQuestion(
 
   if (
     hasSourceArtifact(`${prompt} ${choiceTexts.join(' ')} ${rationale}`) ||
-    hasBrokenFragment(`${prompt} ${choiceTexts.join(' ')} ${rationale}`)
+    hasBrokenFragment(`${prompt} ${choiceTexts.join(' ')} ${rationale}`) ||
+    hasVisibleMetadataNoise(`${prompt} ${choiceTexts.join(' ')} ${rationale}`)
   ) {
     issues.push(
       makeIssue(question, 'question', itemLabel, {
@@ -315,13 +329,13 @@ export function summarizeMaterialQuality(
   const questionPrompts = new Map<string, MaterialQuestion[]>()
 
   flashcards.forEach((card) => {
-    const key = clean(card.front).toLowerCase()
+    const key = duplicateKey(card.front)
     if (!key) return
     cardFronts.set(key, [...(cardFronts.get(key) ?? []), card])
   })
 
   questions.forEach((question) => {
-    const key = clean(question.prompt).toLowerCase()
+    const key = duplicateKey(question.prompt)
     if (!key) return
     questionPrompts.set(key, [...(questionPrompts.get(key) ?? []), question])
   })
