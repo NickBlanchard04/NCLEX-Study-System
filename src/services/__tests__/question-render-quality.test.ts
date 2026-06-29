@@ -92,6 +92,19 @@ describe('question render quality', () => {
     )
   })
 
+  it('blocks internal topic and blueprint labels from learner-visible question copy', () => {
+    const result = diagnoseQuestionRenderQuality(
+      makeQuestion({
+        scenario:
+          'A client reports worsening shortness of breath. Focus area: Med-Surg. Blueprint: NCSBN NCLEX-RN.',
+      }),
+    )
+
+    expect(result.displaySafe).toBe(false)
+    expect(result.action).toBe('needs_render_review')
+    expect(result.issues.map((issue) => issue.code)).toContain('internal_metadata_leak')
+  })
+
   it('turns learner formatting flags into render review instead of clinical scoring changes', () => {
     const question = makeQuestion({ id: 'render-feedback-001' })
     const diagnosis = diagnoseQuestionRenderFeedback(question, [
