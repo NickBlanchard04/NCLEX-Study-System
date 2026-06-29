@@ -4,7 +4,9 @@ import type {
   MaterialQuestion,
   MaterialQuizSession,
   Note,
+  ActiveSession,
   QuestionAttempt,
+  SessionResponse,
   StudyMaterial,
   SyncEvent,
   UserProfile,
@@ -36,7 +38,41 @@ export interface CloudStateBundle {
   materialFlashcards: MaterialFlashcard[]
   materialQuestions: MaterialQuestion[]
   materialQuizSessions: MaterialQuizSession[]
+  practiceSessions: ActiveSession[]
 }
+
+const mapPracticeResponse = (row: Record<string, unknown>): SessionResponse => ({
+  questionId: String(row.question_id),
+  selectedAnswer: Array.isArray(row.selected_answer) ? row.selected_answer as string[] : [],
+  isCorrect: Boolean(row.is_correct),
+  confidence: (row.confidence as SessionResponse['confidence']) ?? 'medium',
+  timeSpentSec: Number(row.time_spent_sec) || 0,
+  flagged: Boolean(row.flagged),
+  submittedAt: String(row.submitted_at ?? row.updated_at ?? row.created_at ?? nowIso()),
+})
+
+const mapPracticeSession = (
+  row: Record<string, unknown>,
+  responses: Record<string, unknown>[],
+): ActiveSession => ({
+  id: String(row.id),
+  userId: String(row.user_id),
+  mode: row.mode as ActiveSession['mode'],
+  examTrack: row.exam_track as ActiveSession['examTrack'],
+  title: String(row.title),
+  subtitle: String(row.subtitle),
+  questionIds: Array.isArray(row.question_ids) ? row.question_ids as string[] : [],
+  startedAt: String(row.started_at),
+  endedAt: row.ended_at ? String(row.ended_at) : undefined,
+  score: typeof row.score === 'number' ? row.score : row.score === null || row.score === undefined ? undefined : Number(row.score),
+  status: row.status as ActiveSession['status'],
+  lastActivityAt: String(row.last_activity_at ?? row.updated_at ?? row.started_at),
+  currentIndex: Number(row.current_index) || 0,
+  config: row.config as ActiveSession['config'],
+  responses: responses.map(mapPracticeResponse),
+  createdAt: String(row.created_at ?? row.started_at),
+  updatedAt: String(row.updated_at ?? row.last_activity_at ?? row.started_at),
+})
 
 export async function loadCloudState(userId: string): Promise<CloudStateBundle> {
   const client = requireClient()
@@ -49,6 +85,8 @@ export async function loadCloudState(userId: string): Promise<CloudStateBundle> 
     flashcardsResult,
     questionsResult,
     quizSessionsResult,
+    practiceSessionsResult,
+    practiceResponsesResult,
   ] = await Promise.all([
     client.from('profiles').select('*').eq('id', userId).maybeSingle(),
     client.from('question_attempts').select('*').eq('user_id', userId).is('deleted_at', null),
@@ -58,6 +96,8 @@ export async function loadCloudState(userId: string): Promise<CloudStateBundle> 
     client.from('material_flashcards').select('*').eq('user_id', userId).is('deleted_at', null),
     client.from('material_questions').select('*').eq('user_id', userId).is('deleted_at', null),
     client.from('material_quiz_sessions').select('*').eq('user_id', userId).is('deleted_at', null),
+    client.from('practice_sessions').select('*').eq('user_id', userId).is('deleted_at', null),
+    client.from('practice_session_responses').select('*').eq('user_id', userId).is('deleted_at', null),
   ])
 
   const firstError = [
@@ -69,6 +109,8 @@ export async function loadCloudState(userId: string): Promise<CloudStateBundle> 
     flashcardsResult.error,
     questionsResult.error,
     quizSessionsResult.error,
+    practiceSessionsResult.error,
+    practiceResponsesResult.error,
   ].find(Boolean)
   if (firstError) throw firstError
 
@@ -88,6 +130,15 @@ export async function loadCloudState(userId: string): Promise<CloudStateBundle> 
   const profilePreferences = profileResult.data?.preferences as
     | (UserProfile['preferences'] & { profileImageDataUrl?: string })
     | undefined
+
+  const responsesBySessionId = (practiceResponsesResult.data ?? []).reduce<Record<string, Record<string, unknown>[]>>(
+    (groups, row) => {
+      const sessionId = String(row.session_id)
+      groups[sessionId] = [...(groups[sessionId] ?? []), row]
+      return groups
+    },
+    {},
+  )
 
   return {
     profile: profileResult.data
@@ -127,6 +178,7 @@ export async function loadCloudState(userId: string): Promise<CloudStateBundle> 
       flagged: row.flagged,
       completedAt: row.completed_at,
       sessionType: row.session_type,
+      sessionId: row.session_id ?? undefined,
       engineDiagnosis: row.engine_diagnosis ?? undefined,
       engineRemediationEvents: row.engine_remediation_events ?? undefined,
       userId,
@@ -167,6 +219,9 @@ export async function loadCloudState(userId: string): Promise<CloudStateBundle> 
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     })),
+    practiceSessions: (practiceSessionsResult.data ?? [])
+      .map((row) => mapPracticeSession(row, responsesBySessionId[String(row.id)] ?? []))
+      .toSorted((left, right) => (right.updatedAt ?? '').localeCompare(left.updatedAt ?? '')),
   }
 }
 
@@ -211,6 +266,7 @@ export async function saveAttempts(userId: string, attempts: QuestionAttempt[]) 
       flagged: owned.flagged,
       completed_at: owned.completedAt,
       session_type: owned.sessionType,
+      session_id: owned.sessionId ?? null,
       engine_diagnosis: owned.engineDiagnosis ?? null,
       engine_remediation_events: owned.engineRemediationEvents ?? [],
       created_at: owned.createdAt,
@@ -218,6 +274,64 @@ export async function saveAttempts(userId: string, attempts: QuestionAttempt[]) 
     }
   })
   const { error } = await client.from('question_attempts').upsert(rows)
+  if (error) throw error
+}
+
+export async function savePracticeSessions(userId: string, sessions: ActiveSession[]) {
+  if (!sessions.length) return
+  const client = requireClient()
+  const sessionRows = sessions.map((session) => {
+    const owned = withOwnership(userId, session)
+    const status = owned.deletedAt
+      ? 'discarded'
+      : owned.status ?? (owned.endedAt ? 'completed' : 'active')
+    return {
+      id: owned.id,
+      user_id: userId,
+      mode: owned.mode,
+      exam_track: owned.examTrack ?? 'nclex-rn',
+      title: owned.title,
+      subtitle: owned.subtitle,
+      question_ids: owned.questionIds,
+      current_index: owned.currentIndex,
+      config: owned.config,
+      started_at: owned.startedAt,
+      ended_at: owned.endedAt ?? null,
+      score: owned.score ?? null,
+      status,
+      last_activity_at: owned.lastActivityAt ?? owned.updatedAt ?? nowIso(),
+      created_at: owned.createdAt ?? owned.startedAt,
+      updated_at: owned.updatedAt ?? nowIso(),
+      deleted_at: owned.deletedAt ?? null,
+    }
+  })
+  const responseRows = sessions.flatMap((session) =>
+    session.responses.map((response) => ({
+      user_id: userId,
+      session_id: session.id,
+      question_id: response.questionId,
+      selected_answer: response.selectedAnswer,
+      is_correct: response.isCorrect,
+      confidence: response.confidence,
+      time_spent_sec: response.timeSpentSec,
+      flagged: response.flagged,
+      submitted_at: response.submittedAt,
+      updated_at: session.updatedAt ?? session.lastActivityAt ?? nowIso(),
+      deleted_at: session.deletedAt ?? null,
+    })),
+  )
+
+  const operations = [client.from('practice_sessions').upsert(sessionRows)]
+  if (responseRows.length) {
+    operations.push(
+      client
+        .from('practice_session_responses')
+        .upsert(responseRows, { onConflict: 'user_id,session_id,question_id' }),
+    )
+  }
+
+  const results = await Promise.all(operations)
+  const error = results.find((result) => result.error)?.error
   if (error) throw error
 }
 

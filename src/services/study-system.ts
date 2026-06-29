@@ -337,12 +337,80 @@ export const getDashboardState = (
   }
 }
 
+const practiceSessionRoute: Record<ActiveSession['mode'], string> = {
+  practice: '/practice-questions',
+  'quick-study': '/quick-study',
+  test: '/test-mode',
+  'clinical-thinking': '/clinical-simulator',
+}
+
+const practiceSessionLabel: Record<ActiveSession['mode'], string> = {
+  practice: 'Practice set',
+  'quick-study': 'Quick Study',
+  test: 'Test mode',
+  'clinical-thinking': 'Clinical thinking',
+}
+
+const getSessionTopCategory = (session: ActiveSession) => {
+  const categoryCounts = session.questionIds.reduce<Map<string, number>>((counts, questionId) => {
+    const category = questionLookup[questionId]?.category
+    if (!category) return counts
+    counts.set(category, (counts.get(category) ?? 0) + 1)
+    return counts
+  }, new Map())
+  return [...categoryCounts.entries()].toSorted((left, right) => right[1] - left[1])[0]?.[0] ?? 'Mixed'
+}
+
+export const getActiveSessionSummary = (session: ActiveSession | null) => {
+  if (!session || session.endedAt || session.status === 'discarded' || session.deletedAt) return null
+  return {
+    id: session.id,
+    mode: session.mode,
+    label: practiceSessionLabel[session.mode],
+    title: session.title,
+    route: practiceSessionRoute[session.mode],
+    answeredCount: session.responses.length,
+    questionCount: session.questionIds.length,
+    topCategory: getSessionTopCategory(session),
+    lastActivityAt: session.lastActivityAt ?? session.updatedAt ?? session.startedAt,
+  }
+}
+
+export const getPracticeHistory = (sessions: ActiveSession[], limit = 3) =>
+  sessions
+    .filter((session) => session.status === 'completed' || Boolean(session.endedAt))
+    .filter((session) => !session.deletedAt && session.status !== 'discarded')
+    .toSorted((left, right) =>
+      (right.endedAt ?? right.updatedAt ?? right.startedAt).localeCompare(
+        left.endedAt ?? left.updatedAt ?? left.startedAt,
+      ),
+    )
+    .slice(0, limit)
+    .map((session) => ({
+      id: session.id,
+      mode: session.mode,
+      label: practiceSessionLabel[session.mode],
+      title: session.title,
+      score: session.score ?? 0,
+      questionCount: session.questionIds.length,
+      answeredCount: session.responses.length,
+      completedAt: session.endedAt ?? session.updatedAt ?? session.startedAt,
+      topCategory: getSessionTopCategory(session),
+      route: practiceSessionRoute[session.mode],
+    }))
+
 const shuffle = <T,>(items: T[]) => [...items].sort(() => Math.random() - 0.5)
 
 const getEngineRankScores = (questions: typeof questionBank, attempts: QuestionAttempt[]) => {
   const { diagnoses, remediationEvents } = getEngineEvidenceFromAttempts(attempts)
   return selectAdaptiveEngineItem(questions, diagnoses, remediationEvents).scoreByItemId
 }
+
+const countAttemptsByQuestionId = (attempts: QuestionAttempt[]) =>
+  attempts.reduce<Map<string, number>>((counts, attempt) => {
+    counts.set(attempt.questionId, (counts.get(attempt.questionId) ?? 0) + 1)
+    return counts
+  }, new Map())
 
 const questionQualityRank = (questionId: string) => {
   const quality = questionLookup[questionId]?.contentQuality
@@ -372,21 +440,60 @@ const getAdaptiveDifficulty = (attempts: QuestionAttempt[], category?: QuestionC
 
 const createSession = (
   mode: ActiveSession['mode'],
+  examTrack: ExamTrackId,
   title: string,
   subtitle: string,
   questionIds: string[],
   config: ActiveSession['config'],
-): ActiveSession => ({
-  id: crypto.randomUUID(),
-  mode,
-  title,
-  subtitle,
-  questionIds,
-  startedAt: new Date().toISOString(),
-  currentIndex: 0,
-  config,
-  responses: [],
-})
+): ActiveSession => {
+  const startedAt = new Date().toISOString()
+  return {
+    id: crypto.randomUUID(),
+    mode,
+    examTrack,
+    title,
+    subtitle,
+    questionIds,
+    startedAt,
+    currentIndex: 0,
+    config,
+    responses: [],
+    status: 'active',
+    lastActivityAt: startedAt,
+  }
+}
+
+export const selectQuickStudyQuestionIds = (
+  available: typeof questionBank,
+  attempts: QuestionAttempt[],
+  difficulty: QuestionDifficulty,
+  questionCount = 5,
+) => {
+  const recentAttemptIds = attempts.slice(-8).map((attempt) => attempt.questionId)
+  const recentIds = new Set(recentAttemptIds)
+  const nonRecent = available.filter((question) => !recentIds.has(question.id))
+  const recentBackfill = available
+    .filter((question) => recentIds.has(question.id))
+    .toSorted((left, right) => recentAttemptIds.indexOf(left.id) - recentAttemptIds.indexOf(right.id))
+  const candidatePool =
+    nonRecent.length >= questionCount ? nonRecent : [...nonRecent, ...recentBackfill]
+  const engineScores = getEngineRankScores(candidatePool, attempts)
+  const attemptCounts = countAttemptsByQuestionId(attempts)
+
+  return candidatePool
+    .toSorted((left, right) => {
+      const engineDelta = (engineScores[right.id] ?? 0) - (engineScores[left.id] ?? 0)
+      if (Math.abs(engineDelta) > 0.05) return engineDelta
+      const qualityDelta = questionQualityRank(left.id) - questionQualityRank(right.id)
+      if (qualityDelta !== 0) return qualityDelta
+      const leftMatch = left.difficulty === difficulty ? 0 : 1
+      const rightMatch = right.difficulty === difficulty ? 0 : 1
+      if (leftMatch !== rightMatch) return leftMatch - rightMatch
+      return (attemptCounts.get(left.id) ?? 0) - (attemptCounts.get(right.id) ?? 0)
+    })
+    .slice(0, questionCount)
+    .map((question) => question.id)
+}
 
 export const generateQuickStudySession = (
   attempts: QuestionAttempt[],
@@ -394,30 +501,22 @@ export const generateQuickStudySession = (
   preferredCategory?: QuestionCategory,
 ) => {
   const bank = getExamQuestionBank(examTrack)
+  const scopedAttempts = getScopedAttempts(attempts, examTrack)
+  const weakAreas = getWeakAreas(scopedAttempts, examTrack)
   const weakArea = preferredCategory
-    ? getWeakAreas(attempts, examTrack).find((item) => item.category === preferredCategory)
-    : getWeakAreas(attempts, examTrack)[0]
-  const category = weakArea?.category ?? getWeakAreas(attempts, examTrack)[0]?.category ?? getExamCategories(examTrack)[0]
+    ? weakAreas.find((item) => item.category === preferredCategory)
+    : weakAreas[0]
+  const category = weakArea?.category ?? weakAreas[0]?.category ?? getExamCategories(examTrack)[0]
   const available = bank.filter((question) => question.category === category)
-  const recentIds = new Set(attempts.slice(-8).map((attempt) => attempt.questionId))
-  const unseenFirst = [
-    ...available.filter((question) => !recentIds.has(question.id)),
-    ...available.filter((question) => recentIds.has(question.id)),
-  ]
-  const difficulty = getAdaptiveDifficulty(attempts, category)
-  const engineScores = getEngineRankScores(unseenFirst, attempts)
-  const sorted = unseenFirst.toSorted((left, right) => {
-    const engineDelta = (engineScores[right.id] ?? 0) - (engineScores[left.id] ?? 0)
-    if (Math.abs(engineDelta) > 0.05) return engineDelta
-    const leftMatch = left.difficulty === difficulty ? 0 : 1
-    const rightMatch = right.difficulty === difficulty ? 0 : 1
-    return leftMatch - rightMatch
-  })
+  const difficulty = getAdaptiveDifficulty(scopedAttempts, category)
+  const questionIds = selectQuickStudyQuestionIds(available, scopedAttempts, difficulty, 5)
+
   return createSession(
     'quick-study',
+    examTrack,
     '10-minute rescue set',
     `${category} focus. Five questions, fast feedback, zero clutter.`,
-    sorted.slice(0, 5).map((question) => question.id),
+    questionIds,
     {
       questionCount: 5,
       category,
@@ -503,6 +602,7 @@ export const generatePracticeSet = (
   const questionCount = filters.questionCount ?? 10
   return createSession(
     'practice',
+    examTrack,
     'Adaptive practice',
     filters.category && filters.category !== 'All'
       ? `${filters.category} focus with rationale-rich feedback.`
@@ -547,6 +647,7 @@ export const generateTestSession = (
 
   return createSession(
     'test',
+    examTrack,
     `${examTrack.toUpperCase()} test mode`,
     config.timed
       ? `${config.questionCount} questions. Timed, mixed, and focused on realistic exam pressure.`
@@ -592,6 +693,7 @@ export const generateClinicalThinkingSession = (
 
   return createSession(
     'clinical-thinking',
+    examTrack,
     `${focus} drill`,
     'Patient-based judgment practice with fast rationale debriefs.',
     ranked.slice(0, 5).map((question) => question.id),

@@ -75,7 +75,9 @@ import { examTracks, getExamTrack } from '../data/exam-tracks'
 import {
   buildStudyPlan,
   getAnalyticsSnapshot,
+  getActiveSessionSummary,
   getDashboardState,
+  getPracticeHistory,
   getWeakAreas,
   questionLookup,
 } from '../services/study-system'
@@ -793,10 +795,15 @@ export function DashboardPage() {
   const profile = useStudySystemStore((state) => state.profile)
   const attempts = useStudySystemStore((state) => state.attempts)
   const materials = useStudySystemStore((state) => state.materials)
+  const activeSession = useStudySystemStore((state) => state.activeSession)
+  const practiceSessions = useStudySystemStore((state) => state.practiceSessions)
+  const discardPracticeSession = useStudySystemStore((state) => state.abandonSession)
   const startQuickStudy = useStudySystemStore((state) => state.startQuickStudy)
   const [dashboardNowMs] = useState(() => new Date().getTime())
   const dashboard = useMemo(() => getDashboardState(profile, attempts), [attempts, profile])
   const analytics = useMemo(() => getAnalyticsSnapshot(attempts, profile), [attempts, profile])
+  const continueSession = useMemo(() => getActiveSessionSummary(activeSession), [activeSession])
+  const practiceHistory = useMemo(() => getPracticeHistory(practiceSessions, 3), [practiceSessions])
   const weakestArea = dashboard.weakestCategories[0]
   const todayMinutes = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10)
@@ -861,6 +868,10 @@ export function DashboardPage() {
         (!item.generatedFlashcardIds.length || !item.generatedQuestionIds.length)),
   ).length
   const startPlanQuickStudy = (category?: QuestionCategory) => {
+    if (continueSession) {
+      navigate(continueSession.route)
+      return
+    }
     startQuickStudy(category)
     navigate('/quick-study')
   }
@@ -1236,6 +1247,104 @@ export function DashboardPage() {
           </div>
         </div>
       </FocusPanel>
+
+      {continueSession || practiceHistory.length ? (
+        <section className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+          {continueSession ? (
+            <Surface className="border-cyan-300/24 bg-cyan-300/[0.065]">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-100/70">
+                    Continue session
+                  </p>
+                  <h3 className="mt-1 text-xl font-black text-white">{continueSession.label}</h3>
+                  <p className="mt-1 text-sm leading-6 text-sky-100/66">
+                    {continueSession.answeredCount}/{continueSession.questionCount} answered in {continueSession.topCategory}.
+                    Resume where you left off.
+                  </p>
+                </div>
+                <div className="flex shrink-0 flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => navigate(continueSession.route)}
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-cyan-100/45 bg-cyan-400/18 px-4 py-2.5 text-sm font-black text-cyan-50 transition hover:bg-cyan-400/25"
+                  >
+                    Resume
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={discardPracticeSession}
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-rose-200/25 bg-rose-300/[0.08] px-4 py-2.5 text-sm font-black text-rose-100 transition hover:bg-rose-300/14"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Discard
+                  </button>
+                </div>
+              </div>
+              <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
+                <div
+                  className="h-full rounded-full bg-[linear-gradient(90deg,#22d3ee_0%,#34d399_100%)]"
+                  style={{
+                    width: `${Math.max(
+                      6,
+                      Math.round((continueSession.answeredCount / Math.max(continueSession.questionCount, 1)) * 100),
+                    )}%`,
+                  }}
+                />
+              </div>
+            </Surface>
+          ) : null}
+
+          {practiceHistory.length ? (
+            <Surface className="border-emerald-300/20 bg-emerald-300/[0.045]">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-100/70">
+                    Recent practice
+                  </p>
+                  <h3 className="mt-1 text-xl font-black text-white">Scores and review trail</h3>
+                </div>
+                <Link to="/performance-analytics" className="text-sm font-black text-cyan-100">
+                  View all
+                </Link>
+              </div>
+              <div className="mt-4 grid gap-2">
+                {practiceHistory.map((session) => (
+                  <div
+                    key={session.id}
+                    className="grid gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-black text-white">{session.label}</p>
+                      <p className="mt-1 text-xs font-semibold text-sky-100/58">
+                        {session.topCategory} - {session.answeredCount}/{session.questionCount} answered -{' '}
+                        {new Date(session.completedAt).toLocaleDateString(undefined, {
+                          month: 'short',
+                          day: 'numeric',
+                        })}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 sm:justify-end">
+                      <span className="inline-flex min-w-16 justify-center rounded-lg border border-emerald-200/24 bg-emerald-300/10 px-3 py-1.5 text-sm font-black text-emerald-100">
+                        {Math.round(session.score * 100)}%
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => navigate('/performance-analytics')}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-cyan-200/16 bg-cyan-300/[0.07] text-cyan-100 transition hover:bg-cyan-300/14"
+                        aria-label={`Review ${session.label}`}
+                      >
+                        <BarChart3 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Surface>
+          ) : null}
+        </section>
+      ) : null}
 
       <section
         className="dashboard-section-mastery rounded-[1.25rem] border border-emerald-300/22 p-4 shadow-[0_18px_50px_rgba(16,185,129,0.08)] md:p-5"

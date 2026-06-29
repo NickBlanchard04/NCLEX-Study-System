@@ -1288,13 +1288,24 @@ const trackQuestionBlueprints: Record<ExamTrackId, TrackQuestionBlueprint> = {
 
 const generatedQuestionCount = 250
 const difficultyCycle = ['foundation', 'developing', 'advanced'] as const
+const fingerprintText = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/\b(?:focus area|blueprint)\s*:[^.]+\.?/gi, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+
+export const createQuestionFingerprint = (...parts: string[]) =>
+  parts
+    .map(fingerprintText)
+    .filter(Boolean)
+    .join('|')
 
 const makeGeneratedQuestion = (
   examTrack: ExamTrackId,
   index: number,
 ): Question => {
   const blueprint = trackQuestionBlueprints[examTrack]
-  const track = getExamTrack(examTrack)
   const category = blueprint.categories[index % blueprint.categories.length]
   const system = blueprint.systems[index % blueprint.systems.length]
   const board = blueprint.boards[index % blueprint.boards.length]
@@ -1317,6 +1328,11 @@ const makeGeneratedQuestion = (
     : isCase
       ? 'Which decision best reflects safe clinical judgment?'
       : 'Which response is most appropriate?'
+  const scenarioText = scenario
+  const promptText = isSata
+    ? 'Which actions should be included? Select all that apply.'
+    : stemFocus
+  const correctChoice = `Use the ${system} findings to ${intervention}.`
 
   return {
     id: `${examTrack}-q-${String(index + 1).padStart(3, '0')}`,
@@ -1326,6 +1342,7 @@ const makeGeneratedQuestion = (
     system,
     board,
     contentQuality: 'generated-starter',
+    contentFingerprint: createQuestionFingerprint(examTrack, category, system, scenarioText, promptText, correctChoice),
     authorType: 'system-generated',
     sourceRefs:
       examTrack === 'fnp'
@@ -1344,20 +1361,18 @@ const makeGeneratedQuestion = (
     difficulty,
     difficultyProfile,
     format: isSata ? 'select-all-that-apply' : 'multiple-choice',
-    scenario: `${scenario} Focus area: ${system}. Blueprint: ${board}.`,
-    prompt: isSata
-      ? `Which actions should be included for this ${track.shortName} ${system} item? Select all that apply.`
-      : stemFocus,
+    scenario: scenarioText,
+    prompt: promptText,
     choices: isSata
       ? makeChoices(
-          `Use the ${system} findings to ${intervention}.`,
+          correctChoice,
           'Pause and verify safety cues before moving to routine tasks.',
           wrong[(index + 1) % wrong.length],
           'Document relevant findings and communicate changes clearly.',
           wrong[(index + 2) % wrong.length],
         )
       : makeChoices(
-          `Use the ${system} findings to ${intervention}.`,
+          correctChoice,
           wrong[index % wrong.length],
           wrong[(index + 1) % wrong.length],
           wrong[(index + 2) % wrong.length],
@@ -1365,9 +1380,9 @@ const makeGeneratedQuestion = (
     correctAnswer: isSata ? ['A', 'B', 'D'] : ['A'],
     rationale: {
       whyCorrect:
-        `This answer uses the ${track.shortName} blueprint focus for ${category}/${system} and prioritizes safe, exam-relevant decision-making.`,
+        `This answer prioritizes the relevant ${system} cues and supports safe, exam-relevant decision-making.`,
       whyOthers:
-        `The distractors either delay needed action, move outside the role being tested, or skip the assessment and safety logic required for ${track.shortName}.`,
+        'The distractors either delay needed action, move outside the role being tested, or skip the assessment and safety logic needed for clinical judgment.',
     },
     nclexTip: blueprint.tips[index % blueprint.tips.length],
     clinicalRelevance:

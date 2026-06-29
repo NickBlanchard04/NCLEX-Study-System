@@ -92,6 +92,26 @@ describe('material quality gates', () => {
     )
   })
 
+  it('blocks visible blueprint metadata in proposed study tools', () => {
+    const summary = summarizeMaterialQuality(
+      [
+        makeCard({
+          front: 'Focus area: Med-Surg. What finding requires immediate follow-up?',
+        }),
+      ],
+      [
+        makeQuestion({
+          prompt:
+            'A nurse is reviewing a postoperative client. Which finding should be reported immediately? Blueprint: NCSBN NCLEX-RN.',
+        }),
+      ],
+    )
+
+    expect(summary.issues.map((issue) => issue.code)).toEqual(
+      expect.arrayContaining(['flashcard_source_noise', 'question_source_noise']),
+    )
+  })
+
   it('blocks source-code shaped cards and questions before approval', () => {
     const summary = summarizeMaterialQuality(
       [
