@@ -8,6 +8,7 @@ import type {
   ExamTrackId,
   MasteryLevel,
   Note,
+  Question,
   QuestionAttempt,
   QuestionCategory,
   QuestionDifficulty,
@@ -401,6 +402,58 @@ export const getPracticeHistory = (sessions: ActiveSession[], limit = 3) =>
 
 const shuffle = <T,>(items: T[]) => [...items].sort(() => Math.random() - 0.5)
 
+const normalizeQuestionStemText = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/\b(?:focus area|blueprint)\s*:[^.]+\.?/gi, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+
+export const getQuestionStemFingerprint = (
+  question: Pick<Question, 'contentFingerprint' | 'examTrack' | 'prompt' | 'scenario'>,
+) => {
+  const visibleStem = [question.examTrack, question.scenario, question.prompt]
+    .map((part) => normalizeQuestionStemText(part ?? ''))
+    .filter(Boolean)
+    .join('|')
+
+  return visibleStem || question.contentFingerprint || ''
+}
+
+const getRecentQuestionStemFingerprints = (attempts: QuestionAttempt[], windowSize = 24) =>
+  attempts
+    .slice(-windowSize)
+    .map((attempt) => questionLookup[attempt.questionId])
+    .filter((question): question is Question => Boolean(question))
+    .map(getQuestionStemFingerprint)
+    .filter(Boolean)
+
+const selectUniqueQuestionIdsByStem = (
+  ranked: typeof questionBank,
+  questionCount: number,
+  recentStemFingerprints: Set<string> = new Set(),
+) => {
+  const selected: string[] = []
+  const selectedStemFingerprints = new Set<string>()
+
+  const addUnique = (allowRecentStem: boolean) => {
+    for (const question of ranked) {
+      if (selected.length >= questionCount) return
+      const stemFingerprint = getQuestionStemFingerprint(question)
+      if (!stemFingerprint || selectedStemFingerprints.has(stemFingerprint)) continue
+      if (!allowRecentStem && recentStemFingerprints.has(stemFingerprint)) continue
+
+      selected.push(question.id)
+      selectedStemFingerprints.add(stemFingerprint)
+    }
+  }
+
+  addUnique(false)
+  addUnique(true)
+
+  return selected
+}
+
 const getEngineRankScores = (questions: typeof questionBank, attempts: QuestionAttempt[]) => {
   const { diagnoses, remediationEvents } = getEngineEvidenceFromAttempts(attempts)
   return selectAdaptiveEngineItem(questions, diagnoses, remediationEvents).scoreByItemId
@@ -469,30 +522,35 @@ export const selectQuickStudyQuestionIds = (
   difficulty: QuestionDifficulty,
   questionCount = 5,
 ) => {
-  const recentAttemptIds = attempts.slice(-8).map((attempt) => attempt.questionId)
-  const recentIds = new Set(recentAttemptIds)
-  const nonRecent = available.filter((question) => !recentIds.has(question.id))
+  const recentStemList = getRecentQuestionStemFingerprints(attempts)
+  const recentStemFingerprints = new Set(recentStemList)
+  const nonRecent = available.filter(
+    (question) => !recentStemFingerprints.has(getQuestionStemFingerprint(question)),
+  )
   const recentBackfill = available
-    .filter((question) => recentIds.has(question.id))
-    .toSorted((left, right) => recentAttemptIds.indexOf(left.id) - recentAttemptIds.indexOf(right.id))
+    .filter((question) => recentStemFingerprints.has(getQuestionStemFingerprint(question)))
+    .toSorted(
+      (left, right) =>
+        recentStemList.indexOf(getQuestionStemFingerprint(left)) -
+        recentStemList.indexOf(getQuestionStemFingerprint(right)),
+    )
   const candidatePool =
     nonRecent.length >= questionCount ? nonRecent : [...nonRecent, ...recentBackfill]
   const engineScores = getEngineRankScores(candidatePool, attempts)
   const attemptCounts = countAttemptsByQuestionId(attempts)
 
-  return candidatePool
-    .toSorted((left, right) => {
-      const engineDelta = (engineScores[right.id] ?? 0) - (engineScores[left.id] ?? 0)
-      if (Math.abs(engineDelta) > 0.05) return engineDelta
-      const qualityDelta = questionQualityRank(left.id) - questionQualityRank(right.id)
-      if (qualityDelta !== 0) return qualityDelta
-      const leftMatch = left.difficulty === difficulty ? 0 : 1
-      const rightMatch = right.difficulty === difficulty ? 0 : 1
-      if (leftMatch !== rightMatch) return leftMatch - rightMatch
-      return (attemptCounts.get(left.id) ?? 0) - (attemptCounts.get(right.id) ?? 0)
-    })
-    .slice(0, questionCount)
-    .map((question) => question.id)
+  const ranked = candidatePool.toSorted((left, right) => {
+    const engineDelta = (engineScores[right.id] ?? 0) - (engineScores[left.id] ?? 0)
+    if (Math.abs(engineDelta) > 0.05) return engineDelta
+    const qualityDelta = questionQualityRank(left.id) - questionQualityRank(right.id)
+    if (qualityDelta !== 0) return qualityDelta
+    const leftMatch = left.difficulty === difficulty ? 0 : 1
+    const rightMatch = right.difficulty === difficulty ? 0 : 1
+    if (leftMatch !== rightMatch) return leftMatch - rightMatch
+    return (attemptCounts.get(left.id) ?? 0) - (attemptCounts.get(right.id) ?? 0)
+  })
+
+  return selectUniqueQuestionIdsByStem(ranked, questionCount, recentStemFingerprints)
 }
 
 export const generateQuickStudySession = (
@@ -586,11 +644,15 @@ export const generatePracticeSet = (
 
   const candidatePool = filtered.length ? filtered : bank
   const engineScores = getEngineRankScores(candidatePool, scopedAttempts)
+  const recentStemFingerprints = new Set(getRecentQuestionStemFingerprints(scopedAttempts))
   const ranked = shuffle(candidatePool).sort((left, right) => {
     const leftAttempts = scopedAttempts.filter((attempt) => attempt.questionId === left.id)
     const rightAttempts = scopedAttempts.filter((attempt) => attempt.questionId === right.id)
     const engineDelta = (engineScores[right.id] ?? 0) - (engineScores[left.id] ?? 0)
     if (Math.abs(engineDelta) > 0.05) return engineDelta
+    const leftRecentStem = recentStemFingerprints.has(getQuestionStemFingerprint(left)) ? 1 : 0
+    const rightRecentStem = recentStemFingerprints.has(getQuestionStemFingerprint(right)) ? 1 : 0
+    if (leftRecentStem !== rightRecentStem) return leftRecentStem - rightRecentStem
     const qualityDelta = questionQualityRank(left.id) - questionQualityRank(right.id)
     if (qualityDelta !== 0) return qualityDelta
     const leftDifficultyMatch = left.difficulty === targetDifficulty ? 0 : 1
@@ -600,6 +662,7 @@ export const generatePracticeSet = (
   })
 
   const questionCount = filters.questionCount ?? 10
+  const questionIds = selectUniqueQuestionIdsByStem(ranked, questionCount, recentStemFingerprints)
   return createSession(
     'practice',
     examTrack,
@@ -607,9 +670,9 @@ export const generatePracticeSet = (
     filters.category && filters.category !== 'All'
       ? `${filters.category} focus with rationale-rich feedback.`
       : 'Mixed practice built around your current weak spots.',
-    ranked.slice(0, questionCount).map((question) => question.id),
+    questionIds,
     {
-      questionCount,
+      questionCount: questionIds.length,
       category: filters.category && filters.category !== 'All' ? filters.category : 'Mixed',
       domain: filters.domain ?? 'All',
       system: filters.system ?? 'All',
@@ -634,16 +697,26 @@ export const generateTestSession = (
   config: TestConfig,
 ) => {
   const bank = getExamQuestionBank(examTrack)
+  const scopedAttempts = getScopedAttempts(attempts, examTrack)
   const weaknessByCategory = getWeakAreas(attempts, examTrack)
-  const engineScores = getEngineRankScores(bank, getScopedAttempts(attempts, examTrack))
+  const engineScores = getEngineRankScores(bank, scopedAttempts)
+  const recentStemFingerprints = new Set(getRecentQuestionStemFingerprints(scopedAttempts))
   const prioritized = shuffle(bank).sort((left, right) => {
     const engineDelta = (engineScores[right.id] ?? 0) - (engineScores[left.id] ?? 0)
     if (Math.abs(engineDelta) > 0.05) return engineDelta
+    const leftRecentStem = recentStemFingerprints.has(getQuestionStemFingerprint(left)) ? 1 : 0
+    const rightRecentStem = recentStemFingerprints.has(getQuestionStemFingerprint(right)) ? 1 : 0
+    if (leftRecentStem !== rightRecentStem) return leftRecentStem - rightRecentStem
     const leftWeight = weaknessByCategory.findIndex((item) => item.category === left.category) + 1
     const rightWeight =
       weaknessByCategory.findIndex((item) => item.category === right.category) + 1
     return leftWeight - rightWeight
   })
+  const questionIds = selectUniqueQuestionIdsByStem(
+    prioritized,
+    config.questionCount,
+    recentStemFingerprints,
+  )
 
   return createSession(
     'test',
@@ -652,9 +725,9 @@ export const generateTestSession = (
     config.timed
       ? `${config.questionCount} questions. Timed, mixed, and focused on realistic exam pressure.`
       : `${config.questionCount} questions. Untimed, mixed, and built for exam stamina.`,
-    prioritized.slice(0, config.questionCount).map((question) => question.id),
+    questionIds,
     {
-      questionCount: config.questionCount,
+      questionCount: questionIds.length,
       category: 'Mixed',
       format: 'mixed',
       difficulty: 'mixed',
@@ -670,6 +743,7 @@ export const generateClinicalThinkingSession = (
   examTrack: ExamTrackId,
   focus: string,
 ) => {
+  const scopedAttempts = getScopedAttempts(attempts, examTrack)
   const focusTags =
     focus === 'Prioritization'
       ? ['priority', 'who first']
@@ -686,19 +760,24 @@ export const generateClinicalThinkingSession = (
   )
 
   const ranked = shuffle(filtered).sort((left, right) => {
-    const leftAttempts = attempts.filter((attempt) => attempt.questionId === left.id)
-    const rightAttempts = attempts.filter((attempt) => attempt.questionId === right.id)
+    const leftAttempts = scopedAttempts.filter((attempt) => attempt.questionId === left.id)
+    const rightAttempts = scopedAttempts.filter((attempt) => attempt.questionId === right.id)
     return leftAttempts.length - rightAttempts.length
   })
+  const questionIds = selectUniqueQuestionIdsByStem(
+    ranked,
+    5,
+    new Set(getRecentQuestionStemFingerprints(scopedAttempts)),
+  )
 
   return createSession(
     'clinical-thinking',
     examTrack,
     `${focus} drill`,
     'Patient-based judgment practice with fast rationale debriefs.',
-    ranked.slice(0, 5).map((question) => question.id),
+    questionIds,
     {
-      questionCount: 5,
+      questionCount: questionIds.length,
       category: 'Mixed',
       format: 'mixed',
       difficulty: 'adaptive',
