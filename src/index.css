@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@500;600;700;800&display=swap');
 @import 'tailwindcss';
 
 :root {
@@ -57,9 +57,80 @@ body {
 h1,
 h2,
 h3,
-h4,
-.font-serif {
+h4 {
   font-family: 'Poppins', sans-serif;
+}
+
+.nc-hero-title,
+.nc-page-title,
+.nc-section-title,
+.nc-card-title,
+.nc-metric-value {
+  font-family: 'Poppins', sans-serif;
+  letter-spacing: 0;
+}
+
+.nc-hero-title {
+  font-weight: 800;
+  line-height: 0.95;
+}
+
+.nc-page-title {
+  font-weight: 700;
+  line-height: 1.04;
+}
+
+.nc-section-title {
+  font-weight: 700;
+  line-height: 1.16;
+}
+
+.nc-card-title {
+  font-weight: 600;
+  line-height: 1.22;
+}
+
+.nc-eyebrow,
+.nc-meta,
+.nc-chip-label,
+.nc-metric-label,
+.nc-primary-label,
+.nc-secondary-label {
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 0;
+}
+
+.nc-eyebrow,
+.nc-metric-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+
+.nc-meta {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.nc-chip-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.nc-metric-value {
+  font-weight: 700;
+  line-height: 1.04;
+}
+
+.nc-primary-label {
+  font-weight: 700;
+}
+
+.nc-secondary-label {
+  font-weight: 600;
 }
 
 button,

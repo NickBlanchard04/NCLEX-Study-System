@@ -69,7 +69,7 @@ function PersonAvatar({
   return (
     <div
       className={clsx(
-        'grid shrink-0 place-items-center overflow-hidden rounded-2xl border border-cyan-200/28 bg-[#0b2a48] font-black text-white',
+        'grid shrink-0 place-items-center overflow-hidden rounded-2xl border border-cyan-200/28 bg-[#0b2a48] font-bold text-white',
         sizeClass,
       )}
     >
@@ -95,7 +95,7 @@ function IconBadge({
   }[tone]
 
   return (
-    <span className={clsx('inline-flex min-h-8 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-black', toneClass)}>
+    <span className={clsx('inline-flex min-h-8 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-bold', toneClass)}>
       {icon}
       <span className="max-w-[8.5rem] truncate">{label}</span>
     </span>
@@ -138,9 +138,9 @@ function SectionTitle({
           {icon}
         </div>
         <div className="min-w-0">
-          <p className="truncate text-lg font-black text-white sm:text-2xl">{label}</p>
+          <p className="truncate text-lg font-bold text-white sm:text-2xl">{label}</p>
           {typeof count === 'number' ? (
-            <p className="text-xs font-black uppercase tracking-[0.14em] text-sky-100/50">{count} active</p>
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-sky-100/50">{count} active</p>
           ) : null}
         </div>
       </div>
@@ -175,7 +175,7 @@ function IconButton({
       onClick={onClick}
       disabled={disabled}
       className={clsx(
-        'inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-xl border px-3 text-sm font-black transition disabled:opacity-60',
+        'inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-xl border px-3 text-sm font-bold transition disabled:opacity-60',
         toneClass,
       )}
       aria-label={label}
@@ -549,7 +549,7 @@ export function SocialPage() {
                 type="button"
                 onClick={() => setActiveTab(tab)}
                 className={clsx(
-                  'inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-3 text-sm font-black capitalize transition',
+                  'inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-3 text-sm font-bold capitalize transition',
                   activeTab === tab
                     ? 'bg-sky-300/18 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]'
                     : 'text-sky-100/58 hover:text-white',
@@ -617,7 +617,7 @@ export function SocialPage() {
 
 function LoadingPanel({ label }: { label: string }) {
   return (
-    <div className="flex min-h-20 items-center justify-center gap-2 rounded-2xl border border-sky-300/22 bg-white/[0.04] px-4 py-5 text-sm font-black text-sky-100/72">
+    <div className="flex min-h-20 items-center justify-center gap-2 rounded-2xl border border-sky-300/22 bg-white/[0.04] px-4 py-5 text-sm font-bold text-sky-100/72">
       <LoaderCircle className="h-4 w-4 animate-spin" />
       {label}
     </div>
@@ -630,7 +630,7 @@ function IconEmpty({ icon, title }: { icon: React.ReactNode; title: string }) {
       <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-sky-300/18 bg-sky-300/[0.06] text-sky-100/70">
         {icon}
       </div>
-      <p className="text-sm font-black text-sky-100/70">{title}</p>
+      <p className="text-sm font-bold text-sky-100/70">{title}</p>
     </div>
   )
 }
@@ -700,7 +700,7 @@ function SuggestionCard({
       <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3">
         <PersonAvatar name={person.displayName} imageUrl={person.profileImageDataUrl} size="lg" />
         <div className="min-w-0">
-          <h4 className="truncate text-base font-black text-white sm:text-lg">{person.displayName}</h4>
+          <h4 className="truncate text-base font-bold text-white sm:text-lg">{person.displayName}</h4>
           <div className="mt-2 flex flex-wrap gap-1.5">
             <IconBadge
               icon={<Sparkles className="h-3.5 w-3.5" />}
@@ -750,7 +750,7 @@ function PersonCard({
       <div className="flex items-start gap-3">
         <PersonAvatar name={person.displayName} imageUrl={person.profileImageDataUrl} />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-base font-black text-white">{person.displayName}</p>
+          <p className="truncate text-base font-bold text-white">{person.displayName}</p>
           <div className="mt-2">
             <ProfileBadges person={person} compact />
           </div>
@@ -784,7 +784,7 @@ function InboxRow({
         <div className="flex min-w-0 items-center gap-3">
           <PersonAvatar name={item.displayName} imageUrl={item.profileImageDataUrl} size="sm" />
           <div className="min-w-0">
-            <p className="truncate text-sm font-black text-white">{item.displayName}</p>
+            <p className="truncate text-sm font-bold text-white">{item.displayName}</p>
             <IconBadge
               icon={isRequest ? <UserPlus className="h-3.5 w-3.5" /> : <Inbox className="h-3.5 w-3.5" />}
               label={isRequest ? 'Request' : 'Message'}
@@ -825,7 +825,7 @@ function ConnectionRow({
       <div className="flex min-w-0 items-center gap-3">
         <PersonAvatar name={connection.displayName} imageUrl={connection.profileImageDataUrl} />
         <div className="min-w-0">
-          <p className="truncate text-base font-black text-white">{connection.displayName}</p>
+          <p className="truncate text-base font-bold text-white">{connection.displayName}</p>
           <div className="mt-2">
             <ProfileBadges person={connection} compact />
           </div>
@@ -869,7 +869,7 @@ function RequestRow({
       <div className="flex min-w-0 items-center gap-3">
         <PersonAvatar name={request.displayName} imageUrl={request.profileImageDataUrl} />
         <div className="min-w-0">
-          <p className="truncate text-base font-black text-white">{request.displayName}</p>
+          <p className="truncate text-base font-bold text-white">{request.displayName}</p>
           <div className="mt-2">
             <IconBadge
               icon={incoming ? <UserPlus className="h-3.5 w-3.5" /> : <Send className="h-3.5 w-3.5" />}

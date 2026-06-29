@@ -1,4 +1,4 @@
-﻿import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, useTransition } from 'react'
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   CartesianGrid,
@@ -577,10 +577,10 @@ export function StudyMenuPage() {
 
             <div className="min-w-0">
               <div className="mt-2 max-w-3xl pr-14 sm:mt-0 lg:max-w-2xl">
-                <p className="text-xs font-black uppercase tracking-normal text-cyan-200/72 sm:text-sm">
+                <p className="nc-eyebrow text-cyan-200/72 sm:text-sm">
                   Study. Practice. Lead.
                 </p>
-                <h1 className="mt-2 text-5xl font-black uppercase leading-[0.9] tracking-normal text-white drop-shadow-[0_0_26px_rgba(125,211,252,0.24)] sm:text-6xl lg:text-7xl xl:text-[4.5rem]">
+                <h1 className="nc-hero-title mt-2 text-5xl uppercase text-white drop-shadow-[0_0_26px_rgba(125,211,252,0.24)] sm:text-6xl lg:text-7xl xl:text-[4.5rem]">
                   Nurse
                   <span className="block text-cyan-100">Command</span>
                 </h1>
@@ -616,13 +616,13 @@ export function StudyMenuPage() {
                       </span>
                       <span className="grid min-w-0 flex-1 gap-1 sm:grid-cols-[minmax(0,0.95fr)_minmax(0,0.75fr)] sm:items-center">
                         <span className="flex min-w-0 items-center gap-2">
-                          <span className="text-base font-black text-white sm:text-lg">{item.title}</span>
-                          <span className={clsx('hidden rounded-md border px-2 py-1 text-xs font-black sm:inline-flex', isActive ? selectedTaskClasses.meta : tone.meta)}>
+                          <span className="nc-card-title text-base text-white sm:text-lg">{item.title}</span>
+                          <span className={clsx('nc-chip-label hidden rounded-md border px-2 py-1 sm:inline-flex', isActive ? selectedTaskClasses.meta : tone.meta)}>
                             {item.status}
                           </span>
                         </span>
                         <span className="hidden min-w-0 text-sm font-semibold text-sky-50/62 sm:block sm:text-right">
-                          {item.eyebrow} · {item.description}
+                          {item.eyebrow} - {item.description}
                         </span>
                       </span>
                       <ArrowRight className={clsx('h-5 w-5 shrink-0 transition group-hover:translate-x-1', isActive ? selectedTaskClasses.text : tone.text)} />
@@ -636,10 +636,10 @@ export function StudyMenuPage() {
               <div className="overflow-hidden rounded-xl border border-sky-200/20 bg-[linear-gradient(135deg,rgba(14,165,233,0.13),rgba(2,8,18,0.82)_42%,rgba(124,58,237,0.13))] p-4 shadow-[0_18px_38px_rgba(0,0,0,0.18)] sm:p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-xs font-black uppercase tracking-normal text-cyan-100/66">Today&apos;s Status</p>
-                    <h2 className="mt-1 text-xl font-black leading-tight text-white">Level, mastery, streak.</h2>
+                    <p className="nc-eyebrow text-cyan-100/66">Today&apos;s Status</p>
+                    <h2 className="nc-section-title mt-1 text-xl text-white">Level, mastery, streak.</h2>
                   </div>
-                  <span className="shrink-0 rounded-full border border-amber-200/38 bg-amber-300/14 px-3 py-1 text-xs font-black text-amber-100">
+                  <span className="shrink-0 rounded-full border border-amber-200/38 bg-amber-300/14 px-3 py-1 text-xs font-bold text-amber-100">
                     {levelProgress}% to Lv {nurseLevel + 1}
                   </span>
                 </div>
@@ -650,15 +650,15 @@ export function StudyMenuPage() {
                       <div className={clsx('flex h-11 w-11 items-center justify-center rounded-xl border', badge.iconFrameClass)}>
                         <img src={badge.iconSrc} alt="" className={clsx('object-contain', badge.imageClass)} />
                       </div>
-                      <p className={clsx('mt-3 text-[0.7rem] font-black uppercase tracking-normal', badge.labelClass)}>{badge.label}</p>
-                      <p className="mt-1 truncate text-xl font-black leading-none text-white">{badge.value}</p>
+                      <p className={clsx('nc-metric-label mt-3 text-[0.7rem]', badge.labelClass)}>{badge.label}</p>
+                      <p className="nc-metric-value mt-1 truncate text-xl text-white">{badge.value}</p>
                     </div>
                   ))}
                 </div>
                 <div className="mt-4 rounded-lg border border-cyan-200/16 bg-[#03101f]/58 p-3">
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-xs font-black uppercase tracking-normal text-cyan-100/68">Today&apos;s progress</span>
-                    <span className="text-sm font-black text-white">{dashboard.todayCompleted}/{dashboard.dailyGoal}</span>
+                    <span className="nc-metric-label text-cyan-100/68">Today&apos;s progress</span>
+                    <span className="nc-metric-value text-sm text-white">{dashboard.todayCompleted}/{dashboard.dailyGoal}</span>
                   </div>
                   <CommandProgress value={planProgress} tone="blue" className="mt-3" />
                   <p className="mt-2 text-xs font-semibold leading-5 text-sky-100/56">{todayPriority}</p>
@@ -673,7 +673,7 @@ export function StudyMenuPage() {
                 <div className="flex items-start gap-3">
                   <span className={clsx('mt-1 h-9 w-1 shrink-0 rounded-full', launchToneClasses[group.tone].accent)} />
                   <div className="min-w-0">
-                    <h2 className="text-base font-black text-white">{group.title}</h2>
+                    <h2 className="nc-card-title text-base text-white">{group.title}</h2>
                     <p className="mt-1 text-sm leading-6 text-sky-50/66">{group.description}</p>
                   </div>
                 </div>
@@ -693,7 +693,7 @@ export function StudyMenuPage() {
                         {tool.icon}
                       </span>
                       <span className="min-w-0 flex-1 overflow-hidden">
-                        <span className="block text-sm font-bold text-white">{tool.title}</span>
+                        <span className="nc-card-title block text-sm text-white">{tool.title}</span>
                         <span className="block whitespace-normal break-words text-xs leading-4 text-sky-50/58">{tool.description}</span>
                       </span>
                       <ArrowRight className={clsx('mt-2 h-4 w-4 shrink-0 transition group-hover:translate-x-0.5', launchToneClasses[tool.tone].text)} />
@@ -707,13 +707,13 @@ export function StudyMenuPage() {
           <section className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]" aria-label="User added materials">
             <section className="relative overflow-hidden rounded-xl border border-violet-200/24 bg-[#03101f]/66 p-4">
               <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-300 via-cyan-300 to-emerald-300" />
-              <h2 className="text-base font-black text-white">User added materials</h2>
+              <h2 className="nc-card-title text-base text-white">User added materials</h2>
               <p className="mt-1 text-sm leading-6 text-sky-50/66">
                 Your uploaded notes, files, and study links stay here when you need them.
               </p>
               <div className="mt-4 rounded-lg border border-violet-200/24 bg-violet-300/[0.1] px-4 py-4">
-                <p className="text-xs font-black uppercase tracking-normal text-violet-100/72">Total added</p>
-                <p className="mt-1 text-4xl font-black leading-none text-white">{materials.length}</p>
+                <p className="nc-metric-label text-violet-100/72">Total added</p>
+                <p className="nc-metric-value mt-1 text-4xl text-white">{materials.length}</p>
               </div>
               {extractingMaterials.length ? (
                 <p className="mt-3 rounded-lg border border-amber-300/22 bg-amber-300/10 px-3 py-2 text-sm font-semibold text-amber-100">
@@ -1119,20 +1119,20 @@ export function DashboardPage() {
           <div className="relative grid gap-5 lg:grid-cols-[minmax(0,1fr)_250px] lg:items-stretch">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-2 rounded-lg border border-cyan-200/26 bg-cyan-300/10 px-3 py-1.5 text-xs font-black uppercase text-cyan-100">
+                <span className="inline-flex items-center gap-2 rounded-lg border border-cyan-200/26 bg-cyan-300/10 px-3 py-1.5 text-xs font-bold uppercase text-cyan-100">
                   <BadgeCheck className="h-3.5 w-3.5" />
                   {activeExamTrack.shortName}
                 </span>
-                <span className="inline-flex items-center gap-2 rounded-lg border border-white/14 bg-white/8 px-3 py-1.5 text-xs font-black uppercase text-sky-100/72">
+                <span className="inline-flex items-center gap-2 rounded-lg border border-white/14 bg-white/8 px-3 py-1.5 text-xs font-bold uppercase text-sky-100/72">
                   <CalendarClock className="h-3.5 w-3.5" />
                   Exam in {daysUntilExam}d
                 </span>
-                <span className="inline-flex items-center gap-2 rounded-lg border border-amber-200/22 bg-amber-300/10 px-3 py-1.5 text-xs font-black uppercase text-amber-100">
+                <span className="inline-flex items-center gap-2 rounded-lg border border-amber-200/22 bg-amber-300/10 px-3 py-1.5 text-xs font-bold uppercase text-amber-100">
                   <Zap className="h-3.5 w-3.5" />
                   {missionReason}
                 </span>
                 {repairQueueCount ? (
-                  <span className="inline-flex items-center gap-2 rounded-lg border border-emerald-200/24 bg-emerald-300/10 px-3 py-1.5 text-xs font-black uppercase text-emerald-100">
+                  <span className="inline-flex items-center gap-2 rounded-lg border border-emerald-200/24 bg-emerald-300/10 px-3 py-1.5 text-xs font-bold uppercase text-emerald-100">
                     <ShieldCheck className="h-3.5 w-3.5" />
                     {repairQueueCount} repairs
                   </span>
@@ -1143,8 +1143,8 @@ export function DashboardPage() {
                 <Target className="h-3.5 w-3.5 shrink-0 text-cyan-200" />
                 <span className="min-w-0">One task, one badge signal, and one review queue for today.</span>
               </div>
-              <p className="mt-5 text-sm font-black uppercase text-cyan-100/78">Start here</p>
-              <h2 className="mt-2 max-w-3xl text-[2rem] font-black leading-[1.08] text-white sm:text-3xl md:text-4xl">
+              <p className="mt-5 text-sm font-bold uppercase text-cyan-100/78">Start here</p>
+              <h2 className="mt-2 max-w-3xl text-[2rem] font-bold leading-[1.08] text-white sm:text-3xl md:text-4xl">
                 {missionTitle}
               </h2>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-sky-100/78">
@@ -1154,11 +1154,11 @@ export function DashboardPage() {
                 Study signal: {engineWeakPatternLabel}
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
-                <span className="inline-flex items-center gap-2 rounded-lg border border-emerald-200/24 bg-emerald-300/10 px-3 py-1.5 text-xs font-black text-emerald-100">
+                <span className="inline-flex items-center gap-2 rounded-lg border border-emerald-200/24 bg-emerald-300/10 px-3 py-1.5 text-xs font-bold text-emerald-100">
                   <ShieldCheck className="h-3.5 w-3.5" />
                   Practice evidence only
                 </span>
-                <span className="inline-flex items-center gap-2 rounded-lg border border-sky-200/18 bg-white/[0.055] px-3 py-1.5 text-xs font-black text-sky-100/70">
+                <span className="inline-flex items-center gap-2 rounded-lg border border-sky-200/18 bg-white/[0.055] px-3 py-1.5 text-xs font-bold text-sky-100/70">
                   <Activity className="h-3.5 w-3.5" />
                   {readinessPercent}% readiness signal
                 </span>
@@ -1167,7 +1167,7 @@ export function DashboardPage() {
                 <button
                   type="button"
                   onClick={planItems[0].onSelect}
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-cyan-100/45 bg-[linear-gradient(180deg,#24b8ff_0%,#0b83d6_100%)] px-6 py-3 text-sm font-black text-white shadow-[0_12px_34px_rgba(14,165,233,0.28)] transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-cyan-200/55"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-cyan-100/45 bg-[linear-gradient(180deg,#24b8ff_0%,#0b83d6_100%)] px-6 py-3 text-sm font-bold text-white shadow-[0_12px_34px_rgba(14,165,233,0.28)] transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-cyan-200/55"
                 >
                   Start now
                   <ArrowRight className="h-4 w-4" />
@@ -1175,7 +1175,7 @@ export function DashboardPage() {
                 <button
                   type="button"
                   onClick={() => navigate('/study-plan')}
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-sky-200/22 bg-white/[0.06] px-5 py-3 text-sm font-black text-sky-100 transition hover:border-sky-200/45 hover:bg-white/[0.09]"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-sky-200/22 bg-white/[0.06] px-5 py-3 text-sm font-bold text-sky-100 transition hover:border-sky-200/45 hover:bg-white/[0.09]"
                 >
                   View plan
                   <CalendarClock className="h-4 w-4" />
@@ -1185,12 +1185,12 @@ export function DashboardPage() {
             <div className={clsx('rounded-[1rem] border p-4', readinessTheme.card)}>
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs font-black uppercase text-sky-100/64">Readiness badge</p>
+                  <p className="text-xs font-bold uppercase text-sky-100/64">Readiness badge</p>
                   <p className="mt-2 max-w-40 text-xs leading-5 text-sky-100/62">
                     Practice evidence only, not a licensure prediction. {readinessSnapshot.trustedAttemptCount} trusted / {readinessSnapshot.practiceAttemptCount} practice attempts.
                   </p>
                 </div>
-                <span className={clsx('rounded-lg border border-white/12 bg-white/8 px-2.5 py-1 text-[0.68rem] font-black uppercase', readinessTheme.label)}>
+                <span className={clsx('rounded-lg border border-white/12 bg-white/8 px-2.5 py-1 text-[0.68rem] font-bold uppercase', readinessTheme.label)}>
                   {readinessBadge}
                 </span>
               </div>
@@ -1220,8 +1220,8 @@ export function DashboardPage() {
                     />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                    <p className="text-3xl font-black text-white">{readinessPercent}%</p>
-                    <p className="mt-1 text-[0.68rem] font-black uppercase text-sky-100/60">signal</p>
+                    <p className="text-3xl font-bold text-white">{readinessPercent}%</p>
+                    <p className="mt-1 text-[0.68rem] font-bold uppercase text-sky-100/60">signal</p>
                   </div>
                 </div>
               </div>
@@ -1237,11 +1237,11 @@ export function DashboardPage() {
                   missionStatToneClasses[stat.tone as keyof typeof missionStatToneClasses],
                 )}
               >
-                <div className="flex items-center gap-2 text-xs font-black uppercase">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase">
                   {stat.icon}
                   <span className="truncate">{stat.label}</span>
                 </div>
-                <p className="mt-2 truncate text-2xl font-black text-white">{stat.value}</p>
+                <p className="mt-2 truncate text-2xl font-bold text-white">{stat.value}</p>
                 <p className="truncate text-xs font-semibold text-sky-100/58">{stat.detail}</p>
               </div>
             ))}
@@ -1255,10 +1255,10 @@ export function DashboardPage() {
             <Surface className="border-cyan-300/24 bg-cyan-300/[0.065]">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
-                  <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-100/70">
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-cyan-100/70">
                     Continue session
                   </p>
-                  <h3 className="mt-1 text-xl font-black text-white">{continueSession.label}</h3>
+                  <h3 className="mt-1 text-xl font-bold text-white">{continueSession.label}</h3>
                   <p className="mt-1 text-sm leading-6 text-sky-100/66">
                     {continueSession.answeredCount}/{continueSession.questionCount} answered in {continueSession.topCategory}.
                     Resume where you left off.
@@ -1268,7 +1268,7 @@ export function DashboardPage() {
                   <button
                     type="button"
                     onClick={() => navigate(continueSession.route)}
-                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-cyan-100/45 bg-cyan-400/18 px-4 py-2.5 text-sm font-black text-cyan-50 transition hover:bg-cyan-400/25"
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-cyan-100/45 bg-cyan-400/18 px-4 py-2.5 text-sm font-bold text-cyan-50 transition hover:bg-cyan-400/25"
                   >
                     Resume
                     <ArrowRight className="h-4 w-4" />
@@ -1276,7 +1276,7 @@ export function DashboardPage() {
                   <button
                     type="button"
                     onClick={discardPracticeSession}
-                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-rose-200/25 bg-rose-300/[0.08] px-4 py-2.5 text-sm font-black text-rose-100 transition hover:bg-rose-300/14"
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-rose-200/25 bg-rose-300/[0.08] px-4 py-2.5 text-sm font-bold text-rose-100 transition hover:bg-rose-300/14"
                   >
                     <Trash2 className="h-4 w-4" />
                     Discard
@@ -1301,12 +1301,12 @@ export function DashboardPage() {
             <Surface className="border-emerald-300/20 bg-emerald-300/[0.045]">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-100/70">
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-100/70">
                     Recent practice
                   </p>
-                  <h3 className="mt-1 text-xl font-black text-white">Scores and review trail</h3>
+                  <h3 className="mt-1 text-xl font-bold text-white">Scores and review trail</h3>
                 </div>
-                <Link to="/performance-analytics" className="text-sm font-black text-cyan-100">
+                <Link to="/performance-analytics" className="text-sm font-bold text-cyan-100">
                   View all
                 </Link>
               </div>
@@ -1317,7 +1317,7 @@ export function DashboardPage() {
                     className="grid gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
                   >
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-black text-white">{session.label}</p>
+                      <p className="truncate text-sm font-bold text-white">{session.label}</p>
                       <p className="mt-1 text-xs font-semibold text-sky-100/58">
                         {session.topCategory} - {session.answeredCount}/{session.questionCount} answered -{' '}
                         {new Date(session.completedAt).toLocaleDateString(undefined, {
@@ -1327,7 +1327,7 @@ export function DashboardPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2 sm:justify-end">
-                      <span className="inline-flex min-w-16 justify-center rounded-lg border border-emerald-200/24 bg-emerald-300/10 px-3 py-1.5 text-sm font-black text-emerald-100">
+                      <span className="inline-flex min-w-16 justify-center rounded-lg border border-emerald-200/24 bg-emerald-300/10 px-3 py-1.5 text-sm font-bold text-emerald-100">
                         {Math.round(session.score * 100)}%
                       </span>
                       <button
@@ -1357,8 +1357,8 @@ export function DashboardPage() {
       >
         <div className="mb-3 flex items-end justify-between gap-3">
           <div>
-            <p className="text-xs font-black uppercase text-emerald-100/70">Badge board</p>
-            <h3 className="mt-1 text-2xl font-black text-white">Mastery badges</h3>
+            <p className="text-xs font-bold uppercase text-emerald-100/70">Badge board</p>
+            <h3 className="mt-1 text-2xl font-bold text-white">Mastery badges</h3>
             <p className="mt-1 text-sm leading-6 text-sky-100/62">
               Category badges show where practice evidence is strong, improving, needs reps, or still locked.{' '}
               {primaryConfidenceRisk
@@ -1368,7 +1368,7 @@ export function DashboardPage() {
                   : `Weakest pattern: ${engineWeakPatternLabel}`}
             </p>
           </div>
-          <Link to="/performance-analytics" className="hidden text-sm font-black text-cyan-100 sm:inline-flex">
+          <Link to="/performance-analytics" className="hidden text-sm font-bold text-cyan-100 sm:inline-flex">
             Analytics
           </Link>
         </div>
@@ -1382,11 +1382,11 @@ export function DashboardPage() {
                     {badge.theme.marker}
                   </span>
                   <div className="min-w-0">
-                    <p className="max-w-full whitespace-normal break-words text-sm font-black leading-tight text-white [overflow-wrap:anywhere]">{badge.label}</p>
+                    <p className="max-w-full whitespace-normal break-words text-sm font-bold leading-tight text-white [overflow-wrap:anywhere]">{badge.label}</p>
                     <p className="mt-1 text-xs font-semibold text-sky-100/58">{badge.attempts} attempts</p>
                   </div>
                 </div>
-                <span className="shrink-0 rounded-lg border border-white/12 bg-white/8 px-2 py-1 text-[0.68rem] font-black uppercase text-sky-100">
+                <span className="shrink-0 rounded-lg border border-white/12 bg-white/8 px-2 py-1 text-[0.68rem] font-bold uppercase text-sky-100">
                   {badge.theme.tier}
                 </span>
               </div>
@@ -1402,8 +1402,8 @@ export function DashboardPage() {
                     />
                   </div>
                   <div className="mt-2 flex items-center justify-between gap-2">
-                    <p className="truncate text-xs font-black text-sky-100">{badge.theme.label}</p>
-                    <p className="shrink-0 text-xs font-black text-white">
+                    <p className="truncate text-xs font-bold text-sky-100">{badge.theme.label}</p>
+                    <p className="shrink-0 text-xs font-bold text-white">
                       {badge.attempts ? `${Math.round(badge.progress * 100)}%` : '0%'}
                     </p>
                   </div>
@@ -1442,15 +1442,15 @@ export function DashboardPage() {
                   {item.icon}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-black text-white">{item.label}</span>
+                  <span className="block text-sm font-bold text-white">{item.label}</span>
                   <span className="mt-0.5 block text-xs font-semibold text-sky-100/52">{item.meta}</span>
                 </span>
-                <span className="text-xs font-black uppercase text-cyan-100">{item.actionLabel}</span>
+                <span className="text-xs font-bold uppercase text-cyan-100">{item.actionLabel}</span>
               </button>
             ))}
           </div>
           <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.035] p-4">
-            <p className="text-xs font-black uppercase text-sky-100/48">Materials</p>
+            <p className="text-xs font-bold uppercase text-sky-100/48">Materials</p>
             <p className="mt-2 text-sm font-semibold leading-6 text-sky-100/68">
               {materialsReadyCount} ready file{materialsReadyCount === 1 ? '' : 's'}
               {materialsNeedingAttention ? `, ${materialsNeedingAttention} need attention.` : ', ready to review.'}
@@ -1469,7 +1469,7 @@ export function DashboardPage() {
           <SectionHeading
             title="Focus lane"
             description="Weak areas stay compact until you want the full review view."
-            action={<Link to="/weak-areas" className="text-sm font-black text-cyan-100">See all</Link>}
+            action={<Link to="/weak-areas" className="text-sm font-bold text-cyan-100">See all</Link>}
           />
           <div className="mt-5 grid gap-3 md:grid-cols-2">
             {dashboard.weakestCategories.slice(0, 2).map((area, index) => {
@@ -1485,7 +1485,7 @@ export function DashboardPage() {
                         {visual.icon}
                       </span>
                       <div className="min-w-0">
-                        <p className="truncate font-black text-white">{shortCategoryLabel(area.category)}</p>
+                        <p className="truncate font-bold text-white">{shortCategoryLabel(area.category)}</p>
                         <p className="mt-1 text-xs font-semibold text-sky-100/55">{areaPercent}% practice accuracy</p>
                       </div>
                     </div>
@@ -1500,12 +1500,12 @@ export function DashboardPage() {
                   </div>
                   <div className="mt-4 grid grid-cols-2 gap-2">
                     <div className="rounded-xl border border-cyan-200/12 bg-[#03101f]/36 p-3">
-                      <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-sky-100/50">Mismatch</p>
-                      <p className="mt-1 text-lg font-black text-white">{Math.round(area.confidenceMismatchScore * 100)}%</p>
+                      <p className="text-[0.68rem] font-bold uppercase tracking-[0.14em] text-sky-100/50">Mismatch</p>
+                      <p className="mt-1 text-lg font-bold text-white">{Math.round(area.confidenceMismatchScore * 100)}%</p>
                     </div>
                     <div className="rounded-xl border border-cyan-200/12 bg-[#03101f]/36 p-3">
-                      <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-sky-100/50">Flags</p>
-                      <p className="mt-1 text-lg font-black text-white">{area.flaggedCount}</p>
+                      <p className="text-[0.68rem] font-bold uppercase tracking-[0.14em] text-sky-100/50">Flags</p>
+                      <p className="mt-1 text-lg font-bold text-white">{area.flaggedCount}</p>
                     </div>
                   </div>
                   <button
@@ -1514,7 +1514,7 @@ export function DashboardPage() {
                       startQuickStudy(area.category)
                       navigate('/quick-study')
                     }}
-                    className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-cyan-200/25 bg-cyan-300/10 px-4 py-2.5 text-sm font-black text-cyan-100 transition hover:border-cyan-200/50 hover:bg-cyan-300/16 focus:outline-none focus:ring-2 focus:ring-cyan-200/45"
+                    className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-cyan-200/25 bg-cyan-300/10 px-4 py-2.5 text-sm font-bold text-cyan-100 transition hover:border-cyan-200/50 hover:bg-cyan-300/16 focus:outline-none focus:ring-2 focus:ring-cyan-200/45"
                   >
                     {actionVerb} {shortCategoryLabel(area.category)}
                     <ArrowRight className="h-4 w-4" />
@@ -1526,10 +1526,10 @@ export function DashboardPage() {
           <div className="mt-5 rounded-xl border border-cyan-200/12 bg-[#03101f]/45 p-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-xs font-black uppercase text-sky-100/48">Progress snapshot</p>
+                <p className="text-xs font-bold uppercase text-sky-100/48">Progress snapshot</p>
                 <p className="mt-1 text-sm font-semibold text-sky-100/68">{activeExamTrack.title}</p>
               </div>
-              <p className="text-sm font-black text-white">{dashboardCopy.examLabel}</p>
+              <p className="text-sm font-bold text-white">{dashboardCopy.examLabel}</p>
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
               {[
@@ -1538,8 +1538,8 @@ export function DashboardPage() {
                 { label: 'Pattern', value: engineWeakPatternLabel, detail: primaryConfidenceRisk ? confidenceRiskLabel : 'engine signal' },
               ].map((metric) => (
                 <div key={metric.label} className="min-w-0 border-t border-cyan-200/16 pt-3 first:border-t-0 first:pt-0 sm:border-l sm:border-t-0 sm:pl-3 sm:pt-0 sm:first:border-l-0 sm:first:pl-0">
-                  <p className="truncate text-[0.68rem] font-black uppercase text-sky-100/46">{metric.label}</p>
-                  <p className="mt-1 text-sm font-black leading-tight text-white">{metric.value}</p>
+                  <p className="truncate text-[0.68rem] font-bold uppercase text-sky-100/46">{metric.label}</p>
+                  <p className="mt-1 text-sm font-bold leading-tight text-white">{metric.value}</p>
                   <p className="mt-0.5 text-xs font-semibold leading-snug text-sky-100/52">{metric.detail}</p>
                 </div>
               ))}
@@ -1642,14 +1642,14 @@ export function PracticeQuestionsPage() {
             <button
               type="button"
               onClick={() => launchPracticeSession()}
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-6 py-3 text-sm font-black text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-6 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
             >
               {isPending ? 'Building set...' : 'Start focused set'}
               <ArrowRight className="h-4 w-4" />
             </button>
             <Link
               to="/quick-study"
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-sky-200/22 bg-white/[0.06] px-5 py-3 text-sm font-black text-sky-100 transition hover:border-sky-200/45 hover:bg-white/[0.09]"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-sky-200/22 bg-white/[0.06] px-5 py-3 text-sm font-bold text-sky-100 transition hover:border-sky-200/45 hover:bg-white/[0.09]"
             >
               Quick study
               <Zap className="h-4 w-4" />
@@ -1658,8 +1658,8 @@ export function PracticeQuestionsPage() {
         }
         aside={
           <div className="h-full rounded-[1rem] border border-amber-200/26 bg-amber-300/[0.08] p-4">
-            <p className="text-xs font-black uppercase text-amber-100/72">Ready set</p>
-            <p className="mt-2 text-3xl font-black text-white">{questionCount}</p>
+            <p className="text-xs font-bold uppercase text-amber-100/72">Ready set</p>
+            <p className="mt-2 text-3xl font-bold text-white">{questionCount}</p>
             <p className="text-sm font-semibold text-sky-100/70">questions queued</p>
             <div className="mt-4 space-y-2 text-sm font-semibold text-sky-100/68">
               <p>{category === 'All' ? 'All categories' : shortCategoryLabel(category)}</p>
@@ -1869,7 +1869,7 @@ export function ExamPrepPage() {
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-blue)]">
               Current Track
             </p>
-            <h3 className="mt-2 font-serif text-3xl text-[var(--nclex-text)]">
+            <h3 className="mt-2 nc-section-title text-3xl text-[var(--nclex-text)]">
               {activeTrack.title}
             </h3>
             <p className="mt-2 max-w-3xl text-sm leading-7 text-[var(--nclex-text-muted)]">
@@ -1925,7 +1925,7 @@ export function ExamPrepPage() {
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-100">
               {selectedTrack.shortName} Product Blueprint
             </p>
-            <h3 className="mt-3 font-serif text-4xl leading-tight">
+            <h3 className="mt-3 nc-section-title text-4xl leading-tight">
               {selectedTrack.title}
             </h3>
             <p className="mt-3 max-w-4xl text-sm leading-7 text-sky-100/85">
@@ -2105,7 +2105,7 @@ export function QuickStudyPage() {
           <button
             type="button"
             onClick={() => startQuickStudy()}
-            className="inline-flex min-h-[48px] items-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-black text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
+            className="inline-flex min-h-[48px] items-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
           >
             <Sparkles className="h-4 w-4" />
             Start 10-minute drill
@@ -2119,7 +2119,7 @@ export function QuickStudyPage() {
               <CommandBadge tone="amber" icon={<Zap className="h-3.5 w-3.5" />}>Current action</CommandBadge>
               <CommandBadge tone="rose" icon={<Target className="h-3.5 w-3.5" />}>{shortCategoryLabel(quickStudyCategory)}</CommandBadge>
             </div>
-            <h3 className="mt-4 max-w-3xl text-3xl font-black tracking-[-0.04em] text-white md:text-5xl">
+            <h3 className="mt-4 max-w-3xl text-3xl font-bold tracking-normal text-white md:text-5xl">
               Start 10-minute drill
             </h3>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-sky-100/72">
@@ -2129,7 +2129,7 @@ export function QuickStudyPage() {
               <button
                 type="button"
                 onClick={() => startQuickStudy()}
-                className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-black text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
+                className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
               >
                 Start 10-minute drill
                 <ArrowRight className="h-4 w-4" />
@@ -2137,7 +2137,7 @@ export function QuickStudyPage() {
               <button
                 type="button"
                 onClick={() => setCustomizeOpen((current) => !current)}
-                className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl border border-cyan-200/24 bg-cyan-300/[0.07] px-5 py-3 text-sm font-black text-cyan-100 transition hover:border-cyan-100/55 hover:bg-cyan-300/13 focus:outline-none focus:ring-4 focus:ring-cyan-300/18"
+                className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl border border-cyan-200/24 bg-cyan-300/[0.07] px-5 py-3 text-sm font-bold text-cyan-100 transition hover:border-cyan-100/55 hover:bg-cyan-300/13 focus:outline-none focus:ring-4 focus:ring-cyan-300/18"
               >
                 Customize
                 <Shuffle className="h-4 w-4" />
@@ -2237,7 +2237,7 @@ export function TestModePage() {
       />
       <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
         <Surface>
-          <h3 className="font-serif text-3xl text-[#163042]">Build a realistic test</h3>
+          <h3 className="nc-section-title text-3xl text-[#163042]">Build a realistic test</h3>
           <div className="mt-6 grid gap-5">
             <Field label="Question count">
               <input type="range" min={20} max={60} step={5} value={questionCount} onChange={(event) => setQuestionCount(Number(event.target.value))} className="w-full accent-sky-600" />
@@ -2333,7 +2333,7 @@ export function WeakAreasPage() {
             <button
               type="button"
               onClick={() => startRepairSet(priorityArea.category)}
-              className="inline-flex min-h-[48px] items-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-black text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
+              className="inline-flex min-h-[48px] items-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
             >
               Start repair set
               <ArrowRight className="h-4 w-4" />
@@ -2352,7 +2352,7 @@ export function WeakAreasPage() {
                   {getRepairStatus(priorityArea).label}
                 </CommandBadge>
               </div>
-              <h3 className="mt-3 text-3xl font-black tracking-[-0.04em] text-white md:text-5xl">
+              <h3 className="mt-3 text-3xl font-bold tracking-normal text-white md:text-5xl">
                 Train {shortCategoryLabel(priorityArea.category)}
               </h3>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-sky-100/72">
@@ -2360,7 +2360,7 @@ export function WeakAreasPage() {
               </p>
               <div className="mt-5 flex flex-wrap gap-2">
                 {priorityArea.commonMistakes.slice(0, 3).map((mistake) => (
-                  <span key={mistake} className="rounded-full border border-rose-300/30 bg-rose-300/10 px-3 py-1.5 text-xs font-black uppercase tracking-[0.14em] text-rose-100">
+                  <span key={mistake} className="rounded-full border border-rose-300/30 bg-rose-300/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.14em] text-rose-100">
                     {mistake}
                   </span>
                 ))}
@@ -2369,7 +2369,7 @@ export function WeakAreasPage() {
                 <button
                   type="button"
                   onClick={() => startRepairSet(priorityArea.category)}
-                  className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-black text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
+                  className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
                 >
                   Start {shortCategoryLabel(priorityArea.category)} repair
                   <ArrowRight className="h-4 w-4" />
@@ -2377,7 +2377,7 @@ export function WeakAreasPage() {
                 <button
                   type="button"
                   onClick={() => navigate(`/flashcards?category=${encodeURIComponent(priorityArea.category)}`)}
-                  className="nclex-btn-secondary inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black"
+                  className="nclex-btn-secondary inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold"
                 >
                   Review cards
                   <SquareStack className="h-4 w-4" />
@@ -2399,7 +2399,7 @@ export function WeakAreasPage() {
             <button
               type="button"
               onClick={() => navigate('/practice-questions')}
-              className="nclex-btn-primary rounded-xl px-4 py-3 text-sm font-black"
+              className="nclex-btn-primary rounded-xl px-4 py-3 text-sm font-bold"
             >
               Start practice
             </button>
@@ -2429,14 +2429,14 @@ export function WeakAreasPage() {
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className={clsx('rounded-full border px-2.5 py-1 text-xs font-black', index === 0 ? 'border-amber-200/36 bg-amber-300/12 text-amber-100' : 'border-rose-200/28 bg-rose-300/10 text-rose-100')}>
+                      <span className={clsx('rounded-full border px-2.5 py-1 text-xs font-bold', index === 0 ? 'border-amber-200/36 bg-amber-300/12 text-amber-100' : 'border-rose-200/28 bg-rose-300/10 text-rose-100')}>
                         {index === 0 ? 'Next' : `Later ${index}`}
                       </span>
                       <CommandBadge tone={getRepairStatus(area).tone} icon={getRepairStatus(area).icon}>
                         {getRepairStatus(area).label}
                       </CommandBadge>
                     </div>
-                    <h3 className="mt-3 text-xl font-black tracking-[-0.03em] text-white">
+                    <h3 className="mt-3 text-xl font-bold tracking-normal text-white">
                       {repairActionVerb(index)} {shortCategoryLabel(area.category)}
                     </h3>
                     <p className="mt-2 max-w-2xl text-sm leading-6 text-sky-100/68">
@@ -2445,11 +2445,11 @@ export function WeakAreasPage() {
                   </div>
                   <div className="grid min-w-[138px] grid-cols-2 gap-2 text-center">
                     <div className="rounded-xl border border-emerald-300/18 bg-emerald-300/[0.065] p-3">
-                      <p className="text-lg font-black text-white">{Math.round(area.accuracy * 100)}%</p>
+                      <p className="text-lg font-bold text-white">{Math.round(area.accuracy * 100)}%</p>
                       <p className="text-xs font-semibold text-emerald-100/58">accuracy</p>
                     </div>
                     <div className="rounded-xl border border-rose-300/18 bg-rose-300/[0.065] p-3">
-                      <p className="text-lg font-black text-white">{getRepairCountForCategory(area.category)}</p>
+                      <p className="text-lg font-bold text-white">{getRepairCountForCategory(area.category)}</p>
                       <p className="text-xs font-semibold text-rose-100/58">repairs</p>
                     </div>
                   </div>
@@ -2462,7 +2462,7 @@ export function WeakAreasPage() {
                     type="button"
                     onClick={() => startRepairSet(area.category)}
                     className={clsx(
-                      'inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-black text-white transition hover:brightness-110 focus:outline-none focus:ring-4',
+                      'inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-bold text-white transition hover:brightness-110 focus:outline-none focus:ring-4',
                       index === 0
                         ? 'border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] shadow-[0_12px_28px_rgba(251,191,36,0.18)] focus:ring-amber-300/20'
                         : 'border-rose-100/38 bg-rose-400/18 focus:ring-rose-300/18',
@@ -2473,7 +2473,7 @@ export function WeakAreasPage() {
                   <button
                     type="button"
                     onClick={() => navigate(`/notes?category=${encodeURIComponent(area.category)}`)}
-                    className="nclex-btn-secondary inline-flex min-h-[44px] items-center justify-center rounded-xl px-4 py-2.5 text-sm font-black"
+                    className="nclex-btn-secondary inline-flex min-h-[44px] items-center justify-center rounded-xl px-4 py-2.5 text-sm font-bold"
                   >
                     Open notes
                   </button>
@@ -2491,19 +2491,19 @@ export function WeakAreasPage() {
           <div className="mt-5 grid gap-3">
             {readinessBlockers.map((item) => (
               <div key={item} className="rounded-2xl border border-cyan-200/15 bg-white/[0.035] p-4">
-                <p className="text-sm font-black text-white">{item}</p>
+                <p className="text-sm font-bold text-white">{item}</p>
               </div>
             ))}
           </div>
           <div className="mt-5 rounded-2xl border border-amber-300/20 bg-amber-300/10 p-4">
-            <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-200">Next best action</p>
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-amber-200">Next best action</p>
             <p className="mt-2 text-sm leading-7 text-sky-100/72">{readiness.nextBestAction}</p>
           </div>
           {readiness.coverageGaps.length ? (
             <div className="mt-5 grid gap-3">
               {readiness.coverageGaps.slice(0, 3).map((gap, index) => (
                 <div key={`${gap.dimensionType}-${gap.dimensionId}-${index}`} className="rounded-2xl border border-cyan-200/15 bg-white/[0.035] p-4">
-                  <p className="font-black text-white">{gap.dimensionId.replaceAll('_', ' ')}</p>
+                  <p className="font-bold text-white">{gap.dimensionId.replaceAll('_', ' ')}</p>
                   <p className="mt-1 text-sm text-sky-100/60">{gap.gapType.replaceAll('_', ' ')}</p>
                 </div>
               ))}
@@ -2589,7 +2589,7 @@ export function PerformanceAnalyticsPage() {
                     })
                   }
                   className={clsx(
-                    'rounded-lg px-3 py-2 text-xs font-black transition',
+                    'rounded-lg px-3 py-2 text-xs font-bold transition',
                     analyticsScope === item.value
                       ? 'bg-cyan-300 text-[#04101f] shadow-[0_0_18px_rgba(56,189,248,0.28)]'
                       : 'text-sky-100/62 hover:text-sky-100',
@@ -2601,14 +2601,14 @@ export function PerformanceAnalyticsPage() {
             </div>
             <Link
               to="/weak-areas"
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-cyan-100/45 bg-[linear-gradient(180deg,#24b8ff_0%,#0b83d6_100%)] px-5 py-3 text-sm font-black text-white shadow-[0_12px_34px_rgba(14,165,233,0.24)] transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-cyan-200/55"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-cyan-100/45 bg-[linear-gradient(180deg,#24b8ff_0%,#0b83d6_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_12px_34px_rgba(14,165,233,0.24)] transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-cyan-200/55"
             >
               Open remediation
               <Target className="h-4 w-4" />
             </Link>
             <Link
               to="/practice-questions"
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-sky-200/22 bg-white/[0.06] px-5 py-3 text-sm font-black text-sky-100 transition hover:border-sky-200/45 hover:bg-white/[0.09]"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-sky-200/22 bg-white/[0.06] px-5 py-3 text-sm font-bold text-sky-100 transition hover:border-sky-200/45 hover:bg-white/[0.09]"
             >
               Start practice
               <ArrowRight className="h-4 w-4" />
@@ -2619,11 +2619,11 @@ export function PerformanceAnalyticsPage() {
           <div className="h-full rounded-[1rem] border border-emerald-200/24 bg-emerald-300/[0.07] p-4">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-100/70">Readiness</p>
-                <p className="mt-2 text-3xl font-black text-white">{readinessLabel}</p>
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-100/70">Readiness</p>
+                <p className="mt-2 text-3xl font-bold text-white">{readinessLabel}</p>
                 <p className="text-sm font-semibold text-sky-100/75">{readinessPercent}% readiness score</p>
               </div>
-              <span className="rounded-lg border border-white/12 bg-white/8 px-2.5 py-1 text-[0.68rem] font-black uppercase text-emerald-100">
+              <span className="rounded-lg border border-white/12 bg-white/8 px-2.5 py-1 text-[0.68rem] font-bold uppercase text-emerald-100">
                 Signal
               </span>
             </div>
@@ -2718,9 +2718,9 @@ export function PerformanceAnalyticsPage() {
               <div key={category.category} className="rounded-2xl border border-cyan-200/15 bg-sky-300/[0.055] p-4">
                 <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <p className="font-black text-white">{shortCategoryLabel(category.category)}</p>
+                    <p className="font-bold text-white">{shortCategoryLabel(category.category)}</p>
                     <p className="mt-1 text-sm text-sky-100/60">
-                      {category.attemptCount} attempts · {Math.round(category.confidenceMismatchScore * 100)}% confidence mismatch
+                      {category.attemptCount} attempts - {Math.round(category.confidenceMismatchScore * 100)}% confidence mismatch
                     </p>
                   </div>
                   <MasteryPill mastery={category.masteryLevel} />
@@ -2732,14 +2732,14 @@ export function PerformanceAnalyticsPage() {
                 <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                   <Link
                     to="/weak-areas"
-                    className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-cyan-300/24 bg-cyan-300/10 px-4 py-2 text-sm font-black text-cyan-100 transition hover:border-cyan-200/60 hover:bg-cyan-300/16"
+                    className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-cyan-300/24 bg-cyan-300/10 px-4 py-2 text-sm font-bold text-cyan-100 transition hover:border-cyan-200/60 hover:bg-cyan-300/16"
                   >
                     Repair target
                     <Target className="h-4 w-4" />
                   </Link>
                   <Link
                     to="/practice-questions"
-                    className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-black text-sky-100/76 transition hover:border-cyan-200/40 hover:text-white"
+                    className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-bold text-sky-100/76 transition hover:border-cyan-200/40 hover:text-white"
                   >
                     Practice set
                     <ArrowRight className="h-4 w-4" />
@@ -2795,7 +2795,7 @@ export function PerformanceAnalyticsPage() {
           <MetricChip label="Scope" value={(profile.preferences.analyticsScope ?? 'selected-track') === 'selected-track' ? activeTrack.shortName : 'All exams'} />
         </div>
         <div className="mt-5 rounded-2xl border border-cyan-200/15 bg-sky-300/[0.045] p-4">
-          <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-100/56">Method note</p>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-100/56">Method note</p>
           <p className="mt-2 text-sm leading-7 text-sky-100/70">
             Performance separates practice attempts, trusted evidence, confidence mismatches, and coverage gaps so the next action stays about learning behavior rather than a single chart line.
           </p>
@@ -2994,7 +2994,7 @@ export function FlashcardsPage() {
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-blue)]">
               Spaced repetition queue
             </p>
-            <h3 className="mt-2 font-serif text-2xl text-[var(--nclex-text)]">
+            <h3 className="mt-2 nc-section-title text-2xl text-[var(--nclex-text)]">
               {dueCards.length} card{dueCards.length === 1 ? '' : 's'} due now
             </h3>
             <p className="mt-2 text-sm leading-6 text-[var(--nclex-text-muted)]">
@@ -3099,7 +3099,7 @@ export function FlashcardsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="nclex-label text-xs font-semibold uppercase">{currentCard.category}</p>
-                  <h3 className="mt-2 font-serif text-2xl text-[#163042]">Card {activeIndex + 1} of {filtered.length}</h3>
+                  <h3 className="mt-2 nc-section-title text-2xl text-[#163042]">Card {activeIndex + 1} of {filtered.length}</h3>
                   <p className="mt-1 text-sm text-[var(--nclex-text-muted)]">{currentCard.sourceLabel}</p>
                   {currentCard.review?.nextReviewAt ? (
                     <p className="mt-1 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]">
@@ -3127,7 +3127,7 @@ export function FlashcardsPage() {
               >
                 <FlipCard isFlipped={isFlipped} onFlip={() => setIsFlipped((current) => !current)} front={currentCard.front} back={currentCard.back} />
                 <p className="mt-3 text-center text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)] sm:hidden">
-                  Swipe cards • tap to flip
+                  Swipe cards - tap to flip
                 </p>
               </div>
               <div className="mobile-quiz-actions sticky bottom-[5.2rem] z-10 -mx-1 mt-6 flex flex-wrap items-center gap-3 rounded-[20px] border border-[var(--nclex-border)] bg-white/96 p-3 backdrop-blur-xl md:static md:mx-0 md:border-0 md:bg-transparent md:p-0">
@@ -3341,7 +3341,7 @@ export function MyMaterialsPage() {
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-cyan-100/45 bg-[linear-gradient(180deg,#24b8ff_0%,#0b83d6_100%)] px-6 py-3 text-sm font-black text-white shadow-[0_12px_34px_rgba(14,165,233,0.28)] transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-cyan-200/55"
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-cyan-100/45 bg-[linear-gradient(180deg,#24b8ff_0%,#0b83d6_100%)] px-6 py-3 text-sm font-bold text-white shadow-[0_12px_34px_rgba(14,165,233,0.28)] transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-cyan-200/55"
           >
             <Upload className="h-4 w-4" />
             Upload material
@@ -3349,8 +3349,8 @@ export function MyMaterialsPage() {
         }
         aside={
           <div className="h-full rounded-[1rem] border border-amber-200/24 bg-amber-300/[0.07] p-4">
-            <p className="text-xs font-black uppercase text-sky-100/64">Review gate</p>
-            <p className="mt-2 text-3xl font-black text-white">{pendingReviewCount}</p>
+            <p className="text-xs font-bold uppercase text-sky-100/64">Review gate</p>
+            <p className="mt-2 text-3xl font-bold text-white">{pendingReviewCount}</p>
             <p className="text-sm font-semibold text-sky-100/70">materials waiting</p>
             <p className="mt-4 text-sm leading-6 text-sky-100/62">
               Nothing enters the deck until generated tools are checked and approved.
@@ -3455,7 +3455,7 @@ export function MyMaterialsPage() {
           <Surface>
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h3 className="font-serif text-2xl text-[var(--nclex-text)]">Materials library</h3>
+                <h3 className="nc-section-title text-2xl text-[var(--nclex-text)]">Materials library</h3>
                 <p className="mt-1 text-sm text-[var(--nclex-text-muted)]">
                   {errorCount
                     ? `${errorCount} item${errorCount === 1 ? '' : 's'} need attention.`
@@ -3560,7 +3560,7 @@ export function MyMaterialsPage() {
                           : 'Study tools ready'}
                     </span>
                   </div>
-                  <h3 className="mt-3 font-serif text-3xl text-[var(--nclex-text)]">
+                  <h3 className="mt-3 nc-section-title text-3xl text-[var(--nclex-text)]">
                     {selectedMaterial.displayTitle}
                   </h3>
                   <p className="mt-2 text-sm leading-7 text-[var(--nclex-text-muted)]">
@@ -3581,14 +3581,14 @@ export function MyMaterialsPage() {
               <div className="rounded-[18px] border border-cyan-200/18 bg-[#061c31] p-4 text-white">
                 <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                   <div>
-                    <h4 className="text-xl font-black text-white">What this upload can do</h4>
+                    <h4 className="text-xl font-bold text-white">What this upload can do</h4>
                     <p className="mt-2 max-w-3xl text-sm leading-6 text-sky-100/66">
                       Work from left to right: review generated tools, open a guide, drill flashcards, or run a quiz from this material.
                     </p>
                   </div>
                   <span
                     className={clsx(
-                      'inline-flex min-h-8 items-center rounded-lg border px-3 py-1 text-xs font-black',
+                      'inline-flex min-h-8 items-center rounded-lg border px-3 py-1 text-xs font-bold',
                       selectedMaterial.extractionStatus === 'error'
                         ? 'border-rose-200/28 bg-rose-300/10 text-rose-100'
                         : selectedIsPendingReview
@@ -3770,7 +3770,7 @@ export function MyMaterialsPage() {
                       <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-blue)]">
                         Nursing exam study guide
                       </p>
-                      <h4 className="mt-2 font-serif text-2xl text-[var(--nclex-text)]">
+                      <h4 className="mt-2 nc-section-title text-2xl text-[var(--nclex-text)]">
                         {selectedMaterial.displayTitle}
                       </h4>
                     </div>
@@ -3926,18 +3926,18 @@ function MaterialToolCard({
         <span className={clsx('inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border', styles.icon)}>
           {icon}
         </span>
-        <span className={clsx('rounded-lg border px-2.5 py-1 text-[0.68rem] font-black uppercase', styles.status)}>
+        <span className={clsx('rounded-lg border px-2.5 py-1 text-[0.68rem] font-bold uppercase', styles.status)}>
           {status}
         </span>
       </div>
-      <h5 className="mt-4 text-base font-black text-white">{title}</h5>
+      <h5 className="mt-4 text-base font-bold text-white">{title}</h5>
       <p className="mt-2 flex-1 text-sm leading-6 text-sky-100/64">{detail}</p>
       {actionLabel ? (
         <button
           type="button"
           disabled={disabled || !onAction}
           onClick={onAction}
-          className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-cyan-200/24 bg-white/[0.055] px-3 py-2 text-sm font-black text-cyan-100 transition hover:border-cyan-200/45 hover:bg-cyan-300/10 disabled:cursor-not-allowed disabled:border-slate-200/10 disabled:text-slate-200/40"
+          className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-cyan-200/24 bg-white/[0.055] px-3 py-2 text-sm font-bold text-cyan-100 transition hover:border-cyan-200/45 hover:bg-cyan-300/10 disabled:cursor-not-allowed disabled:border-slate-200/10 disabled:text-slate-200/40"
         >
           {actionLabel}
           <ArrowRight className="h-4 w-4" />
@@ -4059,7 +4059,7 @@ function MaterialReviewPanel({
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-blue)]">
             Review before saving
           </p>
-          <h4 className="mt-2 font-serif text-2xl text-[var(--nclex-text)]">
+          <h4 className="mt-2 nc-section-title text-2xl text-[var(--nclex-text)]">
             Approve generated study tools
           </h4>
           <p className="mt-2 max-w-3xl text-sm leading-7 text-[var(--nclex-text-muted)]">
@@ -4309,7 +4309,7 @@ export function StudyPlanPage() {
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
               <p className="text-sm font-semibold text-sky-100/85">Next Action</p>
-              <h3 className="mt-3 font-serif text-3xl leading-tight md:text-[2.15rem]">
+              <h3 className="mt-3 nc-section-title text-3xl leading-tight md:text-[2.15rem]">
                 Start with {shortCategoryLabel(priorityArea)}
               </h3>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-sky-100/82">
@@ -4323,8 +4323,8 @@ export function StudyPlanPage() {
                 { label: 'Exam', value: `${daysUntilExam}d` },
               ].map((item) => (
                 <div key={item.label} className="rounded-2xl border border-white/15 bg-white/10 px-3 py-3 text-center">
-                  <p className="text-lg font-black text-white">{item.value}</p>
-                  <p className="mt-1 text-[0.68rem] font-black uppercase tracking-[0.12em] text-sky-100/62">{item.label}</p>
+                  <p className="text-lg font-bold text-white">{item.value}</p>
+                  <p className="mt-1 text-[0.68rem] font-bold uppercase tracking-[0.12em] text-sky-100/62">{item.label}</p>
                 </div>
               ))}
             </div>
@@ -4342,15 +4342,15 @@ export function StudyPlanPage() {
             <div key={task.title} className="rounded-2xl border border-cyan-200/15 bg-sky-300/[0.055] px-4 py-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex min-w-0 gap-3">
-                  <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-cyan-300/12 text-sm font-black text-cyan-100">
+                  <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-cyan-300/12 text-sm font-bold text-cyan-100">
                     {index + 1}
                   </span>
                   <div className="min-w-0">
-                    <p className="font-black text-white">{task.title}</p>
+                    <p className="font-bold text-white">{task.title}</p>
                     <p className="mt-1 text-sm leading-6 text-sky-100/70">{task.detail}</p>
                   </div>
                 </div>
-                <span className="w-fit shrink-0 rounded-full border border-cyan-200/25 bg-cyan-300/10 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-cyan-100">
+                <span className="w-fit shrink-0 rounded-full border border-cyan-200/25 bg-cyan-300/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-cyan-100">
                   {task.meta}
                 </span>
               </div>
@@ -4369,7 +4369,7 @@ export function StudyPlanPage() {
             {thisWeekTasks.map((goal, index) => (
               <li key={goal} className="rounded-2xl border border-cyan-200/15 bg-sky-300/[0.055] px-4 py-3">
                 <div className="flex items-start gap-3">
-                  <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-cyan-300/12 text-xs font-black text-cyan-100">
+                  <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-cyan-300/12 text-xs font-bold text-cyan-100">
                     {index + 1}
                   </span>
                   <p className="text-sm leading-6 text-sky-100/76">{goal}</p>
@@ -4407,11 +4407,11 @@ export function StudyPlanPage() {
           <div className="rounded-2xl border border-emerald-300/20 bg-emerald-300/[0.055] p-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-100/70">Today progress</p>
-                <p className="mt-2 text-3xl font-black text-white">{todayCompleted}/{profile.dailyGoal}</p>
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-100/70">Today progress</p>
+                <p className="mt-2 text-3xl font-bold text-white">{todayCompleted}/{profile.dailyGoal}</p>
                 <p className="text-sm font-semibold text-sky-100/70">questions completed</p>
               </div>
-              <span className="rounded-full border border-emerald-200/25 bg-emerald-300/10 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-emerald-100">
+              <span className="rounded-full border border-emerald-200/25 bg-emerald-300/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-emerald-100">
                 {Math.round(todayProgress * 100)}%
               </span>
             </div>
@@ -4421,12 +4421,12 @@ export function StudyPlanPage() {
           </div>
           <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-1">
             <div className="rounded-2xl border border-cyan-200/15 bg-sky-300/[0.055] p-4">
-              <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-100/58">Intensity</p>
-              <p className="mt-2 text-xl font-black capitalize text-white">{profile.studyIntensity}</p>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-100/58">Intensity</p>
+              <p className="mt-2 text-xl font-bold capitalize text-white">{profile.studyIntensity}</p>
             </div>
             <div className="rounded-2xl border border-amber-200/20 bg-amber-300/[0.07] p-4">
-              <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-100/62">Exam window</p>
-              <p className="mt-2 text-xl font-black text-white">{daysUntilExam} days</p>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-amber-100/62">Exam window</p>
+              <p className="mt-2 text-xl font-bold text-white">{daysUntilExam} days</p>
             </div>
           </div>
         </div>
@@ -4650,7 +4650,7 @@ export function NurseCommandLabPage() {
         action={
           <Link
             to={featuredLabModule.to}
-            className="nclex-btn-primary inline-flex min-h-[48px] items-center gap-2 rounded-xl px-5 py-3 text-sm font-black"
+            className="nclex-btn-primary inline-flex min-h-[48px] items-center gap-2 rounded-xl px-5 py-3 text-sm font-bold"
           >
             Start featured lab
             <ArrowRight className="h-4 w-4" />
@@ -4661,8 +4661,8 @@ export function NurseCommandLabPage() {
       <FocusPanel className="nclex-dark-panel text-white">
         <div className="grid gap-5 p-5 md:p-6 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-stretch">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-200">Featured lab</p>
-            <h3 className="mt-3 max-w-3xl text-3xl font-black tracking-[-0.04em] text-white md:text-5xl">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-200">Featured lab</p>
+            <h3 className="mt-3 max-w-3xl text-3xl font-bold tracking-normal text-white md:text-5xl">
               {featuredLabModule.title}
             </h3>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-sky-100/72">
@@ -4671,14 +4671,14 @@ export function NurseCommandLabPage() {
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <Link
                 to={featuredLabModule.to}
-                className="nclex-btn-primary inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black"
+                className="nclex-btn-primary inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold"
               >
                 {featuredLabModule.action}
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
                 to="/quick-study"
-                className="nclex-btn-secondary inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black"
+                className="nclex-btn-secondary inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold"
               >
                 Back to questions
                 <BookOpen className="h-4 w-4" />
@@ -4710,17 +4710,17 @@ export function NurseCommandLabPage() {
                   <div className="flex h-12 w-12 items-center justify-center rounded-[16px] border border-cyan-300/25 bg-cyan-300/12 text-cyan-100 shadow-[0_0_24px_rgba(56,189,248,0.16)]">
                     <Icon className="h-5 w-5" />
                   </div>
-                  <span className="rounded-full border border-cyan-300/25 bg-white/[0.04] px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-sky-100/64">
+                  <span className="rounded-full border border-cyan-300/25 bg-white/[0.04] px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-sky-100/64">
                     {meta}
                   </span>
                 </div>
-                <h2 className="mt-5 text-2xl font-black tracking-[-0.03em] text-white">{title}</h2>
+                <h2 className="mt-5 text-2xl font-bold tracking-normal text-white">{title}</h2>
                 <p className="mt-3 text-sm leading-6 text-sky-100/66">{description}</p>
               </div>
             </div>
             <Link
               to={to}
-              className="mx-5 mb-5 inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl border border-cyan-300/24 bg-white/[0.04] px-4 py-3 text-sm font-black text-cyan-100 transition group-hover:border-cyan-200/60 group-hover:bg-cyan-300/12 md:mx-6 md:mb-6"
+              className="mx-5 mb-5 inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl border border-cyan-300/24 bg-white/[0.04] px-4 py-3 text-sm font-bold text-cyan-100 transition group-hover:border-cyan-200/60 group-hover:bg-cyan-300/12 md:mx-6 md:mb-6"
             >
               {action}
               <ArrowRight className="h-4 w-4" />
@@ -4746,9 +4746,9 @@ export function NurseCommandLabPage() {
                   <Icon className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="font-black text-white">{title}</p>
+                  <p className="font-bold text-white">{title}</p>
                   <p className="mt-1 text-sm leading-6 text-sky-100/64">{description}</p>
-                  <p className="mt-3 inline-flex items-center gap-2 text-sm font-black text-cyan-200">
+                  <p className="mt-3 inline-flex items-center gap-2 text-sm font-bold text-cyan-200">
                     {action}
                     <ArrowRight className="h-4 w-4" />
                   </p>
@@ -4840,7 +4840,7 @@ export function ClinicalSimulatorPage() {
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-blue)]">
               Active case
             </p>
-            <h3 className="mt-2 font-serif text-3xl text-[var(--nclex-text)]">{scenario.title}</h3>
+            <h3 className="mt-2 nc-section-title text-3xl text-[var(--nclex-text)]">{scenario.title}</h3>
             <p className="mt-3 text-sm leading-7 text-[var(--nclex-text-secondary)]">{scenario.brief}</p>
             <div className="mt-5">
               <ProgressBar value={completed / scenario.steps.length} />
@@ -4933,7 +4933,7 @@ export function StrategyTrainingPage() {
         <div className="flex flex-col gap-5 bg-[linear-gradient(135deg,#ffffff_0%,#eef5ff_100%)] px-5 py-6 lg:flex-row lg:items-end lg:justify-between md:px-6">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-blue)]">Clinical thinking mode</p>
-            <h3 className="mt-3 font-serif text-4xl text-[var(--nclex-text)]">Drill the decision types that move scores.</h3>
+            <h3 className="mt-3 nc-section-title text-4xl text-[var(--nclex-text)]">Drill the decision types that move scores.</h3>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--nclex-text-muted)]">
               Practice prioritization, delegation, first-action decisions, and patient safety in short targeted bursts.
             </p>
@@ -4958,7 +4958,7 @@ export function StrategyTrainingPage() {
             <div className="grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
               <div>
                 <p className="nclex-label text-xs font-semibold uppercase">{lesson.framework}</p>
-                <h3 className="mt-3 font-serif text-3xl text-[var(--nclex-text)]">{lesson.title}</h3>
+                <h3 className="mt-3 nc-section-title text-3xl text-[var(--nclex-text)]">{lesson.title}</h3>
                 <p className="mt-3 text-sm leading-7 text-[var(--nclex-text-muted)]">{lesson.summary}</p>
                 <ul className="mt-5 space-y-3 text-sm leading-6 text-slate-700">
                   {lesson.bullets.map((bullet) => (
@@ -5065,7 +5065,7 @@ export function NotesPage() {
         </Surface>
         <Surface>
           <div className="flex items-center justify-between">
-            <h3 className="font-serif text-3xl text-[#163042]">{draft.title || 'New note'}</h3>
+            <h3 className="nc-section-title text-3xl text-[#163042]">{draft.title || 'New note'}</h3>
             <button
               type="button"
               onClick={() =>
@@ -5163,12 +5163,12 @@ export function SettingsPage() {
       />
       <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
         <Surface>
-          <h3 className="font-serif text-3xl text-[#163042]">Profile preferences</h3>
+          <h3 className="nc-section-title text-3xl text-[#163042]">Profile preferences</h3>
           <div className="mt-6 grid gap-4">
             <div className="rounded-[20px] border border-[var(--nclex-border)] bg-[var(--nclex-card-muted)] p-4">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-[#b8d7f4] bg-[linear-gradient(180deg,#0f7aff_0%,#062d63_100%)] text-xl font-black text-white shadow-[0_12px_28px_rgba(43,148,255,0.22)]">
+                  <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-[#b8d7f4] bg-[linear-gradient(180deg,#0f7aff_0%,#062d63_100%)] text-xl font-bold text-white shadow-[0_12px_28px_rgba(43,148,255,0.22)]">
                     {profile.profileImageDataUrl ? (
                       <img src={profile.profileImageDataUrl} alt="" className="h-full w-full object-cover" />
                     ) : (
@@ -5181,7 +5181,7 @@ export function SettingsPage() {
                       Shows on the Home title screen and account menu.
                     </p>
                     {profile.memberNumber ? (
-                      <span className="mt-3 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-black text-amber-700">
+                      <span className="mt-3 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700">
                         <BadgeCheck className="h-4 w-4" />
                         Founding learner #{profile.memberNumber}
                       </span>
@@ -5266,7 +5266,7 @@ export function SettingsPage() {
           </div>
         </Surface>
         <Surface>
-          <h3 className="font-serif text-3xl text-[#163042]">Cloud account & sync</h3>
+          <h3 className="nc-section-title text-3xl text-[#163042]">Cloud account & sync</h3>
           <div className="mt-5 rounded-[20px] border border-[var(--nclex-border)] bg-[var(--nclex-card-muted)] p-5">
             <div className="flex items-start gap-4">
               <div className="rounded-2xl bg-[var(--nclex-blue-soft)] p-3 text-[var(--nclex-blue)]">
@@ -5311,14 +5311,14 @@ export function SettingsPage() {
               ) : null}
             </div>
           </div>
-          <h3 className="mt-7 font-serif text-3xl text-[#163042]">Monetization-ready structure</h3>
+          <h3 className="mt-7 nc-section-title text-3xl text-[#163042]">Monetization-ready structure</h3>
           <div className="mt-6 grid gap-4 md:grid-cols-2">
             <FeatureCallout title="User accounts" description="Supabase Auth now provides real account sessions and password recovery entry points." />
             <FeatureCallout title="Saved progress" description="Attempts, flashcards, notes, materials, and generated study tools can sync to Postgres." />
             <FeatureCallout title="Premium tiers" description="Feature gating can layer on top of existing page and session boundaries." />
             <FeatureCallout title="Retention hooks" description="Quick Study, streaks, weak-area review, and notes already support daily return behavior." />
           </div>
-          <h3 className="mt-7 font-serif text-3xl text-[#163042]">Privacy, terms & support</h3>
+          <h3 className="mt-7 nc-section-title text-3xl text-[#163042]">Privacy, terms & support</h3>
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             <FeatureCallout title="Privacy" description="Cloud accounts store your email and synced study activity. Do not upload protected health information or patient-identifying material." />
             <FeatureCallout title="Terms" description="Nurse Command is practice study support only. Readiness and adaptive signals are practice evidence, not clinical advice or licensure guarantees." />
@@ -5380,7 +5380,7 @@ function MaterialQuizRunner() {
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-blue)]">
                 Session Summary
               </p>
-              <h3 className="mt-3 font-serif text-4xl text-[var(--nclex-text)]">{score}% correct</h3>
+              <h3 className="mt-3 nc-section-title text-4xl text-[var(--nclex-text)]">{score}% correct</h3>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--nclex-text-muted)]">
                 {material
                   ? `You completed ${activeMaterialQuizSession.questionIds.length} questions from ${material.displayTitle}.`
@@ -5466,7 +5466,7 @@ function MaterialQuizRunner() {
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-blue)]">
               Study From Your Material
             </p>
-            <h3 className="mt-2 font-serif text-3xl text-[var(--nclex-text)]">
+            <h3 className="mt-2 nc-section-title text-3xl text-[var(--nclex-text)]">
               {material?.displayTitle ?? activeMaterialQuizSession.title}
             </h3>
           </div>

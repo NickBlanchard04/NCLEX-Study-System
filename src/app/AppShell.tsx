@@ -193,7 +193,7 @@ function RouteLoadingScreen({ label = 'Loading module' }: { label?: string }) {
         <div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-2xl border border-cyan-300/30 bg-cyan-400/10 text-cyan-200">
           <RefreshCw className="h-5 w-5 animate-spin" />
         </div>
-        <p className="text-sm font-black uppercase tracking-[0.18em] text-sky-200/72">
+        <p className="nc-eyebrow text-sky-200/72">
           {label}
         </p>
       </div>
@@ -369,7 +369,7 @@ function NclexAppShell() {
                     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-blue)]">
                       Cloud migration ready
                     </p>
-                    <h2 className="mt-1 font-serif text-2xl text-[var(--nclex-text)]">
+                    <h2 className="mt-1 nc-section-title text-2xl text-[var(--nclex-text)]">
                       Move this device's study progress into your account.
                     </h2>
                     <p className="mt-1 text-sm text-[var(--nclex-text-muted)]">
@@ -451,10 +451,10 @@ function NclexAppShell() {
                   <Menu className="h-4 w-4" />
                 </button>
                 <div className="min-w-0">
-                  <p className="text-xs font-black uppercase tracking-[0.2em] text-sky-200/60">
-                    Nurse Command
-                  </p>
-                  <h1 className="truncate text-lg font-black text-white md:text-xl">
+                    <p className="nc-eyebrow text-sky-200/60">
+                      Nurse Command
+                    </p>
+                  <h1 className="nc-section-title truncate text-lg text-white md:text-xl">
                     {pageMeta.label}
                   </h1>
                 </div>
@@ -465,7 +465,7 @@ function NclexAppShell() {
                   type="button"
                   onClick={() => void syncNow()}
                   className={clsx(
-                    'hidden items-center gap-2 rounded-xl border px-3 py-2 text-xs font-bold uppercase tracking-[0.12em] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition md:inline-flex',
+                    'nc-chip-label hidden items-center gap-2 rounded-xl border px-3 py-2 uppercase shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition md:inline-flex',
                     syncStatus === 'error'
                       ? 'border-rose-300/35 bg-rose-400/12 text-rose-300'
                       : syncStatus === 'offline'
@@ -499,7 +499,7 @@ function NclexAppShell() {
                   onClick={() => setAccountOpen((current) => !current)}
                   className="flex items-center gap-2 rounded-xl border border-sky-300/24 bg-white/5 px-2 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition hover:border-sky-200/60"
                 >
-                  <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-cyan-300/30 bg-[linear-gradient(180deg,#0f7aff_0%,#062d63_100%)] text-sm font-black text-white shadow-[0_0_20px_rgba(43,148,255,0.28)]">
+                  <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-cyan-300/30 bg-[linear-gradient(180deg,#0f7aff_0%,#062d63_100%)] text-sm font-bold text-white shadow-[0_0_20px_rgba(43,148,255,0.28)]">
                     {profile.profileImageDataUrl ? (
                       <img src={profile.profileImageDataUrl} alt="" className="h-full w-full object-cover" />
                     ) : (
@@ -516,7 +516,7 @@ function NclexAppShell() {
             </div>
             {accountOpen ? (
               <div className="absolute right-4 top-[4.5rem] z-30 w-[290px] rounded-[20px] border border-sky-300/24 bg-[#071d34]/95 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.34)] backdrop-blur md:right-8">
-                <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-200/62">
+                <p className="nc-eyebrow text-sky-200/62">
                   Account
                 </p>
                 <p className="mt-2 font-semibold text-white">{authUser?.email ?? profile.name}</p>
@@ -552,10 +552,10 @@ function NclexAppShell() {
                 <div className="mb-5 rounded-[20px] border border-sky-300/24 bg-[#071d34]/78 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_16px_34px_rgba(0,0,0,0.18)] backdrop-blur">
                   <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
-                      <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-300">
+                      <p className="nc-eyebrow text-sky-300">
                         Cloud migration ready
                       </p>
-                      <h2 className="mt-1 text-2xl font-black text-white">
+                      <h2 className="nc-section-title mt-1 text-2xl text-white">
                         Move this device's study progress into your account.
                       </h2>
                       <p className="mt-1 text-sm text-sky-100/64">
@@ -699,10 +699,10 @@ function NclexAppShell() {
               <div className="mx-auto mb-4 h-1.5 w-14 rounded-full bg-sky-300/24" />
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-200/62">
+                  <p className="nc-eyebrow text-sky-200/62">
                     More
                   </p>
-                  <h2 className="text-xl font-black text-white">Study tools</h2>
+                  <h2 className="nc-section-title text-xl text-white">Study tools</h2>
                 </div>
                 <button
                   type="button"
@@ -715,7 +715,7 @@ function NclexAppShell() {
               <div className="mt-5 min-h-0 space-y-5 overflow-y-auto pr-1">
                 {mobileMoreNavigationGroups.map((group) => (
                   <div key={group.title}>
-                    <p className="px-1 pb-2 text-[10px] font-black uppercase tracking-[0.2em] text-sky-100/44">
+                    <p className="nc-eyebrow px-1 pb-2 text-[10px] text-sky-100/44">
                       {group.title}
                     </p>
                     <div className="grid gap-3">
@@ -917,13 +917,13 @@ function AdminPasskeyState({ onVerified }: { onVerified: () => void }) {
         <div className="grid h-14 w-14 place-items-center rounded-2xl border border-cyan-200/24 bg-cyan-300/10 text-cyan-100">
           <LockKeyhole className="h-6 w-6" />
         </div>
-        <p className="mt-5 text-xs font-black uppercase tracking-[0.18em] text-cyan-200/74">Admin preview access</p>
-        <h1 className="mt-2 text-2xl font-black">Enter command pass key</h1>
+        <p className="nc-eyebrow mt-5 text-cyan-200/74">Admin preview access</p>
+        <h1 className="nc-section-title mt-2 text-2xl">Enter command pass key</h1>
         <p className="mt-3 text-sm leading-6 text-sky-100/64">
           This unlocks the live cockpit preview. Remote user analytics still require Supabase admin access.
         </p>
         <label
-          className="mt-6 block text-xs font-black uppercase tracking-[0.14em] text-sky-100/56"
+          className="nc-eyebrow mt-6 block text-sky-100/56"
           htmlFor="admin-passkey"
         >
           Pass key
@@ -940,7 +940,7 @@ function AdminPasskeyState({ onVerified }: { onVerified: () => void }) {
         <button
           type="submit"
           disabled={submitting || !value.trim()}
-          className="mt-5 inline-flex h-12 w-full items-center justify-center rounded-2xl border border-cyan-200/24 bg-cyan-300/14 px-4 text-sm font-black uppercase tracking-[0.14em] text-cyan-50 transition hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-45"
+          className="nc-primary-label mt-5 inline-flex h-12 w-full items-center justify-center rounded-2xl border border-cyan-200/24 bg-cyan-300/14 px-4 text-sm uppercase text-cyan-50 transition hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-45"
         >
           {submitting ? 'Checking' : 'Unlock admin'}
         </button>
@@ -956,7 +956,7 @@ function AdminAccessState({ title, detail }: { title: string; detail: string }) 
         <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-cyan-200/24 bg-cyan-300/10 text-cyan-100">
           <LockKeyhole className="h-6 w-6" />
         </div>
-        <h1 className="mt-5 text-2xl font-black">{title}</h1>
+        <h1 className="nc-section-title mt-5 text-2xl">{title}</h1>
         <p className="mt-3 text-sm leading-6 text-sky-100/64">{detail}</p>
       </div>
     </div>
@@ -1014,7 +1014,7 @@ function SidebarNavigationGroup({
     <div>
       <div className="mb-2 flex items-center gap-2 px-3">
         <span className={clsx('h-1.5 w-1.5 rounded-full', tone.dot)} />
-        <p className={clsx('text-[10px] font-black uppercase tracking-[0.2em]', tone.group)}>
+        <p className={clsx('nc-eyebrow text-[10px]', tone.group)}>
           {group.title}
         </p>
       </div>
@@ -1136,10 +1136,10 @@ function BrandLockup({ compact = false }: { compact?: boolean }) {
           <img src={nursingCommandLogo} alt="Nurse Command logo" className="h-10 w-10 object-contain" />
         </div>
         <div className="min-w-0">
-          <p className="text-lg font-black uppercase tracking-[0.14em] text-white drop-shadow-[0_0_12px_rgba(144,204,255,0.36)]">
+          <p className="nc-section-title text-lg uppercase text-white drop-shadow-[0_0_12px_rgba(144,204,255,0.36)]">
             Nurse Command
           </p>
-          <p className="-mt-0.5 text-[10px] font-bold uppercase tracking-[0.28em] text-sky-100">
+          <p className="nc-eyebrow -mt-0.5 text-[10px] text-sky-100">
             Study. Practice. Lead.
           </p>
           {!compact ? (
@@ -1147,7 +1147,7 @@ function BrandLockup({ compact = false }: { compact?: boolean }) {
               {['RN', 'PN', 'FNP'].map((label) => (
                 <span
                   key={label}
-                  className="rounded-lg border border-white/10 bg-white/[0.055] px-2 py-1 text-center text-[10px] font-black text-sky-100/70"
+                  className="rounded-lg border border-white/10 bg-white/[0.055] px-2 py-1 text-center text-[10px] font-bold text-sky-100/70"
                 >
                   {label}
                 </span>
@@ -1180,10 +1180,10 @@ function SupportSheet({ open, onClose }: { open: boolean; onClose: () => void })
           >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-300">
+                <p className="nc-eyebrow text-sky-300">
                   Help & Support
                 </p>
-                <h3 className="mt-2 text-2xl font-black text-white">
+                <h3 className="nc-section-title mt-2 text-2xl text-white">
                   Need a quick reset?
                 </h3>
                 <p className="mt-2 text-sm leading-6 text-sky-100/64">
