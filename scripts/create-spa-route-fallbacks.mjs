@@ -27,6 +27,7 @@ const appRoutes = [
   'strategy-training',
   'notes',
   'my-materials',
+  'social',
   'settings',
   'medical-command-center',
   'shift-command',
