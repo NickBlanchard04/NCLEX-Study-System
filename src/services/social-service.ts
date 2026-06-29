@@ -168,7 +168,16 @@ export async function sendFriendRequest(userId: string) {
     target_user_id: userId,
   })
   if (error) throw error
-  return typeof data === 'string' ? data : null
+  const requestId = typeof data === 'string' ? data : null
+  if (requestId) {
+    const { error: notificationError } = await client.functions.invoke('send-friend-request-notification', {
+      body: { requestId },
+    })
+    if (notificationError) {
+      console.warn('Friend request email notification was not sent.', notificationError.message)
+    }
+  }
+  return requestId
 }
 
 export async function respondFriendRequest(requestId: string, status: 'accepted' | 'declined') {
