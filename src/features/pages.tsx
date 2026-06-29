@@ -133,6 +133,7 @@ interface LaunchTool {
   route: string
   icon: React.ReactNode
   featured?: boolean
+  mobilePrimary?: boolean
   onSelect?: () => void
 }
 
@@ -263,23 +264,25 @@ export function StudyMenuPage() {
       {
         title: 'Start Today',
         eyebrow: 'Start',
-        description: 'Next best action',
+        description: 'Next action',
         action: 'Open dashboard',
         route: '/dashboard',
         featured: true,
+        mobilePrimary: true,
         icon: <Goal className="h-5 w-5" />,
         status: planProgress + '% today',
-        tone: 'cyan',
+        tone: 'amber',
       },
       {
         title: 'Quick Study',
         eyebrow: 'Practice',
-        description: 'Fast drill',
+        description: 'Weak-spot drill',
         action: 'Start drill',
         route: '/quick-study',
+        mobilePrimary: true,
         icon: <Zap className="h-5 w-5" />,
         status: shortCategoryLabel(weakestCategory),
-        tone: 'amber',
+        tone: 'rose',
       },
       {
         title: 'Study Plan',
@@ -287,6 +290,7 @@ export function StudyMenuPage() {
         description: 'Today / week / later',
         action: 'View plan',
         route: '/study-plan',
+        mobilePrimary: true,
         icon: <CalendarClock className="h-5 w-5" />,
         status: dashboard.todayCompleted + '/' + dashboard.dailyGoal + ' done',
         tone: 'cyan',
@@ -294,17 +298,18 @@ export function StudyMenuPage() {
       {
         title: 'Question Bank',
         eyebrow: 'Bank',
-        description: 'Question sets',
+        description: 'Build a set',
         action: 'Open bank',
         route: '/practice-questions',
+        mobilePrimary: true,
         icon: <ClipboardList className="h-5 w-5" />,
         status: Math.max(attempts.length, 1245).toLocaleString() + ' answered',
-        tone: 'amber',
+        tone: 'cyan',
       },
       {
         title: 'Performance',
         eyebrow: 'Insight',
-        description: 'Signals and trends',
+        description: 'Signals',
         action: 'Read signals',
         route: '/performance-analytics',
         icon: <BarChart3 className="h-5 w-5" />,
@@ -314,7 +319,7 @@ export function StudyMenuPage() {
       {
         title: 'Nurse Lab',
         eyebrow: 'Lab',
-        description: 'Games and simulation',
+        description: 'Simulation',
         action: 'Open lab',
         route: '/nurse-command-lab',
         icon: <HeartPulse className="h-5 w-5" />,
@@ -331,8 +336,6 @@ export function StudyMenuPage() {
       weakestCategory,
     ],
   )
-
-  const activeTitleItem = titleMenuItems[activeMenuIndex] ?? titleMenuItems[0]
 
   const progressBadges: Array<{
     label: string
@@ -432,6 +435,14 @@ export function StudyMenuPage() {
           route: '/strategy-training',
           icon: <BookOpen className="h-4 w-4" />,
           tone: 'emerald',
+        },
+        {
+          title: 'Performance',
+          description: 'Review signals and trends.',
+          action: 'Open',
+          route: '/performance-analytics',
+          icon: <BarChart3 className="h-4 w-4" />,
+          tone: 'violet',
         },
       ],
     },
@@ -538,7 +549,7 @@ export function StudyMenuPage() {
     <NurseCommandBackdrop className="min-h-screen w-full overflow-x-hidden px-4 pb-4 pt-3 md:px-7 md:pt-6">
       <div className="mx-auto flex min-h-[calc(100vh-1rem)] max-w-7xl flex-col">
         <main className="relative z-10 flex flex-1 flex-col gap-5">
-          <section className="home-title-stage relative isolate grid min-h-[calc(100vh-8.25rem)] overflow-hidden border-y border-cyan-300/18 py-5 lg:min-h-[calc(100vh-7.25rem)] lg:grid-cols-[minmax(0,0.9fr)_minmax(22rem,0.58fr)] lg:items-center lg:gap-8 lg:py-8">
+          <section className="home-title-stage relative isolate grid min-h-[calc(100svh-3rem)] overflow-hidden border-y border-cyan-300/18 py-4 sm:py-5 lg:min-h-[calc(100vh-7.25rem)] lg:grid-cols-[minmax(0,0.88fr)_minmax(20rem,0.46fr)] lg:items-center lg:gap-6 lg:py-8 xl:gap-8">
             <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(56,189,248,0.08)_1px,transparent_1px),linear-gradient(180deg,rgba(56,189,248,0.06)_1px,transparent_1px)] bg-[length:88px_88px]" />
             <div className="home-motion-field pointer-events-none absolute inset-0 -z-10" aria-hidden="true" />
             <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(2,8,18,0.08),rgba(2,8,18,0.72)_75%,rgba(2,8,18,0.96))]" />
@@ -562,20 +573,20 @@ export function StudyMenuPage() {
             </button>
 
             <div className="min-w-0">
-              <div className="mt-3 max-w-4xl pr-14 sm:mt-0">
-                <p className="text-sm font-black uppercase tracking-normal text-cyan-200/72">
+              <div className="mt-2 max-w-3xl pr-14 sm:mt-0 lg:max-w-2xl">
+                <p className="text-xs font-black uppercase tracking-normal text-cyan-200/72 sm:text-sm">
                   Study. Practice. Lead.
                 </p>
-                <h1 className="mt-2 text-[clamp(2.85rem,6.4vw,5.8rem)] font-black uppercase leading-[0.86] tracking-normal text-white drop-shadow-[0_0_26px_rgba(125,211,252,0.24)]">
+                <h1 className="mt-2 text-5xl font-black uppercase leading-[0.9] tracking-normal text-white drop-shadow-[0_0_26px_rgba(125,211,252,0.24)] sm:text-6xl lg:text-7xl xl:text-[4.5rem]">
                   Nurse
                   <span className="block text-cyan-100">Command</span>
                 </h1>
-                <p className="mt-5 max-w-xl text-base leading-7 text-sky-50/76 md:text-lg">
+                <p className="mt-4 max-w-xl text-base leading-7 text-sky-50/76">
                   Start with one focused win.
                 </p>
               </div>
 
-              <div className="mt-7 grid max-w-3xl gap-2" aria-label="Title menu">
+              <div className="mt-6 grid max-w-3xl gap-2 md:gap-2.5" aria-label="Title menu">
                 {titleMenuItems.map((item, index) => {
                   const isActive = index === activeMenuIndex
                   const tone = launchToneClasses[item.tone]
@@ -589,7 +600,8 @@ export function StudyMenuPage() {
                       onFocus={() => setActiveMenuIndex(index)}
                       onMouseEnter={() => setActiveMenuIndex(index)}
                       className={clsx(
-                        'group relative flex min-h-[4rem] w-full min-w-0 items-center gap-3 overflow-hidden rounded-xl border bg-gradient-to-br px-3 py-2.5 pl-4 text-left transition focus:outline-none focus:ring-4 sm:px-4 sm:pl-5',
+                        'group relative min-h-[3.75rem] w-full min-w-0 items-center gap-3 overflow-hidden rounded-xl border bg-gradient-to-br px-3 py-2.5 pl-4 text-left transition focus:outline-none focus:ring-4 sm:min-h-[4rem] sm:px-4 sm:pl-5',
+                        item.mobilePrimary ? 'flex' : 'hidden sm:flex',
                         isActive
                           ? clsx(selectedTaskClasses.border, selectedTaskClasses.surface, selectedTaskClasses.glow)
                           : clsx(tone.idle, tone.hover, 'focus:ring-cyan-300/16'),
@@ -601,12 +613,12 @@ export function StudyMenuPage() {
                       </span>
                       <span className="grid min-w-0 flex-1 gap-1 sm:grid-cols-[minmax(0,0.95fr)_minmax(0,0.75fr)] sm:items-center">
                         <span className="flex min-w-0 items-center gap-2">
-                          <span className="text-lg font-black text-white">{item.title}</span>
+                          <span className="text-base font-black text-white sm:text-lg">{item.title}</span>
                           <span className={clsx('hidden rounded-md border px-2 py-1 text-xs font-black sm:inline-flex', isActive ? selectedTaskClasses.meta : tone.meta)}>
                             {item.status}
                           </span>
                         </span>
-                        <span className="min-w-0 text-sm font-semibold text-sky-50/62 sm:text-right">
+                        <span className="hidden min-w-0 text-sm font-semibold text-sky-50/62 sm:block sm:text-right">
                           {item.eyebrow} · {item.description}
                         </span>
                       </span>
@@ -618,43 +630,11 @@ export function StudyMenuPage() {
             </div>
 
             <aside className="mt-5 min-w-0 lg:mt-0">
-              <div className={clsx('relative overflow-hidden rounded-xl border p-5', selectedTaskClasses.border, selectedTaskClasses.surface, selectedTaskClasses.glow)}>
-                <span className={clsx('pointer-events-none absolute inset-x-0 top-0 h-1.5', selectedTaskClasses.accent)} />
-                <div className="relative">
-                  <p className="text-xs font-black uppercase tracking-normal text-sky-100/62">
-                    Selected
-                  </p>
-                  <div className="mt-3 flex items-center gap-3">
-                    <span className={clsx('grid h-12 w-12 shrink-0 place-items-center rounded-lg border', selectedTaskClasses.icon)}>
-                      {activeTitleItem.icon}
-                    </span>
-                    <div className="min-w-0">
-                      <h2 className="text-2xl font-black leading-tight text-white">{activeTitleItem.title}</h2>
-                      <p className={clsx('mt-2 inline-flex rounded-md border px-2 py-1 text-xs font-black', selectedTaskClasses.meta)}>
-                        {activeTitleItem.eyebrow} · {activeTitleItem.status}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => activateTitleMenuItem(activeTitleItem)}
-                    className={clsx(
-                      'mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-black transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-cyan-300/22 sm:w-auto',
-                      selectedTaskClasses.border,
-                      selectedTaskClasses.icon,
-                    )}
-                  >
-                    {activeTitleItem.action}
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="mt-3 overflow-hidden rounded-xl border border-sky-200/16 bg-[linear-gradient(135deg,rgba(14,165,233,0.11),rgba(2,8,18,0.78)_42%,rgba(16,185,129,0.1))] p-4">
+              <div className="overflow-hidden rounded-xl border border-sky-200/20 bg-[linear-gradient(135deg,rgba(14,165,233,0.13),rgba(2,8,18,0.82)_42%,rgba(124,58,237,0.13))] p-4 shadow-[0_18px_38px_rgba(0,0,0,0.18)] sm:p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-sm font-black text-white">Progress badges</p>
-                    <p className="mt-1 text-sm font-semibold leading-6 text-sky-50/66">Small wins stack up.</p>
+                    <p className="text-xs font-black uppercase tracking-normal text-cyan-100/66">Today&apos;s Status</p>
+                    <h2 className="mt-1 text-xl font-black leading-tight text-white">Level, mastery, streak.</h2>
                   </div>
                   <span className="shrink-0 rounded-full border border-amber-200/38 bg-amber-300/14 px-3 py-1 text-xs font-black text-amber-100">
                     {levelProgress}% to Lv {nurseLevel + 1}
@@ -674,7 +654,7 @@ export function StudyMenuPage() {
                 </div>
                 <div className="mt-4 rounded-lg border border-cyan-200/16 bg-[#03101f]/58 p-3">
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-xs font-black uppercase tracking-normal text-cyan-100/68">Today's momentum</span>
+                    <span className="text-xs font-black uppercase tracking-normal text-cyan-100/68">Today&apos;s progress</span>
                     <span className="text-sm font-black text-white">{dashboard.todayCompleted}/{dashboard.dailyGoal}</span>
                   </div>
                   <CommandProgress value={planProgress} tone="blue" className="mt-3" />
