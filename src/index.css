@@ -1,7 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700;800&family=Google+Sans+Text:wght@400;500;600;700;800&display=swap');
 @import 'tailwindcss';
 
 :root {
+  --font-ui: 'Google Sans Text', 'Google Sans', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: 'Google Sans', 'Google Sans Text', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --nclex-navy: #003b66;
   --nclex-navy-2: #12375a;
   --nclex-blue: #2a7de1;
@@ -24,7 +26,7 @@
   --nclex-shadow-sm: 0 12px 28px rgba(15, 37, 61, 0.05);
   --nclex-shadow-md: 0 18px 44px rgba(15, 37, 61, 0.07);
   --nclex-shadow-lg: 0 28px 56px rgba(15, 37, 61, 0.08);
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-ui);
   color: var(--nclex-text);
   background: var(--nclex-bg);
   font-synthesis: none;
@@ -58,7 +60,7 @@ h1,
 h2,
 h3,
 h4 {
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-display);
 }
 
 .nc-hero-title,
@@ -66,7 +68,7 @@ h4 {
 .nc-section-title,
 .nc-card-title,
 .nc-metric-value {
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-display);
   letter-spacing: 0;
 }
 
@@ -96,7 +98,7 @@ h4 {
 .nc-metric-label,
 .nc-primary-label,
 .nc-secondary-label {
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-ui);
   letter-spacing: 0;
 }
 
@@ -946,7 +948,7 @@ textarea {
     auto,
     auto;
   color: var(--retro-text);
-  font-family: Inter, sans-serif;
+  font-family: var(--font-ui);
 }
 
 .retro-med * {
@@ -1035,7 +1037,7 @@ textarea {
 .retro-modal h3,
 .retro-drawer h3 {
   margin: 0;
-  font-family: Poppins, sans-serif;
+  font-family: var(--font-display);
   letter-spacing: 0;
 }
 

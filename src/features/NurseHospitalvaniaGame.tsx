@@ -351,7 +351,7 @@ class HospitalvaniaScene extends Phaser.Scene {
       this.add.rectangle(x + 110, 250, 120, 42, 0x153f66, 0.8).setScrollFactor(0.45)
       this.add.text(x + 68, 238, `ROOM ${400 + Math.floor(x / 220)}`, {
         color: '#bde9ff',
-        fontFamily: 'Inter, sans-serif',
+        fontFamily: 'Google Sans Text, Google Sans, sans-serif',
         fontSize: '13px',
         fontStyle: '700',
       }).setScrollFactor(0.45)
@@ -399,7 +399,7 @@ class HospitalvaniaScene extends Phaser.Scene {
       sprite.setData('need', patient.need)
       this.add.text(patient.x - 42, patient.y - 56, `${patient.room}\n${patient.need}`, {
         color: '#e8f4ff',
-        fontFamily: 'Inter, sans-serif',
+        fontFamily: 'Google Sans Text, Google Sans, sans-serif',
         fontSize: '13px',
         fontStyle: '700',
         align: 'center',
@@ -436,7 +436,7 @@ class HospitalvaniaScene extends Phaser.Scene {
     this.exit.setScale(0.55).refreshBody()
     this.add.text(3990, 70, 'HANDOFF\nEXIT', {
       color: '#bbf7d0',
-      fontFamily: 'Inter, sans-serif',
+      fontFamily: 'Google Sans Text, Google Sans, sans-serif',
       fontSize: '16px',
       fontStyle: '900',
       align: 'center',
@@ -587,7 +587,7 @@ class HospitalvaniaScene extends Phaser.Scene {
   private emitFloatingText(x: number, y: number, message: string, color: string) {
     const text = this.add.text(x, y, message, {
       color,
-      fontFamily: 'Inter, sans-serif',
+      fontFamily: 'Google Sans Text, Google Sans, sans-serif',
       fontSize: '18px',
       fontStyle: '900',
       stroke: '#03111f',
