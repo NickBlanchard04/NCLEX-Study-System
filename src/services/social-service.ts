@@ -13,6 +13,8 @@ export interface SocialPerson {
   state?: string
   friendStatus: FriendStatus
   requestId?: string
+  suggestionReason?: string
+  matchScore?: number
 }
 
 export interface SocialConnection extends Omit<SocialPerson, 'friendStatus' | 'requestId'> {
@@ -42,6 +44,11 @@ type SocialPersonRow = {
   profile_state: string | null
   friend_status: FriendStatus | null
   request_id: string | null
+}
+
+type SocialSuggestionRow = SocialPersonRow & {
+  suggestion_reason: string | null
+  match_score: number | string | null
 }
 
 type SocialConnectionRow = Omit<SocialPersonRow, 'friend_status'> & {
@@ -93,6 +100,12 @@ const mapPerson = (row: SocialPersonRow): SocialPerson => ({
   requestId: optionalText(row.request_id),
 })
 
+const mapSuggestion = (row: SocialSuggestionRow): SocialPerson => ({
+  ...mapPerson(row),
+  suggestionReason: optionalText(row.suggestion_reason),
+  matchScore: optionalNumber(row.match_score),
+})
+
 const mapConnection = (row: SocialConnectionRow): SocialConnection => ({
   userId: row.user_id,
   displayName: row.display_name,
@@ -124,6 +137,15 @@ export async function searchPeople(query: string) {
   })
   if (error) throw error
   return ((data ?? []) as SocialPersonRow[]).map(mapPerson)
+}
+
+export async function suggestPeople(limit = 18) {
+  const client = requireClient()
+  const { data, error } = await client.rpc('suggest_people', {
+    limit_count: limit,
+  })
+  if (error) throw error
+  return ((data ?? []) as SocialSuggestionRow[]).map(mapSuggestion)
 }
 
 export async function listSocialConnections() {
