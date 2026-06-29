@@ -2,8 +2,11 @@ import { describe, expect, it } from 'vitest'
 import type { ExamTrackId, Question, QuestionAttempt, QuestionCategory } from '../../app/types'
 import { getExamCategories, getExamQuestionBank } from '../../data/content'
 import {
+  generatePracticeSet,
   generateQuickStudySession,
+  generateTestSession,
   getActiveSessionSummary,
+  getQuestionStemFingerprint,
   getPracticeHistory,
   selectQuickStudyQuestionIds,
 } from '../study-system'
@@ -28,40 +31,113 @@ const makeAttempt = (
 
 const getCategoryWithFreshAlternatives = (examTrack: ExamTrackId) => {
   const bank = getExamQuestionBank(examTrack)
+  const uniqueByStem = (items: Question[]) => {
+    const seen = new Set<string>()
+    return items.filter((question) => {
+      const fingerprint = getQuestionStemFingerprint(question)
+      if (seen.has(fingerprint)) return false
+      seen.add(fingerprint)
+      return true
+    })
+  }
   const category = getExamCategories(examTrack).find(
-    (candidate) => bank.filter((question) => question.category === candidate).length >= 14,
+    (candidate) => uniqueByStem(bank.filter((question) => question.category === candidate)).length >= 8,
   )
   if (!category) throw new Error(`Expected enough ${examTrack} questions for repeat-prevention test.`)
+  const questions = bank.filter((question) => question.category === category)
   return {
     category,
-    questions: bank.filter((question) => question.category === category),
+    questions,
+    uniqueQuestions: uniqueByStem(questions),
   }
 }
 
 describe('quick study selection', () => {
   it('excludes recent repeats when enough fresh questions exist', () => {
-    const { questions } = getCategoryWithFreshAlternatives('nclex-rn')
-    const recentQuestions = questions.slice(0, 8)
-    const recentIds = new Set(recentQuestions.map((question) => question.id))
+    const { questions, uniqueQuestions } = getCategoryWithFreshAlternatives('nclex-rn')
+    const byId = new Map(questions.map((question) => [question.id, question]))
+    const recentQuestions = uniqueQuestions.slice(0, 3)
+    const recentStems = new Set(recentQuestions.map(getQuestionStemFingerprint))
     const attempts = recentQuestions.map((question, index) => makeAttempt(question, index))
 
     const selectedIds = selectQuickStudyQuestionIds(questions, attempts, 'developing', 5)
+    const selectedStems = selectedIds.map((id) => getQuestionStemFingerprint(byId.get(id)!))
 
     expect(selectedIds).toHaveLength(5)
-    expect(selectedIds.some((id) => recentIds.has(id))).toBe(false)
+    expect(selectedStems.some((stem) => recentStems.has(stem))).toBe(false)
   })
 
   it('creates quick study sessions without repeating recent question stems', () => {
-    const { category, questions } = getCategoryWithFreshAlternatives('nclex-rn')
-    const recentQuestions = questions.slice(0, 8)
-    const recentIds = new Set(recentQuestions.map((question) => question.id))
+    const { category, questions, uniqueQuestions } = getCategoryWithFreshAlternatives('nclex-rn')
+    const byId = new Map(questions.map((question) => [question.id, question]))
+    const recentQuestions = uniqueQuestions.slice(0, 3)
+    const recentStems = new Set(recentQuestions.map(getQuestionStemFingerprint))
     const attempts = recentQuestions.map((question, index) => makeAttempt(question, index))
 
     const session = generateQuickStudySession(attempts, 'nclex-rn', category as QuestionCategory)
+    const selectedStems = session.questionIds.map((id) => getQuestionStemFingerprint(byId.get(id)!))
 
     expect(session.questionIds).toHaveLength(5)
-    expect(session.questionIds.some((id) => recentIds.has(id))).toBe(false)
+    expect(selectedStems.some((stem) => recentStems.has(stem))).toBe(false)
+    expect(new Set(selectedStems).size).toBe(selectedStems.length)
     expect(session.config.category).toBe(category)
+  })
+})
+
+describe('question bank repeat prevention', () => {
+  it('creates practice sessions without duplicate visible question stems', () => {
+    const bank = getExamQuestionBank('nclex-rn')
+    const byId = new Map(bank.map((question) => [question.id, question]))
+
+    const session = generatePracticeSet([], 'nclex-rn', {
+      category: 'All',
+      questionStatus: 'all',
+      format: 'mixed',
+      difficulty: 'mixed',
+      questionCount: 20,
+    })
+    const stems = session.questionIds.map((id) => getQuestionStemFingerprint(byId.get(id)!))
+
+    expect(session.questionIds.length).toBeGreaterThan(10)
+    expect(new Set(stems).size).toBe(stems.length)
+  })
+
+  it('deprioritizes recently answered stems in question bank practice', () => {
+    const { category, questions, uniqueQuestions } = getCategoryWithFreshAlternatives('nclex-rn')
+    const recentQuestions = uniqueQuestions.slice(0, 3)
+    const recentStems = new Set(recentQuestions.map(getQuestionStemFingerprint))
+    const attempts = recentQuestions.map((question, index) =>
+      makeAttempt(question, index, { sessionType: 'practice' }),
+    )
+
+    const session = generatePracticeSet(attempts, 'nclex-rn', {
+      category,
+      questionStatus: 'all',
+      format: 'mixed',
+      difficulty: 'mixed',
+      questionCount: 5,
+    })
+    const byId = new Map(questions.map((question) => [question.id, question]))
+    const selectedStems = session.questionIds.map((id) => getQuestionStemFingerprint(byId.get(id)!))
+
+    expect(session.questionIds).toHaveLength(5)
+    expect(selectedStems.some((stem) => recentStems.has(stem))).toBe(false)
+    expect(new Set(selectedStems).size).toBe(selectedStems.length)
+  })
+
+  it('creates test sessions without duplicate visible question stems', () => {
+    const bank = getExamQuestionBank('nclex-rn')
+    const byId = new Map(bank.map((question) => [question.id, question]))
+
+    const session = generateTestSession([], 'nclex-rn', {
+      questionCount: 40,
+      timed: false,
+      noBacktracking: false,
+    })
+    const stems = session.questionIds.map((id) => getQuestionStemFingerprint(byId.get(id)!))
+
+    expect(session.questionIds.length).toBeGreaterThan(20)
+    expect(new Set(stems).size).toBe(stems.length)
   })
 })
 
