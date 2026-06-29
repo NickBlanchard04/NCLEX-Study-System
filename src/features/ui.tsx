@@ -948,6 +948,11 @@ export function QuestionSessionRunner({
     selectedAnswers.some((answerId) => question.correctAnswer.includes(answerId))
   const resultLabel = currentIsCorrect ? 'Correct' : hasPartialSignal ? 'Partial' : 'Incorrect'
   const resultTone: 'green' | 'amber' | 'red' = currentIsCorrect ? 'green' : hasPartialSignal ? 'amber' : 'red'
+  const answerReviewClass = currentIsCorrect
+    ? 'border-emerald-300/24 bg-[#051f25]'
+    : hasPartialSignal
+      ? 'border-amber-300/28 bg-[#1f1a0a]'
+      : 'border-rose-300/28 bg-[#210f1d]'
   const evidenceLevel = question.blueprintMapped && question.sourceBacked ? 'Readiness evidence' : 'Practice evidence'
   const qualityStatus = question.contentQuality?.replaceAll('-', ' ') ?? 'draft item'
   const reviewState = submitted ? (showRationale ? 'Review open' : 'Review hidden') : 'Answer pending'
@@ -982,26 +987,26 @@ export function QuestionSessionRunner({
 
   return (
     <div className="space-y-6 pb-44 xl:pb-0">
-      <Surface className="p-4 md:p-5">
+      <Surface className="border-cyan-200/20 bg-[#061b31]/72 p-4 md:p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-blue)]">
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-200">
               {modeLabel}
             </p>
-            <h3 className="mt-1 font-serif text-2xl text-[var(--nclex-text)] md:text-3xl">
+            <h3 className="mt-1 text-2xl font-black tracking-[-0.03em] text-white md:text-3xl">
               {session.title}
             </h3>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--nclex-text-muted)]">
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-sky-100/68">
               {session.subtitle}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <div className="rounded-xl border border-[var(--nclex-border)] bg-[var(--nclex-card-muted)] px-4 py-2 text-sm font-semibold text-[var(--nclex-text-secondary)]">
+            <div className="rounded-xl border border-amber-200/28 bg-amber-300/[0.08] px-4 py-2 text-sm font-black text-amber-100">
               Question {session.currentIndex + 1} of {session.questionIds.length}
             </div>
             {session.config.timed && remainingSeconds !== null ? (
-              <div className="inline-flex items-center gap-2 rounded-xl border border-[var(--nclex-border)] bg-[var(--nclex-card-muted)] px-4 py-2 text-sm font-semibold text-[var(--nclex-text-secondary)]">
-                <Clock3 className="h-4 w-4 text-[var(--nclex-blue)]" />
+              <div className="inline-flex items-center gap-2 rounded-xl border border-cyan-200/24 bg-cyan-300/[0.08] px-4 py-2 text-sm font-black text-cyan-100">
+                <Clock3 className="h-4 w-4" />
                 {Math.floor(remainingSeconds / 60)}:{String(remainingSeconds % 60).padStart(2, '0')}
               </div>
             ) : null}
@@ -1028,7 +1033,7 @@ export function QuestionSessionRunner({
                     ? 'border-amber-200/70 bg-amber-300/22 text-amber-50 shadow-[0_0_18px_rgba(251,191,36,0.18)]'
                     : answered
                       ? 'border-emerald-300/34 bg-emerald-300/[0.08] text-emerald-100'
-                      : 'border-[var(--nclex-border)] bg-white text-[var(--nclex-text-muted)]',
+                      : 'border-cyan-200/18 bg-white/[0.04] text-sky-100/58',
                   session.config.noBacktracking && 'cursor-not-allowed opacity-60',
                 )}
               >
@@ -1040,13 +1045,13 @@ export function QuestionSessionRunner({
       </Surface>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
-        <Surface className="nclex-surface-muted">
+        <Surface className="border-cyan-200/18 bg-[#041629]/78">
           {question.scenario ? (
-            <div className="rounded-[16px] border border-[#cfe1f7] bg-[#eef5ff] p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-blue)]">
+            <div className="rounded-[16px] border border-cyan-200/20 bg-cyan-300/[0.07] p-4">
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-100">
                 Clinical scenario
               </p>
-              <p className="mt-2 text-sm leading-7 text-[var(--nclex-text-secondary)]">{question.scenario}</p>
+              <p className="mt-2 text-sm leading-7 text-sky-100/76">{question.scenario}</p>
             </div>
           ) : null}
 
@@ -1065,10 +1070,10 @@ export function QuestionSessionRunner({
               onClick={() => setFlagged((current) => !current)}
               disabled={Boolean(existingResponse)}
               className={clsx(
-                'inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em]',
+                'inline-flex min-h-8 items-center gap-2 rounded-full border px-3 py-1 text-xs font-black uppercase tracking-[0.14em]',
                 flagged
-                  ? 'border-[#ffd9ae] bg-[var(--nclex-warning-soft)] text-[var(--nclex-warning)]'
-                  : 'border-[var(--nclex-border)] bg-white text-[var(--nclex-text-muted)]',
+                  ? 'border-amber-200/40 bg-amber-300/12 text-amber-100'
+                  : 'border-cyan-200/18 bg-white/[0.04] text-sky-100/58',
               )}
             >
               <Flag className="h-3.5 w-3.5" />
@@ -1076,11 +1081,11 @@ export function QuestionSessionRunner({
             </button>
           </div>
 
-          <h4 className="mt-5 font-serif text-[1.7rem] leading-tight text-[var(--nclex-text)] md:text-[2rem]">
+          <h4 className="mt-5 text-[1.6rem] font-black leading-tight tracking-[-0.03em] text-white md:text-[2rem]">
             {question.prompt}
           </h4>
 
-          <div className="mt-6 space-y-3">
+          <div className="mt-6 space-y-3.5">
             {question.choices.map((choice) => {
               const selected = selectedAnswers.includes(choice.id)
               const correct = question.correctAnswer.includes(choice.id)
@@ -1101,7 +1106,7 @@ export function QuestionSessionRunner({
                       : undefined
                   }
                   className={clsx(
-                    'nclex-answer flex min-h-[64px] w-full items-start gap-4 rounded-[16px] border p-4 text-left transition active:scale-[0.995] sm:min-h-0',
+                    'nclex-answer flex min-h-[72px] w-full items-start gap-4 rounded-[16px] border p-4 text-left transition active:scale-[0.995]',
                     selected && 'nclex-answer-selected',
                     submitted && correct && 'nclex-answer-correct',
                     incorrectSelection && 'nclex-answer-incorrect',
@@ -1110,17 +1115,17 @@ export function QuestionSessionRunner({
                 >
                   <span
                     className={clsx(
-                      'mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-xs font-semibold',
+                      'mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-xs font-black',
                       selected
                         ? 'border-amber-200/70 bg-amber-300/22 text-amber-50 shadow-[0_0_16px_rgba(251,191,36,0.16)]'
-                        : 'border-[var(--nclex-border-strong)] bg-white text-[var(--nclex-text-muted)]',
+                        : 'border-cyan-200/24 bg-white/[0.04] text-sky-100/58',
                       submitted && correct && 'border-[var(--nclex-success)] bg-[var(--nclex-success)] text-white',
                       incorrectSelection && 'border-[var(--nclex-danger)] bg-[var(--nclex-danger)] text-white',
                     )}
                   >
                     {choice.id}
                   </span>
-                  <span className="text-sm leading-7 text-[var(--nclex-text-secondary)]">{choice.text}</span>
+                  <span className="text-base leading-7 text-sky-50/84">{choice.text}</span>
                 </button>
               )
             })}
@@ -1179,13 +1184,13 @@ export function QuestionSessionRunner({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 8 }}
-                className="mt-5 rounded-[16px] border border-cyan-300/18 bg-[#071b2f] p-4 text-white shadow-[0_12px_30px_rgba(2,18,34,0.18)] md:p-5"
+                className={clsx('mt-5 rounded-[16px] border p-4 text-white shadow-[0_12px_30px_rgba(2,18,34,0.18)] md:p-5', answerReviewClass)}
               >
                 <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                   <div>
-                    <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-200/70">Answer Review</p>
+                    <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-200/70">Answer review</p>
                     <p className="mt-1 text-sm leading-6 text-sky-100/70">
-                      Confirm confidence, review the rationale, then move to the next best action.
+                      Confirm confidence, read the clinical rationale, then move to the next best action.
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -1238,7 +1243,7 @@ export function QuestionSessionRunner({
                   <div className="mt-4 grid gap-3 md:grid-cols-2">
                     <div className="md:col-span-2">
                       <RationaleCard
-                        title="Best answer"
+                        title="Correct answer"
                         tone="green"
                         body={question.rationale.whyCorrect}
                       />
@@ -1263,7 +1268,7 @@ export function QuestionSessionRunner({
                       </div>
                     ) : null}
                     <RationaleCard
-                      title="Why others fall away"
+                      title="Why the other options fall away"
                       tone="amber"
                       body={question.rationale.whyOthers}
                     />

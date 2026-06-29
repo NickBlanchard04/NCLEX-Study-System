@@ -11,6 +11,7 @@ import {
 } from 'recharts'
 import {
   Activity,
+  AlertTriangle,
   ArrowLeft,
   ArrowRight,
   Award,
@@ -2072,11 +2073,16 @@ export function QuickStudyPage() {
   const activeSession = useStudySystemStore((state) => state.activeSession)
   const startQuickStudy = useStudySystemStore((state) => state.startQuickStudy)
   const abandonSession = useStudySystemStore((state) => state.abandonSession)
+  const [customizeOpen, setCustomizeOpen] = useState(false)
   const weakArea = useMemo(
     () => getWeakAreas(attempts, profile.examTrack ?? 'nclex-rn', profile.preferences.analyticsScope ?? 'selected-track')[0],
     [attempts, profile.examTrack, profile.preferences.analyticsScope],
   )
   const activeTrack = getExamTrack(profile.examTrack ?? 'nclex-rn')
+  const quickStudyCategory = weakArea?.category ?? getExamCategories(activeTrack.id)[0]
+  const quickStudyReason = weakArea
+    ? `${Math.round(weakArea.accuracy * 100)}% accuracy in ${shortCategoryLabel(weakArea.category)}. Keep it short, then review the miss pattern.`
+    : `Start with high-yield ${activeTrack.shortName} questions so Nurse Command can find your first repair pattern.`
 
   if (activeSession?.mode === 'quick-study') {
     return (
@@ -2093,8 +2099,8 @@ export function QuickStudyPage() {
     <PageStack>
       <PageHeader
         eyebrow="Quick Study"
-        title="Quick Study"
-        description="Five questions. One priority. Answer, review, choose confidence, and move."
+        title="Start one focused drill."
+        description="Quick Study is the fastest practice loop: answer, review, choose confidence, and move to the next repair."
         action={
           <button
             type="button"
@@ -2102,21 +2108,22 @@ export function QuickStudyPage() {
             className="inline-flex min-h-[48px] items-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-black text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
           >
             <Sparkles className="h-4 w-4" />
-            Start 5 questions
+            Start 10-minute drill
           </button>
         }
       />
       <FocusPanel className="border-amber-200/34 bg-[linear-gradient(135deg,rgba(251,191,36,0.16),rgba(6,28,49,0.92)_42%,rgba(2,8,18,0.94))] text-white shadow-[0_0_38px_rgba(251,191,36,0.12)]">
-        <div className="grid gap-5 p-5 md:p-6 xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-end">
+        <div className="grid gap-5 p-5 md:p-6 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-end">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-100/78">Next sprint</p>
-            <h3 className="mt-3 max-w-3xl text-3xl font-black tracking-[-0.04em] text-white md:text-5xl">
-              Train {shortCategoryLabel(weakArea?.category ?? getExamCategories(activeTrack.id)[0])}
+            <div className="flex flex-wrap gap-2">
+              <CommandBadge tone="amber" icon={<Zap className="h-3.5 w-3.5" />}>Current action</CommandBadge>
+              <CommandBadge tone="rose" icon={<Target className="h-3.5 w-3.5" />}>{shortCategoryLabel(quickStudyCategory)}</CommandBadge>
+            </div>
+            <h3 className="mt-4 max-w-3xl text-3xl font-black tracking-[-0.04em] text-white md:text-5xl">
+              Start 10-minute drill
             </h3>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-sky-100/72">
-              {weakArea
-                ? `${Math.round(weakArea.accuracy * 100)}% accuracy here. Keep the loop short and let the review tell you what to repair.`
-                : 'No attempt history yet. Start with high-yield safety and prioritization questions so Nurse Command can find the first repair pattern.'}
+              {quickStudyReason}
             </p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <button
@@ -2124,35 +2131,75 @@ export function QuickStudyPage() {
                 onClick={() => startQuickStudy()}
                 className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-black text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
               >
-                Start 5 questions
+                Start 10-minute drill
                 <ArrowRight className="h-4 w-4" />
               </button>
-              <Link
-                to="/study-plan"
-                className="nclex-btn-secondary inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black"
+              <button
+                type="button"
+                onClick={() => setCustomizeOpen((current) => !current)}
+                className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl border border-cyan-200/24 bg-cyan-300/[0.07] px-5 py-3 text-sm font-black text-cyan-100 transition hover:border-cyan-100/55 hover:bg-cyan-300/13 focus:outline-none focus:ring-4 focus:ring-cyan-300/18"
               >
-                View plan
-                <CalendarClock className="h-4 w-4" />
-              </Link>
+                Customize
+                <Shuffle className="h-4 w-4" />
+              </button>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-2 xl:grid-cols-1">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-1">
+            <CommandStatTile label="Category" value={shortCategoryLabel(quickStudyCategory)} detail="current target" tone="rose" icon={<Target className="h-4 w-4" />} />
             <CommandStatTile label="Set" value="5" detail="questions" tone="amber" icon={<Zap className="h-4 w-4" />} />
+            <CommandStatTile label="Time" value="~10m" detail="focused pace" tone="cyan" icon={<Clock3 className="h-4 w-4" />} />
             <CommandStatTile label="Review" value="Now" detail="rationale" tone="emerald" icon={<BookOpen className="h-4 w-4" />} />
-            <CommandStatTile label="Repair" value="Next" detail="after finish" tone="rose" icon={<Target className="h-4 w-4" />} />
           </div>
         </div>
       </FocusPanel>
 
+      {customizeOpen ? (
+        <Surface className="border-cyan-200/22 bg-cyan-300/[0.055]">
+          <SectionHeading
+            title="Customize the drill"
+            description="Keep Quick Study simple by default. Use these routes when you want more control before starting."
+          />
+          <div className="mt-5 grid gap-3 md:grid-cols-3">
+            <CommandActionCard
+              title={`Train ${shortCategoryLabel(quickStudyCategory)}`}
+              description="Start from the current weak-area signal."
+              meta="Rose / remediation"
+              icon={<Target className="h-4 w-4" />}
+              tone="rose"
+              onClick={() => startQuickStudy(quickStudyCategory)}
+              action={<ArrowRight className="h-4 w-4" />}
+            />
+            <CommandActionCard
+              title="Use Study Plan"
+              description="Open today's tasks before starting."
+              meta="Cyan / planning"
+              icon={<CalendarClock className="h-4 w-4" />}
+              tone="cyan"
+              to="/study-plan"
+              action={<ArrowRight className="h-4 w-4" />}
+            />
+            <CommandActionCard
+              title="Build a question set"
+              description="Choose count, category, and format from the bank."
+              meta="Violet / control"
+              icon={<ClipboardList className="h-4 w-4" />}
+              tone="violet"
+              to="/practice-questions"
+              action={<ArrowRight className="h-4 w-4" />}
+            />
+          </div>
+        </Surface>
+      ) : null}
+
       <div className="grid gap-5 lg:grid-cols-3">
         <Surface className="border-amber-200/24 bg-amber-300/[0.06]">
-          <SectionHeading title="1. Decide" description="Read the scenario, choose the safest answer, and submit without hunting through side panels." />
+          <SectionHeading title="1. Decide" description="Gold marks the current action: choose the safest answer and submit." />
         </Surface>
         <Surface className="border-emerald-200/24 bg-emerald-300/[0.06]">
-          <SectionHeading title="2. Review" description="The rationale opens after the answer so the clinical decision stays primary." />
+          <SectionHeading title="2. Review" description="Emerald confirms correct decisions. Rationale stays readable and immediate." />
         </Surface>
         <Surface className="border-rose-200/24 bg-rose-300/[0.06]">
-          <SectionHeading title="3. Repair" description="The finish screen turns misses into a remediation or focused practice route." />
+          <SectionHeading title="3. Repair" description="Rose marks misses and weak-area work so the next action is obvious." />
         </Surface>
       </div>
     </PageStack>
@@ -2260,6 +2307,20 @@ export function WeakAreasPage() {
     `${readiness.coverageGaps.length} coverage gaps`,
     `${highConfidenceMisses.length} high-confidence misses`,
   ]
+  const getRepairStatus = (area: NonNullable<typeof priorityArea>) => {
+    const repairCount = getRepairCountForCategory(area.category)
+    if (area.masteryLevel === 'strong') {
+      return { label: 'Mastery building', tone: 'violet' as const, icon: <BadgeCheck className="h-3.5 w-3.5" /> }
+    }
+    if (area.accuracy >= 0.72 && repairCount <= 1) {
+      return { label: 'Improving', tone: 'emerald' as const, icon: <TrendingUp className="h-3.5 w-3.5" /> }
+    }
+    if (repairCount >= 2 || area.confidenceMismatchScore >= 0.28) {
+      return { label: 'Stuck', tone: 'rose' as const, icon: <AlertTriangle className="h-3.5 w-3.5" /> }
+    }
+    return { label: 'Needs reps', tone: 'rose' as const, icon: <Target className="h-3.5 w-3.5" /> }
+  }
+  const repairActionVerb = (index: number) => (index === 0 ? 'Train' : index === 1 ? 'Review' : 'Practice')
 
   return (
     <PageStack>
@@ -2272,7 +2333,7 @@ export function WeakAreasPage() {
             <button
               type="button"
               onClick={() => startRepairSet(priorityArea.category)}
-              className="nclex-btn-primary inline-flex min-h-[48px] items-center gap-2 rounded-xl px-5 py-3 text-sm font-black"
+              className="inline-flex min-h-[48px] items-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-black text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
             >
               Start repair set
               <ArrowRight className="h-4 w-4" />
@@ -2282,10 +2343,15 @@ export function WeakAreasPage() {
       />
 
       {priorityArea ? (
-        <FocusPanel className="nclex-dark-panel text-white">
+        <FocusPanel className="border-rose-200/32 bg-[#061426] text-white shadow-[0_0_40px_rgba(244,63,94,0.12)]">
           <div className="grid gap-5 p-5 md:p-6 xl:grid-cols-[1fr_0.76fr] xl:items-center">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-200">Next repair</p>
+              <div className="flex flex-wrap gap-2">
+                <CommandBadge tone="amber" icon={<Sparkles className="h-3.5 w-3.5" />}>Selected repair</CommandBadge>
+                <CommandBadge tone={getRepairStatus(priorityArea).tone} icon={getRepairStatus(priorityArea).icon}>
+                  {getRepairStatus(priorityArea).label}
+                </CommandBadge>
+              </div>
               <h3 className="mt-3 text-3xl font-black tracking-[-0.04em] text-white md:text-5xl">
                 Train {shortCategoryLabel(priorityArea.category)}
               </h3>
@@ -2303,7 +2369,7 @@ export function WeakAreasPage() {
                 <button
                   type="button"
                   onClick={() => startRepairSet(priorityArea.category)}
-                  className="nclex-btn-primary inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black"
+                  className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-black text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
                 >
                   Start {shortCategoryLabel(priorityArea.category)} repair
                   <ArrowRight className="h-4 w-4" />
@@ -2318,10 +2384,10 @@ export function WeakAreasPage() {
                 </button>
               </div>
             </div>
-            <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-              <QuickMetric label="Accuracy" value={`${Math.round(priorityArea.accuracy * 100)}%`} detail={`${priorityArea.attemptCount} attempts`} />
-              <QuickMetric label="Open repairs" value={`${getRepairCountForCategory(priorityArea.category)}`} detail="Misses or active repair routes." />
-              <QuickMetric label="Mismatch" value={`${Math.round(priorityArea.confidenceMismatchScore * 100)}%`} detail="Confidence calibration risk." />
+            <div className="grid grid-cols-3 gap-2 xl:grid-cols-1">
+              <CommandStatTile label="Accuracy" value={`${Math.round(priorityArea.accuracy * 100)}%`} detail={`${priorityArea.attemptCount} attempts`} tone={priorityArea.accuracy >= 0.72 ? 'emerald' : 'rose'} icon={<BadgeCheck className="h-4 w-4" />} />
+              <CommandStatTile label="Open repairs" value={`${getRepairCountForCategory(priorityArea.category)}`} detail="active misses" tone="rose" icon={<AlertTriangle className="h-4 w-4" />} />
+              <CommandStatTile label="Mismatch" value={`${Math.round(priorityArea.confidenceMismatchScore * 100)}%`} detail="confidence risk" tone="violet" icon={<BrainCircuit className="h-4 w-4" />} />
             </div>
           </div>
         </FocusPanel>
@@ -2350,28 +2416,41 @@ export function WeakAreasPage() {
           />
           <div className="mt-5 grid gap-4">
             {weakAreas.slice(0, 4).map((area, index) => (
-              <div key={area.category} className="rounded-2xl border border-cyan-200/15 bg-sky-300/[0.055] p-4">
+              <div
+                key={area.category}
+                className={clsx(
+                  'relative overflow-hidden rounded-2xl border p-4 transition hover:-translate-y-0.5',
+                  index === 0
+                    ? 'border-amber-200/52 bg-amber-300/[0.08] shadow-[0_0_28px_rgba(251,191,36,0.12)]'
+                    : 'border-rose-200/22 bg-rose-300/[0.045] hover:border-rose-200/38',
+                )}
+              >
+                <span className={clsx('pointer-events-none absolute inset-y-4 left-0 w-1 rounded-r-full', index === 0 ? 'bg-amber-300' : 'bg-rose-300')} />
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-full border border-cyan-300/24 bg-cyan-300/10 px-2.5 py-1 text-xs font-black text-cyan-100">
+                      <span className={clsx('rounded-full border px-2.5 py-1 text-xs font-black', index === 0 ? 'border-amber-200/36 bg-amber-300/12 text-amber-100' : 'border-rose-200/28 bg-rose-300/10 text-rose-100')}>
                         {index === 0 ? 'Next' : `Later ${index}`}
                       </span>
-                      <MasteryPill mastery={area.masteryLevel} />
+                      <CommandBadge tone={getRepairStatus(area).tone} icon={getRepairStatus(area).icon}>
+                        {getRepairStatus(area).label}
+                      </CommandBadge>
                     </div>
                     <h3 className="mt-3 text-xl font-black tracking-[-0.03em] text-white">
-                      {shortCategoryLabel(area.category)}
+                      {repairActionVerb(index)} {shortCategoryLabel(area.category)}
                     </h3>
-                    <p className="mt-2 text-sm leading-6 text-sky-100/65">{area.suggestedAction}</p>
+                    <p className="mt-2 max-w-2xl text-sm leading-6 text-sky-100/68">
+                      {area.suggestedAction}
+                    </p>
                   </div>
                   <div className="grid min-w-[138px] grid-cols-2 gap-2 text-center">
-                    <div className="rounded-xl border border-cyan-300/15 bg-white/[0.04] p-3">
+                    <div className="rounded-xl border border-emerald-300/18 bg-emerald-300/[0.065] p-3">
                       <p className="text-lg font-black text-white">{Math.round(area.accuracy * 100)}%</p>
-                      <p className="text-xs font-semibold text-sky-100/55">accuracy</p>
+                      <p className="text-xs font-semibold text-emerald-100/58">accuracy</p>
                     </div>
-                    <div className="rounded-xl border border-cyan-300/15 bg-white/[0.04] p-3">
+                    <div className="rounded-xl border border-rose-300/18 bg-rose-300/[0.065] p-3">
                       <p className="text-lg font-black text-white">{getRepairCountForCategory(area.category)}</p>
-                      <p className="text-xs font-semibold text-sky-100/55">repairs</p>
+                      <p className="text-xs font-semibold text-rose-100/58">repairs</p>
                     </div>
                   </div>
                 </div>
@@ -2382,9 +2461,14 @@ export function WeakAreasPage() {
                   <button
                     type="button"
                     onClick={() => startRepairSet(area.category)}
-                    className="nclex-btn-primary inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black"
+                    className={clsx(
+                      'inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-black text-white transition hover:brightness-110 focus:outline-none focus:ring-4',
+                      index === 0
+                        ? 'border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] shadow-[0_12px_28px_rgba(251,191,36,0.18)] focus:ring-amber-300/20'
+                        : 'border-rose-100/38 bg-rose-400/18 focus:ring-rose-300/18',
+                    )}
                   >
-                    Train {shortCategoryLabel(area.category)}
+                    {repairActionVerb(index)} {shortCategoryLabel(area.category)}
                   </button>
                   <button
                     type="button"
