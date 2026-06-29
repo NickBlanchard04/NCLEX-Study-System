@@ -4,12 +4,14 @@ import type {
   AnswerChoice,
   MaterialAsset,
   MaterialFlashcard,
+  MaterialImportMode,
   MaterialQuestion,
   QuestionCategory,
   StudyMaterial,
   StudyMaterialFileType,
 } from '../app/types'
 import { hasCodeLikeStudyArtifact } from './material-quality'
+import { isSupabaseConfigured, supabase } from './supabase'
 
 GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString()
 
@@ -45,6 +47,12 @@ const sourceDomainPattern =
 const codeSourceHostPattern =
   /\b(?:github\.com|raw\.githubusercontent\.com|gitlab\.com|bitbucket\.org|stackoverflow\.com|stackblitz\.com|codesandbox\.io|npmjs\.com|react\.dev|vitejs\.dev)\b/i
 const codeSourcePathPattern = /\.(?:cjs|css|js|jsx|json|mjs|py|sql|ts|tsx)(?:$|[?#])/i
+const blockedStudyLinkHostPattern = /\b(?:quizlet\.com|chegg\.com|coursehero\.com|studocu\.com)\b/i
+const quizletNoiseLinePattern =
+  /^(?:advertisement|already have an account|create|create flashcards|expert solutions|flashcards|learn|log in|login|match|q-chat|quizlet|sign up|spell|study with quizlet|test|terms in this set(?: \(\d+\))?|upgrade|write)$/i
+const deckLabelLinePattern = /^(?:term|definition|answer|question|front|back)$/i
+const commonMedicationPattern =
+  /\b(?:acetaminophen|acyclovir|albuterol|amiodarone|amoxicillin|aspirin|atenolol|atropine|ceftriaxone|digoxin|dopamine|epinephrine|fentanyl|furosemide|gabapentin|heparin|hydralazine|ibuprofen|insulin|labetalol|levothyroxine|lisinopril|lithium|lorazepam|metformin|metoprolol|morphine|nitroglycerin|ondansetron|phenytoin|prednisone|vancomycin|warfarin)\b/i
 
 const genericConceptLabels = new Set([
   'answer',
@@ -134,6 +142,127 @@ const cleanStudyFragment = (value: string) => {
   return cleaned
 }
 
+interface StudyPair {
+  definition: string
+  term: string
+}
+
+const normalizeDeckLine = (line: string) =>
+  line
+    .replace(/\u00a0/g, ' ')
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/^[\s•*#\d.)-]+/, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+const isStudyDeckNoiseLine = (line: string) => {
+  const cleaned = normalizeDeckLine(line)
+  const lower = cleaned.toLowerCase()
+
+  if (!cleaned) return true
+  if (isSourceNoiseLine(cleaned)) return true
+  if (quizletNoiseLinePattern.test(cleaned)) return true
+  if (/^study with quizlet\b/i.test(cleaned)) return true
+  if (/^terms in this set\b/i.test(cleaned)) return true
+  if (/^(?:copy|edit|share|star|view all|show answer|tap card to see definition)$/i.test(cleaned)) return true
+  if (/^(?:\d+\s*)?(?:terms?|cards?)$/i.test(cleaned)) return true
+  if (lower.includes('your browser') || lower.includes('enable javascript')) return true
+  if (lower.includes('privacy policy') || lower.includes('terms of service')) return true
+  if (lower.includes('cookie') && cleaned.length < 90) return true
+
+  return false
+}
+
+const isLikelyTermLine = (line: string) => {
+  const cleaned = normalizeConceptLabel(line)
+  const wordCount = cleaned.split(/\s+/).filter(Boolean).length
+
+  if (!cleaned || deckLabelLinePattern.test(cleaned) || isStudyDeckNoiseLine(cleaned)) return false
+  if (cleaned.length < 2 || cleaned.length > 88 || wordCount > 8) return false
+  if (/[.!?]$/.test(cleaned) && !commonMedicationPattern.test(cleaned)) return false
+  if (/\b(?:because|therefore|which|when|after|before|should|requires)\b/i.test(cleaned)) return false
+
+  return /[a-z]/i.test(cleaned)
+}
+
+const isLikelyDefinitionLine = (line: string) => {
+  const cleaned = normalizeDeckLine(line)
+  if (!cleaned || deckLabelLinePattern.test(cleaned) || isStudyDeckNoiseLine(cleaned)) return false
+  if (cleaned.length < 16 || cleaned.length > 760) return false
+  if (hasCodeLikeStudyArtifact(cleaned)) return false
+
+  return nursingStudySignalPatterns.some((pattern) => pattern.test(cleaned)) || commonMedicationPattern.test(cleaned) || cleaned.length >= 34
+}
+
+const normalizeStudyPair = (term: string, definition: string): StudyPair | null => {
+  const cleanTerm = normalizeConceptLabel(term)
+  const cleanDefinition = cleanStudyFragment(definition)
+
+  if (!isLikelyTermLine(cleanTerm) || !isLikelyDefinitionLine(cleanDefinition)) return null
+  if (cleanTerm.toLowerCase() === cleanDefinition.toLowerCase()) return null
+
+  return {
+    term: truncate(cleanTerm, 86),
+    definition: truncate(cleanDefinition, 620),
+  }
+}
+
+const extractDelimitedStudyPair = (line: string): StudyPair | null => {
+  const cleaned = normalizeDeckLine(line)
+  const delimiterMatch = cleaned.match(/^([^:\t|–—-]{2,88})(?:\s*(?:[:\t|]|[-–—]{1,2})\s+)(.{16,760})$/)
+  if (!delimiterMatch) return null
+
+  return normalizeStudyPair(delimiterMatch[1], delimiterMatch[2])
+}
+
+const extractStudyPairsFromLines = (rawLines: string[]) => {
+  const lines = rawLines.map(normalizeDeckLine).filter((line) => line && !isStudyDeckNoiseLine(line))
+  const pairs: StudyPair[] = []
+  const consumed = new Set<number>()
+
+  lines.forEach((line, index) => {
+    const delimited = extractDelimitedStudyPair(line)
+    if (!delimited) return
+    pairs.push(delimited)
+    consumed.add(index)
+  })
+
+  for (let index = 0; index < lines.length - 1; index += 1) {
+    if (consumed.has(index) || consumed.has(index + 1)) continue
+    const pair = normalizeStudyPair(lines[index], lines[index + 1])
+    if (!pair) continue
+    pairs.push(pair)
+    consumed.add(index)
+    consumed.add(index + 1)
+    index += 1
+  }
+
+  return uniqueByKey(pairs, (pair) => `${pair.term}-${pair.definition}`).slice(0, 80)
+}
+
+const extractStudyPairs = (rawText: string) =>
+  extractStudyPairsFromLines(
+    rawText
+      .replace(/\r/g, '')
+      .split('\n')
+      .map((line) => line.trim()),
+  )
+
+const buildStudyPairPrelude = (rawText: string) => {
+  const pairs = extractStudyPairs(rawText)
+  if (pairs.length < 2) return ''
+
+  return pairs.map((pair) => `${pair.term}: ${pair.definition}`).join('\n\n')
+}
+
+const focusPairHeavyStudyText = (rawText: string) => {
+  const pairs = extractStudyPairs(rawText)
+  if (pairs.length < 3) return rawText
+
+  return pairs.map((pair) => `${pair.term}: ${pair.definition}`).join('\n\n')
+}
+
 const isLikelyFrontMatter = (paragraph: string) => {
   if (isSourceNoiseLine(paragraph)) return true
   const lower = paragraph.toLowerCase()
@@ -162,7 +291,9 @@ const isLikelyFrontMatter = (paragraph: string) => {
 }
 
 export function cleanExtractedStudyText(rawText: string) {
-  const normalized = rawText
+  const pairPrelude = buildStudyPairPrelude(rawText)
+  const inputText = pairPrelude ? `${pairPrelude}\n\n${rawText}` : rawText
+  const normalized = inputText
     .replace(/\r/g, '')
     .replace(/\t/g, ' ')
     .replace(/[ ]{2,}/g, ' ')
@@ -235,8 +366,108 @@ const normalizeStudyUrl = (rawUrl: string) => {
   return url
 }
 
+export class MaterialImportBlockedError extends Error {
+  readonly reason: string
+  readonly sourceUrl: string
+
+  constructor(sourceUrl: string, reason = 'blocked') {
+    super(
+      'This study site blocks direct import. Copy the visible terms, definitions, or notes from the page, paste them into Assisted import, and Nurse Command will clean them into editable study tools.',
+    )
+    this.name = 'MaterialImportBlockedError'
+    this.reason = reason
+    this.sourceUrl = sourceUrl
+  }
+}
+
+const isBlockedStudyLinkHost = (url: URL) => blockedStudyLinkHostPattern.test(url.hostname)
+
 const isCodeLikeStudyUrl = (url: URL) =>
   codeSourceHostPattern.test(url.hostname) || codeSourcePathPattern.test(url.pathname)
+
+const parseLinkPayload = (
+  source: URL,
+  rawText: string,
+  contentType = '',
+  titleHint?: string,
+) => {
+  const parsed =
+    contentType.toLowerCase().includes('html') || /^\s*</.test(rawText)
+      ? htmlToStudyText(rawText)
+      : {
+          title: titleHint,
+          text: rawText
+            .replace(/\r/g, '')
+            .replace(/\t/g, ' ')
+            .replace(/\s+\n/g, '\n')
+            .trim(),
+        }
+
+  if (!parsed.text || parsed.text.length < 80) {
+    throw new Error('We could not find enough readable study text at this link.')
+  }
+
+  const focusedText = focusPairHeavyStudyText(parsed.text)
+  const cleaned = cleanExtractedStudyText(focusedText)
+  if (!cleaned) {
+    throw new Error('We could not find enough readable study text at this link.')
+  }
+  validateStudyMaterialContent(cleaned, parsed.title || titleHint || titleFromUrl(source), true)
+
+  return {
+    fileType: 'link' as const,
+    fullText: cleaned,
+    assets: chunkMaterialContent(`${focusedText}\n\n${cleaned}`),
+    preview: cleaned.slice(0, 420),
+    title: parsed.title || titleHint || titleFromUrl(source),
+    sourceUrl: source.toString(),
+  }
+}
+
+type EdgeLinkImportPayload =
+  | {
+      contentType?: string
+      ok: true
+      sourceUrl?: string
+      text: string
+      title?: string
+    }
+  | {
+      message?: string
+      ok: false
+      reason?: string
+      status?: number
+    }
+
+const importStudyLinkFromEdge = async (source: URL) => {
+  if (!isSupabaseConfigured || !supabase) return null
+
+  const { data, error } = await supabase.functions.invoke('import-study-link', {
+    body: { url: source.toString() },
+  })
+  if (error || !data || typeof data !== 'object') return null
+
+  const payload = data as EdgeLinkImportPayload
+  if (!payload.ok) {
+    if (
+      payload.reason === 'blocked' ||
+      payload.status === 401 ||
+      payload.status === 403 ||
+      payload.status === 429 ||
+      isBlockedStudyLinkHost(source)
+    ) {
+      throw new MaterialImportBlockedError(source.toString(), payload.reason ?? 'blocked')
+    }
+    throw new Error(payload.message || 'This link could not be imported.')
+  }
+
+  return parseLinkPayload(
+    source,
+    payload.text,
+    payload.contentType,
+    payload.title,
+  )
+}
 
 const nursingStudySignalPatterns = [
   /\b(?:nurse|nursing|client|patient|clinical|nclex|rn|pn|fnp)\b/i,
@@ -335,7 +566,7 @@ export async function extractMaterialText(file: File) {
   return {
     fileType,
     fullText: cleaned,
-    assets: chunkMaterialContent(cleaned),
+    assets: chunkMaterialContent(`${fullText}\n\n${cleaned}`),
     preview: cleaned.slice(0, 420),
   }
 }
@@ -367,6 +598,9 @@ export async function extractMaterialTextFromUrl(rawUrl: string) {
     )
   }
 
+  const edgeImport = await importStudyLinkFromEdge(source)
+  if (edgeImport) return edgeImport
+
   let response: Response
   try {
     response = await fetch(source.toString(), {
@@ -375,54 +609,79 @@ export async function extractMaterialTextFromUrl(rawUrl: string) {
       },
     })
   } catch {
+    if (isBlockedStudyLinkHost(source)) {
+      throw new MaterialImportBlockedError(source.toString(), 'browser-blocked')
+    }
     throw new Error(
-      'We could not read this link from the browser. If the site blocks imports, upload the PDF/DOCX/TXT file instead.',
+      'We could not read this link directly. If the site blocks imports, use Assisted import or upload the PDF/DOCX/TXT file instead.',
     )
   }
 
   if (!response.ok) {
+    if ([401, 403, 429].includes(response.status) || isBlockedStudyLinkHost(source)) {
+      throw new MaterialImportBlockedError(source.toString(), `http-${response.status}`)
+    }
     throw new Error(`This link could not be imported. The site returned ${response.status}.`)
   }
 
   const contentType = response.headers.get('content-type')?.toLowerCase() ?? ''
   const rawText = await response.text()
-  const parsed =
-    contentType.includes('html') || /^\s*</.test(rawText)
-      ? htmlToStudyText(rawText)
-      : {
-          title: undefined,
-          text: rawText
-            .replace(/\r/g, '')
-            .replace(/\t/g, ' ')
-            .replace(/\s+\n/g, '\n')
-            .trim(),
-        }
+  return parseLinkPayload(source, rawText, contentType)
+}
 
-  if (!parsed.text || parsed.text.length < 80) {
-    throw new Error('We could not find enough readable study text at this link.')
+export function extractMaterialTextFromPastedStudyText(input: {
+  mode?: MaterialImportMode
+  sourceUrl?: string
+  text: string
+  title?: string
+}) {
+  const source = input.sourceUrl?.trim() ? normalizeStudyUrl(input.sourceUrl) : null
+  const title = input.title?.trim() || (source ? titleFromUrl(source) : 'Pasted study material')
+  const rawText = input.text.trim()
+
+  if (rawText.length < 80) {
+    throw new Error('Paste the visible terms, definitions, notes, or study guide text before importing.')
   }
 
-  const cleaned = cleanExtractedStudyText(parsed.text)
-  if (!cleaned) {
-    throw new Error('We could not find enough readable study text at this link.')
+  const focusedText = focusPairHeavyStudyText(rawText)
+  const cleaned = cleanExtractedStudyText(focusedText)
+  if (!cleaned || cleaned.length < 80) {
+    throw new Error('We could not find enough readable study text in that paste.')
   }
-  validateStudyMaterialContent(cleaned, parsed.title || titleFromUrl(source), true)
+  validateStudyMaterialContent(cleaned, title, false)
 
   return {
-    fileType: 'link' as const,
+    fileType: (source ? 'link' : 'txt') as StudyMaterialFileType,
     fullText: cleaned,
-    assets: chunkMaterialContent(cleaned),
+    assets: chunkMaterialContent(`${focusedText}\n\n${cleaned}`),
     preview: cleaned.slice(0, 420),
-    title: parsed.title || titleFromUrl(source),
-    sourceUrl: source.toString(),
+    title,
+    sourceUrl: source?.toString(),
+    importMode: input.mode ?? 'full',
   }
 }
 
 export function chunkMaterialContent(materialText: string) {
+  const pairs = extractStudyPairs(materialText)
   const paragraphs = splitParagraphs(cleanExtractedStudyText(materialText))
   const assets: MaterialAsset[] = []
   let currentHeading = 'Overview'
   let order = 0
+
+  pairs.forEach((pair) => {
+    assets.push({
+      id: crypto.randomUUID(),
+      materialId: '',
+      title: safeHeading(pair.term),
+      content: pair.definition,
+      order,
+    })
+    order += 1
+  })
+
+  if (pairs.length >= 3) {
+    return uniqueByKey(assets, (asset) => `${asset.title}-${asset.content}`).slice(0, 24)
+  }
 
   paragraphs.forEach((paragraph) => {
     const content = cleanStudyFragment(paragraph)
@@ -463,7 +722,7 @@ export function chunkMaterialContent(materialText: string) {
     })
   }
 
-  return assets.slice(0, 20)
+  return uniqueByKey(assets, (asset) => `${asset.title}-${asset.content}`).slice(0, 24)
 }
 
 const uniqueByKey = <T,>(items: T[], getKey: (item: T) => string) => {
@@ -513,6 +772,7 @@ const clinicalTopicPatterns: Array<{ pattern: RegExp; label: string; kind: Learn
   { pattern: /\binfection\b|\bsterile\b|\bsepsis\b/i, label: 'infection and sepsis safety', kind: 'safety' },
   { pattern: /\bairway\b|\bbreathing\b|\boxygen\b|\bo2\b/i, label: 'oxygenation priority', kind: 'priority' },
   { pattern: /\bdelegate|delegation|uap|lpn|charge nurse\b/i, label: 'delegation priority', kind: 'priority' },
+  { pattern: commonMedicationPattern, label: 'medication safety', kind: 'medication' },
   { pattern: /\bmedication\b|\bdrug\b|\bdose\b|\btoxicity\b|\bcontraindication\b/i, label: 'medication safety', kind: 'medication' },
   { pattern: /\bfluid\b|\belectrolyte\b|\bdehydration\b|\bedema\b/i, label: 'fluid and electrolyte balance', kind: 'lab' },
 ]
@@ -612,6 +872,7 @@ const inferLearningKind = (topic: string, statement: string): LearningPointKind 
     return 'priority'
   }
   if (/\b(?:safety|precaution|fall|bleeding|infection|sterile|sepsis)\b/i.test(haystack)) return 'safety'
+  if (commonMedicationPattern.test(haystack)) return 'medication'
   if (/\b(?:medication|drug|dose|administer|toxicity|contraindication)\b/i.test(haystack)) return 'medication'
   if (/\b(?:assess|assessment|monitor|finding|symptom|sign)\b/i.test(haystack)) return 'assessment'
   return 'general'
@@ -878,6 +1139,47 @@ export function createStudyMaterialRecordFromUrl(
   }
 }
 
+export function createStudyMaterialRecordFromText(
+  extracted: {
+    assets: MaterialAsset[]
+    fileType: StudyMaterialFileType
+    fullText: string
+    importMode?: MaterialImportMode
+    preview: string
+    sourceUrl?: string
+    title: string
+  },
+  materialId: string = crypto.randomUUID(),
+): StudyMaterial {
+  const source = extracted.sourceUrl ? normalizeStudyUrl(extracted.sourceUrl) : null
+  const assets = extracted.assets.map((asset) => ({
+    ...asset,
+    id: crypto.randomUUID(),
+    materialId,
+  }))
+
+  const base: StudyMaterial = {
+    id: materialId,
+    filename: source?.hostname ?? 'pasted-study-material.txt',
+    displayTitle: extracted.title || source?.hostname || 'Pasted study material',
+    fileType: extracted.fileType,
+    sourceUrl: source?.toString(),
+    importedAt: new Date().toISOString(),
+    extractionStatus: 'ready',
+    textLength: extracted.fullText.length,
+    tags: extracted.assets.slice(0, 3).map((asset) => asset.title).filter(Boolean),
+    preview: extracted.preview,
+    assets,
+    generatedFlashcardIds: [],
+    generatedQuestionIds: [],
+  }
+
+  return {
+    ...base,
+    sourceCategory: inferCategory(base) ?? 'General',
+  }
+}
+
 export function createPendingStudyMaterial(file: File): StudyMaterial {
   const fileType = validateMaterialFile(file)
   return {
@@ -904,6 +1206,27 @@ export function createPendingStudyMaterialFromUrl(rawUrl: string): StudyMaterial
     displayTitle: titleFromUrl(source),
     fileType: 'link',
     sourceUrl: source.toString(),
+    importedAt: new Date().toISOString(),
+    extractionStatus: 'extracting',
+    textLength: 0,
+    tags: [],
+    preview: '',
+    assets: [],
+    generatedFlashcardIds: [],
+    generatedQuestionIds: [],
+  }
+}
+
+export function createPendingStudyMaterialFromText(input: { sourceUrl?: string; title?: string }): StudyMaterial {
+  const source = input.sourceUrl?.trim() ? normalizeStudyUrl(input.sourceUrl) : null
+  const displayTitle = input.title?.trim() || (source ? titleFromUrl(source) : 'Pasted study material')
+
+  return {
+    id: crypto.randomUUID(),
+    filename: source?.hostname ?? 'pasted-study-material.txt',
+    displayTitle,
+    fileType: source ? 'link' : 'txt',
+    sourceUrl: source?.toString(),
     importedAt: new Date().toISOString(),
     extractionStatus: 'extracting',
     textLength: 0,

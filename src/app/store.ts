@@ -9,6 +9,7 @@ import type {
   FlashcardStatus,
   GeneratedFromMaterialSessionConfig,
   MaterialFlashcard,
+  MaterialImportMode,
   MaterialQuestion,
   MaterialQuizSession,
   Note,
@@ -158,6 +159,12 @@ interface StudySystemState {
   updateMaterialFlashcardStatus: (id: string, status: FlashcardStatus) => Promise<void>
   importStudyMaterial: (file: File) => Promise<void>
   importStudyMaterialFromUrl: (url: string) => Promise<void>
+  importStudyMaterialFromText: (input: {
+    mode?: MaterialImportMode
+    sourceUrl?: string
+    text: string
+    title?: string
+  }) => Promise<void>
   deleteStudyMaterial: (id: string) => Promise<void>
   updateStudyMaterialMeta: (id: string, updates: Partial<StudyMaterial>) => Promise<void>
   regenerateMaterialStudyTools: (id: string) => Promise<void>
@@ -214,7 +221,12 @@ const generateReviewReadyMaterialTools = async (
     MaterialPipelineModule,
     'generateCleanFlashcardsFromMaterial' | 'generateCleanQuestionsFromMaterial'
   >,
+  mode: MaterialImportMode = 'full',
 ) => {
+  if (mode === 'guide') {
+    return { flashcards: [], questions: [] }
+  }
+
   const aiTools = await generateMaterialToolsWithAi(material).catch((error) => {
     reportSafeError('material-ai-generation', error)
     return null
@@ -223,8 +235,13 @@ const generateReviewReadyMaterialTools = async (
   const localQuestions = pipeline.generateCleanQuestionsFromMaterial(material, localFlashcards)
   const localTools = filterMaterialStudyTools(localFlashcards, localQuestions)
 
+  const applyMode = (tools: { flashcards: MaterialFlashcard[]; questions: MaterialQuestion[] }) => ({
+    flashcards: mode === 'quiz' ? [] : tools.flashcards,
+    questions: mode === 'flashcards' ? [] : tools.questions,
+  })
+
   if (!aiTools?.flashcards.length && !aiTools?.questions.length) {
-    return localTools
+    return applyMode(localTools)
   }
 
   const aiToolsAfterReview = filterMaterialStudyTools(aiTools.flashcards, aiTools.questions)
@@ -233,7 +250,7 @@ const generateReviewReadyMaterialTools = async (
   const aiHasEnoughQuestions =
     aiToolsAfterReview.questions.length >= Math.min(2, Math.max(1, localTools.questions.length))
 
-  return aiHasEnoughCards && aiHasEnoughQuestions ? aiToolsAfterReview : localTools
+  return applyMode(aiHasEnoughCards && aiHasEnoughQuestions ? aiToolsAfterReview : localTools)
 }
 
 const createInitialSimulatorProgress = (): SimulatorProgressState => ({
@@ -1425,6 +1442,108 @@ export const useStudySystemStore = create<StudySystemState>()(
             pending,
             message,
           )
+          await saveMaterialBundle({ material: failure, flashcards: [], questions: [] })
+          set((state) => ({
+            materials: [failure, ...state.materials.filter((item) => item.id !== pending.id)],
+            syncEvents: [...state.syncEvents, makeSyncEvent('material', failure.id, 'upsert', failure)],
+          }))
+          void get().syncNow()
+          throw new Error(message, { cause: error })
+        }
+      },
+      importStudyMaterialFromText: async (input) => {
+        const importStartedAt = Date.now()
+        const startingState = get()
+        void trackAppEvent(
+          'material_upload_started',
+          {
+            page_path: '/my-materials',
+            feature_name: 'Assisted Material Import',
+            exam_track: startingState.profile.examTrack ?? 'nclex-rn',
+            is_demo_user: startingState.isDemoMode,
+            metadata: { mode: input.mode ?? 'full' },
+          },
+          { userId: startingState.authUser?.id, isDemoUser: startingState.isDemoMode },
+        )
+        const {
+          createErroredMaterial,
+          createPendingStudyMaterialFromText,
+          createStudyMaterialRecordFromText,
+          extractMaterialTextFromPastedStudyText,
+          generateCleanFlashcardsFromMaterial,
+          generateCleanQuestionsFromMaterial,
+        } = await loadMaterialPipeline()
+        const pending = createPendingStudyMaterialFromText(input)
+        set((state) => ({
+          materials: [pending, ...state.materials.filter((item) => item.id !== pending.id)],
+        }))
+
+        try {
+          const extracted = extractMaterialTextFromPastedStudyText(input)
+          const material = createStudyMaterialRecordFromText(extracted, pending.id)
+          const { flashcards, questions } = await generateReviewReadyMaterialTools(
+            material,
+            {
+              generateCleanFlashcardsFromMaterial,
+              generateCleanQuestionsFromMaterial,
+            },
+            input.mode,
+          )
+          const hasGeneratedTools = flashcards.length + questions.length > 0
+          const nextMaterial = {
+            ...material,
+            reviewStatus: hasGeneratedTools ? ('pending-review' as const) : ('approved' as const),
+            generatedFlashcardIds: [],
+            generatedQuestionIds: [],
+            pendingFlashcards: flashcards,
+            pendingQuestions: questions,
+          }
+
+          await saveMaterialBundle({
+            material: nextMaterial,
+            flashcards: [],
+            questions: [],
+          })
+
+          set((state) => ({
+            materials: [nextMaterial, ...state.materials.filter((item) => item.id !== pending.id)],
+            syncEvents: [...state.syncEvents, makeSyncEvent('material', nextMaterial.id, 'upsert', nextMaterial)],
+          }))
+          const completedState = get()
+          void trackAppEvent(
+            'material_upload_completed',
+            {
+              page_path: '/my-materials',
+              feature_name: 'Assisted Material Import',
+              exam_track: completedState.profile.examTrack ?? 'nclex-rn',
+              time_spent_seconds: Math.round((Date.now() - importStartedAt) / 1000),
+              is_demo_user: completedState.isDemoMode,
+              metadata: {
+                generated_flashcards: flashcards.length,
+                generated_questions: questions.length,
+                mode: input.mode ?? 'full',
+              },
+            },
+            { userId: completedState.authUser?.id, isDemoUser: completedState.isDemoMode },
+          )
+          void get().syncNow()
+        } catch (error) {
+          reportSafeError('material-assisted-import', error)
+          const failedState = get()
+          void trackAppEvent(
+            'material_upload_failed',
+            {
+              page_path: '/my-materials',
+              feature_name: 'Assisted Material Import',
+              exam_track: failedState.profile.examTrack ?? 'nclex-rn',
+              time_spent_seconds: Math.round((Date.now() - importStartedAt) / 1000),
+              is_demo_user: failedState.isDemoMode,
+              metadata: { error_category: 'assisted_import', mode: input.mode ?? 'full' },
+            },
+            { userId: failedState.authUser?.id, isDemoUser: failedState.isDemoMode },
+          )
+          const message = getSafeErrorCopy('material-assisted-import')
+          const failure = createErroredMaterial(pending, message)
           await saveMaterialBundle({ material: failure, flashcards: [], questions: [] })
           set((state) => ({
             materials: [failure, ...state.materials.filter((item) => item.id !== pending.id)],

@@ -1288,6 +1288,7 @@ const trackQuestionBlueprints: Record<ExamTrackId, TrackQuestionBlueprint> = {
 
 const generatedQuestionCount = 250
 const difficultyCycle = ['foundation', 'developing', 'advanced'] as const
+const generatedDistractorFallback = 'This choice does not best address the priority cue in the stem.'
 const fingerprintText = (value: string) =>
   value
     .toLowerCase()
@@ -1333,6 +1334,29 @@ const makeGeneratedQuestion = (
     ? 'Which actions should be included? Select all that apply.'
     : stemFocus
   const correctChoice = `Use the ${system} findings to ${intervention}.`
+  const correctAnswer = isSata ? ['A', 'B', 'D'] : ['A']
+  const choices = isSata
+    ? makeChoices(
+        correctChoice,
+        'Pause and verify safety cues before moving to routine tasks.',
+        wrong[(index + 1) % wrong.length],
+        'Document relevant findings and communicate changes clearly.',
+        wrong[(index + 2) % wrong.length],
+      )
+    : makeChoices(
+        correctChoice,
+        wrong[index % wrong.length],
+        wrong[(index + 1) % wrong.length],
+        wrong[(index + 2) % wrong.length],
+      )
+  const choiceRationales = Object.fromEntries(
+    choices.map((choice) => [
+      choice.id,
+      correctAnswer.includes(choice.id)
+        ? `This choice uses the ${system} findings to support the safest next action.`
+        : generatedDistractorFallback,
+    ]),
+  )
 
   return {
     id: `${examTrack}-q-${String(index + 1).padStart(3, '0')}`,
@@ -1363,26 +1387,13 @@ const makeGeneratedQuestion = (
     format: isSata ? 'select-all-that-apply' : 'multiple-choice',
     scenario: scenarioText,
     prompt: promptText,
-    choices: isSata
-      ? makeChoices(
-          correctChoice,
-          'Pause and verify safety cues before moving to routine tasks.',
-          wrong[(index + 1) % wrong.length],
-          'Document relevant findings and communicate changes clearly.',
-          wrong[(index + 2) % wrong.length],
-        )
-      : makeChoices(
-          correctChoice,
-          wrong[index % wrong.length],
-          wrong[(index + 1) % wrong.length],
-          wrong[(index + 2) % wrong.length],
-        ),
-    correctAnswer: isSata ? ['A', 'B', 'D'] : ['A'],
+    choices,
+    correctAnswer,
     rationale: {
       whyCorrect:
         `This answer prioritizes the relevant ${system} cues and supports safe, exam-relevant decision-making.`,
-      whyOthers:
-        'The distractors either delay needed action, move outside the role being tested, or skip the assessment and safety logic needed for clinical judgment.',
+      whyOthers: generatedDistractorFallback,
+      choices: choiceRationales,
     },
     nclexTip: blueprint.tips[index % blueprint.tips.length],
     clinicalRelevance:

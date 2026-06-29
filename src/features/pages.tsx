@@ -55,6 +55,7 @@ import type {
   ExamTrackId,
   FlashcardStatus,
   MaterialFlashcard,
+  MaterialImportMode,
   MaterialQuestion,
   Note,
   QuestionCategory,
@@ -2843,7 +2844,7 @@ export function PerformanceAnalyticsPage() {
         <Surface>
           <SectionHeading
             title="Engine Signals"
-            description="Practice signal, readiness evidence, and repair logic stay separated."
+            description="Practice signal, practice evidence, and repair logic stay separated."
           />
           <div className="mt-5 space-y-4">
             <InsightRow
@@ -3261,6 +3262,17 @@ export function FlashcardsPage() {
   )
 }
 
+const isBlockedMaterialImport = (error: unknown) => {
+  let current: unknown = error
+
+  while (current && typeof current === 'object') {
+    if ('name' in current && current.name === 'MaterialImportBlockedError') return true
+    current = 'cause' in current ? current.cause : null
+  }
+
+  return false
+}
+
 export function MyMaterialsPage() {
   const navigate = useNavigate()
   const profile = useStudySystemStore((state) => state.profile)
@@ -3271,6 +3283,7 @@ export function MyMaterialsPage() {
   const activeMaterialQuizSession = useStudySystemStore((state) => state.activeMaterialQuizSession)
   const importStudyMaterial = useStudySystemStore((state) => state.importStudyMaterial)
   const importStudyMaterialFromUrl = useStudySystemStore((state) => state.importStudyMaterialFromUrl)
+  const importStudyMaterialFromText = useStudySystemStore((state) => state.importStudyMaterialFromText)
   const deleteStudyMaterial = useStudySystemStore((state) => state.deleteStudyMaterial)
   const updateStudyMaterialMeta = useStudySystemStore((state) => state.updateStudyMaterialMeta)
   const regenerateMaterialStudyTools = useStudySystemStore((state) => state.regenerateMaterialStudyTools)
@@ -3285,6 +3298,10 @@ export function MyMaterialsPage() {
   const [dragActive, setDragActive] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [materialUrl, setMaterialUrl] = useState('')
+  const [assistedImportOpen, setAssistedImportOpen] = useState(false)
+  const [assistedImportText, setAssistedImportText] = useState('')
+  const [assistedImportMode, setAssistedImportMode] = useState<MaterialImportMode>('full')
+  const [assistedSourceUrl, setAssistedSourceUrl] = useState('')
   const [uploadMessage, setUploadMessage] = useState('')
   const [previewExpanded, setPreviewExpanded] = useState(false)
   const [studyGuideOpen, setStudyGuideOpen] = useState(false)
@@ -3349,11 +3366,61 @@ export function MyMaterialsPage() {
 
     try {
       await importStudyMaterialFromUrl(materialUrl)
+      setAssistedImportOpen(false)
+      setAssistedSourceUrl('')
+      setAssistedImportText('')
       setMaterialUrl('')
       setUploadMessage('Link imported. Review the generated study tools before saving them to your deck.')
     } catch (error) {
       reportSafeError('material-link-import', error)
-      setUploadMessage(getSafeErrorCopy('material-link-import'))
+      const blocked = isBlockedMaterialImport(error)
+      if (blocked) {
+        setAssistedImportOpen(true)
+        setAssistedSourceUrl(materialUrl)
+        setUploadMessage('This site blocks direct import. Copy the visible terms, definitions, or notes from the page, paste them below, and Nurse Command will clean them into editable study tools.')
+      } else {
+        setUploadMessage(getSafeErrorCopy('material-link-import'))
+      }
+    }
+
+    setIsUploading(false)
+  }
+
+  const handleClipboardAssistedImport = async () => {
+    if (!navigator.clipboard?.readText) {
+      setUploadMessage('Clipboard access is not available in this browser. Paste the study text into the box below.')
+      return
+    }
+
+    try {
+      const text = await navigator.clipboard.readText()
+      setAssistedImportText(text)
+      setAssistedImportOpen(true)
+      setUploadMessage('Copied page text loaded. Review it, then import.')
+    } catch (error) {
+      reportSafeError('material-assisted-import', error)
+      setUploadMessage('Clipboard access was blocked. Paste the study text into the box below.')
+    }
+  }
+
+  const handleAssistedImport = async () => {
+    setUploadMessage('')
+    setIsUploading(true)
+
+    try {
+      await importStudyMaterialFromText({
+        mode: assistedImportMode,
+        sourceUrl: assistedSourceUrl || materialUrl || undefined,
+        text: assistedImportText,
+      })
+      setAssistedImportText('')
+      setAssistedImportOpen(false)
+      setAssistedSourceUrl('')
+      setMaterialUrl('')
+      setUploadMessage('Study text imported. Review the generated tools before saving them to your deck.')
+    } catch (error) {
+      reportSafeError('material-assisted-import', error)
+      setUploadMessage(getSafeErrorCopy('material-assisted-import'))
     }
 
     setIsUploading(false)
@@ -3526,9 +3593,81 @@ export function MyMaterialsPage() {
                 </div>
               </Field>
               <p className="mt-3 text-xs leading-5 text-sky-200/60">
-                Works best with public text-heavy study pages. If a site blocks browser imports, upload the source file instead.
+                Works best with public text-heavy study pages. If a site blocks direct import, copy the visible terms or notes and use Assisted import.
               </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setAssistedImportOpen((current) => !current)
+                  setAssistedSourceUrl(materialUrl)
+                }}
+                className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-xl border border-sky-300/20 bg-white/[0.045] px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-sky-100 transition hover:bg-white/[0.08]"
+              >
+                <ClipboardList className="h-4 w-4" />
+                {assistedImportOpen ? 'Hide assisted import' : 'Use assisted import'}
+              </button>
             </form>
+            {assistedImportOpen ? (
+              <div className="mt-4 rounded-[20px] border border-amber-200/24 bg-amber-300/[0.07] p-4">
+                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.14em] text-amber-100/70">
+                      Assisted import
+                    </p>
+                    <h3 className="mt-1 text-lg font-black text-white">
+                      Paste copied terms, definitions, or notes.
+                    </h3>
+                    <p className="mt-2 max-w-2xl text-sm leading-6 text-sky-100/66">
+                      For Quizlet-style pages, open the set, select the visible study text, copy it, then paste here. Nurse Command removes page noise and turns the content into editable study tools.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void handleClipboardAssistedImport()}
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-amber-100/25 bg-amber-200/12 px-4 py-2 text-sm font-black text-amber-50 transition hover:bg-amber-200/18"
+                  >
+                    <ClipboardList className="h-4 w-4" />
+                    Read clipboard
+                  </button>
+                </div>
+
+                <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto]">
+                  <Field label="Build">
+                    <select
+                      value={assistedImportMode}
+                      onChange={(event) => setAssistedImportMode(event.target.value as MaterialImportMode)}
+                      className="h-12 w-full rounded-2xl border border-amber-100/20 bg-[#03101f]/70 px-3 text-sm font-semibold text-white outline-none transition focus:border-amber-100/70 focus:ring-4 focus:ring-amber-300/15"
+                    >
+                      <option value="full">Flashcards, quiz, and guide</option>
+                      <option value="flashcards">Flashcards only</option>
+                      <option value="quiz">Quiz only</option>
+                      <option value="guide">Study guide only</option>
+                    </select>
+                  </Field>
+                  <button
+                    type="button"
+                    disabled={isUploading || assistedImportText.trim().length < 80}
+                    onClick={() => void handleAssistedImport()}
+                    className="inline-flex min-h-12 items-center justify-center gap-2 self-end rounded-xl border border-emerald-100/30 bg-emerald-500/80 px-4 py-3 text-sm font-black text-white shadow-[0_0_24px_rgba(16,185,129,0.18)] transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isUploading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    Clean and import
+                  </button>
+                </div>
+
+                <textarea
+                  value={assistedImportText}
+                  onChange={(event) => setAssistedImportText(event.target.value)}
+                  placeholder={'Paste copied study text here, for example:\nDigoxin\nMonitor pulse and watch for toxicity.\nWarfarin\nMonitor INR and bleeding precautions.'}
+                  className="mt-3 min-h-44 w-full resize-y rounded-2xl border border-amber-100/20 bg-[#03101f]/78 p-4 text-sm leading-6 text-white outline-none transition placeholder:text-sky-100/34 focus:border-amber-100/70 focus:ring-4 focus:ring-amber-300/15"
+                />
+                <div className="mt-3 grid gap-2 text-xs leading-5 text-sky-100/58 md:grid-cols-3">
+                  <p>Removes navigation, dates, ads, URLs, and duplicate deck lines.</p>
+                  <p>Detects term-definition pairs, medication clues, lab values, safety cues, and nursing actions.</p>
+                  <p>Keeps generated cards/questions editable until you approve them.</p>
+                </div>
+              </div>
+            ) : null}
             {uploadMessage ? (
               <div className="mt-4 rounded-2xl border border-sky-300/25 bg-sky-400/10 px-4 py-3 text-sm font-semibold text-sky-100">
                 {uploadMessage}
