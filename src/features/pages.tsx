@@ -59,6 +59,7 @@ import {
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import type {
+  ActiveSession,
   ExamTrackId,
   FlashcardStatus,
   MaterialFlashcard,
@@ -139,6 +140,12 @@ const percentTooltip = (
   if (Array.isArray(value)) return value.join(', ')
   return value ?? ''
 }
+
+const isActiveSessionOpen = (session: ActiveSession | null | undefined) =>
+  Boolean(session && !session.endedAt && session.status !== 'discarded' && !session.deletedAt)
+
+const isRenderableSession = (session: ActiveSession | null | undefined) =>
+  Boolean(session && session.status !== 'discarded' && !session.deletedAt)
 
 const seededHash = (value: string) => {
   let hash = 0
@@ -895,6 +902,16 @@ export function DashboardPage() {
     startQuickStudy(category)
     navigate('/quick-study')
   }
+  const launchDashboardQuickStudy = (category?: QuestionCategory) => {
+    const sessionIsOpen = isActiveSessionOpen(activeSession)
+    if (sessionIsOpen && activeSession?.mode !== 'quick-study') {
+      discardPracticeSession()
+    }
+    if (!(sessionIsOpen && activeSession?.mode === 'quick-study')) {
+      startQuickStudy(category)
+    }
+    navigate('/quick-study')
+  }
   const primaryCategory = weakestArea?.category ?? getExamCategories(activeExamTrack.id)[0] ?? 'Pharmacology'
   const missionTitle = priorityRepair
     ? `Fix first: ${priorityRepair.routeLabel}`
@@ -1540,10 +1557,7 @@ export function DashboardPage() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => {
-                      startQuickStudy(area.category)
-                      navigate('/quick-study')
-                    }}
+                    onClick={() => launchDashboardQuickStudy(area.category)}
                     className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-cyan-200/25 bg-cyan-300/10 px-4 py-2.5 text-sm font-bold text-cyan-100 transition hover:border-cyan-200/50 hover:bg-cyan-300/16 focus:outline-none focus:ring-2 focus:ring-cyan-200/45"
                   >
                     {actionVerb} {shortCategoryLabel(area.category)}
@@ -1586,6 +1600,7 @@ export function PracticeQuestionsPage() {
   const activeSession = useStudySystemStore((state) => state.activeSession)
   const startPracticeSession = useStudySystemStore((state) => state.startPracticeSession)
   const abandonSession = useStudySystemStore((state) => state.abandonSession)
+  const activeSessionIsOpen = isActiveSessionOpen(activeSession)
   const [isPending, startTransition] = useTransition()
   const [category, setCategory] = useState<QuestionCategory | 'All'>('All')
   const [system, setSystem] = useState<string | 'All'>('All')
@@ -1598,7 +1613,11 @@ export function PracticeQuestionsPage() {
   const trackCategories = getExamCategories(activeTrack.id)
   const trackSystems = getExamSystems(activeTrack.id)
   const launchPracticeSession = (overrides: Partial<Parameters<typeof startPracticeSession>[0]> = {}) =>
-    startTransition(() =>
+    startTransition(() => {
+      if (activeSessionIsOpen && activeSession?.mode !== 'practice') {
+        abandonSession()
+      }
+      if (activeSessionIsOpen && activeSession?.mode === 'practice') return
       startPracticeSession({
         category,
         system,
@@ -1608,8 +1627,8 @@ export function PracticeQuestionsPage() {
         difficulty,
         questionCount,
         ...overrides,
-      }),
-    )
+      })
+    })
   const priorityCategory = category === 'All' ? trackCategories[0] : category
   const selectedCategoryLabel = category === 'All' ? 'Mixed bank' : shortCategoryLabel(category)
   const selectedSystemLabel = system === 'All' ? 'All systems' : system
@@ -1643,7 +1662,7 @@ export function PracticeQuestionsPage() {
     },
   ]
 
-  if (activeSession?.mode === 'practice') {
+  if (activeSession?.mode === 'practice' && isRenderableSession(activeSession)) {
     return (
       <QuestionSessionRunner
         key={`${activeSession.id}-${activeSession.currentIndex}`}
@@ -1872,8 +1891,10 @@ export function PracticeQuestionsPage() {
 export function ExamPrepPage() {
   const navigate = useNavigate()
   const profile = useStudySystemStore((state) => state.profile)
+  const activeSession = useStudySystemStore((state) => state.activeSession)
   const updateProfile = useStudySystemStore((state) => state.updateProfile)
   const startPracticeSession = useStudySystemStore((state) => state.startPracticeSession)
+  const abandonSession = useStudySystemStore((state) => state.abandonSession)
   const [selectedTrackId, setSelectedTrackId] = useState<ExamTrackId>(profile.examTrack ?? 'nclex-rn')
   const [fnpBoard, setFnpBoard] = useState<'AANP' | 'ANCC'>('AANP')
   const [questionStatus, setQuestionStatus] = useState<'unused' | 'incorrect' | 'all'>('unused')
@@ -1885,6 +1906,26 @@ export function ExamPrepPage() {
   const isFnp = selectedTrack.id === 'fnp'
   const selectedBankSize = getExamQuestionBank(selectedTrack.id).length
   const qualitySummary = getExamContentQualitySummary(selectedTrack.id)
+  const createFnpPracticeTest = () => {
+    updateProfile({ examTrack: 'fnp' })
+    const sessionIsOpen = isActiveSessionOpen(activeSession)
+    if (sessionIsOpen && activeSession?.mode !== 'practice') {
+      abandonSession()
+    }
+    if (!(sessionIsOpen && activeSession?.mode === 'practice')) {
+      startPracticeSession({
+        category: 'All',
+        system: fnpSystem,
+        board: fnpBoard,
+        questionStatus,
+        difficulty: 'adaptive',
+        format: 'mixed',
+        questionCount: 15,
+      })
+      setCreatedTest(true)
+    }
+    navigate('/practice-questions')
+  }
 
   const fnpCoverage = [
     '1,100+ FNP practice questions target',
@@ -2110,20 +2151,7 @@ export function ExamPrepPage() {
             </div>
             <button
               type="button"
-              onClick={() => {
-                updateProfile({ examTrack: 'fnp' })
-                startPracticeSession({
-                  category: 'All',
-                  system: fnpSystem,
-                  board: fnpBoard,
-                  questionStatus,
-                  difficulty: 'adaptive',
-                  format: 'mixed',
-                  questionCount: 15,
-                })
-                setCreatedTest(true)
-                navigate('/practice-questions')
-              }}
+              onClick={createFnpPracticeTest}
               className="nclex-btn-primary mt-5 inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold"
             >
               Create FNP practice test
@@ -2220,9 +2248,7 @@ export function QuickStudyPage() {
       icon: <Target className="h-4 w-4" />,
     },
   ] as const
-  const activeSessionIsOpen = Boolean(
-    activeSession && !activeSession.endedAt && activeSession.status !== 'discarded' && !activeSession.deletedAt,
-  )
+  const activeSessionIsOpen = isActiveSessionOpen(activeSession)
   const launchQuickStudy = (category?: QuestionCategory) => {
     if (activeSessionIsOpen && activeSession?.mode !== 'quick-study') {
       abandonSession()
@@ -2232,7 +2258,7 @@ export function QuickStudyPage() {
     }
   }
 
-  if (activeSession?.mode === 'quick-study' && activeSessionIsOpen) {
+  if (activeSession?.mode === 'quick-study' && isRenderableSession(activeSession)) {
     return (
       <QuestionSessionRunner
         key={`${activeSession.id}-${activeSession.currentIndex}`}
@@ -2459,11 +2485,13 @@ export function TestModePage() {
     : latestExam
       ? 'Send weak patterns to remediation before the next simulation.'
       : 'Your first completed block will unlock a review queue.'
-  const activeSessionIsOpen = Boolean(
-    activeSession && !activeSession.endedAt && activeSession.status !== 'discarded' && !activeSession.deletedAt,
-  )
+  const activeSessionIsOpen = isActiveSessionOpen(activeSession)
 
-  if (activeSession?.mode === 'test' && activeSessionIsOpen && (resumeExamNow || activeSession.responses.length === 0)) {
+  if (
+    activeSession?.mode === 'test' &&
+    isRenderableSession(activeSession) &&
+    (resumeExamNow || activeSession.responses.length === 0 || Boolean(activeSession.endedAt))
+  ) {
     return (
       <QuestionSessionRunner
         key={`${activeSession.id}-${activeSession.currentIndex}`}
@@ -2691,7 +2719,9 @@ export function WeakAreasPage() {
   const navigate = useNavigate()
   const profile = useStudySystemStore((state) => state.profile)
   const attempts = useStudySystemStore((state) => state.attempts)
+  const activeSession = useStudySystemStore((state) => state.activeSession)
   const startPracticeSession = useStudySystemStore((state) => state.startPracticeSession)
+  const abandonSession = useStudySystemStore((state) => state.abandonSession)
   const analytics = useMemo(() => getAnalyticsSnapshot(attempts, profile), [attempts, profile])
   const weakAreas = useMemo(
     () => getWeakAreas(attempts, profile.examTrack ?? 'nclex-rn', profile.preferences.analyticsScope ?? 'selected-track'),
@@ -2705,6 +2735,14 @@ export function WeakAreasPage() {
     (diagnosis) => diagnosis.confidenceEscalated && !diagnosis.scoreResult.isCorrect,
   )
   const startRepairSet = (category: QuestionCategory, questionCount = 5) => {
+    const sessionIsOpen = isActiveSessionOpen(activeSession)
+    if (sessionIsOpen && activeSession?.mode !== 'practice') {
+      abandonSession()
+    }
+    if (sessionIsOpen && activeSession?.mode === 'practice') {
+      navigate('/practice-questions')
+      return
+    }
     startPracticeSession({
       category,
       difficulty: 'adaptive',
@@ -5164,8 +5202,10 @@ export function StudyPlanPage() {
   const navigate = useNavigate()
   const profile = useStudySystemStore((state) => state.profile)
   const attempts = useStudySystemStore((state) => state.attempts)
+  const activeSession = useStudySystemStore((state) => state.activeSession)
   const updateProfile = useStudySystemStore((state) => state.updateProfile)
   const startQuickStudy = useStudySystemStore((state) => state.startQuickStudy)
+  const abandonSession = useStudySystemStore((state) => state.abandonSession)
   const [studyPlanToday] = useState(() => new Date().toISOString().slice(0, 10))
   const [studyPlanNowMs] = useState(() => new Date().getTime())
   const weakAreas = useMemo(
@@ -5202,6 +5242,16 @@ export function StudyPlanPage() {
   ]
   const thisWeekTasks = plan.weeklyGoals.slice(0, 4)
   const laterTasks = plan.recommendedSessions.slice(0, 4)
+  const launchTodaySession = () => {
+    const sessionIsOpen = isActiveSessionOpen(activeSession)
+    if (sessionIsOpen && activeSession?.mode !== 'quick-study') {
+      abandonSession()
+    }
+    if (!(sessionIsOpen && activeSession?.mode === 'quick-study')) {
+      startQuickStudy(priorityArea)
+    }
+    navigate('/quick-study')
+  }
 
   return (
     <PageStack>
@@ -5212,10 +5262,7 @@ export function StudyPlanPage() {
         action={
           <button
             type="button"
-            onClick={() => {
-              startQuickStudy(priorityArea)
-              navigate('/quick-study')
-            }}
+            onClick={launchTodaySession}
             className="nclex-btn-primary inline-flex min-h-11 items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold"
           >
             <Sparkles className="h-4 w-4" />
@@ -5728,8 +5775,17 @@ export function ClinicalSimulatorPage() {
 
   const scenario = clinicalScenarios.find((item) => item.id === scenarioId) ?? clinicalScenarios[0]
   const completed = scenario.steps.filter((_, index) => typeof answers[index] === 'number').length
+  const launchClinicalThinking = (focus: string) => {
+    const sessionIsOpen = isActiveSessionOpen(activeSession)
+    if (sessionIsOpen && activeSession?.mode !== 'clinical-thinking') {
+      abandonSession()
+    }
+    if (!(sessionIsOpen && activeSession?.mode === 'clinical-thinking')) {
+      startClinicalThinking(focus)
+    }
+  }
 
-  if (activeSession?.mode === 'clinical-thinking') {
+  if (activeSession?.mode === 'clinical-thinking' && isRenderableSession(activeSession)) {
     return (
       <QuestionSessionRunner
         key={`${activeSession.id}-${activeSession.currentIndex}`}
@@ -5749,7 +5805,7 @@ export function ClinicalSimulatorPage() {
         action={
           <button
             type="button"
-            onClick={() => startClinicalThinking('First Action')}
+            onClick={() => launchClinicalThinking('First Action')}
             className="nclex-btn-primary inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold"
           >
             <Zap className="h-4 w-4" />
@@ -5858,8 +5914,17 @@ export function StrategyTrainingPage() {
   const activeSession = useStudySystemStore((state) => state.activeSession)
   const startClinicalThinking = useStudySystemStore((state) => state.startClinicalThinking)
   const abandonSession = useStudySystemStore((state) => state.abandonSession)
+  const launchClinicalThinking = (focus: string) => {
+    const sessionIsOpen = isActiveSessionOpen(activeSession)
+    if (sessionIsOpen && activeSession?.mode !== 'clinical-thinking') {
+      abandonSession()
+    }
+    if (!(sessionIsOpen && activeSession?.mode === 'clinical-thinking')) {
+      startClinicalThinking(focus)
+    }
+  }
 
-  if (activeSession?.mode === 'clinical-thinking') {
+  if (activeSession?.mode === 'clinical-thinking' && isRenderableSession(activeSession)) {
     return (
       <QuestionSessionRunner
         key={`${activeSession.id}-${activeSession.currentIndex}`}
@@ -5894,7 +5959,7 @@ export function StrategyTrainingPage() {
         primary={
           <button
             type="button"
-            onClick={() => startClinicalThinking('Prioritization')}
+            onClick={() => launchClinicalThinking('Prioritization')}
             className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-cyan-100/45 bg-[linear-gradient(180deg,#24b8ff_0%,#0b83d6_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_12px_34px_rgba(14,165,233,0.24)] transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-cyan-200/55"
           >
             Start prioritization drill
@@ -5925,7 +5990,7 @@ export function StrategyTrainingPage() {
               <button
                 key={focus}
                 type="button"
-                onClick={() => startClinicalThinking(focus)}
+                onClick={() => launchClinicalThinking(focus)}
                 className="nclex-btn-secondary rounded-xl px-4 py-2.5 text-sm font-semibold"
               >
                 {focus}
@@ -5958,7 +6023,7 @@ export function StrategyTrainingPage() {
                   </ul>
                   <button
                     type="button"
-                    onClick={() => startClinicalThinking(lesson.framework)}
+                    onClick={() => launchClinicalThinking(lesson.framework)}
                     className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-cyan-200/24 bg-cyan-300/[0.07] px-4 py-2 text-sm font-bold text-cyan-100 transition hover:bg-cyan-300/13 focus:outline-none focus:ring-4 focus:ring-cyan-300/18"
                   >
                     Practice this
@@ -5987,11 +6052,13 @@ export function NotesPage() {
   const [searchParams] = useSearchParams()
   const seedCategory = searchParams.get('category')
   const profile = useStudySystemStore((state) => state.profile)
+  const activeSession = useStudySystemStore((state) => state.activeSession)
   const notes = useStudySystemStore((state) => state.notes)
   const saveNote = useStudySystemStore((state) => state.saveNote)
   const deleteNote = useStudySystemStore((state) => state.deleteNote)
   const importStudyMaterialFromText = useStudySystemStore((state) => state.importStudyMaterialFromText)
   const startPracticeSession = useStudySystemStore((state) => state.startPracticeSession)
+  const abandonSession = useStudySystemStore((state) => state.abandonSession)
   const [selectedCategory, setSelectedCategory] = useState<string>(seedCategory ?? 'All')
   const [search, setSearch] = useState('')
   const deferredSearch = useDeferredValue(search)
@@ -6043,12 +6110,18 @@ export function NotesPage() {
       navigate('/practice-questions')
       return
     }
-    startPracticeSession({
-      category: draft.category,
-      difficulty: 'adaptive',
-      format: 'mixed',
-      questionCount: 10,
-    })
+    const sessionIsOpen = isActiveSessionOpen(activeSession)
+    if (sessionIsOpen && activeSession?.mode !== 'practice') {
+      abandonSession()
+    }
+    if (!(sessionIsOpen && activeSession?.mode === 'practice')) {
+      startPracticeSession({
+        category: draft.category,
+        difficulty: 'adaptive',
+        format: 'mixed',
+        questionCount: 10,
+      })
+    }
     navigate('/practice-questions')
   }
 
