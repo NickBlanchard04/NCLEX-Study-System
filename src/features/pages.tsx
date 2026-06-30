@@ -2417,6 +2417,33 @@ export function TestModePage() {
     () => getPracticeHistory(practiceSessions, 4).filter((session) => session.mode === 'test'),
     [practiceSessions],
   )
+  const latestExam = recentExamHistory[0]
+  const latestExamScore = latestExam ? Math.round(latestExam.score * 100) : null
+  const activeAnsweredPercent = activeTestSummary
+    ? Math.round((activeTestSummary.answeredCount / Math.max(activeTestSummary.questionCount, 1)) * 100)
+    : 0
+  const examVerdict = activeTestSummary
+    ? 'Exam block in progress'
+    : latestExamScore === null
+      ? 'No exam signal yet'
+      : latestExamScore >= 75
+        ? 'Last exam block held up'
+        : 'Last exam block needs repair'
+  const examVerdictDetail = activeTestSummary
+    ? `${activeTestSummary.answeredCount}/${activeTestSummary.questionCount} answered from ${activeTestSummary.topCategory}. Resume the block or discard it before starting clean.`
+    : latestExamScore === null
+      ? `Start with a ${questionCount}-question timed block to establish a baseline.`
+      : `${latestExamScore}% on the last exam-style set. Review misses before adding another timed block.`
+  const reviewQueueTitle = activeTestSummary
+    ? 'Resume active exam'
+    : latestExam
+      ? 'Review last misses'
+      : 'Create first result'
+  const reviewQueueDetail = activeTestSummary
+    ? 'Finish the current block so the result screen stays clean.'
+    : latestExam
+      ? 'Send weak patterns to remediation before the next simulation.'
+      : 'Your first completed block will unlock a review queue.'
 
   if (activeSession?.mode === 'test' && resumeExamNow) {
     return (
@@ -2464,97 +2491,32 @@ export function TestModePage() {
     <PageStack>
       <PageHeader
         eyebrow="Exam Simulation"
-        title="Start a serious exam block."
-        description={`A calmer ${activeTrack.shortName} test surface: choose the mode, set the count, then review misses without extra noise.`}
+        title="Exam Simulation"
+        description={`Start a serious exam block for ${activeTrack.shortName}. Choose the simulation style, run the set, then leave with one verdict and a review queue.`}
         action={
           <button
             type="button"
             onClick={() => startTransition(() => startTestSession({ questionCount, timed, noBacktracking }))}
             className="inline-flex min-h-[48px] items-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
           >
-            {isPending ? 'Building exam...' : 'Start exam'}
+            {isPending ? 'Building exam...' : 'Start timed exam'}
             <ArrowRight className="h-4 w-4" />
           </button>
         }
       />
 
-      {activeTestSummary ? (
-        <NextActionPanel
-          eyebrow="Resume exam"
-          title={`${activeTestSummary.answeredCount}/${activeTestSummary.questionCount} answered`}
-          description={`Continue the active ${activeTrack.shortName} exam block from ${activeTestSummary.topCategory}, or discard it before starting a clean test.`}
-          tone="amber"
-          primary={
-            <button
-              type="button"
-              onClick={() => setResumeExamNow(true)}
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
-            >
-              Resume exam
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          }
-          secondary={
-            <button
-              type="button"
-              onClick={abandonSession}
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-rose-200/25 bg-rose-300/[0.08] px-5 py-3 text-sm font-bold text-rose-100 transition hover:bg-rose-300/14 focus:outline-none focus:ring-4 focus:ring-rose-300/18"
-            >
-              Discard
-            </button>
-          }
-        />
-      ) : null}
-
-      {recentExamHistory.length ? (
-        <Surface className="border-violet-200/20 bg-violet-300/[0.05]">
-          <SectionHeading
-            title="Recent exam history"
-            description="Review the last exam-style blocks before starting another timed set."
-            action={
-              <Link
-                to="/performance-analytics"
-                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-violet-200/24 bg-violet-300/[0.08] px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-violet-100 transition hover:bg-violet-300/14"
-              >
-                View history
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            }
-          />
-          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            {recentExamHistory.map((session) => (
-              <div key={session.id} className="rounded-2xl border border-violet-200/16 bg-white/[0.04] p-4">
-                <p className="text-xs font-black uppercase tracking-[0.14em] text-violet-100/58">
-                  {new Date(session.completedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                </p>
-                <p className="mt-2 text-2xl font-black text-white">{Math.round(session.score * 100)}%</p>
-                <p className="mt-1 text-sm font-semibold text-sky-100/64">
-                  {session.answeredCount}/{session.questionCount} questions
-                </p>
-                <Link
-                  to="/weak-areas"
-                  className="mt-3 inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-cyan-200/18 bg-cyan-300/[0.07] px-3 py-2 text-sm font-bold text-cyan-100"
-                >
-                  Review misses
-                </Link>
-              </div>
-            ))}
-          </div>
-        </Surface>
-      ) : null}
-
       <FocusPanel className="border-amber-200/34 bg-[linear-gradient(135deg,rgba(251,191,36,0.15),rgba(6,28,49,0.92)_42%,rgba(2,8,18,0.94))] text-white shadow-[0_0_38px_rgba(251,191,36,0.12)]">
         <div className="grid gap-5 p-5 md:p-6 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-end">
           <div>
             <div className="flex flex-wrap gap-2">
-              <CommandBadge tone="amber" icon={<Clock3 className="h-3.5 w-3.5" />}>Current mode</CommandBadge>
+              <CommandBadge tone="amber" icon={<Clock3 className="h-3.5 w-3.5" />}>Start action</CommandBadge>
               <CommandBadge tone="cyan" icon={<BadgeCheck className="h-3.5 w-3.5" />}>{activeTrack.shortName}</CommandBadge>
             </div>
             <h3 className="mt-4 max-w-3xl text-3xl font-bold tracking-normal text-white md:text-5xl">
-              {examMode} exam block
+              Start timed exam
             </h3>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-sky-100/72">
-              {questionCount} mixed questions with a clean result screen after you finish. Advanced settings stay below so starting the test is the obvious action.
+              {questionCount} mixed questions, one clean timer, and a result screen that turns misses into a repair queue. Switch to Tutor or Readiness only when that better matches the session.
             </p>
             <div className="mt-6 grid gap-2 sm:grid-cols-3">
               {modeOptions.map((mode) => (
@@ -2574,19 +2536,24 @@ export function TestModePage() {
                 </button>
               ))}
             </div>
-            <div className="mt-6">
-              <Field label="Question count">
-                <input
-                  type="range"
-                  min={20}
-                  max={60}
-                  step={5}
-                  value={questionCount}
-                  onChange={(event) => setQuestionCount(Number(event.target.value))}
-                  className="w-full accent-amber-300"
-                />
-                <p className="mt-2 text-sm font-semibold text-sky-100/70">{questionCount} mixed questions</p>
-              </Field>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <button
+                type="button"
+                onClick={() => startTransition(() => startTestSession({ questionCount, timed, noBacktracking }))}
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
+              >
+                {isPending ? 'Building exam...' : 'Start exam'}
+                <ArrowRight className="h-4 w-4" />
+              </button>
+              {activeTestSummary ? (
+                <button
+                  type="button"
+                  onClick={() => setResumeExamNow(true)}
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-cyan-200/24 bg-cyan-300/[0.09] px-5 py-3 text-sm font-bold text-cyan-100 transition hover:border-cyan-100/45 hover:bg-cyan-300/[0.14] focus:outline-none focus:ring-4 focus:ring-cyan-300/18"
+                >
+                  Resume current block
+                </button>
+              ) : null}
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-3 xl:grid-cols-1">
@@ -2600,13 +2567,77 @@ export function TestModePage() {
       <DetailGrid>
         <Surface className="border-violet-200/22 bg-violet-300/[0.055]">
           <SectionHeading
-            title="Results preview"
-            description="One verdict first, then category signal and review queue."
+            title="Results and resume"
+            description="One verdict first, then the three numbers that decide what to review."
+            action={
+              <Link
+                to="/performance-analytics"
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-violet-200/24 bg-violet-300/[0.08] px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-violet-100 transition hover:bg-violet-300/14"
+              >
+                Performance
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            }
           />
-          <div className="mt-5 space-y-4">
-            <ReviewRow icon={<CheckCircle2 className="h-4 w-4" />} title="Score + category breakdown" detail="See what held up under mixed exam pressure and where accuracy dropped." />
-            <ReviewRow icon={<TrendingDown className="h-4 w-4" />} title="Missed questions review" detail="Review weak clinical decisions while the reasoning is still active in memory." />
-            <ReviewRow icon={<Sparkles className="h-4 w-4" />} title="Next prep move" detail="Close each test with a concrete follow-up instead of a vague score report." />
+          <div className="mt-5 rounded-2xl border border-violet-200/18 bg-[#061426]/75 p-4">
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-violet-100/62">Verdict</p>
+            <h4 className="mt-2 text-2xl font-black tracking-normal text-white">{examVerdict}</h4>
+            <p className="mt-2 text-sm leading-6 text-sky-100/66">{examVerdictDetail}</p>
+          </div>
+          <div className="mt-4 grid gap-2 sm:grid-cols-3">
+            <CommandStatTile
+              label={activeTestSummary ? 'Answered' : 'Last score'}
+              value={activeTestSummary ? `${activeTestSummary.answeredCount}` : latestExamScore === null ? '-' : `${latestExamScore}%`}
+              detail={activeTestSummary ? `${activeAnsweredPercent}% complete` : 'exam result'}
+              tone={latestExamScore !== null && latestExamScore < 75 ? 'rose' : 'violet'}
+              icon={<BarChart3 className="h-4 w-4" />}
+            />
+            <CommandStatTile
+              label={activeTestSummary ? 'Remaining' : 'Questions'}
+              value={activeTestSummary ? `${activeTestSummary.questionCount - activeTestSummary.answeredCount}` : latestExam ? `${latestExam.questionCount}` : `${questionCount}`}
+              detail={activeTestSummary ? 'left in block' : 'mixed block'}
+              tone="cyan"
+              icon={<ClipboardList className="h-4 w-4" />}
+            />
+            <CommandStatTile
+              label="Review queue"
+              value={activeTestSummary ? 'Open' : latestExam ? 'Ready' : 'Locked'}
+              detail={activeTestSummary ? 'finish first' : latestExam ? 'misses available' : 'after exam'}
+              tone={latestExam ? 'rose' : 'amber'}
+              icon={<Target className="h-4 w-4" />}
+            />
+          </div>
+          <div className="mt-5 rounded-2xl border border-rose-200/18 bg-rose-300/[0.055] p-4">
+            <ReviewRow icon={<Target className="h-4 w-4" />} title={reviewQueueTitle} detail={reviewQueueDetail} />
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+              {activeTestSummary ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setResumeExamNow(true)}
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-amber-300/16 px-4 py-2 text-sm font-bold text-amber-100 transition hover:bg-amber-300/24"
+                  >
+                    Resume exam
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={abandonSession}
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-rose-200/25 bg-rose-300/[0.08] px-4 py-2 text-sm font-bold text-rose-100 transition hover:bg-rose-300/14"
+                  >
+                    Discard
+                  </button>
+                </>
+              ) : (
+                <Link
+                  to="/weak-areas"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-rose-200/25 bg-rose-300/[0.08] px-4 py-2 text-sm font-bold text-rose-100 transition hover:bg-rose-300/14"
+                >
+                  Review weak areas
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              )}
+            </div>
           </div>
         </Surface>
 
@@ -2616,6 +2647,25 @@ export function TestModePage() {
             description="Useful controls, parked below the start action."
           />
           <div className="mt-5 grid gap-4">
+            <Field label="Question count">
+              <input
+                type="range"
+                min={20}
+                max={60}
+                step={5}
+                value={questionCount}
+                onChange={(event) => setQuestionCount(Number(event.target.value))}
+                className="w-full accent-amber-300"
+              />
+              <p className="mt-2 text-sm font-semibold text-sky-100/70">{questionCount} mixed questions</p>
+            </Field>
+            <div className="rounded-2xl border border-cyan-200/18 bg-cyan-300/[0.055] p-4">
+              <p className="text-xs font-black uppercase tracking-[0.14em] text-cyan-100/62">Question mix</p>
+              <p className="mt-2 text-sm font-bold text-white">All {activeTrack.shortName} categories</p>
+              <p className="mt-1 text-sm leading-6 text-sky-100/62">
+                Exam simulation stays mixed. Use Question Bank when you need a category-specific drill.
+              </p>
+            </div>
             <ToggleRow label="Timed mode" description="Uses a realistic countdown and keeps the interface lean." checked={timed} onChange={setTimed} />
             <ToggleRow label="No backtracking" description="Once you move forward, you stay forward." checked={noBacktracking} onChange={setNoBacktracking} />
           </div>
