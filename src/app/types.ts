@@ -220,6 +220,17 @@ export interface Flashcard {
   sourceTopic?: string
   sourceRefs?: string[]
   contentQuality?: ContentQualityStatus
+  sourceStatus?: SourceReviewStatus
+  sourceMapStatus?: string
+  clinicalReviewStatus?: ClinicalReviewStatus
+  learnerVisible?: boolean
+  visibility?: ContentVisibility
+  contentStage?: ContentStage
+  countsTowardOfficialReadiness?: boolean
+  sourceNeededClaims?: string[]
+  sourcePackId?: string
+  fixtureId?: string
+  feedbackEnabled?: boolean
   front: string
   back: string
   status: FlashcardStatus

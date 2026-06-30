@@ -1,4 +1,7 @@
 import type { AnswerChoice, ExamTrackId, Flashcard, Question } from '../app/types'
+import { internalIsolationPrecautionsFlashcards } from './internal-isolation-flashcards'
+
+export { internalIsolationPrecautionsFlashcards } from './internal-isolation-flashcards'
 
 const makeChoices = (...choices: string[]): AnswerChoice[] =>
   choices.map((text, index) => ({
@@ -185,7 +188,25 @@ export const internalDraftFixtureQuestionsByTrack: Partial<Record<ExamTrackId, Q
   'nclex-rn': internalPriorityClientsStandaloneQuestions,
 }
 
-export const internalPriorityClientsFlashcards: Flashcard[] = [
+const priorityClientsFlashcardTrustState = {
+  ...trustState,
+  sourcePackId: 'SP-RN-PRIORITY-CLIENTS-0001',
+  fixtureId: 'FIXTURE-SP-RN-PRIORITY-CLIENTS-0001',
+} satisfies Pick<
+  Flashcard,
+  | 'sourceStatus'
+  | 'sourceMapStatus'
+  | 'clinicalReviewStatus'
+  | 'learnerVisible'
+  | 'visibility'
+  | 'contentStage'
+  | 'countsTowardOfficialReadiness'
+  | 'feedbackEnabled'
+  | 'sourcePackId'
+  | 'fixtureId'
+>
+
+const internalPriorityClientsFlashcardDrafts: Flashcard[] = [
   {
     id: 'FC-RN-MOC-PRIORITY-CLIENTS-0001',
     examTrack: 'nclex-rn',
@@ -254,6 +275,12 @@ export const internalPriorityClientsFlashcards: Flashcard[] = [
   },
 ]
 
+export const internalPriorityClientsFlashcards: Flashcard[] =
+  internalPriorityClientsFlashcardDrafts.map((card) => ({
+    ...priorityClientsFlashcardTrustState,
+    ...card,
+  }))
+
 export const internalDraftContentFixturesEnabled =
   import.meta.env.VITE_ENABLE_INTERNAL_CONTENT_FIXTURES === 'true'
 
@@ -264,5 +291,5 @@ export const getInternalDraftFixtureQuestions = (examTrack: ExamTrackId): Questi
 
 export const getInternalDraftFixtureFlashcards = (): Flashcard[] => {
   if (!internalDraftContentFixturesEnabled) return []
-  return internalPriorityClientsFlashcards
+  return [...internalPriorityClientsFlashcards, ...internalIsolationPrecautionsFlashcards]
 }

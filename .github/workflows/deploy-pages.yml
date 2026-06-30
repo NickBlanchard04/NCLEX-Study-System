@@ -36,6 +36,7 @@ jobs:
           VITE_APP_BASE: /
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_ENABLE_INTERNAL_CONTENT_FIXTURES: true
           VITE_ENABLE_ANALYTICS: true
           VITE_ENABLE_ADMIN_PANEL: true
           VITE_ADMIN_EMAILS: ${{ secrets.VITE_ADMIN_EMAILS }}

@@ -73,6 +73,13 @@ import { createClientId } from '../services/ids'
 import { getSafeErrorCopy, reportSafeError } from '../services/safe-errors'
 import { summarizeMaterialQuality, type MaterialQualityIssue } from '../services/material-quality'
 import {
+  contentFeedbackReasonLabels,
+  contentFeedbackReasons,
+  recordContentFeedback,
+  trackContentFeedbackOpened,
+  type ContentFeedbackReason,
+} from '../services/content-feedback'
+import {
   flashcards,
   getExamCategories,
   getExamContentQualitySummary,
@@ -3053,6 +3060,11 @@ export function FlashcardsPage() {
   const [shuffleSeed, setShuffleSeed] = useState(1)
   const [index, setIndex] = useState(0)
   const [isFlipped, setIsFlipped] = useState(false)
+  const [flashcardFeedbackOpen, setFlashcardFeedbackOpen] = useState(false)
+  const [flashcardFeedbackReason, setFlashcardFeedbackReason] =
+    useState<ContentFeedbackReason>('source_concern')
+  const [flashcardFeedbackNote, setFlashcardFeedbackNote] = useState('')
+  const [flashcardFeedbackSubmittedId, setFlashcardFeedbackSubmittedId] = useState<string | null>(null)
   const [reviewNowMs] = useState(() => new Date().getTime())
   const repairingMaterialIdsRef = useRef(new Set<string>())
   const touchStartXRef = useRef<number | null>(null)
@@ -3094,6 +3106,17 @@ export function FlashcardsPage() {
       status: flashcardProgress[card.id] ?? card.status,
       review: flashcardReview[card.id],
       category: card.category,
+      examTrack: card.examTrack ?? 'nclex-rn',
+      sourceStatus: card.sourceStatus,
+      sourceMapStatus: card.sourceMapStatus,
+      clinicalReviewStatus: card.clinicalReviewStatus,
+      learnerVisible: card.learnerVisible,
+      visibility: card.visibility,
+      contentStage: card.contentStage,
+      sourceNeededClaims: card.sourceNeededClaims,
+      sourcePackId: card.sourcePackId,
+      fixtureId: card.fixtureId,
+      feedbackEnabled: card.feedbackEnabled,
       sourceLabel: 'Core Deck',
       sourceMaterialId: null as string | null,
       origin: 'core' as const,
@@ -3106,6 +3129,17 @@ export function FlashcardsPage() {
       status: card.status,
       review: flashcardReview[card.id],
       category: 'Imported Materials',
+      examTrack: 'nclex-rn',
+      sourceStatus: undefined,
+      sourceMapStatus: undefined,
+      clinicalReviewStatus: undefined,
+      learnerVisible: undefined,
+      visibility: undefined,
+      contentStage: undefined,
+      sourceNeededClaims: undefined,
+      sourcePackId: undefined,
+      fixtureId: undefined,
+      feedbackEnabled: undefined,
       sourceLabel: card.sourceTitle,
       sourceMaterialId: card.sourceMaterialId,
       origin: 'imported' as const,
@@ -3147,6 +3181,19 @@ export function FlashcardsPage() {
   ])
   const activeIndex = filtered.length ? Math.min(index, filtered.length - 1) : 0
   const currentCard = filtered[activeIndex] ?? null
+  const currentCardNeedsDraftWarning = Boolean(
+    currentCard?.sourceStatus === 'source_needed' ||
+      currentCard?.clinicalReviewStatus === 'not_sme_reviewed' ||
+      currentCard?.contentStage === 'beta_draft',
+  )
+
+  useEffect(() => {
+    setFlashcardFeedbackOpen(false)
+    setFlashcardFeedbackReason('source_concern')
+    setFlashcardFeedbackNote('')
+    setFlashcardFeedbackSubmittedId(null)
+  }, [currentCard?.id])
+
   const dueCards = useMemo(() => {
     return combinedCards.filter((card) => {
       if (card.status === 'new' || card.status === 'needs-review') return true
@@ -3162,6 +3209,33 @@ export function FlashcardsPage() {
       return
     }
     updateFlashcardStatus(currentCard.id, status)
+  }
+
+  const submitFlashcardFeedback = () => {
+    if (!currentCard || !currentCard.feedbackEnabled) return
+
+    const report = recordContentFeedback({
+      question: {
+        id: currentCard.id,
+        examTrack: currentCard.examTrack,
+        category: currentCard.category,
+        sourcePackId: currentCard.sourcePackId,
+        fixtureId: currentCard.fixtureId,
+        sourceStatus: currentCard.sourceStatus,
+        clinicalReviewStatus: currentCard.clinicalReviewStatus,
+        visibility: currentCard.visibility,
+        contentStage: currentCard.contentStage,
+        learnerVisible: currentCard.learnerVisible,
+      },
+      reason: flashcardFeedbackReason,
+      note: flashcardFeedbackNote,
+      route: '/flashcards',
+      reviewState: flashcardFeedbackOpen ? 'review_open' : 'review_hidden',
+    })
+
+    setFlashcardFeedbackSubmittedId(report.id)
+    setFlashcardFeedbackNote('')
+    setFlashcardFeedbackOpen(false)
   }
 
   const showPreviousCard = () => {
@@ -3328,6 +3402,101 @@ export function FlashcardsPage() {
                     {currentCard.status}
                   </span>
               </div>
+              {currentCardNeedsDraftWarning ? (
+                <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                  <div className="flex gap-3">
+                    <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+                    <div>
+                      <p className="font-semibold">Beta draft: source-needed and not SME reviewed.</p>
+                      <p className="mt-1 leading-6">
+                        Use this card as draft practice only. It is not source checked and remains under content review.
+                      </p>
+                      <p className="mt-2 text-xs font-semibold uppercase tracking-[0.14em] text-amber-700">
+                        {currentCard.sourceStatus ?? 'source_needed'} / {currentCard.clinicalReviewStatus ?? 'not_sme_reviewed'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+              {currentCard.feedbackEnabled ? (
+                <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-[#163042]">Report a card issue</p>
+                      <p className="mt-1 text-xs leading-5 text-[var(--nclex-text-muted)]">
+                        Feedback is saved with this draft card&apos;s source and review labels.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!flashcardFeedbackOpen) {
+                          trackContentFeedbackOpened(
+                            {
+                              id: currentCard.id,
+                              examTrack: currentCard.examTrack,
+                              category: currentCard.category,
+                              sourcePackId: currentCard.sourcePackId,
+                              fixtureId: currentCard.fixtureId,
+                              visibility: currentCard.visibility,
+                              contentStage: currentCard.contentStage,
+                            },
+                            '/flashcards',
+                          )
+                        }
+                        setFlashcardFeedbackOpen((current) => !current)
+                      }}
+                      className="nclex-btn-secondary rounded-xl px-3 py-2 text-xs font-semibold"
+                    >
+                      {flashcardFeedbackOpen ? 'Close report' : 'Open report'}
+                    </button>
+                  </div>
+                  {flashcardFeedbackSubmittedId ? (
+                    <p className="mt-3 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">
+                      Report saved for internal content QA.
+                    </p>
+                  ) : null}
+                  {flashcardFeedbackOpen ? (
+                    <form
+                      className="mt-3 grid gap-3"
+                      onSubmit={(event) => {
+                        event.preventDefault()
+                        submitFlashcardFeedback()
+                      }}
+                    >
+                      <Field label="Reason">
+                        <select
+                          value={flashcardFeedbackReason}
+                          onChange={(event) =>
+                            setFlashcardFeedbackReason(event.target.value as ContentFeedbackReason)
+                          }
+                          className={selectClass}
+                        >
+                          {contentFeedbackReasons.map((reason) => (
+                            <option key={reason} value={reason}>
+                              {contentFeedbackReasonLabels[reason]}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                      <Field label="Note">
+                        <textarea
+                          value={flashcardFeedbackNote}
+                          onChange={(event) => setFlashcardFeedbackNote(event.target.value)}
+                          className={`${selectClass} min-h-24`}
+                          placeholder="What should be checked?"
+                        />
+                      </Field>
+                      <button
+                        type="submit"
+                        className="nclex-btn-primary inline-flex w-fit items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold"
+                      >
+                        Save report
+                      </button>
+                    </form>
+                  ) : null}
+                </div>
+              ) : null}
               <div
                 className="mt-6"
                 onTouchStart={(event) => {
