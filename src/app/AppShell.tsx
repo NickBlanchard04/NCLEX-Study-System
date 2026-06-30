@@ -140,9 +140,9 @@ const sidebarNavigationGroups = [
 ]
 
 const mobilePrimaryNavigation: NavigationItem[] = [
-  { label: 'Today', icon: LayoutGrid, to: '/dashboard' },
-  { label: 'Quick', icon: Flashlight, to: '/quick-study' },
-  { label: 'Bank', icon: ClipboardList, to: '/practice-questions' },
+  { label: 'Dashboard', icon: LayoutGrid, to: '/dashboard' },
+  { label: 'Quick Study', icon: Flashlight, to: '/quick-study' },
+  { label: 'Question Bank', icon: ClipboardList, to: '/practice-questions' },
   { label: 'Library', icon: FolderOpen, to: '/my-materials' },
 ]
 
@@ -296,6 +296,19 @@ function NclexAppShell() {
   useEffect(() => {
     window.scrollTo({ left: 0, top: 0, behavior: 'auto' })
   }, [location.pathname])
+
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      setMobileMenuOpen(false)
+      setMobileMoreOpen(false)
+      setSupportOpen(false)
+      setAccountOpen(false)
+    }
+
+    window.addEventListener('keydown', handleEscape)
+    return () => window.removeEventListener('keydown', handleEscape)
+  }, [])
 
   useEffect(() => {
     const featureName = getFeatureNameFromPath(location.pathname)
@@ -502,6 +515,9 @@ function NclexAppShell() {
                 <button
                   type="button"
                   onClick={() => setAccountOpen((current) => !current)}
+                  aria-label="Open account menu"
+                  aria-expanded={accountOpen}
+                  aria-haspopup="menu"
                   className="flex items-center gap-2 rounded-xl border border-sky-300/24 bg-white/5 px-2 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition hover:border-sky-200/60"
                 >
                   <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-cyan-300/30 bg-[linear-gradient(180deg,#0f7aff_0%,#062d63_100%)] text-sm font-bold text-white shadow-[0_0_20px_rgba(43,148,255,0.28)]">
@@ -519,8 +535,15 @@ function NclexAppShell() {
                 </button>
               </div>
             </div>
+            <span role="status" aria-live="polite" className="sr-only">
+              Sync status: {syncBadgeLabel}
+            </span>
             {accountOpen ? (
-              <div className="absolute right-4 top-[4.5rem] z-30 w-[290px] rounded-[20px] border border-sky-300/24 bg-[#071d34]/95 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.34)] backdrop-blur md:right-8">
+              <div
+                role="menu"
+                aria-label="Account menu"
+                className="absolute right-4 top-[4.5rem] z-30 w-[290px] rounded-[20px] border border-sky-300/24 bg-[#071d34]/95 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.34)] backdrop-blur md:right-8"
+              >
                 <p className="nc-eyebrow text-sky-200/62">
                   Account
                 </p>
@@ -632,8 +655,11 @@ function NclexAppShell() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 bg-slate-950/40 lg:hidden"
-          >
+              className="fixed inset-0 z-40 bg-slate-950/40 lg:hidden"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Primary navigation"
+            >
             <motion.div
               initial={{ x: -32, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
@@ -645,7 +671,7 @@ function NclexAppShell() {
                 <button
                   type="button"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/6"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/6 focus:outline-none focus:ring-2 focus:ring-cyan-200/60"
                   aria-label="Close navigation"
                 >
                   <X className="h-4 w-4" />
@@ -692,6 +718,9 @@ function NclexAppShell() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-40 bg-slate-950/35 lg:hidden"
+            role="dialog"
+            aria-modal="true"
+            aria-label="More navigation"
             onClick={() => setMobileMoreOpen(false)}
           >
             <motion.div
@@ -712,7 +741,8 @@ function NclexAppShell() {
                 <button
                   type="button"
                   onClick={() => setMobileMoreOpen(false)}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-sky-300/24 bg-white/5 text-sky-100/72"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-sky-300/24 bg-white/5 text-sky-100/72 focus:outline-none focus:ring-2 focus:ring-cyan-200/60"
+                  aria-label="Close more navigation"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -736,7 +766,7 @@ function NclexAppShell() {
                               setMobileMoreOpen(false)
                             }}
                             className={clsx(
-                              'flex items-center justify-between rounded-2xl border px-4 py-3.5 text-left',
+                              'flex items-center justify-between rounded-2xl border px-4 py-3.5 text-left focus:outline-none focus:ring-2 focus:ring-cyan-200/55',
                               active
                                 ? 'border-sky-200/60 bg-sky-400/12 text-white shadow-[0_0_24px_rgba(56,189,248,0.16)]'
                                 : 'border-sky-300/20 bg-white/[0.04] text-sky-100/76',
@@ -761,7 +791,7 @@ function NclexAppShell() {
                     setMobileMoreOpen(false)
                     setSupportOpen(true)
                   }}
-                  className="flex items-center justify-between rounded-2xl border border-sky-300/20 bg-white/[0.04] px-4 py-3.5 text-left text-sky-100/76"
+                  className="flex items-center justify-between rounded-2xl border border-sky-300/20 bg-white/[0.04] px-4 py-3.5 text-left text-sky-100/76 focus:outline-none focus:ring-2 focus:ring-cyan-200/55"
                 >
                   <span className="flex items-center gap-3 text-sm font-semibold">
                     <Headphones className="h-4 w-4" />
@@ -1072,7 +1102,7 @@ function SidebarLink({
       onClick={onClick}
       className={({ isActive }) =>
         clsx(
-          'group flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-sm font-semibold transition',
+          'group flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-cyan-200/55',
           isActive || activeByPath
             ? toneClass.active
             : 'text-slate-200/88 hover:border-white/10 hover:bg-white/[0.055] hover:text-white',
@@ -1095,6 +1125,7 @@ function MobileTabBar({
   onOpenQuickStudy: () => void
 }) {
   const navigate = useNavigate()
+  const moreActive = !mobilePrimaryNavigation.some(({ to }) => (to === '/' ? pathname === '/' : pathname.startsWith(to)))
 
   return (
     <div className="mobile-bottom-bar safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-sky-300/20 bg-[#020812]/92 px-3 py-2 backdrop-blur-xl lg:hidden">
@@ -1105,6 +1136,7 @@ function MobileTabBar({
             <button
               key={to}
               type="button"
+              aria-current={active ? 'page' : undefined}
               onClick={() => {
                 if (emphasis) {
                   onOpenQuickStudy()
@@ -1113,7 +1145,7 @@ function MobileTabBar({
                 navigate(to)
               }}
               className={clsx(
-                'flex min-w-0 flex-1 flex-col items-center gap-1 rounded-[18px] px-2 py-2.5 text-[11px] font-semibold transition active:scale-[0.98]',
+                'flex min-h-[3.75rem] min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-[18px] px-1.5 py-2 text-[10px] font-semibold leading-tight transition active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-cyan-200/55 min-[390px]:text-[11px]',
                 emphasis
                   ? 'nclex-btn-primary -mt-5 px-3 py-3 text-white'
                   : active
@@ -1122,14 +1154,19 @@ function MobileTabBar({
               )}
             >
               <Icon className={clsx('h-4 w-4', emphasis && 'h-5 w-5')} />
-              <span className="truncate">{label}</span>
+              <span className="max-w-[4.7rem] whitespace-normal text-center">{label}</span>
             </button>
           )
         })}
         <button
           type="button"
           onClick={onOpenMore}
-          className="flex flex-1 flex-col items-center gap-1 rounded-[18px] px-2 py-2.5 text-[11px] font-semibold text-sky-100/56 active:scale-[0.98]"
+          className={clsx(
+            'flex min-h-[3.75rem] flex-1 flex-col items-center justify-center gap-1 rounded-[18px] px-1.5 py-2 text-[10px] font-semibold leading-tight active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-cyan-200/55 min-[390px]:text-[11px]',
+            moreActive ? 'bg-sky-400/12 text-sky-200 shadow-[inset_0_-2px_0_#1d9bff]' : 'text-sky-100/56',
+          )}
+          aria-label="Open more navigation"
+          aria-current={moreActive ? 'page' : undefined}
         >
           <Menu className="h-4 w-4" />
           <span>More</span>
@@ -1180,6 +1217,9 @@ function SupportSheet({ open, onClose }: { open: boolean; onClose: () => void })
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-50 bg-slate-950/35"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Help and support"
           onClick={onClose}
         >
           <motion.div
@@ -1204,7 +1244,8 @@ function SupportSheet({ open, onClose }: { open: boolean; onClose: () => void })
               <button
                 type="button"
                 onClick={onClose}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-sky-300/24 bg-white/5 text-sky-100/72"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-sky-300/24 bg-white/5 text-sky-100/72 focus:outline-none focus:ring-2 focus:ring-cyan-200/60"
+                aria-label="Close help and support"
               >
                 <X className="h-4 w-4" />
               </button>

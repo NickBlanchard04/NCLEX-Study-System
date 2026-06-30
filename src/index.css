@@ -575,6 +575,19 @@ textarea {
   color: #fff;
 }
 
+.nurse-command-app button:focus-visible,
+.nurse-command-app a:focus-visible,
+.nurse-command-app summary:focus-visible,
+.nurse-command-app .nclex-btn-primary:focus-visible,
+.nurse-command-app .nclex-btn-secondary:focus-visible,
+.nurse-command-app .nclex-btn-danger:focus-visible {
+  outline: 2px solid rgba(125, 211, 252, 0.92);
+  outline-offset: 3px;
+  box-shadow:
+    0 0 0 4px rgba(56, 189, 248, 0.16),
+    0 0 24px rgba(56, 189, 248, 0.22);
+}
+
 .nurse-command-app .nclex-input,
 .nurse-command-app input,
 .nurse-command-app select,

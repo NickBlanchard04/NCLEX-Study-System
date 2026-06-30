@@ -97,13 +97,13 @@ import {
   FocusPanel,
   MasteryPill,
   MetricChip,
+  NextActionPanel,
   PageHeader,
   PageStack,
   ProgressBar,
   QuickMetric,
   QuestionSessionRunner,
   SectionHeading,
-  StatCard,
   Surface,
 } from './ui'
 import {
@@ -1895,6 +1895,39 @@ export function ExamPrepPage() {
         </div>
       </Surface>
 
+      <NextActionPanel
+        eyebrow="What to do next"
+        title={`Practice in ${selectedTrack.shortName}`}
+        description="Pick the exam lane, then move into questions. Track details stay collapsed until you need to inspect coverage."
+        tone="amber"
+        primary={
+          <button
+            type="button"
+            onClick={() => {
+              updateProfile({ examTrack: selectedTrackId })
+              navigate('/practice-questions')
+            }}
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
+          >
+            Start practice
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        }
+        secondary={
+          <button
+            type="button"
+            onClick={() => {
+              updateProfile({ examTrack: selectedTrackId })
+              navigate('/test-mode')
+            }}
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-cyan-200/24 bg-cyan-300/[0.07] px-5 py-3 text-sm font-bold text-cyan-100 transition hover:border-cyan-100/55 hover:bg-cyan-300/13 focus:outline-none focus:ring-4 focus:ring-cyan-300/18"
+          >
+            Start exam
+            <Target className="h-4 w-4" />
+          </button>
+        }
+      />
+
       <div className="grid gap-6 xl:grid-cols-[0.82fr_1.18fr]">
         <Surface className="border-cyan-200/18 bg-cyan-300/[0.045]">
           <SectionHeading
@@ -1934,9 +1967,26 @@ export function ExamPrepPage() {
         </Surface>
 
         <Surface className="overflow-hidden border-violet-200/18 bg-[#061426] p-0">
-          <div className="bg-[linear-gradient(135deg,#003b66_0%,#12375a_100%)] px-5 py-6 text-white md:px-6">
+          <details>
+            <summary className="flex cursor-pointer list-none flex-col gap-3 px-5 py-5 text-white transition hover:bg-white/[0.035] md:flex-row md:items-center md:justify-between md:px-6">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-100/70">
+                  Track details
+                </p>
+                <h3 className="mt-2 text-2xl font-black tracking-normal text-white">
+                  Exam overview, coverage, and quality notes
+                </h3>
+                <p className="mt-1 text-sm leading-6 text-sky-100/62">
+                  Open this when you want the blueprint, domains, systems, formats, and resource list.
+                </p>
+              </div>
+              <span className="inline-flex min-h-10 items-center justify-center rounded-xl border border-violet-200/24 bg-violet-300/[0.08] px-4 py-2 text-sm font-bold text-violet-100">
+                Show details
+              </span>
+            </summary>
+          <div className="border-t border-violet-200/14 bg-[linear-gradient(135deg,#003b66_0%,#12375a_100%)] px-5 py-6 text-white md:px-6">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-100">
-              {selectedTrack.shortName} Product Blueprint
+              {selectedTrack.shortName} Exam overview
             </p>
             <h3 className="mt-3 nc-section-title text-4xl leading-tight">
               {selectedTrack.title}
@@ -1971,6 +2021,7 @@ export function ExamPrepPage() {
             <ExamTrackList title="Testing formats" items={selectedTrack.testingFormats} />
             <ExamTrackList title="Resources" items={selectedTrack.resources} />
           </div>
+          </details>
         </Surface>
       </div>
 
@@ -2222,15 +2273,22 @@ export function QuickStudyPage() {
 export function TestModePage() {
   const profile = useStudySystemStore((state) => state.profile)
   const activeSession = useStudySystemStore((state) => state.activeSession)
+  const practiceSessions = useStudySystemStore((state) => state.practiceSessions)
   const startTestSession = useStudySystemStore((state) => state.startTestSession)
   const abandonSession = useStudySystemStore((state) => state.abandonSession)
   const [isPending, startTransition] = useTransition()
+  const [resumeExamNow, setResumeExamNow] = useState(false)
   const [questionCount, setQuestionCount] = useState(25)
   const [timed, setTimed] = useState(true)
   const [noBacktracking, setNoBacktracking] = useState(true)
   const activeTrack = getExamTrack(profile.examTrack ?? 'nclex-rn')
+  const activeTestSummary = activeSession?.mode === 'test' ? getActiveSessionSummary(activeSession) : null
+  const recentExamHistory = useMemo(
+    () => getPracticeHistory(practiceSessions, 4).filter((session) => session.mode === 'test'),
+    [practiceSessions],
+  )
 
-  if (activeSession?.mode === 'test') {
+  if (activeSession?.mode === 'test' && resumeExamNow) {
     return (
       <QuestionSessionRunner
         key={`${activeSession.id}-${activeSession.currentIndex}`}
@@ -2289,6 +2347,71 @@ export function TestModePage() {
           </button>
         }
       />
+
+      {activeTestSummary ? (
+        <NextActionPanel
+          eyebrow="Resume exam"
+          title={`${activeTestSummary.answeredCount}/${activeTestSummary.questionCount} answered`}
+          description={`Continue the active ${activeTrack.shortName} exam block from ${activeTestSummary.topCategory}, or discard it before starting a clean test.`}
+          tone="amber"
+          primary={
+            <button
+              type="button"
+              onClick={() => setResumeExamNow(true)}
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
+            >
+              Resume exam
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          }
+          secondary={
+            <button
+              type="button"
+              onClick={abandonSession}
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-rose-200/25 bg-rose-300/[0.08] px-5 py-3 text-sm font-bold text-rose-100 transition hover:bg-rose-300/14 focus:outline-none focus:ring-4 focus:ring-rose-300/18"
+            >
+              Discard
+            </button>
+          }
+        />
+      ) : null}
+
+      {recentExamHistory.length ? (
+        <Surface className="border-violet-200/20 bg-violet-300/[0.05]">
+          <SectionHeading
+            title="Recent exam history"
+            description="Review the last exam-style blocks before starting another timed set."
+            action={
+              <Link
+                to="/performance-analytics"
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-violet-200/24 bg-violet-300/[0.08] px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-violet-100 transition hover:bg-violet-300/14"
+              >
+                View history
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            }
+          />
+          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            {recentExamHistory.map((session) => (
+              <div key={session.id} className="rounded-2xl border border-violet-200/16 bg-white/[0.04] p-4">
+                <p className="text-xs font-black uppercase tracking-[0.14em] text-violet-100/58">
+                  {new Date(session.completedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                </p>
+                <p className="mt-2 text-2xl font-black text-white">{Math.round(session.score * 100)}%</p>
+                <p className="mt-1 text-sm font-semibold text-sky-100/64">
+                  {session.answeredCount}/{session.questionCount} questions
+                </p>
+                <Link
+                  to="/weak-areas"
+                  className="mt-3 inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-cyan-200/18 bg-cyan-300/[0.07] px-3 py-2 text-sm font-bold text-cyan-100"
+                >
+                  Review misses
+                </Link>
+              </div>
+            ))}
+          </div>
+        </Surface>
+      ) : null}
 
       <FocusPanel className="border-amber-200/34 bg-[linear-gradient(135deg,rgba(251,191,36,0.15),rgba(6,28,49,0.92)_42%,rgba(2,8,18,0.94))] text-white shadow-[0_0_38px_rgba(251,191,36,0.12)]">
         <div className="grid gap-5 p-5 md:p-6 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-end">
@@ -2769,29 +2892,6 @@ export function PerformanceAnalyticsPage() {
         }
       />
 
-      <div className="grid gap-5 md:grid-cols-3">
-        <StatCard
-          label="Practice accuracy"
-          value={`${Math.round(readiness.practiceAccuracy * 100)}%`}
-          detail={`${analytics.questionsCompleted} questions completed`}
-          tone={readiness.practiceAccuracy >= 0.75 ? 'success' : 'warning'}
-          statusLabel={readiness.practiceAccuracy >= 0.75 ? 'On track' : 'Focus'}
-        />
-        <StatCard
-          label="Trusted evidence"
-          value={`${readiness.trustedAttemptCount}`}
-          detail={`${readiness.practiceAttemptCount} practice attempts available`}
-          tone={readiness.status === 'ready' ? 'success' : readiness.status === 'approaching' ? 'neutral' : 'warning'}
-          statusLabel={readinessLabel}
-        />
-        <StatCard
-          label="Repair queue"
-          value={`${repairQueueCount}`}
-          detail="High-confidence or safety-sensitive misses needing transfer proof."
-          tone={repairQueueCount ? 'warning' : 'success'}
-          statusLabel={repairQueueCount ? 'Repair' : 'Clear'}
-        />
-      </div>
       <Surface>
         <SectionHeading
           title="Accuracy Trend"
@@ -2887,23 +2987,30 @@ export function PerformanceAnalyticsPage() {
         </Surface>
       </DetailGrid>
 
-      <Surface>
-        <SectionHeading
-          title="History & Details"
-          description="Lower-priority context for the current readout. Use this after the main takeaway and repair targets."
-        />
-        <div className="mt-5 grid gap-3 md:grid-cols-4">
-          <MetricChip label="Questions" value={`${analytics.questionsCompleted}`} />
-          <MetricChip label="Trusted attempts" value={`${readiness.trustedAttemptCount}`} />
-          <MetricChip label="Coverage gaps" value={`${readiness.coverageGaps.length}`} />
-          <MetricChip label="Scope" value={(profile.preferences.analyticsScope ?? 'selected-track') === 'selected-track' ? activeTrack.shortName : 'All exams'} />
-        </div>
-        <div className="mt-5 rounded-2xl border border-cyan-200/15 bg-sky-300/[0.045] p-4">
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-100/56">Method note</p>
-          <p className="mt-2 text-sm leading-7 text-sky-100/70">
-            Performance separates practice attempts, trusted evidence, confidence mismatches, and coverage gaps so the next action stays about learning behavior rather than a single chart line.
-          </p>
-        </div>
+      <Surface className="p-0">
+        <details>
+          <summary className="flex cursor-pointer list-none flex-col gap-2 p-5 md:p-6">
+            <span className="text-xs font-black uppercase tracking-[0.16em] text-sky-100/58">Optional details</span>
+            <span className="text-2xl font-black tracking-normal text-white">History and method notes</span>
+            <span className="text-sm leading-6 text-sky-100/64">
+              Open this after the main takeaway when you need the evidence count, scope, and methodology.
+            </span>
+          </summary>
+          <div className="border-t border-cyan-200/14 p-5 md:p-6">
+            <div className="grid gap-3 md:grid-cols-4">
+              <MetricChip label="Questions" value={`${analytics.questionsCompleted}`} />
+              <MetricChip label="Trusted attempts" value={`${readiness.trustedAttemptCount}`} />
+              <MetricChip label="Coverage gaps" value={`${readiness.coverageGaps.length}`} />
+              <MetricChip label="Scope" value={(profile.preferences.analyticsScope ?? 'selected-track') === 'selected-track' ? activeTrack.shortName : 'All exams'} />
+            </div>
+            <div className="mt-5 rounded-2xl border border-cyan-200/15 bg-sky-300/[0.045] p-4">
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-100/56">Method note</p>
+              <p className="mt-2 text-sm leading-7 text-sky-100/70">
+                Performance separates practice attempts, trusted evidence, confidence mismatches, and coverage gaps so the next action stays about learning behavior rather than a single chart line.
+              </p>
+            </div>
+          </div>
+        </details>
       </Surface>
     </div>
   )
@@ -4000,6 +4107,56 @@ export function MyMaterialsPage() {
                   />
                 </div>
               </div>
+
+              {selectedMaterial.extractionStatus === 'error' ? (
+                <NextActionPanel
+                  eyebrow="Fix source"
+                  title="This material needs a cleaner input."
+                  description="Direct scraping failed or the text was unreadable. Use assisted paste for Quizlet-style pages, retry the source, or remove the failed import from your library."
+                  tone="amber"
+                  primary={
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAssistedImportOpen(true)
+                        setAssistedSourceUrl(selectedMaterial.sourceUrl ?? '')
+                        setBlockedImportSourceUrl(selectedMaterial.sourceUrl ?? '')
+                        setMaterialUrl(selectedMaterial.sourceUrl ?? '')
+                        setUploadMessage('Assisted import is open. Paste copied study text or use Read clipboard.')
+                      }}
+                      className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-amber-100/35 bg-amber-300/[0.12] px-5 py-3 text-sm font-bold text-amber-50 transition hover:bg-amber-300/18 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
+                    >
+                      Use assisted paste
+                      <ClipboardList className="h-4 w-4" />
+                    </button>
+                  }
+                  secondary={
+                    <>
+                      {selectedMaterial.sourceUrl ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMaterialUrl(selectedMaterial.sourceUrl ?? '')
+                            setUploadMessage('Source link restored. Import again or open assisted import if the site blocks scraping.')
+                          }}
+                          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-cyan-200/24 bg-cyan-300/[0.07] px-5 py-3 text-sm font-bold text-cyan-100 transition hover:border-cyan-100/55 hover:bg-cyan-300/13 focus:outline-none focus:ring-4 focus:ring-cyan-300/18"
+                        >
+                          Retry link
+                          <RefreshCw className="h-4 w-4" />
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={() => void deleteStudyMaterial(selectedMaterial.id)}
+                        className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-rose-200/25 bg-rose-300/[0.08] px-5 py-3 text-sm font-bold text-rose-100 transition hover:bg-rose-300/14 focus:outline-none focus:ring-4 focus:ring-rose-300/18"
+                      >
+                        Remove failed import
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </>
+                  }
+                />
+              ) : null}
 
               {selectedMaterial.reviewStatus === 'pending-review' ? (
                 <div ref={materialReviewRef} className="scroll-mt-24">
@@ -5249,8 +5406,8 @@ export function StrategyTrainingPage() {
     <div className="space-y-6">
       <PageHeader
         eyebrow="Resources"
-        title="Learn how NCLEX wants you to think."
-        description="Use these frameworks to eliminate weak answers faster, prioritize safety better, and make your correct answers feel repeatable."
+        title="Pick a thinking pattern, then practice it."
+        description="Curated NCLEX strategy support for prioritization, delegation, first action, and safety decisions."
         action={
           <Link
             to="/my-materials"
@@ -5258,6 +5415,31 @@ export function StrategyTrainingPage() {
           >
             <FolderOpen className="h-4 w-4" />
             Upload study material
+          </Link>
+        }
+      />
+      <NextActionPanel
+        eyebrow="Recommended"
+        title="Run a prioritization drill."
+        description="The fastest use of Resources is not reading more. Pick a decision type, answer a few items, then review the rationale."
+        tone="cyan"
+        primary={
+          <button
+            type="button"
+            onClick={() => startClinicalThinking('Prioritization')}
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-cyan-100/45 bg-[linear-gradient(180deg,#24b8ff_0%,#0b83d6_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_12px_34px_rgba(14,165,233,0.24)] transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-cyan-200/55"
+          >
+            Start prioritization drill
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        }
+        secondary={
+          <Link
+            to="/my-materials"
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-violet-200/24 bg-violet-300/[0.08] px-5 py-3 text-sm font-bold text-violet-100 transition hover:bg-violet-300/14"
+          >
+            Add class material
+            <FolderOpen className="h-4 w-4" />
           </Link>
         }
       />
@@ -5284,29 +5466,47 @@ export function StrategyTrainingPage() {
           </div>
         </div>
       </Surface>
-      <div className="grid gap-5">
+      <div className="grid gap-4">
         {strategyLessons.map((lesson) => (
-          <Surface key={lesson.id}>
-            <div className="grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
-              <div>
-                <p className="nclex-label text-xs font-semibold uppercase">{lesson.framework}</p>
-                <h3 className="mt-3 nc-section-title text-3xl text-[var(--nclex-text)]">{lesson.title}</h3>
-                <p className="mt-3 text-sm leading-7 text-[var(--nclex-text-muted)]">{lesson.summary}</p>
-                <ul className="mt-5 space-y-3 text-sm leading-6 text-slate-700">
-                  {lesson.bullets.map((bullet) => (
-                    <li key={bullet}>{bullet}</li>
-                  ))}
-                </ul>
-              </div>
-              <div className="rounded-[18px] border border-[#cfe1f7] bg-[#eef5ff] p-5">
-                <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
-                  <BrainCircuit className="h-3.5 w-3.5" />
-                  Mini scenario
+          <Surface key={lesson.id} className="p-0">
+            <details className="group">
+              <summary className="flex cursor-pointer list-none flex-col gap-3 p-5 md:flex-row md:items-center md:justify-between md:p-6">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-100/66">{lesson.framework}</p>
+                  <h3 className="mt-2 text-2xl font-black tracking-normal text-white">{lesson.title}</h3>
+                  <p className="mt-2 max-w-3xl text-sm leading-6 text-sky-100/64">{lesson.summary}</p>
                 </div>
-                <p className="mt-4 font-semibold text-slate-900">{lesson.microScenario.prompt}</p>
-                <p className="mt-3 text-sm leading-6 text-slate-700">{lesson.microScenario.bestResponse}</p>
+                <span className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-cyan-200/24 bg-cyan-300/[0.07] px-4 py-2 text-sm font-bold text-cyan-100">
+                  Open framework
+                  <ArrowRight className="h-4 w-4" />
+                </span>
+              </summary>
+              <div className="grid gap-5 border-t border-cyan-200/14 p-5 lg:grid-cols-[0.95fr_1.05fr] md:p-6">
+                <div>
+                  <ul className="space-y-3 text-sm leading-6 text-sky-100/70">
+                    {lesson.bullets.map((bullet) => (
+                      <li key={bullet}>{bullet}</li>
+                    ))}
+                  </ul>
+                  <button
+                    type="button"
+                    onClick={() => startClinicalThinking(lesson.framework)}
+                    className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-cyan-200/24 bg-cyan-300/[0.07] px-4 py-2 text-sm font-bold text-cyan-100 transition hover:bg-cyan-300/13 focus:outline-none focus:ring-4 focus:ring-cyan-300/18"
+                  >
+                    Practice this
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="rounded-[18px] border border-cyan-200/16 bg-cyan-300/[0.06] p-5">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200/24 bg-emerald-300/[0.08] px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-100">
+                    <BrainCircuit className="h-3.5 w-3.5" />
+                    Mini scenario
+                  </div>
+                  <p className="mt-4 font-semibold text-white">{lesson.microScenario.prompt}</p>
+                  <p className="mt-3 text-sm leading-6 text-sky-100/70">{lesson.microScenario.bestResponse}</p>
+                </div>
               </div>
-            </div>
+            </details>
           </Surface>
         ))}
       </div>
@@ -5315,15 +5515,19 @@ export function StrategyTrainingPage() {
 }
 
 export function NotesPage() {
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const seedCategory = searchParams.get('category')
   const profile = useStudySystemStore((state) => state.profile)
   const notes = useStudySystemStore((state) => state.notes)
   const saveNote = useStudySystemStore((state) => state.saveNote)
   const deleteNote = useStudySystemStore((state) => state.deleteNote)
+  const importStudyMaterialFromText = useStudySystemStore((state) => state.importStudyMaterialFromText)
+  const startPracticeSession = useStudySystemStore((state) => state.startPracticeSession)
   const [selectedCategory, setSelectedCategory] = useState<string>(seedCategory ?? 'All')
   const [search, setSearch] = useState('')
   const deferredSearch = useDeferredValue(search)
+  const [noteMessage, setNoteMessage] = useState('')
   const [draft, setDraft] = useState<Note>({
     id: createClientId(),
     title: '',
@@ -5332,6 +5536,53 @@ export function NotesPage() {
     updatedAt: new Date().toISOString(),
   })
   const trackCategories = getExamCategories(profile.examTrack ?? 'nclex-rn')
+  const resetDraft = () => {
+    setDraft({
+      id: createClientId(),
+      title: '',
+      body: '',
+      category: (seedCategory as QuestionCategory) ?? 'General',
+      updatedAt: new Date().toISOString(),
+    })
+    setNoteMessage('')
+  }
+  const draftHasContent = Boolean(draft.title.trim() || draft.body.trim())
+  const saveDraft = () => {
+    if (!draftHasContent) {
+      setNoteMessage('Add a title or body before saving this note.')
+      return false
+    }
+    saveNote({ ...draft, updatedAt: new Date().toISOString() })
+    setNoteMessage('Note saved.')
+    return true
+  }
+  const convertDraftToMaterial = async (mode: MaterialImportMode = 'full') => {
+    if (!saveDraft()) return
+    try {
+      await importStudyMaterialFromText({
+        mode,
+        title: draft.title.trim() || 'Study note',
+        text: [draft.title, draft.body].filter(Boolean).join('\n\n'),
+      })
+      navigate('/my-materials')
+    } catch (error) {
+      reportSafeError('material-assisted-import', error)
+      setNoteMessage(getSafeErrorCopy('material-assisted-import'))
+    }
+  }
+  const quizDraftTopic = () => {
+    if (draft.category === 'General') {
+      navigate('/practice-questions')
+      return
+    }
+    startPracticeSession({
+      category: draft.category,
+      difficulty: 'adaptive',
+      format: 'mixed',
+      questionCount: 10,
+    })
+    navigate('/practice-questions')
+  }
 
   const filteredNotes = useMemo(() => {
     return notes.filter((note) => {
@@ -5348,20 +5599,79 @@ export function NotesPage() {
     <div className="space-y-6">
       <PageHeader
         eyebrow="Notes"
-        title="Keep your own clinical anchors."
-        description="Write what keeps tripping you up, how you want to remember it, and the exact frame that makes the answer click."
+        title="Turn your own words into study tools."
+        description="Capture the clinical anchor, attach it to a topic, then turn it into review tools when it is worth practicing."
         action={
-          <Link
-            to="/my-materials"
-            className="nclex-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold"
+          <button
+            type="button"
+            onClick={resetDraft}
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(251,191,36,0.2)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
           >
-            <Upload className="h-4 w-4" />
-            Import study material
-          </Link>
+            <NotebookPen className="h-4 w-4" />
+            New note
+          </button>
         }
       />
+      <NextActionPanel
+        eyebrow="Library action"
+        title={draftHasContent ? 'Make this note usable.' : 'Start with one clinical anchor.'}
+        description={draftHasContent ? 'Save it, turn it into editable cards and quiz items, or run a topic drill from the attached category.' : 'Write the rule, pitfall, or reminder that makes an answer click. Keep it short enough to review later.'}
+        tone="violet"
+        primary={
+          <button
+            type="button"
+            onClick={() => void convertDraftToMaterial('full')}
+            disabled={!draftHasContent}
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-violet-200/30 bg-violet-300/[0.1] px-5 py-3 text-sm font-bold text-violet-100 transition hover:bg-violet-300/16 focus:outline-none focus:ring-4 focus:ring-violet-300/18 disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            Make cards + quiz
+            <Sparkles className="h-4 w-4" />
+          </button>
+        }
+        secondary={
+          <button
+            type="button"
+            onClick={quizDraftTopic}
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-cyan-200/24 bg-cyan-300/[0.07] px-5 py-3 text-sm font-bold text-cyan-100 transition hover:border-cyan-100/55 hover:bg-cyan-300/13 focus:outline-none focus:ring-4 focus:ring-cyan-300/18"
+          >
+            Quiz this topic
+            <ClipboardList className="h-4 w-4" />
+          </button>
+        }
+      />
+      {noteMessage ? (
+        <p role="status" aria-live="polite" className="rounded-2xl border border-cyan-200/20 bg-cyan-300/[0.08] px-4 py-3 text-sm font-semibold text-cyan-100">
+          {noteMessage}
+        </p>
+      ) : null}
       <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
         <Surface>
+          <div className="mb-5 grid gap-3 md:grid-cols-3">
+            <CommandActionCard
+              title="Create clinical anchor"
+              description="Capture the one rule or pitfall you want to remember."
+              meta="Write"
+              icon={<NotebookPen className="h-4 w-4" />}
+              tone="violet"
+              onClick={resetDraft}
+            />
+            <CommandActionCard
+              title="Import larger notes"
+              description="Use Materials when a file, lecture handout, or copied page needs parsing."
+              meta="Import"
+              icon={<Upload className="h-4 w-4" />}
+              tone="cyan"
+              to="/my-materials"
+            />
+            <CommandActionCard
+              title="Review missed areas"
+              description="Open the repair queue and attach notes to the weak topic."
+              meta="Repair"
+              icon={<Target className="h-4 w-4" />}
+              tone="rose"
+              to="/weak-areas"
+            />
+          </div>
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="Category filter">
               <select value={selectedCategory} onChange={(event) => setSelectedCategory(event.target.value)} className={selectClass}>
@@ -5377,39 +5687,36 @@ export function NotesPage() {
             </Field>
           </div>
           <div className="mt-6 space-y-4">
-            {filteredNotes.map((note) => (
+            {filteredNotes.length ? filteredNotes.map((note) => (
               <button
                 key={note.id}
                 type="button"
                 onClick={() => setDraft(note)}
-                className="w-full rounded-[28px] border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-slate-300"
+                className="w-full rounded-2xl border border-cyan-200/16 bg-white/[0.045] p-4 text-left transition hover:border-cyan-100/38 focus:outline-none focus:ring-2 focus:ring-cyan-200/55"
               >
                 <div className="flex items-center justify-between gap-4">
-                  <p className="font-semibold text-slate-900">{note.title}</p>
-                  <span className="nclex-chip nclex-chip-info bg-white">
+                  <p className="font-semibold text-white">{note.title || 'Untitled note'}</p>
+                  <span className="nclex-chip nclex-chip-info">
                     {note.category}
                   </span>
                 </div>
-                <p className="mt-2 line-clamp-2 text-sm leading-6 text-[#4f687a]">{note.body}</p>
+                <p className="mt-2 line-clamp-2 text-sm leading-6 text-sky-100/62">{note.body}</p>
               </button>
-            ))}
+            )) : (
+              <EmptyState
+                title="No notes match this view."
+                description="Create a clinical anchor, relax the filters, or import a larger study file into Materials."
+              />
+            )}
           </div>
         </Surface>
         <Surface>
           <div className="flex items-center justify-between">
-            <h3 className="nc-section-title text-3xl text-[#163042]">{draft.title || 'New note'}</h3>
+            <h3 className="nc-section-title text-3xl text-white">{draft.title || 'New note'}</h3>
             <button
               type="button"
-              onClick={() =>
-                setDraft({
-                  id: createClientId(),
-                  title: '',
-                  body: '',
-                  category: 'General',
-                  updatedAt: new Date().toISOString(),
-                })
-              }
-              className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+              onClick={resetDraft}
+              className="inline-flex min-h-10 items-center justify-center rounded-xl border border-cyan-200/20 bg-cyan-300/[0.07] px-4 py-2 text-sm font-semibold text-cyan-100"
             >
               New note
             </button>
@@ -5433,15 +5740,19 @@ export function NotesPage() {
           <div className="mt-6 flex flex-wrap gap-3">
             <button
               type="button"
-              onClick={() => saveNote(draft)}
-              className="nclex-btn-primary rounded-full px-4 py-2 text-sm font-semibold"
+              onClick={() => saveDraft()}
+              className="nclex-btn-primary rounded-xl px-4 py-2.5 text-sm font-semibold"
             >
               Save note
             </button>
             <button
               type="button"
-              onClick={() => deleteNote(draft.id)}
-              className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+              onClick={() => {
+                deleteNote(draft.id)
+                resetDraft()
+                setNoteMessage('Note deleted.')
+              }}
+              className="rounded-xl border border-rose-200/25 bg-rose-300/[0.08] px-4 py-2.5 text-sm font-semibold text-rose-100"
             >
               Delete
             </button>

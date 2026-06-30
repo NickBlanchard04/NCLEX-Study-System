@@ -211,10 +211,10 @@ export function CommandStatTile({
     <div className={clsx('min-w-0 rounded-xl border px-2 py-2.5 sm:px-3 sm:py-3', commandToneStyles[tone].stat)}>
       <div className="flex items-center gap-1.5 text-[0.68rem] font-black uppercase sm:gap-2 sm:text-xs">
         {icon ? <span className="hidden sm:inline-flex">{icon}</span> : null}
-        <span className="truncate">{label}</span>
+        <span className="min-w-0 break-words leading-tight">{label}</span>
       </div>
-      <p className="mt-1.5 truncate text-xl font-black text-white sm:mt-2 sm:text-2xl">{value}</p>
-      <p className="truncate text-[0.68rem] font-semibold text-sky-100/58 sm:text-xs">{detail}</p>
+      <p className="mt-1.5 min-w-0 break-words text-xl font-black leading-tight text-white sm:mt-2 sm:text-2xl">{value}</p>
+      <p className="min-w-0 break-words text-[0.68rem] font-semibold leading-tight text-sky-100/58 sm:text-xs">{detail}</p>
     </div>
   )
 }
@@ -307,6 +307,49 @@ export function CommandActionCard({
     <button type="button" onClick={onClick} className={className}>
       {content}
     </button>
+  )
+}
+
+export function NextActionPanel({
+  eyebrow = 'Next action',
+  title,
+  description,
+  primary,
+  secondary,
+  tone = 'cyan',
+}: {
+  eyebrow?: string
+  title: string
+  description: string
+  primary: React.ReactNode
+  secondary?: React.ReactNode
+  tone?: CommandTone
+}) {
+  const toneClasses = {
+    cyan: 'border-cyan-200/26 bg-cyan-300/[0.08]',
+    emerald: 'border-emerald-200/26 bg-emerald-300/[0.08]',
+    amber: 'border-amber-200/26 bg-amber-300/[0.08]',
+    rose: 'border-rose-200/26 bg-rose-300/[0.08]',
+    slate: 'border-slate-200/18 bg-slate-300/[0.07]',
+    violet: 'border-fuchsia-200/22 bg-fuchsia-300/[0.08]',
+  }
+
+  return (
+    <section className={clsx('rounded-[1.15rem] border p-4 text-white md:p-5', toneClasses[tone])}>
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="min-w-0">
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-100/66">
+            {eyebrow}
+          </p>
+          <h3 className="mt-2 text-2xl font-black tracking-normal text-white md:text-3xl">{title}</h3>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-sky-100/68">{description}</p>
+        </div>
+        <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:flex-wrap">
+          {primary}
+          {secondary}
+        </div>
+      </div>
+    </section>
   )
 }
 
@@ -468,7 +511,13 @@ export function ProgressBar({
   }[tone]
 
   return (
-    <div className={clsx('h-2.5 overflow-hidden rounded-full bg-sky-300/14', className)}>
+    <div
+      className={clsx('h-2.5 overflow-hidden rounded-full bg-sky-300/14', className)}
+      role="progressbar"
+      aria-valuenow={Math.round(Math.max(0, Math.min(1, value)) * 100)}
+      aria-valuemin={0}
+      aria-valuemax={100}
+    >
       <motion.div
         initial={{ width: 0 }}
         animate={{ width: `${Math.max(4, value * 100)}%` }}
@@ -500,7 +549,14 @@ export function CircularProgress({
 
   return (
     <div className="flex flex-col items-center text-center">
-      <div className="relative h-[134px] w-[134px]">
+      <div
+        className="relative h-[134px] w-[134px]"
+        role="progressbar"
+        aria-label={`${label} ${Math.round(Math.max(0, Math.min(1, value)) * 100)}%`}
+        aria-valuenow={Math.round(Math.max(0, Math.min(1, value)) * 100)}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
         <svg viewBox={`0 0 ${size} ${size}`} className="h-full w-full -rotate-90">
           <circle
             cx={size / 2}
@@ -1410,17 +1466,24 @@ export function QuestionSessionRunner({
                         </div>
                       </div>
                     ) : null}
-                    <RationaleCard
-                      title="Why the other options fall away"
-                      tone="amber"
-                        body={question.rationale.whyOthers}
-                      />
-                      <RationaleCard
-                        title="Test-taking cue"
-                        tone="violet"
-                        body={`${question.nclexTip} ${tutorInsight.reviewTarget}. Watch for: ${tutorInsight.trap}`}
-                        badges={evidenceBadges}
-                      />
+                      <details className="md:col-span-2 rounded-[14px] border border-cyan-300/16 bg-white/[0.04] p-4">
+                        <summary className="cursor-pointer text-sm font-black text-white focus:outline-none focus:ring-2 focus:ring-cyan-200/55">
+                          More explanation and item details
+                        </summary>
+                        <div className="mt-4 grid gap-3 md:grid-cols-2">
+                          <RationaleCard
+                            title="Why the other options fall away"
+                            tone="amber"
+                            body={question.rationale.whyOthers}
+                          />
+                          <RationaleCard
+                            title="Test-taking cue"
+                            tone="violet"
+                            body={`${question.nclexTip} ${tutorInsight.reviewTarget}. Watch for: ${tutorInsight.trap}`}
+                            badges={evidenceBadges}
+                          />
+                        </div>
+                      </details>
                     </div>
                     {question.feedbackEnabled ? (
                       <div className="mt-4 rounded-[14px] border border-cyan-300/16 bg-white/[0.04] p-4">

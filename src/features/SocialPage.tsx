@@ -35,7 +35,7 @@ import {
   type SocialConnection,
   type SocialPerson,
 } from '../services/social-service'
-import { EmptyState, PageHeader, Surface } from './ui'
+import { EmptyState, NextActionPanel, PageHeader, Surface } from './ui'
 
 type RequestTab = 'friends' | 'requests'
 
@@ -413,10 +413,41 @@ export function SocialPage() {
       />
 
       {error ? (
-        <div className="rounded-2xl border border-rose-300/24 bg-rose-400/12 px-4 py-3 text-sm font-semibold text-rose-100">
+        <div role="alert" className="rounded-2xl border border-rose-300/24 bg-rose-400/12 px-4 py-3 text-sm font-semibold text-rose-100">
           {error}
         </div>
       ) : null}
+
+      <NextActionPanel
+        eyebrow="Beta social"
+        title="Find one learner or clear requests."
+        description="Social is live for signed-in beta accounts, but suggestions may be empty while the network grows. Search by name, refresh suggestions, or keep your profile visible in Settings."
+        tone="violet"
+        primary={
+          <button
+            type="button"
+            onClick={() => void refreshSocial()}
+            disabled={socialLoading}
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-violet-200/30 bg-violet-300/[0.1] px-5 py-3 text-sm font-bold text-violet-100 transition hover:bg-violet-300/16 focus:outline-none focus:ring-4 focus:ring-violet-300/18 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {socialLoading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            Refresh network
+          </button>
+        }
+        secondary={
+          <button
+            type="button"
+            onClick={() => {
+              const searchInput = document.querySelector<HTMLInputElement>('[data-social-search-input="true"]')
+              searchInput?.focus()
+            }}
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-cyan-200/24 bg-cyan-300/[0.07] px-5 py-3 text-sm font-bold text-cyan-100 transition hover:border-cyan-100/55 hover:bg-cyan-300/13 focus:outline-none focus:ring-4 focus:ring-cyan-300/18"
+          >
+            Search by name
+            <Search className="h-4 w-4" />
+          </button>
+        }
+      />
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(20rem,0.85fr)]">
         <Surface>
@@ -458,7 +489,7 @@ export function SocialPage() {
                 />
               ))
             ) : (
-              <IconEmpty icon={<Sparkles className="h-5 w-5" />} title="No picks yet" />
+              <IconEmpty icon={<Sparkles className="h-5 w-5" />} title="No picks yet" description="Refresh, search by name, or invite beta learners to create profiles." />
             )}
           </div>
         </Surface>
@@ -491,7 +522,7 @@ export function SocialPage() {
                   />
                 ))
               ) : (
-                <IconEmpty icon={<Inbox className="h-5 w-5" />} title="Clear" />
+                <IconEmpty icon={<Inbox className="h-5 w-5" />} title="No requests waiting" description="When someone sends a request, accept or decline it here." />
               )}
             </div>
           </Surface>
@@ -504,12 +535,13 @@ export function SocialPage() {
                 value={query}
                 onChange={handleQueryChange}
                 placeholder="Name"
+                data-social-search-input="true"
                 className="min-h-11 w-full rounded-xl border border-sky-300/22 bg-[#03101f]/70 py-3 pl-10 pr-4 text-base font-semibold text-white outline-none transition placeholder:text-sky-100/38 focus:border-sky-200/55"
               />
             </div>
             <div className="mt-4 grid gap-3">
               {query.trim().length < 2 ? (
-                <IconEmpty icon={<Search className="h-5 w-5" />} title="Optional" />
+                <IconEmpty icon={<Search className="h-5 w-5" />} title="Search by learner name" description="Use this when suggestions are empty or you know who you want to add." />
               ) : searchLoading ? (
                 <LoadingPanel label="Searching" />
               ) : results.length ? (
@@ -532,7 +564,7 @@ export function SocialPage() {
                   />
                 ))
               ) : (
-                <IconEmpty icon={<Search className="h-5 w-5" />} title="No match" />
+                <IconEmpty icon={<Search className="h-5 w-5" />} title="No match found" description="Check spelling or ask the learner to enable people search in Settings." />
               )}
             </div>
           </Surface>
@@ -624,13 +656,16 @@ function LoadingPanel({ label }: { label: string }) {
   )
 }
 
-function IconEmpty({ icon, title }: { icon: React.ReactNode; title: string }) {
+function IconEmpty({ icon, title, description }: { icon: React.ReactNode; title: string; description?: string }) {
   return (
     <div className="flex min-h-20 items-center gap-3 rounded-2xl border border-dashed border-sky-300/24 bg-white/[0.035] px-4 py-4">
       <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-sky-300/18 bg-sky-300/[0.06] text-sky-100/70">
         {icon}
       </div>
-      <p className="text-sm font-bold text-sky-100/70">{title}</p>
+      <div>
+        <p className="text-sm font-bold text-sky-100/76">{title}</p>
+        {description ? <p className="mt-1 text-xs leading-5 text-sky-100/54">{description}</p> : null}
+      </div>
     </div>
   )
 }
