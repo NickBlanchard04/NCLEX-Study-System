@@ -2220,8 +2220,19 @@ export function QuickStudyPage() {
       icon: <Target className="h-4 w-4" />,
     },
   ] as const
+  const activeSessionIsOpen = Boolean(
+    activeSession && !activeSession.endedAt && activeSession.status !== 'discarded' && !activeSession.deletedAt,
+  )
+  const launchQuickStudy = (category?: QuestionCategory) => {
+    if (activeSessionIsOpen && activeSession?.mode !== 'quick-study') {
+      abandonSession()
+    }
+    if (!(activeSessionIsOpen && activeSession?.mode === 'quick-study')) {
+      startQuickStudy(category)
+    }
+  }
 
-  if (activeSession?.mode === 'quick-study') {
+  if (activeSession?.mode === 'quick-study' && activeSessionIsOpen) {
     return (
       <QuestionSessionRunner
         key={`${activeSession.id}-${activeSession.currentIndex}`}
@@ -2241,7 +2252,7 @@ export function QuickStudyPage() {
         action={
           <button
             type="button"
-            onClick={() => startQuickStudy()}
+            onClick={() => launchQuickStudy()}
             className="inline-flex min-h-[48px] items-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
           >
             <Sparkles className="h-4 w-4" />
@@ -2279,7 +2290,7 @@ export function QuickStudyPage() {
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <button
                 type="button"
-                onClick={() => startQuickStudy()}
+                onClick={() => launchQuickStudy()}
                 className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
               >
                 Start 10-minute drill
@@ -2342,7 +2353,7 @@ export function QuickStudyPage() {
               meta="Rose / remediation"
               icon={<Target className="h-4 w-4" />}
               tone="rose"
-              onClick={() => startQuickStudy(quickStudyCategory)}
+              onClick={() => launchQuickStudy(quickStudyCategory)}
               action={<ArrowRight className="h-4 w-4" />}
             />
             <CommandActionCard
