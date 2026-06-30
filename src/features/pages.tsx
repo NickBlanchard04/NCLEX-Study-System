@@ -3737,7 +3737,6 @@ export function MyMaterialsPage() {
   const profile = useStudySystemStore((state) => state.profile)
   const materialsHydrated = useStudySystemStore((state) => state.materialsHydrated)
   const materials = useStudySystemStore((state) => state.materials)
-  const materialFlashcards = useStudySystemStore((state) => state.materialFlashcards)
   const materialQuestions = useStudySystemStore((state) => state.materialQuestions)
   const activeMaterialQuizSession = useStudySystemStore((state) => state.activeMaterialQuizSession)
   const importStudyMaterial = useStudySystemStore((state) => state.importStudyMaterial)
@@ -3766,6 +3765,22 @@ export function MyMaterialsPage() {
   const [previewExpanded, setPreviewExpanded] = useState(false)
   const [studyGuideOpen, setStudyGuideOpen] = useState(false)
   const trackCategories = getExamCategories(profile.examTrack ?? 'nclex-rn')
+  const getLibraryStatus = (material: StudyMaterial) => {
+    const approvedTotal = material.generatedFlashcardIds.length + material.generatedQuestionIds.length
+    if (material.extractionStatus === 'error') {
+      return { label: 'Failed', tone: 'rose' as const, detail: 'Fix source before studying' }
+    }
+    if (material.extractionStatus === 'extracting') {
+      return { label: 'Importing', tone: 'cyan' as const, detail: 'Building library item' }
+    }
+    if (material.reviewStatus === 'pending-review') {
+      return { label: 'Needs Review', tone: 'amber' as const, detail: 'Approve before studying' }
+    }
+    if (material.reviewStatus === 'approved' || approvedTotal > 0) {
+      return { label: 'Approved', tone: 'emerald' as const, detail: 'Ready to study' }
+    }
+    return { label: 'Needs Review', tone: 'amber' as const, detail: 'Review generated tools' }
+  }
 
   const selectedMaterial =
     materials.find((material) => material.id === selectedMaterialId) ?? materials[0] ?? null
@@ -3796,10 +3811,15 @@ export function MyMaterialsPage() {
     return Boolean(currentQuestionId && materialQuestions.some((question) => question.id === currentQuestionId))
   }, [activeMaterialQuizSession, materialQuestions, materials])
 
-  const readyCount = materials.filter((item) => item.extractionStatus === 'ready').length
   const errorCount = materials.filter((item) => item.extractionStatus === 'error').length
-  const pendingReviewCount = materials.filter((item) => item.reviewStatus === 'pending-review').length
-  const totalGeneratedCards = materialFlashcards.length
+  const latestMaterial = useMemo(
+    () =>
+      [...materials].sort(
+        (left, right) => new Date(right.importedAt).getTime() - new Date(left.importedAt).getTime(),
+      )[0] ?? null,
+    [materials],
+  )
+  const latestMaterialStatus = latestMaterial ? getLibraryStatus(latestMaterial) : null
   const materialUrlNeedsAssistedImport = isAssistedImportStudyHost(materialUrl)
   const assistedSourceUrlForCopy = blockedImportSourceUrl || assistedSourceUrl || materialUrl
   const normalizedAssistedSource = normalizePotentialStudyUrl(assistedSourceUrlForCopy)?.toString() ?? ''
@@ -3956,23 +3976,11 @@ export function MyMaterialsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <CommandPageIntro
+    <PageStack>
+      <PageHeader
+        eyebrow="My Materials"
         title="Your Study Library"
-        description="Add class material, review what Nurse Command creates, then study only the tools you approve."
-        badges={
-          <>
-            <CommandBadge tone="violet" icon={<FolderOpen className="h-3.5 w-3.5" />}>
-              Library
-            </CommandBadge>
-            <CommandBadge tone="amber" icon={<ShieldCheck className="h-3.5 w-3.5" />}>
-              Review gate
-            </CommandBadge>
-            <CommandBadge tone="cyan" icon={<UploadCloud className="h-3.5 w-3.5" />}>
-              {materials.length} files
-            </CommandBadge>
-          </>
-        }
+        description="Keep your uploaded notes, guides, and generated study tools in one calmer library."
         action={
           <button
             type="button"
@@ -3983,24 +3991,72 @@ export function MyMaterialsPage() {
             Upload material
           </button>
         }
-        aside={
-          <div className="h-full rounded-[1rem] border border-violet-200/24 bg-violet-300/[0.08] p-4">
-            <p className="text-xs font-bold uppercase text-violet-100/72">Study tools</p>
-            <p className="mt-2 text-3xl font-bold text-white">{totalGeneratedCards + materialQuestions.length}</p>
-            <p className="text-sm font-semibold text-sky-100/70">approved cards + quiz items</p>
-            <p className="mt-4 text-sm leading-6 text-sky-100/62">
-              Gold marks anything that needs review before it enters your study flow.
-            </p>
-          </div>
-        }
-        stats={
-          <>
-            <CommandStatTile label="Materials" value={`${materials.length}`} detail="uploaded sources" icon={<FolderOpen className="h-4 w-4" />} tone="violet" />
-            <CommandStatTile label="Needs review" value={`${pendingReviewCount}`} detail="approve first" icon={<ShieldCheck className="h-4 w-4" />} tone="amber" />
-            <CommandStatTile label="Ready" value={`${readyCount}`} detail="clean sources" icon={<CheckCircle2 className="h-4 w-4" />} tone="emerald" />
-          </>
-        }
       />
+      <FocusPanel className="border-violet-200/30 bg-[linear-gradient(135deg,rgba(168,85,247,0.16),rgba(6,28,49,0.94)_42%,rgba(2,8,18,0.96))] text-white shadow-[0_0_40px_rgba(168,85,247,0.12)]">
+        <div className="grid gap-5 p-4 sm:p-5 md:p-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
+          <div className="min-w-0">
+            <div className="flex flex-wrap gap-2">
+              <CommandBadge tone="violet" icon={<FolderOpen className="h-3.5 w-3.5" />}>Library</CommandBadge>
+              <CommandBadge tone={latestMaterialStatus?.tone ?? 'cyan'} icon={<UploadCloud className="h-3.5 w-3.5" />}>
+                {latestMaterialStatus?.label ?? 'Ready to add'}
+              </CommandBadge>
+            </div>
+            <h3 className="mt-4 max-w-3xl text-3xl font-bold tracking-normal text-white md:text-4xl">
+              {latestMaterial ? `Review ${latestMaterial.displayTitle}` : 'Add your first study material'}
+            </h3>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-sky-100/72">
+              {latestMaterial
+                ? `${latestMaterialStatus?.detail ?? 'Open the latest material'}, then study only the tools you approve.`
+                : 'Upload a study guide, notes file, or public study link. Nurse Command keeps generated cards and quiz items behind a review gate.'}
+            </p>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              {latestMaterial ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedMaterialId(latestMaterial.id)
+                    setPreviewExpanded(false)
+                    setStudyGuideOpen(false)
+                  }}
+                  className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
+                >
+                  Review latest material
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl border border-cyan-100/45 bg-[linear-gradient(180deg,#24b8ff_0%,#0b83d6_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_12px_34px_rgba(14,165,233,0.28)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-cyan-300/18"
+                >
+                  Add your first material
+                  <Upload className="h-4 w-4" />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl border border-cyan-200/24 bg-cyan-300/[0.07] px-5 py-3 text-sm font-bold text-cyan-100 transition hover:border-cyan-100/55 hover:bg-cyan-300/13 focus:outline-none focus:ring-4 focus:ring-cyan-300/18"
+              >
+                Add material
+                <UploadCloud className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+          <div className="rounded-[1rem] border border-violet-200/18 bg-[#031426]/74 p-4">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-violet-100/66">User-added materials</p>
+            <p className="mt-2 text-5xl font-black leading-none text-white">{materials.length}</p>
+            <p className="mt-2 text-sm font-semibold text-sky-100/66">total files and links in your library</p>
+            {latestMaterial ? (
+              <div className="mt-4 rounded-xl border border-white/8 bg-white/[0.035] px-3 py-3">
+                <p className="text-xs font-bold uppercase text-sky-100/48">Latest</p>
+                <p className="mt-1 min-w-0 break-words text-sm font-bold text-white">{latestMaterial.displayTitle}</p>
+                <p className="mt-1 text-xs font-semibold text-sky-100/56">{latestMaterialStatus?.label}</p>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </FocusPanel>
 
       <input
         ref={fileInputRef}
@@ -4018,8 +4074,15 @@ export function MyMaterialsPage() {
 
       <div className="grid gap-6 xl:grid-cols-[0.86fr_1.14fr]">
         <div className="grid gap-6">
-          <NurseCommandBackdrop className="rounded-[22px] border border-sky-300/20">
+          <NurseCommandBackdrop className="order-2 rounded-[22px] border border-sky-300/20">
             <div className="p-4">
+            <div className="mb-4">
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-cyan-100/66">Add to library</p>
+              <h3 className="mt-1 text-xl font-bold text-white">Upload or import material</h3>
+              <p className="mt-1 text-sm leading-6 text-sky-100/62">
+                Import tools stay lower so the library and next review stay first.
+              </p>
+            </div>
             <div
               onDragOver={(event) => {
                 event.preventDefault()
@@ -4212,10 +4275,10 @@ export function MyMaterialsPage() {
             </div>
           </NurseCommandBackdrop>
 
-          <Surface className="border-violet-200/18 bg-violet-300/[0.045]">
+          <Surface className="order-1 border-violet-200/18 bg-violet-300/[0.045]">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h3 className="nc-section-title text-2xl text-white">Materials library</h3>
+                <h3 className="nc-section-title text-2xl text-white">Your library</h3>
                 <p className="mt-1 text-sm text-sky-100/64">
                   {errorCount
                     ? `${errorCount} item${errorCount === 1 ? '' : 's'} need attention.`
@@ -4228,18 +4291,10 @@ export function MyMaterialsPage() {
             <div className="mt-5 space-y-3">
               {materialsHydrated && materials.length ? (
                 materials.map((material) => {
+                  const materialStatus = getLibraryStatus(material)
                   const materialPendingTotal = (material.pendingFlashcards?.length ?? 0) + (material.pendingQuestions?.length ?? 0)
                   const materialApprovedTotal = material.generatedFlashcardIds.length + material.generatedQuestionIds.length
-                  const materialActionLabel =
-                    material.extractionStatus === 'error'
-                      ? 'Fix source'
-                      : material.extractionStatus === 'extracting'
-                        ? 'Processing'
-                        : material.reviewStatus === 'pending-review'
-                          ? 'Review generated tools'
-                          : materialApprovedTotal
-                            ? 'Ready to study'
-                            : 'Open material'
+                  const materialItemTotal = materialPendingTotal + materialApprovedTotal
 
                   return (
                     <button
@@ -4261,13 +4316,7 @@ export function MyMaterialsPage() {
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="nclex-chip nclex-chip-info">{material.fileType.toUpperCase()}</span>
-                            <span className={materialStatusClass(material.extractionStatus)}>
-                              {material.extractionStatus === 'error'
-                                ? 'Needs attention'
-                                : material.extractionStatus === 'extracting'
-                                  ? 'Extracting'
-                                  : 'Ready'}
-                            </span>
+                            <CommandBadge tone={materialStatus.tone}>{materialStatus.label}</CommandBadge>
                           </div>
                           <p className="mt-3 truncate text-base font-semibold text-white">
                             {material.displayTitle}
@@ -4275,20 +4324,22 @@ export function MyMaterialsPage() {
                           <p className="mt-1 text-sm text-sky-100/58">
                             Imported {formatImportDate(material.importedAt)}
                           </p>
-                          <span className="mt-3 inline-flex min-h-8 items-center rounded-lg border border-violet-200/24 bg-violet-300/[0.08] px-3 py-1 text-xs font-semibold text-violet-100">
-                            {materialActionLabel}
+                          <span className={clsx(
+                            'mt-3 inline-flex min-h-8 items-center rounded-lg border px-3 py-1 text-xs font-semibold',
+                            materialStatus.tone === 'rose' && 'border-rose-200/24 bg-rose-300/[0.08] text-rose-100',
+                            materialStatus.tone === 'cyan' && 'border-cyan-200/24 bg-cyan-300/[0.08] text-cyan-100',
+                            materialStatus.tone === 'amber' && 'border-amber-200/24 bg-amber-300/[0.08] text-amber-100',
+                            materialStatus.tone === 'emerald' && 'border-emerald-200/24 bg-emerald-300/[0.08] text-emerald-100',
+                          )}>
+                            {materialStatus.detail}
                           </span>
                         </div>
                         <div className="shrink-0 text-right">
                           <p className="text-sm font-semibold text-white">
-                            {material.reviewStatus === 'pending-review'
-                              ? `${materialPendingTotal} pending`
-                              : `${material.generatedFlashcardIds.length} cards`}
+                            {materialItemTotal}
                           </p>
                           <p className="mt-1 text-xs text-sky-100/54">
-                            {material.reviewStatus === 'pending-review'
-                              ? 'Approve first'
-                              : `${material.generatedQuestionIds.length} quiz items`}
+                            study items
                           </p>
                         </div>
                       </div>
@@ -4312,13 +4363,9 @@ export function MyMaterialsPage() {
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="nclex-chip nclex-chip-info">{selectedMaterial.fileType.toUpperCase()}</span>
-                    <span className={materialStatusClass(selectedMaterial.extractionStatus)}>
-                      {selectedMaterial.extractionStatus === 'error'
-                        ? "We couldn't read this file cleanly"
-                        : selectedMaterial.extractionStatus === 'extracting'
-                          ? 'Pulling study material into your library'
-                          : 'Study tools ready'}
-                    </span>
+                    <CommandBadge tone={getLibraryStatus(selectedMaterial).tone}>
+                      {getLibraryStatus(selectedMaterial).label}
+                    </CommandBadge>
                   </div>
                   <h3 className="mt-3 nc-section-title text-3xl text-white">
                     {selectedMaterial.displayTitle}
@@ -4326,15 +4373,17 @@ export function MyMaterialsPage() {
                   <p className="mt-2 text-sm leading-7 text-sky-100/64">
                     {selectedMaterial.error
                       ? selectedMaterial.error
-                      : `${selectedMaterial.textLength.toLocaleString()} characters extracted locally from ${selectedMaterial.filename}.`}
+                      : 'Review the material, approve generated tools, then study from the items you trust.'}
                   </p>
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <MetricChip label="Flashcards" value={`${selectedFlashcardCount}`} />
-                  <MetricChip label="Quiz items" value={`${selectedQuestionCount}`} />
-                  {selectedMaterial.reviewStatus === 'pending-review' ? (
-                    <MetricChip label="Pending" value={`${selectedPendingTotal}`} />
-                  ) : null}
+                <div className="min-w-[10rem]">
+                  <CommandStatTile
+                    label="Study items"
+                    value={`${selectedFlashcardCount + selectedQuestionCount + selectedPendingTotal}`}
+                    detail={getLibraryStatus(selectedMaterial).detail}
+                    icon={<FolderOpen className="h-4 w-4" />}
+                    tone={getLibraryStatus(selectedMaterial).tone}
+                  />
                 </div>
               </div>
 
@@ -4684,7 +4733,7 @@ export function MyMaterialsPage() {
           )}
         </Surface>
       </div>
-    </div>
+    </PageStack>
   )
 }
 
@@ -6745,12 +6794,6 @@ function buildMaterialStudyGuide(material: StudyMaterial) {
     outline: outline.length ? outline : ['Review the extracted text, then use generated questions to test recall.'],
     keyTerms: keyTerms.length ? keyTerms : ['priority concepts', 'nursing interventions', 'safety cues'],
   }
-}
-
-function materialStatusClass(status: StudyMaterial['extractionStatus']) {
-  if (status === 'ready') return 'nclex-chip nclex-chip-success'
-  if (status === 'extracting') return 'nclex-chip nclex-chip-info'
-  return 'nclex-chip nclex-chip-danger'
 }
 
 function formatImportDate(value: string) {
