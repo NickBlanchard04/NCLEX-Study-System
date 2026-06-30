@@ -310,6 +310,203 @@ export function CommandActionCard({
   )
 }
 
+export function CommandFocusPanel({
+  tone = 'cyan',
+  className,
+  children,
+}: {
+  tone?: CommandTone
+  className?: string
+  children: React.ReactNode
+}) {
+  const tonePanel = {
+    cyan: 'border-cyan-200/30 bg-[linear-gradient(135deg,rgba(34,211,238,0.14),rgba(6,28,49,0.94)_42%,rgba(2,8,18,0.96))]',
+    emerald: 'border-emerald-200/30 bg-[linear-gradient(135deg,rgba(52,211,153,0.14),rgba(6,28,49,0.94)_42%,rgba(2,8,18,0.96))]',
+    amber: 'border-amber-200/34 bg-[linear-gradient(135deg,rgba(251,191,36,0.15),rgba(6,28,49,0.92)_42%,rgba(2,8,18,0.94))]',
+    rose: 'border-rose-200/32 bg-[linear-gradient(135deg,rgba(244,63,94,0.16),rgba(6,20,38,0.95)_38%,rgba(2,8,18,0.96))]',
+    slate: 'border-slate-200/18 bg-[linear-gradient(135deg,rgba(148,163,184,0.1),rgba(6,28,49,0.92)_42%,rgba(2,8,18,0.94))]',
+    violet: 'border-violet-200/30 bg-[linear-gradient(135deg,rgba(168,85,247,0.16),rgba(6,28,49,0.94)_42%,rgba(2,8,18,0.96))]',
+  }
+
+  return (
+    <FocusPanel className={clsx(tonePanel[tone], 'text-white shadow-[0_0_38px_rgba(56,189,248,0.1)]', className)}>
+      {children}
+    </FocusPanel>
+  )
+}
+
+export function CommandModeControl({
+  options,
+  className,
+}: {
+  options: Array<{
+    label: string
+    detail?: string
+    active: boolean
+    onSelect: () => void
+  }>
+  className?: string
+}) {
+  return (
+    <div className={clsx('grid gap-2 sm:grid-cols-3', className)}>
+      {options.map((mode) => (
+        <button
+          key={mode.label}
+          type="button"
+          onClick={mode.onSelect}
+          className={clsx(
+            'min-h-[58px] rounded-2xl border px-4 py-3 text-left transition focus:outline-none focus:ring-4',
+            mode.active
+              ? 'border-amber-100/55 bg-amber-300/18 text-white shadow-[0_0_26px_rgba(251,191,36,0.16)] focus:ring-amber-300/20'
+              : 'border-cyan-200/18 bg-white/[0.045] text-sky-100/74 hover:border-cyan-100/42 hover:bg-cyan-300/[0.08] focus:ring-cyan-300/18',
+          )}
+        >
+          <span className="block text-sm font-bold">{mode.label}</span>
+          {mode.detail ? (
+            <span className="mt-1 block text-xs font-semibold text-sky-100/58">{mode.detail}</span>
+          ) : null}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+export function CommandRouteLink({
+  to,
+  children,
+  icon,
+  tone = 'cyan',
+  emphasis = 'secondary',
+  className,
+}: {
+  to: string
+  children: React.ReactNode
+  icon?: React.ReactNode
+  tone?: CommandTone
+  emphasis?: 'primary' | 'secondary'
+  className?: string
+}) {
+  return (
+    <Link
+      to={to}
+      className={clsx(
+        'inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border px-5 py-3 text-sm font-bold transition focus:outline-none focus:ring-4',
+        emphasis === 'primary'
+          ? 'border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] hover:brightness-110 focus:ring-amber-300/20'
+          : clsx(commandToneStyles[tone].action, 'text-sky-100 focus:ring-cyan-300/18'),
+        className,
+      )}
+    >
+      {children}
+      {icon}
+    </Link>
+  )
+}
+
+export function CommandStatusRow({
+  icon,
+  title,
+  detail,
+  tone = 'cyan',
+  action,
+}: {
+  icon?: React.ReactNode
+  title: string
+  detail: string
+  tone?: CommandTone
+  action?: React.ReactNode
+}) {
+  return (
+    <div className={clsx('flex min-w-0 items-start gap-3 rounded-2xl border p-4', commandToneStyles[tone].action)}>
+      {icon ? (
+        <span className={clsx('inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border', commandToneStyles[tone].icon)}>
+          {icon}
+        </span>
+      ) : null}
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-black text-white">{title}</span>
+        <span className="mt-1 block text-sm leading-6 text-sky-100/62">{detail}</span>
+      </span>
+      {action ? <span className="shrink-0">{action}</span> : null}
+    </div>
+  )
+}
+
+export function CommandInsightPanel({
+  eyebrow = 'Insight',
+  title,
+  description,
+  tone = 'amber',
+  className,
+  children,
+}: {
+  eyebrow?: string
+  title: string
+  description: string
+  tone?: CommandTone
+  className?: string
+  children?: React.ReactNode
+}) {
+  return (
+    <div className={clsx('rounded-2xl border p-4', commandToneStyles[tone].action, className)}>
+      <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-100/64">{eyebrow}</p>
+      <p className="mt-2 text-xl font-black tracking-normal text-white">{title}</p>
+      <p className="mt-1 text-sm leading-6 text-sky-100/66">{description}</p>
+      {children ? <div className="mt-4">{children}</div> : null}
+    </div>
+  )
+}
+
+export function CommandSetPreview({
+  title,
+  detail,
+  stats,
+  tone = 'cyan',
+}: {
+  title: string
+  detail: string
+  stats?: React.ReactNode
+  tone?: CommandTone
+}) {
+  return (
+    <div className={clsx('rounded-2xl border p-4', commandToneStyles[tone].action)}>
+      <p className="text-sm font-black text-white">{title}</p>
+      <p className="mt-1 text-sm leading-6 text-sky-100/62">{detail}</p>
+      {stats ? <div className="mt-4 grid grid-cols-3 gap-2">{stats}</div> : null}
+    </div>
+  )
+}
+
+export function CommandLibraryCard({
+  title,
+  detail,
+  status,
+  tone = 'violet',
+  action,
+  children,
+}: {
+  title: string
+  detail: string
+  status: string
+  tone?: CommandTone
+  action?: React.ReactNode
+  children?: React.ReactNode
+}) {
+  return (
+    <div className={clsx('rounded-2xl border p-4', commandToneStyles[tone].action)}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <p className="break-words text-base font-black text-white">{title}</p>
+          <p className="mt-1 text-sm leading-6 text-sky-100/62">{detail}</p>
+        </div>
+        <CommandBadge tone={tone}>{status}</CommandBadge>
+      </div>
+      {children ? <div className="mt-4">{children}</div> : null}
+      {action ? <div className="mt-4">{action}</div> : null}
+    </div>
+  )
+}
+
 export function NextActionPanel({
   eyebrow = 'Next action',
   title,

@@ -102,7 +102,12 @@ import {
   ChecklistItem,
   CommandActionCard,
   CommandBadge,
+  CommandFocusPanel,
+  CommandInsightPanel,
+  CommandModeControl,
+  CommandRouteLink,
   CommandStatTile,
+  CommandStatusRow,
   DetailGrid,
   EmptyState,
   FlipCard,
@@ -2504,7 +2509,7 @@ export function TestModePage() {
         }
       />
 
-      <FocusPanel className="border-amber-200/34 bg-[linear-gradient(135deg,rgba(251,191,36,0.15),rgba(6,28,49,0.92)_42%,rgba(2,8,18,0.94))] text-white shadow-[0_0_38px_rgba(251,191,36,0.12)]">
+      <CommandFocusPanel tone="amber">
         <div className="grid gap-5 p-5 md:p-6 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-end">
           <div>
             <div className="flex flex-wrap gap-2">
@@ -2517,24 +2522,7 @@ export function TestModePage() {
             <p className="mt-3 max-w-2xl text-sm leading-7 text-sky-100/72">
               {questionCount} mixed questions, one clean timer, and a result screen that turns misses into a repair queue. Switch to Tutor or Readiness only when that better matches the session.
             </p>
-            <div className="mt-6 grid gap-2 sm:grid-cols-3">
-              {modeOptions.map((mode) => (
-                <button
-                  key={mode.label}
-                  type="button"
-                  onClick={mode.onSelect}
-                  className={clsx(
-                    'min-h-[58px] rounded-2xl border px-4 py-3 text-left transition focus:outline-none focus:ring-4',
-                    mode.active
-                      ? 'border-amber-100/55 bg-amber-300/18 text-white shadow-[0_0_26px_rgba(251,191,36,0.16)] focus:ring-amber-300/20'
-                      : 'border-cyan-200/18 bg-white/[0.045] text-sky-100/74 hover:border-cyan-100/42 hover:bg-cyan-300/[0.08] focus:ring-cyan-300/18',
-                  )}
-                >
-                  <span className="block text-sm font-bold">{mode.label}</span>
-                  <span className="mt-1 block text-xs font-semibold text-sky-100/58">{mode.detail}</span>
-                </button>
-              ))}
-            </div>
+            <CommandModeControl options={modeOptions} className="mt-6" />
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <button
                 type="button"
@@ -2561,7 +2549,7 @@ export function TestModePage() {
             <CommandStatTile label="Review" value="After" detail="miss queue" tone="violet" icon={<BarChart3 className="h-4 w-4" />} />
           </div>
         </div>
-      </FocusPanel>
+      </CommandFocusPanel>
 
       <DetailGrid>
         <Surface className="border-violet-200/22 bg-violet-300/[0.055]">
@@ -2607,7 +2595,7 @@ export function TestModePage() {
             />
           </div>
           <div className="mt-5 rounded-2xl border border-rose-200/18 bg-rose-300/[0.055] p-4">
-            <ReviewRow icon={<Target className="h-4 w-4" />} title={reviewQueueTitle} detail={reviewQueueDetail} />
+            <CommandStatusRow icon={<Target className="h-4 w-4" />} title={reviewQueueTitle} detail={reviewQueueDetail} tone="rose" />
             <div className="mt-4 flex flex-col gap-2 sm:flex-row">
               {activeTestSummary ? (
                 <>
@@ -3031,7 +3019,7 @@ export function PerformanceAnalyticsPage() {
         }
       />
 
-      <FocusPanel className="border-violet-200/30 bg-[linear-gradient(135deg,rgba(168,85,247,0.16),rgba(6,28,49,0.94)_42%,rgba(2,8,18,0.96))] text-white shadow-[0_0_40px_rgba(168,85,247,0.12)]">
+      <CommandFocusPanel tone="violet">
         <div className="grid gap-5 p-5 md:p-6 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-end">
           <div>
             <div className="flex flex-wrap gap-2">
@@ -3045,26 +3033,28 @@ export function PerformanceAnalyticsPage() {
             <p className="mt-3 max-w-2xl text-sm leading-7 text-sky-100/70">
               Readiness is practice evidence from Nurse Command activity, not a licensure prediction or official exam guarantee.
             </p>
-            <div className="mt-5 rounded-2xl border border-amber-200/24 bg-amber-300/[0.09] p-4">
-              <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-100/70">Recommended next action</p>
-              <p className="mt-2 text-xl font-black tracking-normal text-white">{recommendedAction}</p>
-              <p className="mt-1 text-sm leading-6 text-sky-100/66">{recommendedActionDetail}</p>
-            </div>
+            <CommandInsightPanel
+              eyebrow="Recommended next action"
+              title={recommendedAction}
+              description={recommendedActionDetail}
+              tone="amber"
+              className="mt-5"
+            />
             <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <Link
+              <CommandRouteLink
                 to="/weak-areas"
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
+                emphasis="primary"
+                icon={<Target className="h-4 w-4" />}
               >
                 Repair weakest pattern
-                <Target className="h-4 w-4" />
-              </Link>
-              <Link
+              </CommandRouteLink>
+              <CommandRouteLink
                 to="/practice-questions"
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-violet-200/24 bg-violet-300/[0.09] px-5 py-3 text-sm font-bold text-violet-100 transition hover:border-violet-100/45 hover:bg-violet-300/[0.14] focus:outline-none focus:ring-4 focus:ring-violet-300/18"
+                tone="violet"
+                icon={<ArrowRight className="h-4 w-4" />}
               >
                 Start transfer proof
-                <ArrowRight className="h-4 w-4" />
-              </Link>
+              </CommandRouteLink>
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-3 xl:grid-cols-1">
@@ -3091,7 +3081,7 @@ export function PerformanceAnalyticsPage() {
             />
           </div>
         </div>
-      </FocusPanel>
+      </CommandFocusPanel>
 
       <Surface>
         <SectionHeading
@@ -6750,15 +6740,6 @@ function ExamTrackList({ title, items }: { title: string; items: string[] }) {
           </span>
         ))}
       </div>
-    </div>
-  )
-}
-
-function ReviewRow({ icon, title, detail }: { icon: React.ReactNode; title: string; detail: string }) {
-  return (
-    <div className="rounded-[18px] border border-violet-200/18 bg-white/[0.045] p-4">
-      <div className="flex items-center gap-3 text-violet-100">{icon}<p className="font-semibold text-white">{title}</p></div>
-      <p className="mt-2 text-sm leading-6 text-sky-100/64">{detail}</p>
     </div>
   )
 }
