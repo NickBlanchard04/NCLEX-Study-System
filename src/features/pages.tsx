@@ -2157,9 +2157,34 @@ export function QuickStudyPage() {
   )
   const activeTrack = getExamTrack(profile.examTrack ?? 'nclex-rn')
   const quickStudyCategory = weakArea?.category ?? getExamCategories(activeTrack.id)[0]
+  const quickStudyCategoryLabel = shortCategoryLabel(quickStudyCategory)
+  const quickStudyAccuracy = weakArea ? Math.round(weakArea.accuracy * 100) : null
+  const repairSignal = weakArea ? Math.max(0.14, 1 - weakArea.accuracy) : 0.35
+  const quickStudyModeLabel = weakArea ? 'Weak-area repair' : 'First signal'
+  const quickStudySourceLabel = weakArea ? `${quickStudyAccuracy}% accuracy signal` : `${activeTrack.shortName} starter set`
   const quickStudyReason = weakArea
-    ? `${Math.round(weakArea.accuracy * 100)}% accuracy in ${shortCategoryLabel(weakArea.category)}. Keep it short, then review the miss pattern.`
+    ? `${quickStudyAccuracy}% accuracy in ${shortCategoryLabel(weakArea.category)}. Keep the rep short, then review the pattern while it is fresh.`
     : `Start with high-yield ${activeTrack.shortName} questions so Nurse Command can find your first repair pattern.`
+  const quickStudyLoop = [
+    {
+      title: 'Answer',
+      detail: 'One decision at a time.',
+      tone: 'amber',
+      icon: <Zap className="h-4 w-4" />,
+    },
+    {
+      title: 'Review',
+      detail: 'Read the rationale before moving on.',
+      tone: 'emerald',
+      icon: <CheckCircle2 className="h-4 w-4" />,
+    },
+    {
+      title: 'Repair',
+      detail: 'Misses feed your weak-area plan.',
+      tone: 'rose',
+      icon: <Target className="h-4 w-4" />,
+    },
+  ] as const
 
   if (activeSession?.mode === 'quick-study') {
     return (
@@ -2176,8 +2201,8 @@ export function QuickStudyPage() {
     <PageStack>
       <PageHeader
         eyebrow="Quick Study"
-        title="Start one focused drill."
-        description="Quick Study is the fastest practice loop: answer, review, choose confidence, and move to the next repair."
+        title="Quick Study"
+        description="A short, focused practice loop for the next best repair."
         action={
           <button
             type="button"
@@ -2189,19 +2214,33 @@ export function QuickStudyPage() {
           </button>
         }
       />
-      <FocusPanel className="border-amber-200/34 bg-[linear-gradient(135deg,rgba(251,191,36,0.16),rgba(6,28,49,0.92)_42%,rgba(2,8,18,0.94))] text-white shadow-[0_0_38px_rgba(251,191,36,0.12)]">
-        <div className="grid gap-5 p-5 md:p-6 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-end">
-          <div>
+      <FocusPanel className="border-amber-200/34 bg-[linear-gradient(135deg,rgba(251,191,36,0.18),rgba(6,28,49,0.94)_40%,rgba(2,8,18,0.96))] text-white shadow-[0_0_42px_rgba(251,191,36,0.12)]">
+        <div className="grid gap-5 p-4 sm:p-5 md:p-6 xl:grid-cols-[minmax(0,1fr)_21rem]">
+          <div className="min-w-0">
             <div className="flex flex-wrap gap-2">
               <CommandBadge tone="amber" icon={<Zap className="h-3.5 w-3.5" />}>Current action</CommandBadge>
-              <CommandBadge tone="rose" icon={<Target className="h-3.5 w-3.5" />}>{shortCategoryLabel(quickStudyCategory)}</CommandBadge>
+              <CommandBadge tone={weakArea ? 'rose' : 'cyan'} icon={<Target className="h-3.5 w-3.5" />}>{quickStudyCategoryLabel}</CommandBadge>
             </div>
-            <h3 className="mt-4 max-w-3xl text-3xl font-bold tracking-normal text-white md:text-5xl">
+            <h3 className="mt-4 max-w-3xl text-3xl font-bold tracking-normal text-white md:text-4xl">
               Start 10-minute drill
             </h3>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-sky-100/72">
               {quickStudyReason}
             </p>
+            <div className="mt-5 grid gap-2 sm:grid-cols-3">
+              <div className="rounded-xl border border-rose-200/18 bg-rose-300/[0.075] p-3">
+                <p className="text-xs font-bold uppercase text-rose-100/70">Focus</p>
+                <p className="mt-1 break-words text-lg font-bold text-white">{quickStudyCategoryLabel}</p>
+              </div>
+              <div className="rounded-xl border border-amber-200/20 bg-amber-300/[0.08] p-3">
+                <p className="text-xs font-bold uppercase text-amber-100/72">Set</p>
+                <p className="mt-1 text-lg font-bold text-white">5 questions</p>
+              </div>
+              <div className="rounded-xl border border-cyan-200/18 bg-cyan-300/[0.075] p-3">
+                <p className="text-xs font-bold uppercase text-cyan-100/72">Pace</p>
+                <p className="mt-1 text-lg font-bold text-white">About 10m</p>
+              </div>
+            </div>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <button
                 type="button"
@@ -2215,17 +2254,42 @@ export function QuickStudyPage() {
                 type="button"
                 onClick={() => setCustomizeOpen((current) => !current)}
                 className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl border border-cyan-200/24 bg-cyan-300/[0.07] px-5 py-3 text-sm font-bold text-cyan-100 transition hover:border-cyan-100/55 hover:bg-cyan-300/13 focus:outline-none focus:ring-4 focus:ring-cyan-300/18"
+                aria-expanded={customizeOpen}
               >
-                Customize
+                {customizeOpen ? 'Hide options' : 'Customize'}
                 <Shuffle className="h-4 w-4" />
               </button>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-1">
-            <CommandStatTile label="Category" value={shortCategoryLabel(quickStudyCategory)} detail="current target" tone="rose" icon={<Target className="h-4 w-4" />} />
-            <CommandStatTile label="Set" value="5" detail="questions" tone="amber" icon={<Zap className="h-4 w-4" />} />
-            <CommandStatTile label="Time" value="~10m" detail="focused pace" tone="cyan" icon={<Clock3 className="h-4 w-4" />} />
-            <CommandStatTile label="Review" value="Now" detail="rationale" tone="emerald" icon={<BookOpen className="h-4 w-4" />} />
+          <div className="rounded-[1rem] border border-white/10 bg-[#031426]/74 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-100/58">Drill signal</p>
+                <h4 className="mt-2 text-xl font-bold text-white">{quickStudyModeLabel}</h4>
+              </div>
+              <CommandBadge tone={weakArea ? 'rose' : 'cyan'}>{quickStudySourceLabel}</CommandBadge>
+            </div>
+            <div className="mt-4">
+              <ProgressBar value={repairSignal} tone={weakArea ? 'red' : 'blue'} />
+            </div>
+            <div className="mt-4 space-y-3">
+              {quickStudyLoop.map((step) => (
+                <div key={step.title} className="flex items-start gap-3 rounded-xl border border-white/8 bg-white/[0.035] p-3">
+                  <span className={clsx(
+                    'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border',
+                    step.tone === 'amber' && 'border-amber-200/28 bg-amber-300/12 text-amber-100',
+                    step.tone === 'emerald' && 'border-emerald-200/28 bg-emerald-300/12 text-emerald-100',
+                    step.tone === 'rose' && 'border-rose-200/28 bg-rose-300/12 text-rose-100',
+                  )}>
+                    {step.icon}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-bold text-white">{step.title}</span>
+                    <span className="mt-0.5 block text-xs leading-5 text-sky-100/62">{step.detail}</span>
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </FocusPanel>
@@ -2233,12 +2297,12 @@ export function QuickStudyPage() {
       {customizeOpen ? (
         <Surface className="border-cyan-200/22 bg-cyan-300/[0.055]">
           <SectionHeading
-            title="Customize the drill"
-            description="Keep Quick Study simple by default. Use these routes when you want more control before starting."
+            title="Adjust before starting"
+            description="Keep the default drill when you want speed. Use these paths when you need more control."
           />
           <div className="mt-5 grid gap-3 md:grid-cols-3">
             <CommandActionCard
-              title={`Train ${shortCategoryLabel(quickStudyCategory)}`}
+              title={`Train ${quickStudyCategoryLabel}`}
               description="Start from the current weak-area signal."
               meta="Rose / remediation"
               icon={<Target className="h-4 w-4" />}
@@ -2268,15 +2332,37 @@ export function QuickStudyPage() {
         </Surface>
       ) : null}
 
-      <div className="grid gap-5 lg:grid-cols-3">
-        <Surface className="border-amber-200/24 bg-amber-300/[0.06]">
-          <SectionHeading title="1. Decide" description="Gold marks the current action: choose the safest answer and submit." />
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+        <Surface className="border-emerald-200/24 bg-emerald-300/[0.055]">
+          <SectionHeading
+            title="What happens after you answer"
+            description="The session keeps the feedback loop tight: submit, read the rationale, mark confidence, then move forward."
+          />
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            <CommandStatTile label="Correct" value="Green" detail="safe decision" tone="emerald" icon={<ShieldCheck className="h-4 w-4" />} />
+            <CommandStatTile label="Missed" value="Rose" detail="repair signal" tone="rose" icon={<AlertTriangle className="h-4 w-4" />} />
+            <CommandStatTile label="Review" value="Violet" detail="summary queue" tone="violet" icon={<BookOpenCheck className="h-4 w-4" />} />
+          </div>
         </Surface>
-        <Surface className="border-emerald-200/24 bg-emerald-300/[0.06]">
-          <SectionHeading title="2. Review" description="Emerald confirms correct decisions. Rationale stays readable and immediate." />
-        </Surface>
-        <Surface className="border-rose-200/24 bg-rose-300/[0.06]">
-          <SectionHeading title="3. Repair" description="Rose marks misses and weak-area work so the next action is obvious." />
+        <Surface className="border-violet-200/22 bg-fuchsia-300/[0.045]">
+          <SectionHeading
+            title="Need a different practice path?"
+            description="Use the bank for full control, Study Plan for scheduled work, or remediation when the problem area is obvious."
+          />
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            <Link to="/practice-questions" className="rounded-xl border border-violet-200/20 bg-fuchsia-300/[0.07] p-4 text-sm font-bold text-white transition hover:border-violet-100/45 hover:bg-fuchsia-300/[0.12]">
+              Question Bank
+              <span className="mt-2 block text-xs font-semibold leading-5 text-sky-100/58">Choose category and count.</span>
+            </Link>
+            <Link to="/study-plan" className="rounded-xl border border-cyan-200/20 bg-cyan-300/[0.07] p-4 text-sm font-bold text-white transition hover:border-cyan-100/45 hover:bg-cyan-300/[0.12]">
+              Study Plan
+              <span className="mt-2 block text-xs font-semibold leading-5 text-sky-100/58">Follow today's queue.</span>
+            </Link>
+            <Link to="/weak-areas" className="rounded-xl border border-rose-200/20 bg-rose-300/[0.07] p-4 text-sm font-bold text-white transition hover:border-rose-100/45 hover:bg-rose-300/[0.12]">
+              Remediation
+              <span className="mt-2 block text-xs font-semibold leading-5 text-sky-100/58">Repair missed patterns.</span>
+            </Link>
+          </div>
         </Surface>
       </div>
     </PageStack>
@@ -3188,10 +3274,14 @@ export function FlashcardsPage() {
   )
 
   useEffect(() => {
-    setFlashcardFeedbackOpen(false)
-    setFlashcardFeedbackReason('source_concern')
-    setFlashcardFeedbackNote('')
-    setFlashcardFeedbackSubmittedId(null)
+    const resetFeedback = window.setTimeout(() => {
+      setFlashcardFeedbackOpen(false)
+      setFlashcardFeedbackReason('source_concern')
+      setFlashcardFeedbackNote('')
+      setFlashcardFeedbackSubmittedId(null)
+    }, 0)
+
+    return () => window.clearTimeout(resetFeedback)
   }, [currentCard?.id])
 
   const dueCards = useMemo(() => {
