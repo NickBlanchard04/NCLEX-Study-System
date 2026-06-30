@@ -70,6 +70,7 @@ import {
   uploadMaterialFile,
 } from '../services/cloud-repositories'
 import { trackAppEvent } from '../services/analytics-client'
+import { createClientId } from '../services/ids'
 import { isSupabaseConfigured } from '../services/supabase'
 import { getSafeErrorCopy, reportSafeError } from '../services/safe-errors'
 import {
@@ -459,7 +460,7 @@ const makeSyncEvent = (
   operation: SyncEvent['operation'] = 'upsert',
   payload?: unknown,
 ): SyncEvent => ({
-  id: crypto.randomUUID(),
+  id: createClientId('sync'),
   entityType,
   entityId,
   operation,
@@ -1033,7 +1034,7 @@ export const useStudySystemStore = create<StudySystemState>()(
           }
 
           const attempt: QuestionAttempt = {
-            id: crypto.randomUUID(),
+            id: createClientId('attempt'),
             questionId,
             examTrack: state.profile.examTrack ?? 'nclex-rn',
             selectedAnswer,
@@ -1780,7 +1781,7 @@ export const useStudySystemStore = create<StudySystemState>()(
 
           return {
             activeMaterialQuizSession: {
-              id: crypto.randomUUID(),
+              id: createClientId('material-quiz'),
               materialId,
               title: config?.title ?? `Study from ${material.displayTitle}`,
               questionIds: questions.slice(0, questionCount).map((item) => item.id),

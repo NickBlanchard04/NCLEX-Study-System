@@ -63,6 +63,7 @@ import type {
   StudyMaterial,
 } from '../app/types'
 import { useStudySystemStore } from '../app/store'
+import { createClientId } from '../services/ids'
 import { getSafeErrorCopy, reportSafeError } from '../services/safe-errors'
 import { summarizeMaterialQuality, type MaterialQualityIssue } from '../services/material-quality'
 import {
@@ -3485,7 +3486,7 @@ export function MyMaterialsPage() {
       .join('\n\n')
 
     saveNote({
-      id: crypto.randomUUID(),
+      id: createClientId('id'),
       title: `${selectedMaterial.displayTitle} review note`,
       body,
       category: selectedMaterial.sourceCategory ?? 'General',
@@ -4098,7 +4099,7 @@ export function MyMaterialsPage() {
                       type="button"
                       onClick={() => {
                         saveNote({
-                          id: crypto.randomUUID(),
+                          id: createClientId('id'),
                           title: `${selectedMaterial.displayTitle} study guide`,
                           body: [
                             'Simple summary',
@@ -5313,7 +5314,7 @@ export function NotesPage() {
   const [search, setSearch] = useState('')
   const deferredSearch = useDeferredValue(search)
   const [draft, setDraft] = useState<Note>({
-    id: crypto.randomUUID(),
+    id: createClientId('id'),
     title: '',
     body: '',
     category: (seedCategory as QuestionCategory) ?? 'General',
@@ -5390,7 +5391,7 @@ export function NotesPage() {
               type="button"
               onClick={() =>
                 setDraft({
-                  id: crypto.randomUUID(),
+                  id: createClientId('id'),
                   title: '',
                   body: '',
                   category: 'General',

@@ -34,6 +34,7 @@ import {
   getExamStudyPlanTopics,
   questionBank,
 } from '../data/content'
+import { createClientId } from './ids'
 
 const confidenceScore: Record<ConfidenceLevel, number> = {
   low: 0.35,
@@ -501,7 +502,7 @@ const createSession = (
 ): ActiveSession => {
   const startedAt = new Date().toISOString()
   return {
-    id: crypto.randomUUID(),
+    id: createClientId('id'),
     mode,
     examTrack,
     title,

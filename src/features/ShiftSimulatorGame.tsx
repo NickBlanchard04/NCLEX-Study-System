@@ -27,6 +27,7 @@ import { clsx } from 'clsx'
 import type React from 'react'
 import type { SimulatorLevelId } from '../app/types'
 import { useStudySystemStore } from '../app/store'
+import { createClientId } from '../services/ids'
 import { Shift3DEngine } from '../game/shift3d-engine'
 
 type PatientStatus = 'stable' | 'watch' | 'urgent' | 'critical'
@@ -984,7 +985,7 @@ export function ShiftSimulatorGame() {
 
     recordSimulatorLevelAttempt(
       {
-        id: crypto.randomUUID(),
+        id: createClientId('id'),
         levelId: activeLevel.id,
         totalScore,
         safetyScore: score.safety,
@@ -1031,7 +1032,7 @@ export function ShiftSimulatorGame() {
     setLog((current) => [
       {
         ...entry,
-        id: crypto.randomUUID(),
+        id: createClientId('id'),
         time: at,
       },
       ...current,
@@ -1200,7 +1201,7 @@ export function ShiftSimulatorGame() {
 
     setDelegationAssignments((current) => [
       {
-        id: crypto.randomUUID(),
+        id: createClientId('id'),
         role,
         patientId: selectedPatient.id,
         actionId: action.id,
