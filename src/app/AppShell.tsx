@@ -1,7 +1,33 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import {
+  Bell,
+  BookOpen,
+  BookOpenCheck,
+  Building2,
+  CalendarCheck,
+  ChartColumn,
+  ChevronDown,
+  ChevronLeft,
+  CircleHelp,
+  ClipboardList,
   Cloud,
+  FileClock,
+  FlaskConical,
+  FolderOpen,
+  Gamepad2,
+  HeartPulse,
+  House,
+  Layers,
+  LayoutDashboard,
   LockKeyhole,
+  Menu,
+  NotebookPen,
+  RefreshCw,
+  Settings,
+  Stethoscope,
+  Timer,
+  UsersRound,
+  X,
 } from 'lucide-react'
 import { lazy, Suspense, useEffect, useMemo, useState, type ComponentType, type FormEvent, type ReactNode } from 'react'
 import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
@@ -30,30 +56,6 @@ import { getExamTrack } from '../data/exam-tracks'
 import { useStudySystemStore } from './store'
 import { AuthGate } from './AuthGate'
 import {
-  CoolBell,
-  CoolBook,
-  CoolCalendar,
-  CoolChart,
-  CoolChecklist,
-  CoolChevronDown,
-  CoolChevronLeft,
-  CoolClose,
-  CoolFirstAid,
-  CoolFlag,
-  CoolFolder,
-  CoolHelp,
-  CoolHome,
-  CoolMenu,
-  CoolNote,
-  CoolPuzzle,
-  CoolRefresh,
-  CoolSettings,
-  CoolShield,
-  CoolStar,
-  CoolTimer,
-  CoolUsers,
-} from '../features/coolicons'
-import {
   checkAdminAccess,
   hasStoredAdminPreviewPasskeyAccess,
   isAdminPanelEnabled,
@@ -80,44 +82,44 @@ const nurseLabRoutePaths = [
 ]
 
 const commandNavigation: NavigationItem[] = [
-  { label: 'Home', icon: CoolHome, to: '/' },
-  { label: 'Dashboard', icon: CoolChart, to: '/dashboard' },
-  { label: 'Study Plan', icon: CoolCalendar, to: '/study-plan' },
+  { label: 'Home', icon: House, to: '/' },
+  { label: 'Dashboard', icon: LayoutDashboard, to: '/dashboard' },
+  { label: 'Study Plan', icon: CalendarCheck, to: '/study-plan' },
 ]
 
 const practiceNavigation: NavigationItem[] = [
-  { label: 'Question Bank', icon: CoolChecklist, to: '/practice-questions' },
-  { label: 'Quick Study', icon: CoolTimer, to: '/quick-study' },
-  { label: 'Exam Prep', icon: CoolBook, to: '/exam-prep' },
-  { label: 'Exams', icon: CoolFlag, to: '/test-mode' },
+  { label: 'Question Bank', icon: ClipboardList, to: '/practice-questions' },
+  { label: 'Quick Study', icon: Timer, to: '/quick-study' },
+  { label: 'Exam Prep', icon: BookOpenCheck, to: '/exam-prep' },
+  { label: 'Exams', icon: FileClock, to: '/test-mode' },
 ]
 
 const reviewNavigation: NavigationItem[] = [
-  { label: 'Remediation', icon: CoolFirstAid, to: '/weak-areas' },
-  { label: 'Performance', icon: CoolChart, to: '/performance-analytics' },
+  { label: 'Remediation', icon: HeartPulse, to: '/weak-areas' },
+  { label: 'Performance', icon: ChartColumn, to: '/performance-analytics' },
 ]
 
 const libraryNavigation: NavigationItem[] = [
-  { label: 'My Materials', icon: CoolFolder, to: '/my-materials' },
-  { label: 'Flashcards', icon: CoolStar, to: '/flashcards' },
-  { label: 'Notes', icon: CoolNote, to: '/notes' },
-  { label: 'Resources', icon: CoolBook, to: '/strategy-training' },
+  { label: 'My Materials', icon: FolderOpen, to: '/my-materials' },
+  { label: 'Flashcards', icon: Layers, to: '/flashcards' },
+  { label: 'Notes', icon: NotebookPen, to: '/notes' },
+  { label: 'Resources', icon: BookOpen, to: '/strategy-training' },
 ]
 
 const communityNavigation: NavigationItem[] = [
-  { label: 'Nurse Lab', icon: CoolPuzzle, to: '/nurse-command-lab', activePaths: nurseLabRoutePaths },
-  { label: 'Social', icon: CoolUsers, to: '/social' },
+  { label: 'Nurse Lab', icon: FlaskConical, to: '/nurse-command-lab', activePaths: nurseLabRoutePaths },
+  { label: 'Social', icon: UsersRound, to: '/social' },
 ]
 
 const labNavigation: NavigationItem[] = [
-  { label: 'Shift Game', icon: CoolFirstAid, to: '/shift-command' },
-  { label: 'Hospitalvania', icon: CoolPuzzle, to: '/hospitalvania' },
-  { label: 'Tycoon', icon: CoolChart, to: '/nurse-tycoon' },
-  { label: 'Simulator', icon: CoolShield, to: '/clinical-simulator' },
+  { label: 'Shift Game', icon: HeartPulse, to: '/shift-command' },
+  { label: 'Hospitalvania', icon: Gamepad2, to: '/hospitalvania' },
+  { label: 'Tycoon', icon: Building2, to: '/nurse-tycoon' },
+  { label: 'Simulator', icon: Stethoscope, to: '/clinical-simulator' },
 ]
 
 const secondaryNavigation: NavigationItem[] = [
-  { label: 'Settings', icon: CoolSettings, to: '/settings' },
+  { label: 'Settings', icon: Settings, to: '/settings' },
 ]
 
 const mainNavigation = [
@@ -139,9 +141,9 @@ const sidebarNavigationGroups = [
 ]
 
 const mobilePrimaryNavigation: NavigationItem[] = [
-  { label: 'Dashboard', icon: CoolHome, to: '/dashboard' },
-  { label: 'Quick Study', icon: CoolTimer, to: '/quick-study' },
-  { label: 'Question Bank', icon: CoolChecklist, to: '/practice-questions' },
+  { label: 'Dashboard', icon: LayoutDashboard, to: '/dashboard' },
+  { label: 'Quick Study', icon: Timer, to: '/quick-study' },
+  { label: 'Question Bank', icon: ClipboardList, to: '/practice-questions' },
 ]
 
 const mobilePrimaryRoutes = new Set(mobilePrimaryNavigation.map((item) => item.to))
@@ -194,7 +196,7 @@ function RouteLoadingScreen({ label = 'Loading module' }: { label?: string }) {
     <div className="grid min-h-screen place-items-center bg-[#04101f] px-6 text-center text-white">
       <div>
         <div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-2xl border border-cyan-300/30 bg-cyan-400/10 text-cyan-200">
-          <CoolRefresh className="h-5 w-5 animate-spin" />
+          <RefreshCw className="h-5 w-5 animate-spin" />
         </div>
         <p className="nc-eyebrow text-sky-200/72">
           {label}
@@ -440,7 +442,7 @@ function NclexAppShell() {
               onClick={() => setSupportOpen(true)}
               className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-200 transition hover:bg-white/8 hover:text-white"
             >
-              <CoolHelp className="h-4 w-4" />
+              <CircleHelp className="h-4 w-4" />
               Help & Support
             </button>
           </div>
@@ -456,7 +458,7 @@ function NclexAppShell() {
                   className="hidden h-10 w-10 items-center justify-center rounded-xl border border-sky-300/24 bg-white/5 text-sky-100/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition hover:border-sky-200/60 hover:text-sky-200 md:inline-flex"
                   aria-label="Go back"
                 >
-                  <CoolChevronLeft className="h-4 w-4" />
+                  <ChevronLeft className="h-4 w-4" />
                 </button>
                 <button
                   type="button"
@@ -464,7 +466,7 @@ function NclexAppShell() {
                   className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-sky-300/24 bg-white/5 text-sky-100/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] lg:hidden"
                   aria-label="Open navigation"
                 >
-                  <CoolMenu className="h-4 w-4" />
+                  <Menu className="h-4 w-4" />
                 </button>
                 <div className="min-w-0">
                     <p className="nc-eyebrow text-sky-200/60">
@@ -507,7 +509,7 @@ function NclexAppShell() {
                   className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-sky-300/24 bg-white/5 text-sky-100/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition hover:text-sky-200"
                   aria-label="Notifications"
                 >
-                  <CoolBell className="h-4 w-4" />
+                  <Bell className="h-4 w-4" />
                   <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-rose-400 ring-2 ring-[#04101f]" />
                 </button>
                 <button
@@ -529,7 +531,7 @@ function NclexAppShell() {
                     <p className="text-sm font-semibold text-white">{profile.name}</p>
                     <p className="text-xs text-sky-200/62">{activeExamTrack.shortName} learner</p>
                   </div>
-                  <CoolChevronDown className="hidden h-4 w-4 text-sky-200/60 md:block" />
+                  <ChevronDown className="hidden h-4 w-4 text-sky-200/60 md:block" />
                 </button>
               </div>
             </div>
@@ -555,7 +557,7 @@ function NclexAppShell() {
                     onClick={() => void syncNow()}
                     className="nclex-btn-secondary inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold"
                   >
-                    <CoolRefresh className="h-4 w-4" />
+                    <RefreshCw className="h-4 w-4" />
                     Sync now
                   </button>
                   {authUser ? (
@@ -672,7 +674,7 @@ function NclexAppShell() {
                   className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/6 focus:outline-none focus:ring-2 focus:ring-cyan-200/60"
                   aria-label="Close navigation"
                 >
-                  <CoolClose className="h-4 w-4" />
+                  <X className="h-4 w-4" />
                 </button>
               </div>
               <nav className="mt-6 flex-1 space-y-4 overflow-y-auto pr-1">
@@ -687,7 +689,7 @@ function NclexAppShell() {
               <div className="space-y-1.5 border-t border-white/10 pt-5">
                 <SidebarLink
                   label="Settings"
-                  icon={<CoolSettings className="h-4 w-4" />}
+                  icon={<Settings className="h-4 w-4" />}
                   to="/settings"
                   tone="slate"
                   onClick={() => setMobileMenuOpen(false)}
@@ -700,7 +702,7 @@ function NclexAppShell() {
                   }}
                   className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-200 transition hover:bg-white/8 hover:text-white"
                 >
-                  <CoolHelp className="h-4 w-4" />
+                  <CircleHelp className="h-4 w-4" />
                   Help & Support
                 </button>
               </div>
@@ -742,7 +744,7 @@ function NclexAppShell() {
                   className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-sky-300/24 bg-white/5 text-sky-100/72 focus:outline-none focus:ring-2 focus:ring-cyan-200/60"
                   aria-label="Close more navigation"
                 >
-                  <CoolClose className="h-4 w-4" />
+                  <X className="h-4 w-4" />
                 </button>
               </div>
               <div className="mt-5 min-h-0 space-y-5 overflow-y-auto pr-1">
@@ -792,7 +794,7 @@ function NclexAppShell() {
                   className="flex items-center justify-between rounded-2xl border border-sky-300/20 bg-white/[0.04] px-4 py-3.5 text-left text-sky-100/76 focus:outline-none focus:ring-2 focus:ring-cyan-200/55"
                 >
                   <span className="flex items-center gap-3 text-sm font-semibold">
-                    <CoolHelp className="h-4 w-4" />
+                    <CircleHelp className="h-4 w-4" />
                     Help & Support
                   </span>
                 </button>
@@ -1165,7 +1167,7 @@ function MobileTabBar({
           )}
           aria-current={moreActive ? 'page' : undefined}
         >
-          <CoolMenu className="h-4 w-4" />
+          <Menu className="h-4 w-4" />
           <span className="block w-full text-center leading-[1.05]">More</span>
         </button>
       </div>
@@ -1244,7 +1246,7 @@ function SupportSheet({ open, onClose }: { open: boolean; onClose: () => void })
                 className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-sky-300/24 bg-white/5 text-sky-100/72 focus:outline-none focus:ring-2 focus:ring-cyan-200/60"
                 aria-label="Close help and support"
               >
-                <CoolClose className="h-4 w-4" />
+                <X className="h-4 w-4" />
               </button>
             </div>
             <div className="mt-5 grid gap-3">
