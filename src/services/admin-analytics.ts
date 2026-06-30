@@ -38,6 +38,8 @@ export const isLocalAdminPreview = () =>
   typeof window !== 'undefined' &&
   ['localhost', '127.0.0.1'].includes(window.location.hostname)
 
+const allowEnvAdminEmailFallback = () => isLocalAdminPreview()
+
 export const isAdminPanelEnabled = () =>
   import.meta.env.VITE_ENABLE_ADMIN_PANEL === 'true' || isLocalAdminPreview()
 
@@ -70,7 +72,7 @@ export async function checkAdminAccess(user: AuthUser | null) {
   if (isLocalAdminPreview()) return true
   if (!user?.email || !isAdminPanelEnabled()) return false
 
-  if (envAdminEmails.includes(user.email.toLowerCase())) return true
+  if (allowEnvAdminEmailFallback() && envAdminEmails.includes(user.email.toLowerCase())) return true
 
   if (!isSupabaseConfigured || !supabase) return false
 
@@ -132,7 +134,7 @@ export async function getAdminDataAccessStatus(): Promise<AdminDataAccessStatus>
     }
   }
 
-  if (envAdminEmails.includes(email)) {
+  if (allowEnvAdminEmailFallback() && envAdminEmails.includes(email)) {
     return {
       configured: true,
       signedIn: true,

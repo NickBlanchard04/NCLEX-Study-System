@@ -21,6 +21,7 @@ export type AppEventName =
   | 'material_upload_started'
   | 'material_upload_completed'
   | 'material_upload_failed'
+  | 'generated_asset_used'
   | 'note_created'
   | 'feedback_opened'
   | 'feedback_submitted'

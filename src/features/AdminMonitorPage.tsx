@@ -20,7 +20,6 @@ import {
   ShieldCheck,
   Target,
   TimerReset,
-  TrendingDown,
   Users,
   Zap,
   type LucideIcon,
@@ -33,7 +32,7 @@ import {
   type AdminDataAccessStatus,
   type AdminProfileSummary,
 } from '../services/admin-analytics'
-import { getLocalAppEvents, type StoredAppEvent } from '../services/analytics-client'
+import { getLocalAppEvents, type AppEventName, type StoredAppEvent } from '../services/analytics-client'
 
 type RangeFilter = 'Today' | '7 days' | '30 days' | '90 days'
 type SourceFilter = 'All' | 'Google Ads' | 'LinkedIn' | 'Direct' | 'Email' | 'Organic' | 'Other'
@@ -115,6 +114,9 @@ interface UserRow {
   examTrack: ExamFilter
   source: SourceFilter
   status: string
+  latestAction: string
+  riskTone: StatusTone
+  riskLabel: string
   presence: 'Online' | 'Idle' | 'Offline'
   currentPage: string
   events: number
@@ -126,12 +128,36 @@ interface UserRow {
   timeline: StoredAppEvent[]
 }
 
+interface DecisionCardModel {
+  title: string
+  body: string
+  tone: StatusTone
+}
+
+interface EventHealthCheck {
+  title: string
+  value: string
+  body: string
+  tone: StatusTone
+}
+
 interface CategoryRow {
   category: string
   answered: number
   correct: number
   incorrect: number
   highConfidenceMisses: number
+}
+
+interface ContentQaRow {
+  itemId: string
+  category: string
+  answered: number
+  incorrect: number
+  highConfidenceMisses: number
+  feedbackCount: number
+  sourceStatus: string
+  reviewStatus: string
 }
 
 interface DashboardModel {
@@ -156,6 +182,7 @@ interface DashboardModel {
   pageRows: PageRow[]
   featureRows: FeatureRow[]
   categoryRows: CategoryRow[]
+  contentQaRows: ContentQaRow[]
   questionAnswered: number
   correctAnswers: number
   incorrectAnswers: number
@@ -363,6 +390,7 @@ const eventLabels: Record<string, string> = {
   material_upload_started: 'Material upload started',
   material_upload_completed: 'Material upload completed',
   material_upload_failed: 'Material upload failed',
+  generated_asset_used: 'Generated asset used',
   note_created: 'Note created',
   feedback_opened: 'Feedback opened',
   feedback_submitted: 'Feedback submitted',
@@ -579,6 +607,11 @@ const eventDetail = (event: StoredAppEvent) => {
   return parts.join(' | ') || 'No extra event fields'
 }
 
+const metadataString = (event: StoredAppEvent, key: string) => {
+  const value = event.metadata?.[key]
+  return typeof value === 'string' && value.trim() ? value.trim() : null
+}
+
 const eventTone = (event: StoredAppEvent): StatusTone => {
   if (event.event_name.includes('failed')) return 'critical'
   if (event.question_result === 'incorrect' && event.confidence_level === 'high') return 'critical'
@@ -586,6 +619,52 @@ const eventTone = (event: StoredAppEvent): StatusTone => {
   if (event.event_name.includes('started')) return 'watch'
   return 'info'
 }
+
+const meaningfulEventNames = new Set<AppEventName>([
+  'demo_started',
+  'signup_started',
+  'signup_completed',
+  'onboarding_started',
+  'onboarding_completed',
+  'exam_track_selected',
+  'feature_opened',
+  'quiz_started',
+  'question_answered',
+  'quiz_completed',
+  'weak_area_opened',
+  'study_plan_opened',
+  'material_upload_started',
+  'material_upload_completed',
+  'material_upload_failed',
+  'feedback_submitted',
+])
+
+const latestMeaningfulAction = (events: StoredAppEvent[]) =>
+  formatEventLabel(events.find((event) => meaningfulEventNames.has(event.event_name))?.event_name ?? events[0]?.event_name ?? 'page_view')
+
+const userRisk = (events: StoredAppEvent[], sessions: number): { tone: StatusTone; label: string } => {
+  const names = new Set(events.map((event) => event.event_name))
+  if (events.some((event) => event.event_name.includes('failed'))) return { tone: 'critical', label: 'Flow issue' }
+  if (events.some((event) => event.question_result === 'incorrect' && event.confidence_level === 'high')) {
+    return { tone: 'critical', label: 'Confident miss' }
+  }
+  if (names.has('quiz_started') && !names.has('quiz_completed')) return { tone: 'watch', label: 'Quiz drop-off' }
+  if (names.has('material_upload_started') && !names.has('material_upload_completed')) return { tone: 'watch', label: 'Upload drop-off' }
+  if (events.length >= 3 && !events.some((event) => studyEvents.has(event.event_name))) return { tone: 'watch', label: 'No study action' }
+  if (sessions > 1) return { tone: 'good', label: 'Returning' }
+  if (events.some((event) => activationEvents.has(event.event_name))) return { tone: 'good', label: 'Activated' }
+  return { tone: 'info', label: 'New' }
+}
+
+const groupTimelineBySession = (events: StoredAppEvent[]) =>
+  Array.from(groupBy(events, (event) => event.session_id).entries())
+    .map(([sessionId, rows]) => ({
+      sessionId,
+      events: [...rows].sort((a, b) => eventTime(b) - eventTime(a)),
+      startedAt: Math.min(...rows.map(eventTime)),
+      endedAt: Math.max(...rows.map(eventTime)),
+    }))
+    .sort((a, b) => b.endedAt - a.endedAt)
 
 const buildJourney = (userGroups: Map<string, StoredAppEvent[]>, returningUsers: Set<string>) => {
   const countUsers = (match: (event: StoredAppEvent, userEvents: StoredAppEvent[]) => boolean) =>
@@ -743,6 +822,7 @@ const buildModel = (events: StoredAppEvent[], profilesById: Map<string, AdminPro
       const firstTrack =
         userEvents.find((event) => event.exam_track)?.exam_track ?? userEvents[userEvents.length - 1]?.exam_track ?? null
       const mostRecent = userEvents[0]
+      const risk = userRisk(userEvents, sessions.size)
       return {
         id: key,
         label: displayName,
@@ -753,6 +833,9 @@ const buildModel = (events: StoredAppEvent[], profilesById: Map<string, AdminPro
         examTrack: formatExamTrack(firstTrack),
         source: firstSource,
         status: userStatus(userEvents),
+        latestAction: latestMeaningfulAction(userEvents),
+        riskTone: risk.tone,
+        riskLabel: risk.label,
         presence: formatPresence(lastActive),
         currentPage: formatCurrentPage(mostRecent?.page_path, mostRecent?.feature_name),
         events: userEvents.length,
@@ -846,6 +929,44 @@ const buildModel = (events: StoredAppEvent[], profilesById: Map<string, AdminPro
     }))
     .sort((a, b) => b.highConfidenceMisses - a.highConfidenceMisses || b.answered - a.answered)
 
+  const feedbackEvents = sortedEvents.filter((event) => event.event_name === 'feedback_submitted')
+  const feedbackByQuestionId = groupBy(
+    feedbackEvents.filter((event) => metadataString(event, 'question_id')),
+    (event) => metadataString(event, 'question_id') ?? 'unknown',
+  )
+  const contentQaRows = Array.from(
+    groupBy(
+      questionEvents.filter((event) => metadataString(event, 'question_id')),
+      (event) => metadataString(event, 'question_id') ?? 'unknown',
+    ).entries(),
+  )
+    .map<ContentQaRow>(([itemId, rows]) => {
+      const feedbackRows = feedbackByQuestionId.get(itemId) ?? []
+      const sourceStatus =
+        feedbackRows.map((event) => metadataString(event, 'sourceStatus')).find(Boolean) ?? 'unknown'
+      const reviewStatus =
+        feedbackRows.map((event) => metadataString(event, 'clinicalReviewStatus')).find(Boolean) ?? 'unknown'
+      return {
+        itemId,
+        category: rows.find((event) => event.question_category)?.question_category ?? 'Uncategorized',
+        answered: rows.length,
+        incorrect: rows.filter((event) => event.question_result === 'incorrect').length,
+        highConfidenceMisses: rows.filter(
+          (event) => event.question_result === 'incorrect' && event.confidence_level === 'high',
+        ).length,
+        feedbackCount: feedbackRows.length,
+        sourceStatus,
+        reviewStatus,
+      }
+    })
+    .sort(
+      (a, b) =>
+        b.highConfidenceMisses - a.highConfidenceMisses ||
+        b.feedbackCount - a.feedbackCount ||
+        b.incorrect - a.incorrect ||
+        b.answered - a.answered,
+    )
+
   const firstEvent = sortedEvents.length ? Math.min(...sortedEvents.map(eventTime)) : null
   const lastEvent = sortedEvents.length ? Math.max(...sortedEvents.map(eventTime)) : null
   const highConfidenceMisses = questionEvents.filter(
@@ -874,6 +995,7 @@ const buildModel = (events: StoredAppEvent[], profilesById: Map<string, AdminPro
     pageRows,
     featureRows,
     categoryRows,
+    contentQaRows,
     questionAnswered: questionEvents.length,
     correctAnswers: questionEvents.filter((event) => event.question_result === 'correct').length,
     incorrectAnswers: questionEvents.filter((event) => event.question_result === 'incorrect').length,
@@ -1096,12 +1218,12 @@ function KpiCard({
   tone: StatusTone
 }) {
   return (
-    <article className={`rounded-[24px] border p-4 ${toneStyles[tone]}`}>
+    <article className={`rounded-2xl border p-4 shadow-sm shadow-black/10 ${toneStyles[tone]}`}>
       <div className="flex items-start justify-between gap-4">
         <Icon className="h-5 w-5 shrink-0 opacity-90" />
-        <p className="text-3xl font-black leading-none text-white">{value}</p>
+        <p className="text-2xl font-black leading-none text-white xl:text-3xl">{value}</p>
       </div>
-      <p className="mt-5 text-sm font-black text-white">{title}</p>
+      <p className="mt-4 text-sm font-black text-white">{title}</p>
       <p className="mt-1 text-xs font-bold leading-5 text-current/70">{detail}</p>
     </article>
   )
@@ -1124,9 +1246,9 @@ function Panel({
 }) {
   const style = sectionStyles[section.color]
   return (
-    <section className={`rounded-[28px] border border-cyan-200/12 bg-[#041628]/86 p-4 shadow-xl shadow-black/20 ${className}`}>
+    <section className={`rounded-2xl border border-cyan-200/12 bg-[#041628]/86 p-4 shadow-lg shadow-black/15 ${className}`}>
       <div className="mb-4 flex items-start gap-3">
-        <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-2xl border ${style.icon}`}>
+        <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl border ${style.icon}`}>
           <Icon className="h-5 w-5" />
         </div>
         <div>
@@ -1139,13 +1261,18 @@ function Panel({
   )
 }
 
-function EmptyState({ title, body }: { title: string; body: string }) {
+function EmptyState({ title, body, eventName }: { title: string; body: string; eventName?: AppEventName | 'profile_directory' }) {
   return (
-    <div className="rounded-3xl border border-dashed border-slate-500/35 bg-slate-950/30 p-6 text-center">
-      <div className="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-2xl border border-slate-500/30 bg-slate-500/10 text-slate-300">
+    <div className="rounded-2xl border border-dashed border-slate-500/35 bg-slate-950/30 p-6 text-center">
+      <div className="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-xl border border-slate-500/30 bg-slate-500/10 text-slate-300">
         <Database className="h-5 w-5" />
       </div>
       <p className="text-base font-black text-white">{title}</p>
+      {eventName ? (
+        <p className="mx-auto mt-3 inline-flex rounded-full border border-cyan-200/20 bg-cyan-300/10 px-3 py-1 text-xs font-black text-cyan-100">
+          Waiting for {eventName}
+        </p>
+      ) : null}
       <p className="mt-2 text-sm font-bold leading-6 text-slate-400">{body}</p>
     </div>
   )
@@ -1159,6 +1286,104 @@ function Meter({ value, color = 'bg-cyan-300' }: { value: number; color?: string
   )
 }
 
+const eventCount = (model: DashboardModel, eventName: AppEventName) =>
+  model.events.filter((event) => event.event_name === eventName).length
+
+const firstStudyActionRate = (model: DashboardModel) => {
+  const firstStudyUsers = model.users.filter((user) => user.namedProfile && user.timeline.some((event) => studyEvents.has(event.event_name))).length
+  return safePercent(firstStudyUsers, Math.max(1, model.profileCount))
+}
+
+const activeUsers = (model: DashboardModel) =>
+  model.users.filter((user) => user.namedProfile && ['Online', 'Idle'].includes(user.presence)).length
+
+const decisionCards = (model: DashboardModel): DecisionCardModel[] => {
+  const quizStarted = eventCount(model, 'quiz_started')
+  const quizCompleted = eventCount(model, 'quiz_completed')
+  const uploadStarted = eventCount(model, 'material_upload_started')
+  const uploadCompleted = eventCount(model, 'material_upload_completed')
+  const topMiss = model.categoryRows.find((row) => row.highConfidenceMisses > 0)
+  const weakestStep = model.journeySteps
+    .filter((step) => step.dropOff !== null)
+    .sort((a, b) => (b.dropOff ?? 0) - (a.dropOff ?? 0))[0]
+
+  const cards: DecisionCardModel[] = []
+  if (quizStarted > quizCompleted) {
+    cards.push({
+      title: 'Quiz starts are not finishing',
+      body: 'Users start quizzes but do not finish. Improve quiz pacing, save/resume, or reduce first-quiz length.',
+      tone: 'watch',
+    })
+  }
+  if (topMiss) {
+    cards.push({
+      title: `${topMiss.category} needs remediation`,
+      body: `High-confidence misses are clustering in ${topMiss.category}. Add remediation cards and clearer rationales.`,
+      tone: 'critical',
+    })
+  }
+  if (uploadStarted > uploadCompleted) {
+    cards.push({
+      title: 'Upload flow is leaking users',
+      body: 'Users open uploads but do not complete. Simplify upload steps and make accepted files clearer.',
+      tone: 'watch',
+    })
+  }
+  if (weakestStep && (weakestStep.dropOff ?? 0) >= 40) {
+    cards.push({
+      title: `${weakestStep.label} is the main drop-off`,
+      body: `The journey loses ${weakestStep.dropOff}% at this step. Inspect the preceding screen and tighten the next action.`,
+      tone: weakestStep.tone,
+    })
+  }
+  if (!cards.length && model.totalEvents) {
+    cards.push({
+      title: 'No urgent product decision yet',
+      body: 'The current event mix has no obvious critical drop-off. Keep collecting live activity before changing the flow.',
+      tone: 'good',
+    })
+  }
+  return cards
+}
+
+const eventHealthChecks = (model: DashboardModel): EventHealthCheck[] => {
+  const quizStarts = eventCount(model, 'quiz_started')
+  const quizAnswers = eventCount(model, 'question_answered')
+  const quizCompletions = eventCount(model, 'quiz_completed')
+  const uploadFailures = eventCount(model, 'material_upload_failed')
+  const uploadStarts = eventCount(model, 'material_upload_started')
+  const usersWithoutStudy = model.users.filter(
+    (user) => user.namedProfile && user.events > 1 && !user.timeline.some((event) => studyEvents.has(event.event_name)),
+  ).length
+
+  return [
+    {
+      title: 'Missing quiz completions',
+      value: Math.max(0, quizStarts - quizCompletions).toString(),
+      body: `${quizStarts} quiz_started and ${quizCompletions} quiz_completed events in this filter.`,
+      tone: quizStarts > quizCompletions ? 'watch' : quizStarts ? 'good' : 'muted',
+    },
+    {
+      title: 'Quiz starts without answers',
+      value: Math.max(0, quizStarts - quizAnswers).toString(),
+      body: `${quizAnswers} question_answered events are linked to quiz activity.`,
+      tone: quizStarts > quizAnswers ? 'watch' : quizStarts ? 'good' : 'muted',
+    },
+    {
+      title: 'Upload failures',
+      value: uploadFailures.toString(),
+      body: uploadStarts ? `${uploadFailures} failed out of ${uploadStarts} upload attempts.` : 'No material uploads recorded yet.',
+      tone: uploadFailures ? 'critical' : uploadStarts ? 'good' : 'muted',
+    },
+    {
+      title: 'Users with no study action',
+      value: usersWithoutStudy.toString(),
+      body: 'Named accounts with more than one event but no quiz, rationale, plan, weak-area, or flashcard event.',
+      tone: usersWithoutStudy ? 'watch' : model.profileCount ? 'good' : 'muted',
+    },
+  ]
+}
+
 function OverviewPage({
   model,
   section,
@@ -1168,33 +1393,69 @@ function OverviewPage({
   section: AdminSection
   dataAccess: AdminDataAccessStatus | null
 }) {
+  const quizCompletions = eventCount(model, 'quiz_completed')
+  const quizStarts = eventCount(model, 'quiz_started')
+  const firstStudyRate = firstStudyActionRate(model)
+  const activeNow = activeUsers(model)
+  const decisions = decisionCards(model)
+  const healthChecks = eventHealthChecks(model)
+  const topDropOff = model.journeySteps
+    .filter((step) => step.dropOff !== null)
+    .sort((a, b) => (b.dropOff ?? 0) - (a.dropOff ?? 0))[0]
+  const liveUsers = model.users.filter((user) => user.namedProfile).slice(0, 5)
   const accountKpiDetail =
     model.cohortMode === 'verified_signup'
       ? `${model.activatedUsers} verified signups with account confirmation`
       : `${model.activatedUsers} signups with completed signup (email confirmation unavailable, temporary fallback active)`
   return (
     <div className="space-y-5">
-      <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-4">
+      <div className="rounded-2xl border border-cyan-200/14 bg-[#041628]/88 p-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-100/60">Admin Home</p>
+            <h1 className="mt-1 text-2xl font-black text-white">Is the product working?</h1>
+          </div>
+          <p className="text-sm font-bold text-slate-400">
+            {model.lastEvent ? `Last live signal ${formatRelative(model.lastEvent)}` : 'Waiting for the first live signal'}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         <KpiCard
           icon={Users}
-          title="Tracked accounts"
-          value={model.profileCount.toString()}
+          title="Active users"
+          value={activeNow.toString()}
+          detail="Online or idle named accounts"
+          tone={activeNow ? 'good' : model.profileCount ? 'watch' : 'muted'}
+        />
+        <KpiCard
+          icon={Zap}
+          title="Activated users"
+          value={model.activatedUsers.toString()}
           detail={accountKpiDetail}
-          tone={model.profileCount ? 'info' : 'muted'}
+          tone={model.activatedUsers ? 'good' : model.profileCount ? 'watch' : 'muted'}
         />
         <KpiCard
-          icon={Gauge}
-          title="Activation rate"
-          value={`${model.activationRate}%`}
-          detail="Activated means study, onboarding, account, or remediation event"
-          tone={model.activationRate >= 40 ? 'good' : model.profileCount ? 'watch' : 'muted'}
+          icon={BookOpenCheck}
+          title="First study action"
+          value={`${firstStudyRate}%`}
+          detail="Named accounts with quiz, rationale, plan, weak area, or flashcard action"
+          tone={firstStudyRate >= 40 ? 'good' : model.profileCount ? 'watch' : 'muted'}
         />
         <KpiCard
-          icon={Clock3}
-          title="Avg session"
-          value={formatDuration(model.avgSessionSeconds)}
-          detail="Computed from session span or explicit time_spent_seconds"
-          tone={model.avgSessionSeconds >= 480 ? 'good' : model.totalSessions ? 'watch' : 'muted'}
+          icon={CheckCircle2}
+          title="Quiz completion"
+          value={quizStarts ? `${safePercent(quizCompletions, quizStarts)}%` : '0%'}
+          detail={`${quizCompletions} quiz_completed / ${quizStarts} quiz_started`}
+          tone={quizStarts && quizCompletions >= quizStarts * 0.5 ? 'good' : quizStarts ? 'watch' : 'muted'}
+        />
+        <KpiCard
+          icon={TimerReset}
+          title="Return rate"
+          value={`${model.returnRate}%`}
+          detail={`${model.returningUsers} returning named accounts`}
+          tone={model.returnRate >= 25 ? 'good' : model.profileCount ? 'watch' : 'muted'}
         />
         <KpiCard
           icon={AlertTriangle}
@@ -1215,62 +1476,8 @@ function OverviewPage({
         </div>
       ) : null}
 
-      <div className="grid gap-5 xl:grid-cols-[0.9fr_1.4fr_0.8fr]">
-        <Panel title="Acquisition Reality" subtitle="Actual source values from app_events." icon={MousePointer2} section={section}>
-          {model.sourceRows.length ? (
-            <div className="space-y-3">
-              {model.sourceRows.slice(0, 6).map((row) => (
-                <div key={row.source} className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
-                  <div className="mb-2 flex items-center justify-between gap-3">
-                    <div>
-                      <p className="font-black text-white">{row.source}</p>
-                      <p className="text-xs font-bold text-slate-400">
-                        {row.users} users / {row.events} events
-                      </p>
-                    </div>
-                    <span className="rounded-full border border-cyan-200/20 bg-cyan-300/10 px-3 py-1 text-xs font-black text-cyan-100">
-                      {row.percentage}%
-                    </span>
-                  </div>
-                  <Meter value={row.percentage} color="bg-cyan-300" />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <EmptyState title="No acquisition events yet" body="When someone visits the live website, the source mix will appear here." />
-          )}
-        </Panel>
-
-        <Panel title="Learner Journey Map" subtitle="Each step is counted from live user/session events." icon={LineChart} section={section}>
-          {model.journeySteps.length ? (
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-              {model.journeySteps.map((step) => (
-                <div key={step.id} className={`rounded-3xl border p-4 ${toneStyles[step.tone]}`}>
-                  <div className="mb-4 flex items-start justify-between gap-3">
-                    <span className="h-2.5 w-2.5 rounded-full bg-current" />
-                    {step.conversion !== null ? (
-                      <span className="rounded-full border border-white/15 bg-black/20 px-2 py-1 text-xs font-black">
-                        {step.conversion}%
-                      </span>
-                    ) : null}
-                  </div>
-                  <p className="text-sm font-black text-white">{step.label}</p>
-                  <p className="mt-3 text-3xl font-black text-white">{step.users}</p>
-                  <p className="text-[11px] font-black uppercase tracking-[0.14em] text-current/55">users</p>
-                  <p className="mt-3 min-h-[40px] text-xs font-bold leading-5 text-current/70">{step.description}</p>
-                  <div className="mt-3 flex items-center gap-2 text-xs font-bold text-current/65">
-                    <TrendingDown className="h-3.5 w-3.5" />
-                    <span>{step.dropOff === null ? 'No previous step' : `${step.dropOff}% drop-off from prior step`}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <EmptyState title="No journey yet" body="The app has not recorded any live user behavior inside this filter." />
-          )}
-        </Panel>
-
-        <Panel title="Live Truth" subtitle="What the panel knows right now." icon={Activity} section={section}>
+      <div className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
+        <Panel title="Live Ops" subtitle="Who is active, what just happened, and whether access is healthy." icon={Activity} section={section}>
           <div className="space-y-3">
             <StatusCard
               tone={!dataAccess?.signedIn || dataAccess?.isAdmin === false ? 'watch' : model.totalEvents ? 'good' : 'muted'}
@@ -1303,9 +1510,73 @@ function OverviewPage({
             />
             <StatusCard
               tone={model.lastEvent ? 'info' : 'muted'}
-              title="Latest event"
+              title="What changed since last refresh?"
               body={model.lastEvent ? `${formatClock(model.lastEvent)} (${formatRelative(model.lastEvent)})` : 'Not recorded yet.'}
             />
+            {liveUsers.length ? (
+              <DataTable
+                columns={['User', 'Action', 'Risk', 'Last active']}
+                rows={liveUsers.map((user) => [user.displayName, user.latestAction, user.riskLabel, formatRelative(user.lastActive)])}
+              />
+            ) : (
+              <EmptyState title="No named live users yet" eventName="profile_directory" body="Named users appear after profiles are available from the admin profile directory." />
+            )}
+            <div>
+              <p className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-slate-500">Event health</p>
+              <div className="grid gap-2 md:grid-cols-2">
+                {healthChecks.map((check) => (
+                  <div key={check.title} className={`rounded-xl border p-3 ${toneStyles[check.tone]}`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-xs font-black text-white">{check.title}</p>
+                      <p className="text-xl font-black leading-none text-white">{check.value}</p>
+                    </div>
+                    <p className="mt-2 text-xs font-bold leading-5 text-current/70">{check.body}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </Panel>
+
+        <Panel title="Product Analytics" subtitle="Funnel, retention, feature usage, content quality, and build priorities." icon={LineChart} section={section}>
+          <div className="space-y-4">
+            <div className="grid gap-3 md:grid-cols-2">
+              <StatusCard
+                tone={topDropOff?.tone ?? 'muted'}
+                title="Where are users dropping?"
+                body={topDropOff ? `${topDropOff.label}: ${topDropOff.dropOff}% drop-off from the prior step.` : 'Waiting for journey events to identify a real drop-off.'}
+              />
+              <StatusCard
+                tone={decisions[0]?.tone ?? 'muted'}
+                title="What needs attention?"
+                body={decisions[0]?.body ?? 'Waiting for quiz, upload, remediation, or retention events.'}
+              />
+            </div>
+
+            {model.journeySteps.length ? (
+              <div className="grid gap-2 md:grid-cols-4">
+                {model.journeySteps.map((step) => (
+                  <div key={step.id} className={`rounded-xl border p-3 ${toneStyles[step.tone]}`}>
+                    <p className="truncate text-xs font-black text-white">{step.label}</p>
+                    <div className="mt-2 flex items-end justify-between gap-2">
+                      <p className="text-2xl font-black text-white">{step.users}</p>
+                      <p className="text-xs font-black text-current/65">{step.conversion === null ? 'n/a' : `${step.conversion}%`}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState title="No journey yet" eventName="page_view" body="The journey map starts once the app records live behavior for a signed-in account." />
+            )}
+
+            <div>
+              <p className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-slate-500">What should we build next?</p>
+              <div className="grid gap-3 md:grid-cols-2">
+                {(decisions.length ? decisions : [{ title: 'Waiting for product signals', body: 'Collect quiz_completed, material_upload_completed, and question_answered events before ranking build work.', tone: 'muted' as StatusTone }]).map((card) => (
+                  <StatusCard key={card.title} tone={card.tone} title={card.title} body={card.body} />
+                ))}
+              </div>
+            </div>
           </div>
         </Panel>
       </div>
@@ -1349,7 +1620,7 @@ function AcquisitionPage({ model, section }: { model: DashboardModel; section: A
             ))}
           </div>
         ) : (
-          <EmptyState title="No source data yet" body="Open the public app from a live URL and this will populate from real events." />
+            <EmptyState title="No source data yet" eventName="page_view" body="Open the public app from a live URL and this will populate from real events." />
         )}
       </Panel>
 
@@ -1367,7 +1638,7 @@ function AcquisitionPage({ model, section }: { model: DashboardModel; section: A
               ])}
             />
           ) : (
-            <EmptyState title="No campaign data yet" body="Add UTM campaign links when ads or posts go live, then this table becomes useful." />
+            <EmptyState title="No campaign data yet" eventName="page_view" body="Add UTM campaign links when ads or posts go live, then this table becomes useful." />
           )}
         </Panel>
 
@@ -1384,7 +1655,7 @@ function AcquisitionPage({ model, section }: { model: DashboardModel; section: A
               ])}
             />
           ) : (
-            <EmptyState title="No page behavior yet" body="No page_view events were found for this filter." />
+            <EmptyState title="No page behavior yet" eventName="page_view" body="No page_view events were found for this filter." />
           )}
         </Panel>
       </div>
@@ -1447,7 +1718,7 @@ function ActivationPage({ model, section }: { model: DashboardModel; section: Ad
             ))}
           </div>
         ) : (
-          <EmptyState title="No activation data yet" body="The live app has not recorded activation events for this filter." />
+          <EmptyState title="No activation data yet" eventName="signup_completed" body="The live app has not recorded activation events for this filter." />
         )}
       </Panel>
     </div>
@@ -1469,6 +1740,7 @@ function UsersPage({ model, section }: { model: DashboardModel; section: AdminSe
     )
   }, [namedUsers, search])
   const selectedUser = filteredUsers.find((user) => user.id === selectedUserId) ?? filteredUsers[0] ?? null
+  const selectedSessions = selectedUser ? groupTimelineBySession(selectedUser.timeline) : []
 
   return (
     <div className="grid gap-5 xl:grid-cols-[1fr_1.05fr]">
@@ -1519,11 +1791,15 @@ function UsersPage({ model, section }: { model: DashboardModel; section: AdminSe
                     <span className="rounded-full border border-amber-200/25 bg-amber-300/10 px-3 py-1 text-xs font-black text-amber-100">
                       {user.status}
                     </span>
+                    <span className={`rounded-full border px-3 py-1 text-xs font-black ${toneStyles[user.riskTone]}`}>
+                      {user.riskLabel}
+                    </span>
                   </div>
                 </div>
-                <div className="mt-4 grid grid-cols-2 gap-2 text-xs font-bold text-slate-400 sm:grid-cols-4">
+                <div className="mt-4 grid grid-cols-2 gap-2 text-xs font-bold text-slate-400 sm:grid-cols-5">
                   <span>{user.source}</span>
-                  <span>Current: {user.currentPage}</span>
+                  <span className="truncate">Current: {user.currentPage}</span>
+                  <span>Latest: {user.latestAction}</span>
                   <span>{user.events} events</span>
                   <span>{formatRelative(user.lastActive)}</span>
                 </div>
@@ -1532,7 +1808,7 @@ function UsersPage({ model, section }: { model: DashboardModel; section: AdminSe
             ))}
           </div>
         ) : (
-          <EmptyState title="No named users yet" body="Only accounts with a registered name or email are shown here." />
+          <EmptyState title="No named users yet" eventName="profile_directory" body="Only accounts with a registered name or email are shown here." />
         )}
       </Panel>
 
@@ -1558,22 +1834,37 @@ function UsersPage({ model, section }: { model: DashboardModel; section: AdminSe
               </p>
             </div>
 
-            <div className="space-y-3">
-              {selectedUser.timeline.map((event) => (
-                <div key={event.id} className={`rounded-2xl border p-4 ${toneStyles[eventTone(event)]}`}>
-                  <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="space-y-4">
+              {selectedSessions.map((session, index) => (
+                <div key={session.sessionId} className="rounded-2xl border border-white/10 bg-white/[0.025] p-3">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <p className="font-black text-white">{formatEventLabel(event.event_name)}</p>
-                      <p className="mt-1 text-xs font-bold leading-5 text-current/70">{eventDetail(event)}</p>
+                      <p className="text-sm font-black text-white">Session {selectedSessions.length - index}</p>
+                      <p className="mt-1 text-xs font-bold text-slate-500">
+                        {session.events.length} events / {formatDuration((session.endedAt - session.startedAt) / 1000)}
+                      </p>
                     </div>
-                    <span className="text-xs font-black text-current/70">{formatClock(eventTime(event))}</span>
+                    <span className="text-xs font-black text-slate-400">{formatClock(session.endedAt)}</span>
+                  </div>
+                  <div className="space-y-2">
+                    {session.events.map((event) => (
+                      <div key={event.id} className={`rounded-xl border p-3 ${toneStyles[eventTone(event)]}`}>
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <p className="font-black text-white">{formatEventLabel(event.event_name)}</p>
+                            <p className="mt-1 text-xs font-bold leading-5 text-current/70">{eventDetail(event)}</p>
+                          </div>
+                          <span className="text-xs font-black text-current/70">{formatClock(eventTime(event))}</span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               ))}
             </div>
           </div>
         ) : (
-          <EmptyState title="No selected account" body="Once a named account exists, click one to inspect its behavior timeline." />
+          <EmptyState title="No selected account" eventName="profile_directory" body="Once a named account exists, click one to inspect its behavior timeline." />
         )}
       </Panel>
     </div>
@@ -1608,7 +1899,7 @@ function FeatureUsagePage({ model, section }: { model: DashboardModel; section: 
             ))}
           </div>
         ) : (
-          <EmptyState title="No feature events yet" body="Feature opens, quiz starts, uploads, and other interactions will appear here." />
+          <EmptyState title="No feature events yet" eventName="feature_opened" body="Feature opens, quiz starts, uploads, and other interactions will appear here." />
         )}
       </Panel>
 
@@ -1624,7 +1915,7 @@ function FeatureUsagePage({ model, section }: { model: DashboardModel; section: 
             ])}
           />
         ) : (
-          <EmptyState title="No page rows yet" body="There are no live page events for this filter." />
+          <EmptyState title="No page rows yet" eventName="page_view" body="There are no live page events for this filter." />
         )}
       </Panel>
     </div>
@@ -1674,7 +1965,7 @@ function RetentionPage({ model, section }: { model: DashboardModel; section: Adm
             ])}
           />
         ) : (
-          <EmptyState title="No returning users yet" body="This is expected early. Once a named account returns in a new session, it will show up here." />
+          <EmptyState title="No returning users yet" eventName="page_view" body="This is expected early. Once a named account returns in a new session, it will show up here." />
         )}
       </Panel>
     </div>
@@ -1730,7 +2021,31 @@ function ContentQualityPage({ model, section }: { model: DashboardModel; section
             ])}
           />
         ) : (
-          <EmptyState title="No question outcomes yet" body="When live users answer practice questions, category and confidence signals will appear here." />
+          <EmptyState title="No question outcomes yet" eventName="question_answered" body="When live users answer practice questions, category and confidence signals will appear here." />
+        )}
+      </Panel>
+
+      <Panel title="Content QA Queue" subtitle="Item-level review signals from question events and feedback reports." icon={Search} section={section}>
+        {model.contentQaRows.length ? (
+          <DataTable
+            columns={['Item', 'Category', 'Answered', 'Incorrect', 'High-conf misses', 'Feedback', 'Source', 'Review']}
+            rows={model.contentQaRows.slice(0, 20).map((row) => [
+              row.itemId,
+              row.category,
+              row.answered.toString(),
+              row.incorrect.toString(),
+              row.highConfidenceMisses.toString(),
+              row.feedbackCount.toString(),
+              row.sourceStatus,
+              row.reviewStatus,
+            ])}
+          />
+        ) : (
+          <EmptyState
+            title="No item-level QA yet"
+            eventName="question_answered"
+            body="Item rows appear after question_answered events include safe question_id metadata."
+          />
         )}
       </Panel>
     </div>

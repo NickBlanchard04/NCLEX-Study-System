@@ -8,6 +8,10 @@ import type {
   StrategyLesson,
 } from '../app/types'
 import { examTracks, getExamTrack } from './exam-tracks'
+import {
+  getInternalDraftFixtureFlashcards,
+  getInternalDraftFixtureQuestions,
+} from './internal-draft-fixtures'
 import { qualityQuestionPacks } from './quality-question-packs'
 
 const makeChoices = (...choices: string[]): AnswerChoice[] =>
@@ -1410,19 +1414,23 @@ const makeGeneratedQuestion = (
 
 const buildTrackBank = (examTrack: ExamTrackId): Question[] => {
   const qualityPack = qualityQuestionPacks[examTrack]
+  const internalDraftQuestions = getInternalDraftFixtureQuestions(examTrack)
   const generated = Array.from({ length: generatedQuestionCount }, (_, index) =>
     makeGeneratedQuestion(examTrack, index),
   )
 
   if (examTrack !== 'nclex-rn') {
-    const qualityIds = new Set(qualityPack.map((question) => question.id))
+    const qualityIds = new Set([...qualityPack, ...internalDraftQuestions].map((question) => question.id))
     return [
+      ...internalDraftQuestions,
       ...qualityPack,
-      ...generated.filter((question) => !qualityIds.has(question.id)).slice(0, generatedQuestionCount - qualityPack.length),
+      ...generated
+        .filter((question) => !qualityIds.has(question.id))
+        .slice(0, generatedQuestionCount - qualityPack.length - internalDraftQuestions.length),
     ]
   }
 
-  const authoredRnQuestions = [...qualityPack, ...nclexRnBaseQuestions]
+  const authoredRnQuestions = [...internalDraftQuestions, ...qualityPack, ...nclexRnBaseQuestions]
   const generatedIds = new Set(authoredRnQuestions.map((question) => question.id))
   return [
     ...authoredRnQuestions,
@@ -1647,6 +1655,7 @@ const normalizedAuthoredFlashcards = authoredFlashcards.map((card): Flashcard =>
 }))
 
 export const flashcards: Flashcard[] = [
+  ...getInternalDraftFixtureFlashcards(),
   ...normalizedAuthoredFlashcards,
   ...examTracks.flatMap((track) => makeTrackStarterFlashcards(track.id)),
 ]

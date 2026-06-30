@@ -576,6 +576,30 @@ export const useStudySystemStore = create<StudySystemState>()(
             },
             { userId: snapshot.user?.id, isDemoUser: false },
           )
+          void trackAppEvent(
+            'onboarding_completed',
+            {
+              page_path: '/',
+              exam_track: freshProfile.examTrack,
+              feature_name: 'Beta Onboarding',
+              metadata: {
+                has_school: Boolean(freshProfile.nursingSchool?.trim()),
+                has_name: Boolean(freshProfile.name?.trim()),
+              },
+            },
+            { userId: snapshot.user?.id, isDemoUser: false },
+          )
+          if (freshProfile.examTrack) {
+            void trackAppEvent(
+              'exam_track_selected',
+              {
+                page_path: '/',
+                exam_track: freshProfile.examTrack,
+                feature_name: 'Exam Track',
+              },
+              { userId: snapshot.user?.id, isDemoUser: false },
+            )
+          }
           if (!snapshot.user || !snapshot.session) {
             set({
               ...createCleanAccountState(freshProfile),
@@ -1062,6 +1086,9 @@ export const useStudySystemStore = create<StudySystemState>()(
             confidence_level: confidence,
             time_spent_seconds: timeSpentSec,
             is_demo_user: state.isDemoMode,
+            metadata: {
+              question_id: currentQuestionId,
+            },
           },
           { userId: state.authUser?.id, isDemoUser: state.isDemoMode },
         )
@@ -1076,6 +1103,9 @@ export const useStudySystemStore = create<StudySystemState>()(
             confidence_level: confidence,
             time_spent_seconds: timeSpentSec,
             is_demo_user: state.isDemoMode,
+            metadata: {
+              question_id: currentQuestionId,
+            },
           },
           { userId: state.authUser?.id, isDemoUser: state.isDemoMode },
         )
@@ -1690,11 +1720,44 @@ export const useStudySystemStore = create<StudySystemState>()(
         }))
         void get().syncNow()
       },
-      startMaterialFlashcards: (materialId) => set({ preferredMaterialFlashcardsId: materialId }),
+      startMaterialFlashcards: (materialId) => {
+        const state = get()
+        const material = state.materials.find((item) => item.id === materialId)
+        void trackAppEvent(
+          'generated_asset_used',
+          {
+            page_path: '/flashcards',
+            feature_name: 'Material Flashcards',
+            exam_track: state.profile.examTrack ?? 'nclex-rn',
+            is_demo_user: state.isDemoMode,
+            metadata: {
+              asset_type: 'flashcards',
+              has_material: Boolean(material),
+            },
+          },
+          { userId: state.authUser?.id, isDemoUser: state.isDemoMode },
+        )
+        set({ preferredMaterialFlashcardsId: materialId })
+      },
       clearMaterialFlashcardsPreference: () => set({ preferredMaterialFlashcardsId: null }),
       startMaterialQuiz: (materialId, config) => {
         const state = get()
         const material = state.materials.find((item) => item.id === materialId)
+        void trackAppEvent(
+          'generated_asset_used',
+          {
+            page_path: '/my-materials',
+            feature_name: 'Material Quiz',
+            exam_track: state.profile.examTrack ?? 'nclex-rn',
+            is_demo_user: state.isDemoMode,
+            metadata: {
+              asset_type: 'quiz',
+              question_count: config?.questionCount ?? 5,
+              has_material: Boolean(material),
+            },
+          },
+          { userId: state.authUser?.id, isDemoUser: state.isDemoMode },
+        )
         void trackAppEvent(
           'quiz_started',
           {

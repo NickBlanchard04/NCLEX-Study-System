@@ -16,8 +16,16 @@ import {
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { clsx } from 'clsx'
-import type { ActiveSession, AnswerChoice, ConfidenceLevel, MasteryLevel, Question } from '../app/types'
+import type { ActiveSession, ConfidenceLevel, MasteryLevel } from '../app/types'
 import { useStudySystemStore } from '../app/store'
+import {
+  contentFeedbackReasonLabels,
+  contentFeedbackReasons,
+  recordContentFeedback,
+  trackContentFeedbackOpened,
+  type ContentFeedbackReason,
+} from '../services/content-feedback'
+import { trackAppEvent } from '../services/analytics-client'
 import {
   getQuestionCategoryBreakdown,
   getMissReason,
@@ -41,10 +49,10 @@ export function PageHeader({
   return (
     <div className="mb-7 overflow-hidden rounded-[1.35rem] border border-cyan-300/20 bg-[#061b31]/55 px-5 py-5 shadow-[0_0_48px_rgba(0,98,180,0.14)] backdrop-blur md:px-7 lg:flex lg:items-start lg:justify-between lg:gap-6">
       <div className="max-w-3xl">
-        <p className="nc-eyebrow text-sky-300">
+        <p className="text-xs font-black uppercase tracking-[0.2em] text-sky-300">
           {eyebrow}
         </p>
-        <h2 className="nc-page-title mt-2 text-4xl text-white drop-shadow-[0_0_16px_rgba(148,207,255,0.42)] sm:text-5xl md:text-6xl">
+        <h2 className="mt-2 text-[clamp(2.1rem,3.2vw,4.6rem)] font-black leading-[0.95] tracking-[-0.05em] text-white drop-shadow-[0_0_16px_rgba(148,207,255,0.42)]">
           {title}
         </h2>
         <p className="mt-3 max-w-3xl text-sm leading-7 text-sky-100/72 md:text-base">
@@ -68,7 +76,7 @@ export function SectionHeading({
   return (
     <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
       <div>
-        <h3 className="nc-section-title text-xl text-white md:text-2xl">{title}</h3>
+        <h3 className="text-xl font-black tracking-[-0.03em] text-white md:text-2xl">{title}</h3>
         {description ? (
           <p className="mt-1 text-sm leading-6 text-sky-100/64">{description}</p>
         ) : null}
@@ -179,7 +187,7 @@ export function CommandBadge({
   tone?: CommandTone
 }) {
   return (
-    <span className={clsx('nc-chip-label inline-flex min-h-8 items-center gap-2 rounded-lg border px-3 py-1.5', commandToneStyles[tone].badge)}>
+    <span className={clsx('inline-flex min-h-8 items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-black', commandToneStyles[tone].badge)}>
       {icon}
       {children}
     </span>
@@ -201,12 +209,12 @@ export function CommandStatTile({
 }) {
   return (
     <div className={clsx('min-w-0 rounded-xl border px-2 py-2.5 sm:px-3 sm:py-3', commandToneStyles[tone].stat)}>
-      <div className="nc-metric-label flex min-w-0 items-start gap-1.5 leading-tight sm:items-center sm:gap-2">
+      <div className="flex items-center gap-1.5 text-[0.68rem] font-black uppercase sm:gap-2 sm:text-xs">
         {icon ? <span className="hidden sm:inline-flex">{icon}</span> : null}
-        <span className="min-w-0">{label}</span>
+        <span className="truncate">{label}</span>
       </div>
-      <p className="nc-metric-value mt-1.5 truncate text-xl text-white sm:mt-2 sm:text-2xl">{value}</p>
-      <p className="nc-meta leading-tight text-sky-100/58">{detail}</p>
+      <p className="mt-1.5 truncate text-xl font-black text-white sm:mt-2 sm:text-2xl">{value}</p>
+      <p className="truncate text-[0.68rem] font-semibold text-sky-100/58 sm:text-xs">{detail}</p>
     </div>
   )
 }
@@ -234,7 +242,7 @@ export function CommandPageIntro({
         <div className={clsx('relative grid gap-5', aside && 'lg:grid-cols-[minmax(0,1fr)_250px] lg:items-stretch')}>
           <div className="min-w-0">
             {badges ? <div className="flex flex-wrap gap-2">{badges}</div> : null}
-            <h2 className={clsx('nc-page-title max-w-3xl text-white', badges ? 'mt-5' : '', 'text-[2rem] sm:text-3xl md:text-4xl')}>
+            <h2 className={clsx('max-w-3xl font-black leading-[1.08] text-white', badges ? 'mt-5' : '', 'text-[2rem] sm:text-3xl md:text-4xl')}>
               {title}
             </h2>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-sky-100/78">{description}</p>
@@ -277,11 +285,11 @@ export function CommandActionCard({
           </span>
         ) : null}
         <span className="min-w-0 flex-1">
-          {meta ? <span className="nc-meta block uppercase text-sky-100/54">{meta}</span> : null}
-          <span className="nc-card-title block text-sm text-white">{title}</span>
+          {meta ? <span className="block text-xs font-black uppercase text-sky-100/54">{meta}</span> : null}
+          <span className="block text-sm font-black text-white">{title}</span>
           <span className="mt-1 block text-sm leading-6 text-sky-100/62">{description}</span>
         </span>
-        {action ? <span className="nc-secondary-label shrink-0 text-sm text-cyan-100">{action}</span> : null}
+        {action ? <span className="shrink-0 text-sm font-black text-cyan-100">{action}</span> : null}
       </div>
     </>
   )
@@ -315,8 +323,8 @@ export function DetailGrid({
 export function QuickMetric({ label, value, detail }: { label: string; value: string; detail: string }) {
   return (
     <div className="rounded-[18px] border border-[var(--nclex-border)] bg-white p-4 shadow-sm">
-      <p className="nc-metric-label text-[var(--nclex-blue)]">{label}</p>
-      <p className="nc-metric-value mt-2 text-3xl text-[var(--nclex-text)]">{value}</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-blue)]">{label}</p>
+      <p className="mt-2 font-serif text-3xl text-[var(--nclex-text)]">{value}</p>
       <p className="mt-2 text-sm text-[var(--nclex-text-muted)]">{detail}</p>
     </div>
   )
@@ -325,8 +333,8 @@ export function QuickMetric({ label, value, detail }: { label: string; value: st
 export function MetricChip({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-[18px] border border-[var(--nclex-border)] bg-[var(--nclex-card-muted)] p-4">
-      <p className="nc-metric-label text-[var(--nclex-text-muted)]">{label}</p>
-      <p className="nc-metric-value mt-2 text-3xl text-[var(--nclex-text)]">{value}</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]">{label}</p>
+      <p className="mt-2 font-serif text-3xl text-[var(--nclex-text)]">{value}</p>
     </div>
   )
 }
@@ -419,7 +427,7 @@ export function StatCard({
             </div>
           ) : null}
           <div>
-            <p className="text-sm font-bold text-white">{label}</p>
+            <p className="text-sm font-black text-white">{label}</p>
             <p className="mt-1 text-xs leading-5 text-sky-100/60">{detail}</p>
           </div>
         </div>
@@ -427,7 +435,7 @@ export function StatCard({
       </div>
       <div className="mt-5 flex items-end justify-between gap-3">
         <div>
-          <p className="text-3xl font-bold text-white md:text-[2rem]">{value}</p>
+          <p className="text-3xl font-black text-white md:text-[2rem]">{value}</p>
           {trend ? (
             <p className="mt-1 text-xs font-semibold text-sky-100/60">{trend}</p>
           ) : null}
@@ -517,7 +525,7 @@ export function CircularProgress({
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <p className="text-3xl font-bold text-white">{Math.round(value * 100)}%</p>
+          <p className="text-3xl font-black text-white">{Math.round(value * 100)}%</p>
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-sky-200/64">
             {label}
           </p>
@@ -588,7 +596,7 @@ export function EmptyState({
           <Lightbulb className="h-5 w-5" />
         </div>
         <div>
-          <h3 className="text-2xl font-bold text-white">{title}</h3>
+          <h3 className="text-2xl font-black text-white">{title}</h3>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-sky-100/64">{description}</p>
         </div>
         {action}
@@ -605,55 +613,14 @@ const confidenceTone: Record<ConfidenceLevel, string> = {
 
 const practiceActionButton = {
   submit:
-    'inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(251,191,36,0.2)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20 disabled:cursor-not-allowed disabled:border-slate-400/20 disabled:bg-slate-500/18 disabled:text-slate-200/45 disabled:shadow-none',
+    'inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-black text-white shadow-[0_14px_34px_rgba(251,191,36,0.2)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20 disabled:cursor-not-allowed disabled:border-slate-400/20 disabled:bg-slate-500/18 disabled:text-slate-200/45 disabled:shadow-none',
   next:
-    'inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl border border-cyan-100/42 bg-[linear-gradient(180deg,#22d3ee_0%,#0e7490_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(34,211,238,0.18)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-cyan-300/20',
+    'inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl border border-cyan-100/42 bg-[linear-gradient(180deg,#22d3ee_0%,#0e7490_100%)] px-5 py-3 text-sm font-black text-white shadow-[0_14px_34px_rgba(34,211,238,0.18)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-cyan-300/20',
   finish:
-    'inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl border border-emerald-100/42 bg-[linear-gradient(180deg,#34d399_0%,#047857_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(52,211,153,0.18)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-emerald-300/20',
+    'inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl border border-emerald-100/42 bg-[linear-gradient(180deg,#34d399_0%,#047857_100%)] px-5 py-3 text-sm font-black text-white shadow-[0_14px_34px_rgba(52,211,153,0.18)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-emerald-300/20',
   review:
-    'inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl border border-violet-200/30 bg-violet-300/[0.08] px-5 py-3 text-sm font-bold text-violet-100 shadow-[0_12px_28px_rgba(124,58,237,0.12)] transition hover:border-violet-100/56 hover:bg-violet-300/14 focus:outline-none focus:ring-4 focus:ring-violet-300/18',
+    'inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl border border-violet-200/30 bg-violet-300/[0.08] px-5 py-3 text-sm font-black text-violet-100 shadow-[0_12px_28px_rgba(124,58,237,0.12)] transition hover:border-violet-100/56 hover:bg-violet-300/14 focus:outline-none focus:ring-4 focus:ring-violet-300/18',
 }
-
-const generatedDistractorFallback = 'This choice does not best address the priority cue in the stem.'
-const genericDistractorPattern =
-  /The distractors either delay needed action, move outside the role being tested, or skip the assessment and safety logic needed for clinical judgment\./i
-
-const formatContentQuality = (question: Question) =>
-  question.contentQuality?.replaceAll('-', ' ') ?? 'draft item'
-
-const isReviewedReadinessItem = (question: Question) =>
-  Boolean(
-    question.blueprintMapped &&
-      question.sourceBacked &&
-      (question.contentQuality === 'sme-reviewed' || question.contentQuality === 'published'),
-  )
-
-const getLearnerEvidenceLabel = (question: Question) =>
-  isReviewedReadinessItem(question) ? 'Reviewed readiness evidence' : 'Practice evidence only'
-
-const getChoiceFeedback = (question: Question, choice: AnswerChoice) => {
-  const explicit = question.rationale.choices?.[choice.id]?.trim()
-  if (explicit) return explicit
-
-  if (question.correctAnswer.includes(choice.id)) {
-    return question.rationale.whyCorrect
-  }
-
-  const fallback = question.rationale.whyOthers.trim()
-  if (fallback && !genericDistractorPattern.test(fallback)) return fallback
-  return generatedDistractorFallback
-}
-
-const getItemDetailBadges = (question: Question, evidenceLabel: string) =>
-  [
-    question.blueprintMapped ? 'Blueprint mapped' : 'Blueprint not mapped',
-    question.sourceBacked ? 'Source-backed' : 'Practice item',
-    `Status: ${formatContentQuality(question)}`,
-    question.updatedAt ? `Updated: ${question.updatedAt}` : null,
-    evidenceLabel,
-    question.sourceTopic ? `Topic: ${question.sourceTopic}` : null,
-    ...(question.sourceRefs ?? []).map((source) => `Source: ${source}`),
-  ].filter(Boolean) as string[]
 
 export function QuestionSessionRunner({
   session,
@@ -671,6 +638,9 @@ export function QuestionSessionRunner({
   const finishSession = useStudySystemStore((state) => state.finishSession)
   const startPracticeSession = useStudySystemStore((state) => state.startPracticeSession)
   const attempts = useStudySystemStore((state) => state.attempts)
+  const profile = useStudySystemStore((state) => state.profile)
+  const authUser = useStudySystemStore((state) => state.authUser)
+  const isDemoMode = useStudySystemStore((state) => state.isDemoMode)
   const navigate = useNavigate()
   const questionId = session.questionIds[session.currentIndex]
   const question = questionId ? questionLookup[questionId] : undefined
@@ -680,9 +650,12 @@ export function QuestionSessionRunner({
   const [showRationale, setShowRationale] = useState(Boolean(existingResponse))
   const [flagged, setFlagged] = useState(existingResponse?.flagged ?? false)
   const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null)
+  const [feedbackOpen, setFeedbackOpen] = useState(false)
+  const [feedbackReason, setFeedbackReason] = useState<ContentFeedbackReason>('wrong_answer')
+  const [feedbackNote, setFeedbackNote] = useState('')
+  const [feedbackSubmittedId, setFeedbackSubmittedId] = useState<string | null>(null)
   const isLastQuestion = session.currentIndex === session.questionIds.length - 1
   const currentIsCorrect = question ? getQuestionResult(questionId, selectedAnswers) : false
-
   useEffect(() => {
     if (!session.config.timed || !session.config.timeLimitMinutes || session.endedAt) return
     const totalSeconds = session.config.timeLimitMinutes * 60
@@ -739,28 +712,28 @@ export function QuestionSessionRunner({
           <div className="border-b border-[var(--nclex-border)] bg-[linear-gradient(135deg,#04213d_0%,#07172b_100%)] px-5 py-5 text-white md:px-6">
             <div className="grid gap-5 md:grid-cols-[1.15fr_0.85fr] md:items-center">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-cyan-200">
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-200">
                   {modeLabel}
                 </p>
-                <h3 className="mt-2 text-3xl font-bold tracking-normal md:text-5xl">Session complete.</h3>
+                <h3 className="mt-2 text-3xl font-black tracking-[-0.04em] md:text-5xl">Session complete.</h3>
                 <p className="mt-3 max-w-2xl text-sm leading-7 text-sky-100/78">
                   {sessionTakeaway}
                 </p>
               </div>
               <div className="grid gap-3 sm:grid-cols-3 md:grid-cols-1">
                 <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
-                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-100/65">Score</p>
-                  <p className="mt-2 text-3xl font-bold">{score}%</p>
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-100/65">Score</p>
+                  <p className="mt-2 text-3xl font-black">{score}%</p>
                   <p className="text-sm font-semibold text-sky-100/70">{correctCount} correct</p>
                 </div>
                 <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
-                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-100/65">Missed</p>
-                  <p className="mt-2 text-3xl font-bold">{missedQuestions.length}</p>
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-100/65">Missed</p>
+                  <p className="mt-2 text-3xl font-black">{missedQuestions.length}</p>
                   <p className="text-sm font-semibold text-sky-100/70">review items</p>
                 </div>
                 <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
-                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-100/65">Next</p>
-                  <p className="mt-2 text-lg font-bold">{topMissedQuestion?.category ?? 'Mixed set'}</p>
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-100/65">Next</p>
+                  <p className="mt-2 text-lg font-black">{topMissedQuestion?.category ?? 'Mixed set'}</p>
                 </div>
               </div>
             </div>
@@ -770,7 +743,7 @@ export function QuestionSessionRunner({
               <button
                 type="button"
                 onClick={startRepairSet}
-                className="nclex-btn-primary inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold"
+                className="nclex-btn-primary inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black"
               >
                 Repair {topMissedQuestion.category}
                 <ArrowRight className="h-4 w-4" />
@@ -779,14 +752,14 @@ export function QuestionSessionRunner({
             <button
               type="button"
               onClick={() => navigate('/weak-areas')}
-              className="nclex-btn-secondary inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold"
+              className="nclex-btn-secondary inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black"
             >
               Open remediation
             </button>
             <button
               type="button"
               onClick={onExit}
-              className="nclex-btn-secondary min-h-[48px] rounded-xl px-4 py-2.5 text-sm font-bold"
+              className="nclex-btn-secondary min-h-[48px] rounded-xl px-4 py-2.5 text-sm font-black"
             >
               Close session
             </button>
@@ -798,10 +771,10 @@ export function QuestionSessionRunner({
             <div className="flex items-start gap-3">
               <AlertTriangle className="mt-1 h-5 w-5 shrink-0 text-amber-300" />
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-amber-200">
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-200">
                   Why it matters
                 </p>
-                <h4 className="mt-2 text-2xl font-bold tracking-normal text-white">
+                <h4 className="mt-2 text-2xl font-black tracking-[-0.03em] text-white">
                   {topMissedQuestion?.category ?? 'Pattern detected from this quiz'}
                 </h4>
                 <p className="mt-2 text-sm leading-7 text-sky-100/72">
@@ -921,7 +894,7 @@ export function QuestionSessionRunner({
                     difficulty: 'adaptive',
                   })
                 }
-                className="nclex-btn-primary inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold"
+                className="nclex-btn-primary inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black"
               >
                 Rebuild set
                 <ArrowRight className="h-4 w-4" />
@@ -929,7 +902,7 @@ export function QuestionSessionRunner({
               <button
                 type="button"
                 onClick={onExit}
-                className="nclex-btn-secondary min-h-[48px] rounded-xl px-4 py-2.5 text-sm font-bold"
+                className="nclex-btn-secondary min-h-[48px] rounded-xl px-4 py-2.5 text-sm font-black"
               >
                 Back to Question Bank
               </button>
@@ -943,6 +916,22 @@ export function QuestionSessionRunner({
   const openReviewForCurrentAnswer = () => {
     setSubmitted(true)
     setShowRationale(true)
+    void trackAppEvent(
+      'rationale_opened',
+      {
+        page_path: typeof window === 'undefined' ? '/practice-questions' : window.location.pathname,
+        feature_name: 'Answer Rationale',
+        exam_track: profile.examTrack ?? 'nclex-rn',
+        question_category: question.category,
+        question_result: currentIsCorrect ? 'correct' : 'incorrect',
+        is_demo_user: isDemoMode,
+        metadata: {
+          question_id: questionId,
+          review_state: 'answer_submitted',
+        },
+      },
+      { userId: authUser?.id, isDemoUser: isDemoMode },
+    )
   }
 
   const toggleChoice = (choiceId: string) => {
@@ -971,6 +960,71 @@ export function QuestionSessionRunner({
     })
   }
 
+  const resetFeedbackForm = () => {
+    setFeedbackOpen(false)
+    setFeedbackReason('wrong_answer')
+    setFeedbackNote('')
+    setFeedbackSubmittedId(null)
+  }
+
+  const setQuestionUiState = (targetQuestionId?: string) => {
+    const targetResponse = targetQuestionId
+      ? session.responses.find((response) => response.questionId === targetQuestionId)
+      : null
+    setSelectedAnswers(targetResponse?.selectedAnswer ?? [])
+    setSubmitted(Boolean(targetResponse))
+    setShowRationale(Boolean(targetResponse))
+    setFlagged(targetResponse?.flagged ?? false)
+    resetFeedbackForm()
+  }
+
+  const goToQuestionIndex = (index: number) => {
+    setQuestionUiState(session.questionIds[index])
+    goToSessionQuestion(index)
+  }
+
+  const goToNextQuestion = () => {
+    setQuestionUiState(session.questionIds[Math.min(session.currentIndex + 1, session.questionIds.length - 1)])
+    nextQuestion()
+  }
+
+  const goToPreviousQuestion = () => {
+    setQuestionUiState(session.questionIds[Math.max(session.currentIndex - 1, 0)])
+    previousQuestion()
+  }
+
+  const route = typeof window === 'undefined' ? '/practice-questions' : window.location.pathname
+  const feedbackReviewState = !submitted
+    ? 'pre_submit'
+    : showRationale
+      ? 'review_open'
+      : existingResponse
+        ? 'confidence_recorded'
+        : 'confidence_pending'
+
+  const openContentFeedback = () => {
+    if (!question) return
+    setFeedbackOpen((current) => {
+      const next = !current
+      if (next) trackContentFeedbackOpened(question, route)
+      return next
+    })
+  }
+
+  const submitContentFeedback = () => {
+    if (!question) return
+    const record = recordContentFeedback({
+      question,
+      reason: feedbackReason,
+      note: feedbackNote,
+      route,
+      reviewState: feedbackReviewState,
+    })
+    setFeedbackSubmittedId(record.id)
+    setFeedbackOpen(false)
+    setFeedbackNote('')
+  }
+
   const finalResponse = existingResponse ?? null
   const confidenceChosen = Boolean(finalResponse)
   const finalAttempt = finalResponse ? getAttemptForResponse(finalResponse) : null
@@ -994,8 +1048,8 @@ export function QuestionSessionRunner({
     : hasPartialSignal
       ? 'border-amber-300/28 bg-[#1f1a0a]'
       : 'border-rose-300/28 bg-[#210f1d]'
-  const evidenceLevel = getLearnerEvidenceLabel(question)
-  const itemDetailBadges = getItemDetailBadges(question, evidenceLevel)
+  const evidenceLevel = question.blueprintMapped && question.sourceBacked ? 'Readiness evidence' : 'Practice evidence'
+  const qualityStatus = question.contentQuality?.replaceAll('-', ' ') ?? 'draft item'
   const reviewState = submitted ? (showRationale ? 'Review open' : 'Review hidden') : 'Answer pending'
   const confidenceState = confidenceChosen ? `Confidence: ${finalResponse?.confidence}` : submitted ? 'Confidence not chosen' : 'Confidence pending'
   const nextActionLabel = !submitted
@@ -1013,28 +1067,28 @@ export function QuestionSessionRunner({
     { label: 'Priority', tone: 'blue' as const, icon: <Target className="h-3.5 w-3.5" /> },
     { label: 'Safety', tone: 'green' as const, icon: <ShieldCheck className="h-3.5 w-3.5" /> },
     { label: 'Clinical Judgment', tone: 'blue' as const, icon: <BadgeCheck className="h-3.5 w-3.5" /> },
+    {
+      label: question.sourceBacked ? 'Source-backed' : 'Practice item',
+      tone: question.sourceBacked ? 'green' as const : 'amber' as const,
+      icon: <CheckCircle2 className="h-3.5 w-3.5" />,
+    },
+    {
+      label: evidenceLevel,
+      tone: question.blueprintMapped && question.sourceBacked ? 'green' as const : 'amber' as const,
+      icon: <BadgeCheck className="h-3.5 w-3.5" />,
+    },
   ]
-  const choiceFeedbackRows = question.choices.map((choice) => ({
-    choice,
-    selected: selectedAnswers.includes(choice.id),
-    correct: question.correctAnswer.includes(choice.id),
-    feedback: getChoiceFeedback(question, choice),
-  }))
-  const whyOthersCopy = question.rationale.whyOthers.trim()
-  const showWhyOthersCopy =
-    Boolean(whyOthersCopy) &&
-    whyOthersCopy !== generatedDistractorFallback &&
-    !genericDistractorPattern.test(whyOthersCopy)
+  const evidenceBadges = [...tutorInsight.trustFlags, `Evidence: ${evidenceLevel}`]
 
   return (
     <div className="space-y-6 pb-44 xl:pb-0">
       <Surface className="border-cyan-200/20 bg-[#061b31]/72 p-4 md:p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-cyan-200">
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-200">
               {modeLabel}
             </p>
-            <h3 className="mt-1 text-2xl font-bold tracking-normal text-white md:text-3xl">
+            <h3 className="mt-1 text-2xl font-black tracking-[-0.03em] text-white md:text-3xl">
               {session.title}
             </h3>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-sky-100/68">
@@ -1042,11 +1096,11 @@ export function QuestionSessionRunner({
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <div className="rounded-xl border border-amber-200/28 bg-amber-300/[0.08] px-4 py-2 text-sm font-bold text-amber-100">
+            <div className="rounded-xl border border-amber-200/28 bg-amber-300/[0.08] px-4 py-2 text-sm font-black text-amber-100">
               Question {session.currentIndex + 1} of {session.questionIds.length}
             </div>
             {session.config.timed && remainingSeconds !== null ? (
-              <div className="inline-flex items-center gap-2 rounded-xl border border-cyan-200/24 bg-cyan-300/[0.08] px-4 py-2 text-sm font-bold text-cyan-100">
+              <div className="inline-flex items-center gap-2 rounded-xl border border-cyan-200/24 bg-cyan-300/[0.08] px-4 py-2 text-sm font-black text-cyan-100">
                 <Clock3 className="h-4 w-4" />
                 {Math.floor(remainingSeconds / 60)}:{String(remainingSeconds % 60).padStart(2, '0')}
               </div>
@@ -1065,7 +1119,7 @@ export function QuestionSessionRunner({
                 type="button"
                 onClick={() => {
                   if (session.config.noBacktracking) return
-                  goToSessionQuestion(index)
+                  goToQuestionIndex(index)
                 }}
                 disabled={session.config.noBacktracking}
                 className={clsx(
@@ -1089,7 +1143,7 @@ export function QuestionSessionRunner({
         <Surface className="border-cyan-200/18 bg-[#041629]/78">
           {question.scenario ? (
             <div className="rounded-[16px] border border-cyan-200/20 bg-cyan-300/[0.07] p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-cyan-100">
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-100">
                 Clinical scenario
               </p>
               <p className="mt-2 text-sm leading-7 text-sky-100/76">{question.scenario}</p>
@@ -1111,7 +1165,7 @@ export function QuestionSessionRunner({
               onClick={() => setFlagged((current) => !current)}
               disabled={Boolean(existingResponse)}
               className={clsx(
-                'inline-flex min-h-8 items-center gap-2 rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-[0.14em]',
+                'inline-flex min-h-8 items-center gap-2 rounded-full border px-3 py-1 text-xs font-black uppercase tracking-[0.14em]',
                 flagged
                   ? 'border-amber-200/40 bg-amber-300/12 text-amber-100'
                   : 'border-cyan-200/18 bg-white/[0.04] text-sky-100/58',
@@ -1122,7 +1176,7 @@ export function QuestionSessionRunner({
             </button>
           </div>
 
-          <h4 className="mt-5 text-[1.6rem] font-bold leading-tight tracking-normal text-white md:text-[2rem]">
+          <h4 className="mt-5 text-[1.6rem] font-black leading-tight tracking-[-0.03em] text-white md:text-[2rem]">
             {question.prompt}
           </h4>
 
@@ -1156,7 +1210,7 @@ export function QuestionSessionRunner({
                 >
                   <span
                     className={clsx(
-                      'mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-xs font-bold',
+                      'mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-xs font-black',
                       selected
                         ? 'border-amber-200/70 bg-amber-300/22 text-amber-50 shadow-[0_0_16px_rgba(251,191,36,0.16)]'
                         : 'border-cyan-200/24 bg-white/[0.04] text-sky-100/58',
@@ -1186,7 +1240,7 @@ export function QuestionSessionRunner({
               !isLastQuestion ? (
                 <button
                   type="button"
-                  onClick={nextQuestion}
+                  onClick={goToNextQuestion}
                   className={clsx(practiceActionButton.next, 'flex-[1.2] md:flex-none')}
                 >
                   Next question
@@ -1210,7 +1264,31 @@ export function QuestionSessionRunner({
             {submitted ? (
               <button
                 type="button"
-                onClick={() => setShowRationale((current) => !current)}
+                onClick={() =>
+                  setShowRationale((current) => {
+                    const next = !current
+                    if (next) {
+                      void trackAppEvent(
+                        'rationale_opened',
+                        {
+                          page_path: typeof window === 'undefined' ? '/practice-questions' : window.location.pathname,
+                          feature_name: 'Answer Rationale',
+                          exam_track: profile.examTrack ?? 'nclex-rn',
+                          question_category: question.category,
+                          question_result: currentIsCorrect ? 'correct' : 'incorrect',
+                          confidence_level: finalResponse?.confidence,
+                          is_demo_user: isDemoMode,
+                          metadata: {
+                            question_id: questionId,
+                            review_state: finalResponse ? 'confidence_recorded' : 'confidence_pending',
+                          },
+                        },
+                        { userId: authUser?.id, isDemoUser: isDemoMode },
+                      )
+                    }
+                    return next
+                  })
+                }
                 className={clsx(practiceActionButton.review, 'flex-1 md:flex-none')}
               >
                 <Eye className="h-4 w-4" />
@@ -1229,7 +1307,7 @@ export function QuestionSessionRunner({
               >
                 <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-200/70">Answer review</p>
+                    <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-200/70">Answer review</p>
                     <p className="mt-1 text-sm leading-6 text-sky-100/70">
                       Confirm confidence, read the clinical rationale, then move to the next best action.
                     </p>
@@ -1256,7 +1334,7 @@ export function QuestionSessionRunner({
                   <div className="mt-4 rounded-[14px] border border-cyan-300/14 bg-white/[0.04] p-4">
                     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                       <div>
-                        <p className="text-sm font-bold text-white">Choose confidence</p>
+                        <p className="text-sm font-black text-white">Choose confidence</p>
                         <p className="mt-1 text-sm leading-6 text-sky-100/68">
                           This unlocks the next question and separates a solid answer from a lucky one.
                         </p>
@@ -1268,7 +1346,7 @@ export function QuestionSessionRunner({
                           type="button"
                           onClick={() => handleConfidence(level)}
                           className={clsx(
-                            'min-h-[44px] rounded-full border px-4 py-2 text-sm font-bold capitalize transition',
+                            'min-h-[44px] rounded-full border px-4 py-2 text-sm font-black capitalize transition',
                             confidenceTone[level],
                           )}
                         >
@@ -1281,52 +1359,136 @@ export function QuestionSessionRunner({
                 ) : null}
 
                 {showRationale ? (
-                  <div className="mt-4 grid gap-3 md:grid-cols-2">
-                    <div className="md:col-span-2">
-                      <RationaleCard
-                        title="Correct answer"
-                        tone="green"
-                        body={question.rationale.whyCorrect}
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <ChoiceFeedbackList rows={choiceFeedbackRows} />
-                    </div>
-                    {!currentIsCorrect ? (
+                  <>
+                    <div className="mt-4 grid gap-3 md:grid-cols-2">
                       <div className="md:col-span-2">
                         <RationaleCard
-                          title="Miss pattern"
-                          tone="rose"
-                          body={getMissReason(questionId, selectedAnswers)}
+                          title="Correct answer"
+                          tone="green"
+                          body={question.rationale.whyCorrect}
                         />
                       </div>
-                    ) : null}
+                      {!currentIsCorrect ? (
+                        <div className="md:col-span-2">
+                          <RationaleCard
+                            title="Miss pattern"
+                            tone="rose"
+                            body={getMissReason(questionId, selectedAnswers)}
+                          />
+                        </div>
+                      ) : null}
                     {finalRemediation ? (
                       <div className="md:col-span-2">
                         <RationaleCard
-                          title="Next repair"
-                          tone="rose"
-                          body={finalRemediation.nextActionCopy}
-                          badges={[finalRemediation.routeLabel]}
+                            title="Next repair"
+                            tone="rose"
+                            body={finalRemediation.nextActionCopy}
+                            badges={[finalRemediation.routeLabel]}
                         />
                       </div>
                     ) : null}
-                    {showWhyOthersCopy ? (
-                      <RationaleCard
-                        title="Why other answers miss"
-                        tone="amber"
-                        body={whyOthersCopy}
-                      />
+                    {question.relatedFlashcardIds?.length ? (
+                      <div className="md:col-span-2 rounded-[14px] border border-cyan-300/16 bg-white/[0.04] p-4">
+                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                          <div>
+                            <p className="text-sm font-black text-white">Linked remediation card</p>
+                            <p className="mt-1 text-sm leading-6 text-sky-100/64">
+                              Open the matching flashcard for this missed pattern.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              navigate(`/flashcards?cardId=${encodeURIComponent(question.relatedFlashcardIds![0])}`)
+                            }
+                            className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-violet-300/24 bg-violet-300/[0.08] px-4 py-2 text-sm font-black text-violet-100 transition hover:bg-violet-300/14"
+                          >
+                            <Lightbulb className="h-4 w-4" />
+                            Open linked card
+                          </button>
+                        </div>
+                      </div>
                     ) : null}
                     <RationaleCard
-                      title="Test-taking cue"
-                      tone="violet"
-                      body={`${question.nclexTip} ${tutorInsight.reviewTarget}. Watch for: ${tutorInsight.trap}`}
-                    />
-                    <div className="md:col-span-2">
-                      <ItemDetailsDisclosure details={itemDetailBadges} />
+                      title="Why the other options fall away"
+                      tone="amber"
+                        body={question.rationale.whyOthers}
+                      />
+                      <RationaleCard
+                        title="Test-taking cue"
+                        tone="violet"
+                        body={`${question.nclexTip} ${tutorInsight.reviewTarget}. Watch for: ${tutorInsight.trap}`}
+                        badges={evidenceBadges}
+                      />
                     </div>
-                  </div>
+                    {question.feedbackEnabled ? (
+                      <div className="mt-4 rounded-[14px] border border-cyan-300/16 bg-white/[0.04] p-4">
+                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                          <div>
+                            <p className="text-sm font-black text-white">Report content issue</p>
+                            <p className="mt-1 text-sm leading-6 text-sky-100/64">
+                              Flag answer, rationale, wording, typo, or source concerns for internal review.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={openContentFeedback}
+                            className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-cyan-300/24 bg-cyan-300/[0.08] px-4 py-2 text-sm font-black text-cyan-100 transition hover:bg-cyan-300/14"
+                          >
+                            <Flag className="h-4 w-4" />
+                            {feedbackOpen ? 'Close report' : 'Open report'}
+                          </button>
+                        </div>
+                        {feedbackSubmittedId ? (
+                          <div className="mt-3 rounded-xl border border-emerald-300/24 bg-emerald-300/[0.08] px-3 py-2 text-sm font-semibold text-emerald-100">
+                            Report saved for internal review.
+                          </div>
+                        ) : null}
+                        {feedbackOpen ? (
+                          <div className="mt-4 grid gap-3">
+                            <label className="block">
+                              <span className="mb-2 block text-xs font-black uppercase tracking-[0.14em] text-sky-100/58">
+                                Issue type
+                              </span>
+                              <select
+                                value={feedbackReason}
+                                onChange={(event) => setFeedbackReason(event.target.value as ContentFeedbackReason)}
+                                className="min-h-[44px] w-full rounded-xl border border-cyan-300/20 bg-[#061b31] px-3 py-2 text-sm font-semibold text-white"
+                              >
+                                {contentFeedbackReasons.map((reason) => (
+                                  <option key={reason} value={reason}>
+                                    {contentFeedbackReasonLabels[reason]}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                            <label className="block">
+                              <span className="mb-2 block text-xs font-black uppercase tracking-[0.14em] text-sky-100/58">
+                                Note
+                              </span>
+                              <textarea
+                                value={feedbackNote}
+                                onChange={(event) => setFeedbackNote(event.target.value)}
+                                maxLength={500}
+                                rows={3}
+                                placeholder="Optional. Do not enter patient identifiers or private info."
+                                className="w-full resize-none rounded-xl border border-cyan-300/20 bg-[#061b31] px-3 py-2 text-sm font-semibold leading-6 text-white placeholder:text-sky-100/38"
+                              />
+                            </label>
+                            <div className="flex justify-end">
+                              <button
+                                type="button"
+                                onClick={submitContentFeedback}
+                                className="inline-flex min-h-[42px] items-center justify-center rounded-xl border border-emerald-300/28 bg-emerald-300/[0.1] px-4 py-2 text-sm font-black text-emerald-100 transition hover:bg-emerald-300/16"
+                              >
+                                Submit report
+                              </button>
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </>
                 ) : null}
               </motion.div>
             ) : null}
@@ -1358,6 +1520,7 @@ export function QuestionSessionRunner({
                 <StatusMiniCard label="Current streak" value={`${streakCount} correct`} tone={streakCount > 0 ? 'green' : 'blue'} />
                 <StatusMiniCard label="Confidence" value={confidenceState} tone={confidenceChosen ? 'green' : submitted ? 'amber' : 'blue'} />
                 <StatusMiniCard label="Review" value={reviewState} tone={showRationale ? 'green' : 'blue'} />
+                <StatusMiniCard label="Evidence level" value={`${evidenceLevel} / ${qualityStatus}`} tone={question.sourceBacked ? 'green' : 'amber'} />
                 {submitted ? (
                   <StatusMiniCard
                     label="Remediation"
@@ -1369,7 +1532,7 @@ export function QuestionSessionRunner({
               <div className="flex flex-wrap gap-3">
                 <button
                   type="button"
-                  onClick={previousQuestion}
+                  onClick={goToPreviousQuestion}
                   disabled={session.currentIndex === 0 || Boolean(session.config.noBacktracking)}
                   className="nclex-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40"
                 >
@@ -1397,7 +1560,7 @@ export function QuestionSessionRunner({
       </div>
 
       <div className="safe-bottom mobile-quiz-actions rounded-[16px] border border-cyan-300/20 bg-[#061b31]/80 p-3 text-white xl:hidden">
-        <div className="flex items-center justify-between gap-3 text-xs font-bold uppercase tracking-[0.14em] text-sky-100/62">
+        <div className="flex items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.14em] text-sky-100/62">
           <span>Progress</span>
           <span>
             {session.responses.length}/{session.questionIds.length} complete
@@ -1420,7 +1583,7 @@ export function QuestionSessionRunner({
             !isLastQuestion ? (
               <button
                 type="button"
-                onClick={nextQuestion}
+                onClick={goToNextQuestion}
                 className={clsx(practiceActionButton.next, 'w-full')}
               >
                 Next question
@@ -1437,7 +1600,7 @@ export function QuestionSessionRunner({
               </button>
             )
           ) : (
-            <div className="flex min-h-[48px] w-full items-center justify-center rounded-xl border border-amber-300/22 bg-amber-300/[0.08] px-4 py-3 text-center text-sm font-bold text-amber-100">
+            <div className="flex min-h-[48px] w-full items-center justify-center rounded-xl border border-amber-300/22 bg-amber-300/[0.08] px-4 py-3 text-center text-sm font-black text-amber-100">
               Choose confidence to continue
             </div>
           )}
@@ -1445,9 +1608,9 @@ export function QuestionSessionRunner({
         <div className="mt-2 flex flex-wrap gap-3">
           <button
             type="button"
-            onClick={previousQuestion}
+            onClick={goToPreviousQuestion}
             disabled={session.currentIndex === 0 || Boolean(session.config.noBacktracking)}
-            className="nclex-btn-secondary inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-40"
+            className="nclex-btn-secondary inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-black disabled:cursor-not-allowed disabled:opacity-40"
           >
             <ArrowLeft className="h-4 w-4" />
             Back
@@ -1455,14 +1618,14 @@ export function QuestionSessionRunner({
           <button
             type="button"
             onClick={() => navigate('/dashboard')}
-            className="nclex-btn-secondary inline-flex min-h-[44px] flex-1 items-center justify-center rounded-xl px-4 py-2 text-sm font-bold"
+            className="nclex-btn-secondary inline-flex min-h-[44px] flex-1 items-center justify-center rounded-xl px-4 py-2 text-sm font-black"
           >
             Save & leave
           </button>
           <button
             type="button"
             onClick={onExit}
-            className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-xl border border-rose-200/25 bg-rose-300/[0.08] px-4 py-2 text-sm font-bold text-rose-100"
+            className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-xl border border-rose-200/25 bg-rose-300/[0.08] px-4 py-2 text-sm font-black text-rose-100"
           >
             Discard
           </button>
@@ -1498,7 +1661,7 @@ export function FlipCard({
             Prompt
           </p>
           <div className="mt-8 flex h-[210px] items-center overflow-y-auto pr-1">
-            <p className="nc-section-title break-words text-[1.6rem] text-[var(--nclex-text)] md:text-3xl">{front}</p>
+            <p className="break-words font-serif text-[1.6rem] leading-tight text-[var(--nclex-text)] md:text-3xl">{front}</p>
           </div>
           <p className="text-sm font-semibold text-[var(--nclex-text-muted)]">Tap to reveal</p>
         </div>
@@ -1519,10 +1682,10 @@ export function FlipCard({
 function MetricTile({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-[16px] border border-[var(--nclex-border)] bg-[var(--nclex-card-muted)] p-4">
-      <p className="nc-metric-label text-[var(--nclex-text-muted)]">
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]">
         {label}
       </p>
-      <p className="nc-metric-value mt-2 text-3xl text-[var(--nclex-text)]">{value}</p>
+      <p className="mt-2 font-serif text-3xl text-[var(--nclex-text)]">{value}</p>
     </div>
   )
 }
@@ -1569,95 +1732,9 @@ function StatusMiniCard({
 
   return (
     <div className={clsx('rounded-[12px] border px-3 py-3', styles)}>
-      <p className="text-[0.68rem] font-bold uppercase tracking-[0.13em] opacity-65">{label}</p>
+      <p className="text-[0.68rem] font-black uppercase tracking-[0.13em] opacity-65">{label}</p>
       <p className="mt-1 text-sm font-semibold leading-5">{value}</p>
     </div>
-  )
-}
-
-function ChoiceFeedbackList({
-  rows,
-}: {
-  rows: Array<{
-    choice: AnswerChoice
-    selected: boolean
-    correct: boolean
-    feedback: string
-  }>
-}) {
-  return (
-    <div className="rounded-[16px] border border-cyan-300/24 bg-cyan-300/[0.06] p-4 text-cyan-100">
-      <p className="text-xs font-semibold uppercase tracking-[0.16em]">Choice feedback</p>
-      <div className="mt-3 space-y-2.5">
-        {rows.map(({ choice, selected, correct, feedback }) => {
-          const state = correct ? 'Correct answer' : selected ? 'Your selection' : 'Distractor'
-          return (
-            <div
-              key={choice.id}
-              className={clsx(
-                'rounded-xl border bg-white/[0.04] px-3 py-3',
-                correct
-                  ? 'border-emerald-300/28'
-                  : selected
-                    ? 'border-rose-300/30'
-                    : 'border-cyan-300/14',
-              )}
-            >
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                <div className="flex min-w-0 items-start gap-3">
-                  <span
-                    className={clsx(
-                      'grid h-7 w-7 shrink-0 place-items-center rounded-full border text-xs font-black',
-                      correct
-                        ? 'border-emerald-300/42 bg-emerald-300/14 text-emerald-100'
-                        : selected
-                          ? 'border-rose-300/42 bg-rose-300/14 text-rose-100'
-                          : 'border-cyan-300/24 text-cyan-100/70',
-                    )}
-                  >
-                    {choice.id}
-                  </span>
-                  <p className="min-w-0 text-sm font-semibold leading-6 text-sky-100/82">{choice.text}</p>
-                </div>
-                <span
-                  className={clsx(
-                    'shrink-0 rounded-lg border px-2.5 py-1 text-xs font-bold',
-                    correct
-                      ? 'border-emerald-300/34 bg-emerald-300/10 text-emerald-100'
-                      : selected
-                        ? 'border-rose-300/34 bg-rose-300/10 text-rose-100'
-                        : 'border-cyan-300/20 bg-white/[0.04] text-sky-100/62',
-                  )}
-                >
-                  {state}
-                </span>
-              </div>
-              <p className="mt-2 text-sm leading-6 text-sky-100/70">{feedback}</p>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-function ItemDetailsDisclosure({ details }: { details: string[] }) {
-  return (
-    <details className="rounded-[14px] border border-sky-300/18 bg-white/[0.035] p-3 text-sky-100/72">
-      <summary className="cursor-pointer select-none text-sm font-bold text-sky-100">
-        Item details
-      </summary>
-      <div className="mt-3 flex flex-wrap gap-2">
-        {details.map((detail) => (
-          <span
-            key={detail}
-            className="rounded-lg border border-sky-300/18 bg-white/[0.04] px-2.5 py-1 text-xs font-semibold leading-5"
-          >
-            {detail}
-          </span>
-        ))}
-      </div>
-    </details>
   )
 }
 
