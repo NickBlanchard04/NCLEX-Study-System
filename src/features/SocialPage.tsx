@@ -2,19 +2,23 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Ban,
   BadgeCheck,
+  BookOpenCheck,
   Check,
   GraduationCap,
   Inbox,
   LoaderCircle,
-  Map,
+  MapPin,
   MoreHorizontal,
   RefreshCw,
   Search,
   Send,
-  Sparkles,
-  Trash2,
+  Target,
+  Undo2,
   UserCheck,
+  UserMinus,
   UserPlus,
+  UserRound,
+  UserX,
   UsersRound,
   X,
 } from 'lucide-react'
@@ -51,29 +55,54 @@ const getInitials = (name: string) => {
 
 const fallbackValue = (value: string | undefined) => value || 'N/A'
 
+const avatarToneClasses = [
+  'border-cyan-200/42 bg-[linear-gradient(135deg,rgba(34,211,238,0.28),rgba(8,47,73,0.86)_48%,rgba(3,16,31,0.96))] text-cyan-50 shadow-[inset_0_1px_0_rgba(207,250,254,0.18),0_0_22px_rgba(34,211,238,0.16)]',
+  'border-lime-200/42 bg-[linear-gradient(135deg,rgba(163,230,53,0.26),rgba(38,64,18,0.84)_48%,rgba(3,16,31,0.96))] text-lime-50 shadow-[inset_0_1px_0_rgba(236,252,203,0.16),0_0_22px_rgba(163,230,53,0.13)]',
+  'border-violet-200/42 bg-[linear-gradient(135deg,rgba(167,139,250,0.3),rgba(46,32,91,0.84)_48%,rgba(3,16,31,0.96))] text-violet-50 shadow-[inset_0_1px_0_rgba(237,233,254,0.16),0_0_22px_rgba(167,139,250,0.15)]',
+]
+
+const getAvatarToneClass = (seed: string) => {
+  let hash = 0
+  for (let index = 0; index < seed.length; index += 1) {
+    hash = (hash * 31 + seed.charCodeAt(index)) >>> 0
+  }
+  return avatarToneClasses[hash % avatarToneClasses.length]
+}
+
 function PersonAvatar({
   name,
   imageUrl,
   size = 'md',
+  seed,
 }: {
   name: string
   imageUrl?: string
   size?: 'sm' | 'md' | 'lg'
+  seed?: string | number
 }) {
   const sizeClass = {
     sm: 'h-10 w-10 text-xs',
     md: 'h-12 w-12 text-sm',
     lg: 'h-14 w-14 text-base sm:h-16 sm:w-16',
   }[size]
+  const toneClass = getAvatarToneClass(String(seed ?? name))
 
   return (
     <div
       className={clsx(
-        'grid shrink-0 place-items-center overflow-hidden rounded-2xl border border-cyan-200/28 bg-[#0b2a48] font-bold text-white',
+        'relative grid shrink-0 place-items-center overflow-hidden rounded-2xl border font-bold',
+        imageUrl ? 'border-cyan-200/28 bg-[#0b2a48] text-white' : toneClass,
         sizeClass,
       )}
     >
-      {imageUrl ? <img src={imageUrl} alt="" className="h-full w-full object-cover" /> : getInitials(name)}
+      {imageUrl ? (
+        <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+      ) : (
+        <>
+          <UserRound className="absolute h-[76%] w-[76%] text-white/[0.07]" />
+          <span className="relative z-10 drop-shadow-[0_1px_8px_rgba(0,0,0,0.28)]">{getInitials(name)}</span>
+        </>
+      )}
     </div>
   )
 }
@@ -112,7 +141,7 @@ function ProfileBadges({
   return (
     <div className={clsx('flex flex-wrap gap-2', compact && 'gap-1.5')}>
       <IconBadge icon={<GraduationCap className="h-3.5 w-3.5" />} label={fallbackValue(person.college)} />
-      <IconBadge icon={<Map className="h-3.5 w-3.5" />} label={fallbackValue(person.state)} tone="emerald" />
+      <IconBadge icon={<MapPin className="h-3.5 w-3.5" />} label={fallbackValue(person.state)} tone="emerald" />
       {person.memberNumber ? (
         <IconBadge icon={<BadgeCheck className="h-3.5 w-3.5" />} label={`#${person.memberNumber}`} tone="amber" />
       ) : null}
@@ -396,7 +425,7 @@ export function SocialPage() {
           eyebrow="Grow"
           title="Network"
           description="Sign in to see people, requests, and messages."
-          action={<Sparkles className="h-10 w-10 text-lime-100" />}
+          action={<UsersRound className="h-10 w-10 text-lime-100" />}
         />
         <EmptyState
           title="Sign in to connect."
@@ -707,7 +736,7 @@ function RelationshipActions({
     return (
       <>
         <IconButton icon={<Check className="h-4 w-4" />} label="Accept" onClick={onAccept} disabled={busy} tone="success" />
-        <IconButton icon={<X className="h-4 w-4" />} label="Deny" onClick={onDeny} disabled={busy} tone="danger" />
+        <IconButton icon={<UserX className="h-4 w-4" />} label="Deny" onClick={onDeny} disabled={busy} tone="danger" />
       </>
     )
   }
@@ -745,17 +774,17 @@ function SuggestionCard({
   return (
     <div className="rounded-2xl border border-sky-300/18 bg-white/[0.045] p-3 sm:p-4">
       <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3">
-        <PersonAvatar name={person.displayName} imageUrl={person.profileImageDataUrl} size="lg" />
+        <PersonAvatar name={person.displayName} imageUrl={person.profileImageDataUrl} size="lg" seed={person.memberNumber ?? person.userId} />
         <div className="min-w-0">
           <h4 className="truncate text-base font-bold text-white sm:text-lg">{person.displayName}</h4>
           <div className="mt-2 flex flex-wrap gap-1.5">
             <IconBadge
-              icon={<Sparkles className="h-3.5 w-3.5" />}
+              icon={<BookOpenCheck className="h-3.5 w-3.5" />}
               label={person.suggestionReason ?? 'Suggested'}
               tone="lime"
             />
             {typeof person.matchScore === 'number' && person.matchScore > 0 ? (
-              <IconBadge icon={<BadgeCheck className="h-3.5 w-3.5" />} label={`${person.matchScore}`} tone="amber" />
+              <IconBadge icon={<Target className="h-3.5 w-3.5" />} label={`${person.matchScore}`} tone="amber" />
             ) : null}
           </div>
           <div className="mt-2">
@@ -765,7 +794,7 @@ function SuggestionCard({
         <button
           type="button"
           onClick={onDismiss}
-          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-sky-300/16 bg-white/[0.03] text-sky-100/48 transition hover:border-sky-200/40 hover:text-white"
+          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-sky-300/10 bg-transparent text-sky-100/34 transition hover:border-sky-200/28 hover:bg-white/[0.035] hover:text-sky-100/74"
           aria-label="Dismiss suggestion"
           title="Dismiss"
         >
@@ -795,7 +824,7 @@ function PersonCard({
   return (
     <div className="rounded-2xl border border-sky-300/18 bg-white/[0.045] p-3 sm:p-4">
       <div className="flex items-start gap-3">
-        <PersonAvatar name={person.displayName} imageUrl={person.profileImageDataUrl} />
+        <PersonAvatar name={person.displayName} imageUrl={person.profileImageDataUrl} seed={person.memberNumber ?? person.userId} />
         <div className="min-w-0 flex-1">
           <p className="truncate text-base font-bold text-white">{person.displayName}</p>
           <div className="mt-2">
@@ -829,7 +858,7 @@ function InboxRow({
     <div className="rounded-2xl border border-sky-300/18 bg-white/[0.045] p-3">
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          <PersonAvatar name={item.displayName} imageUrl={item.profileImageDataUrl} size="sm" />
+          <PersonAvatar name={item.displayName} imageUrl={item.profileImageDataUrl} size="sm" seed={item.userId} />
           <div className="min-w-0">
             <p className="truncate text-sm font-bold text-white">{item.displayName}</p>
             <IconBadge
@@ -842,7 +871,7 @@ function InboxRow({
         {isRequest ? (
           <div className="flex shrink-0 gap-2">
             <IconButton icon={<Check className="h-4 w-4" />} label="Accept" onClick={onAccept} disabled={busy} tone="success" />
-            <IconButton icon={<X className="h-4 w-4" />} label="Deny" onClick={onDeny} disabled={busy} tone="danger" />
+            <IconButton icon={<UserX className="h-4 w-4" />} label="Deny" onClick={onDeny} disabled={busy} tone="danger" />
           </div>
         ) : (
           <IconButton icon={<Check className="h-4 w-4" />} label="Read" onClick={onMarkRead} disabled={busy} />
@@ -870,7 +899,7 @@ function ConnectionRow({
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-sky-300/18 bg-white/[0.045] p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
       <div className="flex min-w-0 items-center gap-3">
-        <PersonAvatar name={connection.displayName} imageUrl={connection.profileImageDataUrl} />
+        <PersonAvatar name={connection.displayName} imageUrl={connection.profileImageDataUrl} seed={connection.memberNumber ?? connection.userId} />
         <div className="min-w-0">
           <p className="truncate text-base font-bold text-white">{connection.displayName}</p>
           <div className="mt-2">
@@ -881,7 +910,7 @@ function ConnectionRow({
       <div className="flex shrink-0 justify-end gap-2">
         {busy ? <LoaderCircle className="h-4 w-4 animate-spin self-center text-sky-200" /> : null}
         <MenuButton id={connection.userId} openId={openMenuId} onOpen={onOpenMenu}>
-          <MenuAction icon={<Trash2 className="h-4 w-4" />} label="Remove" onClick={onRemove} />
+          <MenuAction icon={<UserMinus className="h-4 w-4" />} label="Remove" onClick={onRemove} />
           <MenuAction tone="danger" icon={<Ban className="h-4 w-4" />} label="Block" onClick={onBlock} />
         </MenuButton>
       </div>
@@ -914,7 +943,7 @@ function RequestRow({
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-sky-300/18 bg-white/[0.045] p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
       <div className="flex min-w-0 items-center gap-3">
-        <PersonAvatar name={request.displayName} imageUrl={request.profileImageDataUrl} />
+        <PersonAvatar name={request.displayName} imageUrl={request.profileImageDataUrl} seed={request.memberNumber ?? request.userId} />
         <div className="min-w-0">
           <p className="truncate text-base font-bold text-white">{request.displayName}</p>
           <div className="mt-2">
@@ -930,14 +959,14 @@ function RequestRow({
         {incoming ? (
           <>
             <IconButton icon={<Check className="h-4 w-4" />} label="Accept" onClick={onAccept} disabled={busy} tone="success" />
-            <IconButton icon={<X className="h-4 w-4" />} label="Deny" onClick={onDeny} disabled={busy} tone="danger" />
+            <IconButton icon={<UserX className="h-4 w-4" />} label="Deny" onClick={onDeny} disabled={busy} tone="danger" />
           </>
         ) : (
           <IconBadge icon={<Send className="h-3.5 w-3.5" />} label="Pending" tone="amber" />
         )}
         {busy ? <LoaderCircle className="h-4 w-4 animate-spin self-center text-sky-200" /> : null}
         <MenuButton id={menuId} openId={openMenuId} onOpen={onOpenMenu}>
-          {incoming ? null : <MenuAction icon={<X className="h-4 w-4" />} label="Cancel" onClick={onCancel} />}
+          {incoming ? null : <MenuAction icon={<Undo2 className="h-4 w-4" />} label="Cancel" onClick={onCancel} />}
           <MenuAction tone="danger" icon={<Ban className="h-4 w-4" />} label="Block" onClick={onBlock} />
         </MenuButton>
       </div>
