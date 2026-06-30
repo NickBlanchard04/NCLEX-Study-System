@@ -1607,6 +1607,11 @@ export function PracticeQuestionsPage() {
       }),
     )
   const priorityCategory = category === 'All' ? trackCategories[0] : category
+  const selectedCategoryLabel = category === 'All' ? 'Mixed bank' : shortCategoryLabel(category)
+  const selectedSystemLabel = system === 'All' ? 'All systems' : system
+  const questionStatusLabel =
+    questionStatus === 'all' ? 'All questions' : questionStatus === 'unused' ? 'Unused only' : 'Missed before'
+  const sessionFormatLabel = format === 'mixed' ? 'Mixed formats' : format === 'multiple-choice' ? 'Multiple choice' : 'Select all'
   const practicePresets = [
     {
       title: 'Start adaptive set',
@@ -1647,61 +1652,87 @@ export function PracticeQuestionsPage() {
 
   return (
     <PageStack>
-      <CommandPageIntro
+      <PageHeader
+        eyebrow="Question Bank"
         title="Question Bank"
-        description={`${questionCount} questions. ${category === 'All' ? 'Mixed category practice' : `Focused ${shortCategoryLabel(category)} practice`}. Start adaptive for the cleanest signal, or tune the set below.`}
-        badges={
-          <>
-            <CommandBadge tone="cyan" icon={<BadgeCheck className="h-3.5 w-3.5" />}>
-              {activeTrack.shortName}
-            </CommandBadge>
-            <CommandBadge tone="amber" icon={<Zap className="h-3.5 w-3.5" />}>
-              Practice mode
-            </CommandBadge>
-            <CommandBadge tone="emerald" icon={<ShieldCheck className="h-3.5 w-3.5" />}>
-              Instant rationale
-            </CommandBadge>
-          </>
-        }
+        description="Build a focused practice set without turning the setup screen into the work."
         action={
-          <>
-            <button
-              type="button"
-              onClick={() => launchPracticeSession()}
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-6 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
-            >
-              {isPending ? 'Building set...' : 'Start focused set'}
-              <ArrowRight className="h-4 w-4" />
-            </button>
-            <Link
-              to="/quick-study"
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-sky-200/22 bg-white/[0.06] px-5 py-3 text-sm font-bold text-sky-100 transition hover:border-sky-200/45 hover:bg-white/[0.09]"
-            >
-              Quick study
-              <Zap className="h-4 w-4" />
-            </Link>
-          </>
-        }
-        aside={
-          <div className="h-full rounded-[1rem] border border-amber-200/26 bg-amber-300/[0.08] p-4">
-            <p className="text-xs font-bold uppercase text-amber-100/72">Ready set</p>
-            <p className="mt-2 text-3xl font-bold text-white">{questionCount}</p>
-            <p className="text-sm font-semibold text-sky-100/70">questions queued</p>
-            <div className="mt-4 space-y-2 text-sm font-semibold text-sky-100/68">
-              <p>{category === 'All' ? 'All categories' : shortCategoryLabel(category)}</p>
-              <p>{system === 'All' ? 'All systems' : system}</p>
-              <p>{questionStatus === 'all' ? 'All statuses' : questionStatus}</p>
-            </div>
-          </div>
-        }
-        stats={
-          <>
-            <CommandStatTile label="Practice" value={`${questionCount}`} detail="questions" icon={<ClipboardList className="h-4 w-4" />} tone="amber" />
-            <CommandStatTile label="Track" value={activeTrack.shortName} detail="blueprint bank" icon={<BadgeCheck className="h-4 w-4" />} tone="cyan" />
-            <CommandStatTile label="Review" value="Instant" detail="rationale" icon={<BookOpen className="h-4 w-4" />} tone="emerald" />
-          </>
+          <button
+            type="button"
+            onClick={() => launchPracticeSession()}
+            className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
+          >
+            {isPending ? 'Building set...' : 'Start adaptive set'}
+            <ArrowRight className="h-4 w-4" />
+          </button>
         }
       />
+      <FocusPanel className="border-amber-200/34 bg-[linear-gradient(135deg,rgba(251,191,36,0.16),rgba(6,28,49,0.94)_42%,rgba(2,8,18,0.96))] text-white shadow-[0_0_38px_rgba(251,191,36,0.12)]">
+        <div className="grid gap-5 p-4 sm:p-5 md:p-6 xl:grid-cols-[minmax(0,1fr)_21rem]">
+          <div className="min-w-0">
+            <div className="flex flex-wrap gap-2">
+              <CommandBadge tone="cyan" icon={<BadgeCheck className="h-3.5 w-3.5" />}>{activeTrack.shortName}</CommandBadge>
+              <CommandBadge tone="amber" icon={<Zap className="h-3.5 w-3.5" />}>Practice mode</CommandBadge>
+              <CommandBadge tone="emerald" icon={<ShieldCheck className="h-3.5 w-3.5" />}>Instant rationale</CommandBadge>
+            </div>
+            <h3 className="mt-4 max-w-3xl text-3xl font-bold tracking-normal text-white md:text-4xl">
+              Start focused set
+            </h3>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-sky-100/72">
+              {questionCount} questions from {selectedCategoryLabel}. Start adaptive for the cleanest signal, or tune the set below when you need precision.
+            </p>
+            <div className="mt-5 grid gap-2 sm:grid-cols-3">
+              <CommandStatTile label="Count" value={`${questionCount}`} detail="questions" icon={<ClipboardList className="h-4 w-4" />} tone="amber" />
+              <CommandStatTile label="Track" value={activeTrack.shortName} detail="blueprint bank" icon={<BadgeCheck className="h-4 w-4" />} tone="cyan" />
+              <CommandStatTile label="Review" value="Instant" detail="rationale" icon={<BookOpen className="h-4 w-4" />} tone="emerald" />
+            </div>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <button
+                type="button"
+                onClick={() => launchPracticeSession()}
+                className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
+              >
+                {isPending ? 'Building set...' : 'Start adaptive set'}
+                <ArrowRight className="h-4 w-4" />
+              </button>
+              <Link
+                to="/quick-study"
+                className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl border border-cyan-200/24 bg-cyan-300/[0.07] px-5 py-3 text-sm font-bold text-cyan-100 transition hover:border-cyan-100/55 hover:bg-cyan-300/13"
+              >
+                Quick Study
+                <Zap className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+          <div className="rounded-[1rem] border border-white/10 bg-[#031426]/74 p-4">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-100/58">Set preview</p>
+            <p className="mt-2 text-3xl font-bold text-white">{questionCount}</p>
+            <p className="text-sm font-semibold text-sky-100/70">questions queued</p>
+            <div className="mt-4 space-y-2">
+              {[
+                { label: 'Focus', value: selectedCategoryLabel, tone: 'amber' },
+                { label: 'System', value: selectedSystemLabel, tone: 'cyan' },
+                { label: 'Status', value: questionStatusLabel, tone: 'rose' },
+                { label: 'Format', value: sessionFormatLabel, tone: 'violet' },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  className={clsx(
+                    'flex items-center justify-between gap-3 rounded-xl border px-3 py-2',
+                    item.tone === 'amber' && 'border-amber-200/18 bg-amber-300/[0.06]',
+                    item.tone === 'cyan' && 'border-cyan-200/18 bg-cyan-300/[0.06]',
+                    item.tone === 'rose' && 'border-rose-200/18 bg-rose-300/[0.06]',
+                    item.tone === 'violet' && 'border-violet-200/18 bg-fuchsia-300/[0.06]',
+                  )}
+                >
+                  <span className="text-xs font-bold uppercase text-sky-100/48">{item.label}</span>
+                  <span className="min-w-0 break-words text-right text-sm font-bold text-white">{item.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </FocusPanel>
 
       <Surface>
         <SectionHeading
