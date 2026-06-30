@@ -2448,8 +2448,11 @@ export function TestModePage() {
     : latestExam
       ? 'Send weak patterns to remediation before the next simulation.'
       : 'Your first completed block will unlock a review queue.'
+  const activeSessionIsOpen = Boolean(
+    activeSession && !activeSession.endedAt && activeSession.status !== 'discarded' && !activeSession.deletedAt,
+  )
 
-  if (activeSession?.mode === 'test' && resumeExamNow) {
+  if (activeSession?.mode === 'test' && activeSessionIsOpen && (resumeExamNow || activeSession.responses.length === 0)) {
     return (
       <QuestionSessionRunner
         key={`${activeSession.id}-${activeSession.currentIndex}`}
@@ -2492,7 +2495,14 @@ export function TestModePage() {
   ]
   const launchTestSession = () => {
     setResumeExamNow(true)
-    startTransition(() => startTestSession({ questionCount, timed, noBacktracking }))
+    startTransition(() => {
+      if (activeSessionIsOpen && activeSession?.mode !== 'test') {
+        abandonSession()
+      }
+      if (!(activeSessionIsOpen && activeSession?.mode === 'test')) {
+        startTestSession({ questionCount, timed, noBacktracking })
+      }
+    })
   }
 
   return (
