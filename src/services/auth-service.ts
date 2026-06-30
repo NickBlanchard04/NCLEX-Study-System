@@ -14,6 +14,8 @@ export interface AuthSnapshot {
   event?: string
 }
 
+export type OAuthProvider = 'apple' | 'google'
+
 const requireSupabase = () => {
   if (!supabase || !isSupabaseConfigured) {
     throw new Error('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to enable accounts.')
@@ -62,6 +64,17 @@ export async function signInWithPassword(email: string, password: string): Promi
     user: toAuthUser(data.user),
     session: toAuthSession(data.session),
   }
+}
+
+export async function signInWithOAuth(provider: OAuthProvider): Promise<void> {
+  const client = requireSupabase()
+  const { error } = await client.auth.signInWithOAuth({
+    provider,
+    options: {
+      redirectTo: getAuthRedirectTo(),
+    },
+  })
+  if (error) throw error
 }
 
 export async function signUpWithPassword(

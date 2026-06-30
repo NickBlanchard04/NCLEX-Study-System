@@ -1,14 +1,14 @@
 import type React from 'react'
 import { clsx } from 'clsx'
 import {
-  LetsArrowRight,
-  LetsCloud,
-  LetsShield,
-  LetsStar,
-  LetsStethoscope,
-  LetsTarget,
-  LetsUpload,
-} from './lets-icons'
+  CoolArrowRight,
+  CoolFirstAid,
+  CoolFlag,
+  CoolShield,
+  CoolStar,
+  CoolTimer,
+  CoolUpload,
+} from './coolicons'
 
 type CommandTone = 'blue' | 'green' | 'amber' | 'orange' | 'violet'
 
@@ -48,7 +48,7 @@ export function CommandBrand({
     <div className="flex items-center gap-4">
       <div className="grid h-16 w-16 place-items-center rounded-[1.25rem] border border-cyan-300/40 bg-[#071d34]/90 shadow-[0_0_34px_rgba(43,148,255,0.34)]">
         <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[linear-gradient(180deg,#0f7aff,#062d63)] text-white">
-          <LetsStethoscope className="h-7 w-7" />
+          <CoolFirstAid className="h-7 w-7" />
         </div>
       </div>
       <div>
@@ -333,7 +333,7 @@ export function GameActionTile({
         <div>
           <div className="flex items-center justify-between gap-3">
             <span className="text-sm font-bold" style={{ color: toneColor[tone] }}>{stat}</span>
-            <LetsArrowRight className="h-6 w-6 text-white transition group-hover:translate-x-1" />
+            <CoolArrowRight className="h-6 w-6 text-white transition group-hover:translate-x-1" />
           </div>
           <CommandProgress value={progress} tone={tone} className="mt-3" />
         </div>
@@ -362,7 +362,7 @@ export function MaterialUploadAsset({
     >
       <div className="flex items-center gap-4">
         <CommandIconBubble tone="blue">
-          <LetsUpload className="h-6 w-6" />
+          <CoolUpload className="h-6 w-6" />
         </CommandIconBubble>
         <div>
           <p className="font-bold text-white">Drop files here or click to upload</p>
@@ -387,7 +387,7 @@ export function UtilityBadge({
   return (
     <div className="rounded-2xl border border-sky-300/22 bg-[#071d34]/70 p-4 text-center">
       <div className="mx-auto mb-2 grid h-9 w-9 place-items-center rounded-full bg-white/[0.06]" style={{ color: toneColor[tone] }}>
-        {icon ?? <LetsStar className="h-5 w-5" />}
+        {icon ?? <CoolStar className="h-5 w-5" />}
       </div>
       <p className="text-sm font-semibold text-sky-100/72">{label}</p>
       <p className="mt-1 text-lg font-black text-white">{value}</p>
@@ -454,9 +454,9 @@ export function NurseCommandAssetStrip({
         </CommandPanel>
         <CommandPanel title="Utility Badges" subtitle="Ready">
           <div className="grid grid-cols-3 gap-3">
-            <UtilityBadge label="Streak" value={`${streak} Days`} icon={<LetsTarget className="h-5 w-5" />} tone="orange" />
-            <UtilityBadge label="Focus Time" value={focusTime} icon={<LetsCloud className="h-5 w-5" />} tone="blue" />
-            <UtilityBadge label="Accuracy" value={`${accuracy}%`} icon={<LetsShield className="h-5 w-5" />} tone="green" />
+            <UtilityBadge label="Streak" value={`${streak} Days`} icon={<CoolFlag className="h-5 w-5" />} tone="orange" />
+            <UtilityBadge label="Focus Time" value={focusTime} icon={<CoolTimer className="h-5 w-5" />} tone="blue" />
+            <UtilityBadge label="Accuracy" value={`${accuracy}%`} icon={<CoolShield className="h-5 w-5" />} tone="green" />
           </div>
         </CommandPanel>
       </div>

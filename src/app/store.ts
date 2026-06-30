@@ -51,7 +51,9 @@ import { generateMaterialToolsWithAi } from '../services/material-ai'
 import {
   getCurrentAuthSnapshot,
   onAuthSnapshotChange,
+  type OAuthProvider,
   requestPasswordReset,
+  signInWithOAuth as signInWithOAuthProvider,
   signInWithPassword,
   signOutCurrentUser,
   signUpWithPassword,
@@ -112,6 +114,7 @@ interface StudySystemState {
   simulatorProgress: SimulatorProgressState
   initializeAuth: () => Promise<void>
   signIn: (email: string, password: string) => Promise<void>
+  signInWithOAuth: (provider: OAuthProvider) => Promise<void>
   signUp: (
     email: string,
     password: string,
@@ -555,6 +558,16 @@ export const useStudySystemStore = create<StudySystemState>()(
             authError: getSafeErrorCopy('auth-sign-in'),
             syncStatus: 'error',
           })
+          throw error
+        }
+      },
+      signInWithOAuth: async (provider) => {
+        set({ authError: null })
+        try {
+          await signInWithOAuthProvider(provider)
+        } catch (error) {
+          reportSafeError('auth-oauth-sign-in', error)
+          set({ authError: getSafeErrorCopy('auth-oauth-sign-in') })
           throw error
         }
       },

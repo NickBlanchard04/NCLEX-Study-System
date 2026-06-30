@@ -1,6 +1,7 @@
 type SafeErrorContext =
   | 'auth-initialize'
   | 'auth-sign-in'
+  | 'auth-oauth-sign-in'
   | 'auth-sign-up'
   | 'auth-reset-password'
   | 'auth-update-password'
@@ -16,6 +17,7 @@ type SafeErrorContext =
 const safeErrorCopy: Record<SafeErrorContext, string> = {
   'auth-initialize': 'We could not check your account status. You can keep studying locally and try again later.',
   'auth-sign-in': 'We could not sign you in. Check your email and password, then try again.',
+  'auth-oauth-sign-in': 'We could not start social sign-in right now. Check that the provider is enabled, then try again.',
   'auth-sign-up': 'We could not create your account right now. Check your details and try again.',
   'auth-reset-password': 'We could not send a reset email right now. Try again in a few minutes.',
   'auth-update-password': 'We could not update your password right now. Try the recovery link again.',

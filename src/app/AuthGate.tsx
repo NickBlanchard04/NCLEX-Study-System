@@ -7,6 +7,7 @@ import { useStudySystemStore } from './store'
 import nursingCommandLogo from '../assets/brand/nursing-command-logo.png'
 import { createBetaTermsConsent } from './beta-terms'
 import { trackAppEvent } from '../services/analytics-client'
+import type { OAuthProvider } from '../services/auth-service'
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const authInitialized = useStudySystemStore((state) => state.authInitialized)
@@ -38,6 +39,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 function AuthLanding() {
   const authConfigured = useStudySystemStore((state) => state.authConfigured)
   const signIn = useStudySystemStore((state) => state.signIn)
+  const signInWithOAuth = useStudySystemStore((state) => state.signInWithOAuth)
   const signUp = useStudySystemStore((state) => state.signUp)
   const requestPasswordReset = useStudySystemStore((state) => state.requestPasswordReset)
   const authError = useStudySystemStore((state) => state.authError)
@@ -99,6 +101,39 @@ function AuthLanding() {
             : 'Verification email sent. Open it to finish creating your account, then sign in.',
         )
       }
+    } catch {
+      // Store owns the visible error copy.
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const startSocialSignIn = async (provider: OAuthProvider) => {
+    setMessage('')
+    if (!authConfigured) {
+      setMessage('Nurse Command beta access requires cloud authentication. Supabase is not configured in this build.')
+      return
+    }
+    if (agreementRequired && !termsAccepted) {
+      setMessage('Please accept the beta terms, privacy notice, and study-support limitations before continuing.')
+      return
+    }
+    setBusy(true)
+    try {
+      const providerLabel = provider === 'google' ? 'Google OAuth' : 'Apple OAuth'
+      if (mode === 'signup') {
+        void trackAppEvent('signup_started', {
+          page_path: '/',
+          feature_name: providerLabel,
+          exam_track: examTrack !== 'na' ? examTrack : undefined,
+        })
+      } else {
+        void trackAppEvent('feature_opened', {
+          page_path: '/',
+          feature_name: providerLabel,
+        })
+      }
+      await signInWithOAuth(provider)
     } catch {
       // Store owns the visible error copy.
     } finally {
@@ -186,7 +221,29 @@ function AuthLanding() {
             </div>
           ) : null}
 
-          <form onSubmit={submit} className="mt-6 space-y-4">
+          {mode !== 'reset' ? (
+            <div className="mt-6">
+              <div className="grid gap-3">
+                <SocialAuthButton
+                  provider="google"
+                  disabled={busy || !authConfigured}
+                  onClick={() => void startSocialSignIn('google')}
+                />
+                <SocialAuthButton
+                  provider="apple"
+                  disabled={busy || !authConfigured}
+                  onClick={() => void startSocialSignIn('apple')}
+                />
+              </div>
+              <div className="my-5 flex items-center gap-3 text-xs font-black uppercase tracking-normal text-sky-100/44">
+                <span className="h-px flex-1 bg-sky-300/16" />
+                <span>or use email</span>
+                <span className="h-px flex-1 bg-sky-300/16" />
+              </div>
+            </div>
+          ) : null}
+
+          <form onSubmit={submit} className={mode === 'reset' ? 'mt-6 space-y-4' : 'space-y-4'}>
             <label className="block">
               <span className="text-xs font-black uppercase tracking-normal text-sky-100/58">Email</span>
               <input
@@ -327,6 +384,61 @@ function AuthLanding() {
         </motion.section>
       </div>
     </div>
+  )
+}
+
+function SocialAuthButton({
+  provider,
+  disabled,
+  onClick,
+}: {
+  provider: OAuthProvider
+  disabled: boolean
+  onClick: () => void
+}) {
+  const isGoogle = provider === 'google'
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className="flex min-h-[48px] w-full items-center justify-center gap-3 rounded-2xl border border-sky-200/18 bg-white/[0.96] px-5 py-3 text-sm font-black text-[#061426] shadow-[0_14px_32px_rgba(0,0,0,0.18)] transition hover:-translate-y-0.5 hover:border-cyan-200 hover:shadow-[0_18px_40px_rgba(56,189,248,0.18)] disabled:cursor-not-allowed disabled:opacity-45"
+    >
+      {isGoogle ? <GoogleIcon className="h-5 w-5" /> : <AppleIcon className="h-5 w-5 text-[#061426]" />}
+      {isGoogle ? 'Continue with Google' : 'Continue with Apple'}
+    </button>
+  )
+}
+
+function GoogleIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+      <path
+        fill="#4285F4"
+        d="M21.805 10.041h-9.58v3.96h5.51c-.237 1.27-.96 2.347-2.04 3.067v2.55h3.3c1.93-1.78 3.045-4.4 3.045-7.5 0-.72-.065-1.414-.235-2.077Z"
+      />
+      <path
+        fill="#34A853"
+        d="M12.225 22c2.755 0 5.07-.913 6.76-2.482l-3.3-2.55c-.913.612-2.08.972-3.46.972-2.66 0-4.913-1.795-5.717-4.21h-3.41v2.635C4.78 19.708 8.235 22 12.225 22Z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M6.508 13.73A6.016 6.016 0 0 1 6.19 12c0-.6.115-1.185.318-1.73V7.635h-3.41A9.984 9.984 0 0 0 2.04 12c0 1.615.387 3.145 1.058 4.365l3.41-2.635Z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12.225 6.06c1.498 0 2.842.515 3.902 1.527l2.93-2.93C17.29 3.013 14.975 2 12.225 2 8.235 2 4.78 4.292 3.098 7.635l3.41 2.635c.804-2.415 3.057-4.21 5.717-4.21Z"
+      />
+    </svg>
+  )
+}
+
+function AppleIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden="true">
+      <path d="M16.37 12.18c-.02-2.12 1.73-3.14 1.81-3.19-1-.1-2.57-1.18-3.92-1.18-1.65 0-2.39.99-3.56.99-1.2 0-2.12-.97-3.47-.94-1.79.03-3.43 1.04-4.35 2.64-1.86 3.23-.47 8 1.34 10.62.89 1.28 1.94 2.72 3.33 2.67 1.33-.05 1.84-.86 3.46-.86 1.61 0 2.07.86 3.48.83 1.44-.02 2.35-1.31 3.23-2.6 1.02-1.49 1.44-2.93 1.46-3-.03-.01-2.79-1.07-2.81-4Z" />
+      <path d="M13.18 5.99c.73-.88 1.22-2.11 1.08-3.33-1.05.04-2.33.7-3.08 1.58-.68.78-1.27 2.03-1.11 3.22 1.17.09 2.37-.6 3.11-1.47Z" />
+    </svg>
   )
 }
 
