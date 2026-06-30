@@ -1006,7 +1006,7 @@ export function QuestionSessionRunner({
     if (!question) return
     setFeedbackOpen((current) => {
       const next = !current
-      if (next) trackContentFeedbackOpened(question, route)
+      if (next) trackContentFeedbackOpened(question, route, { userId: authUser?.id, isDemoUser: isDemoMode })
       return next
     })
   }
@@ -1019,6 +1019,7 @@ export function QuestionSessionRunner({
       note: feedbackNote,
       route,
       reviewState: feedbackReviewState,
+      context: { userId: authUser?.id, isDemoUser: isDemoMode },
     })
     setFeedbackSubmittedId(record.id)
     setFeedbackOpen(false)

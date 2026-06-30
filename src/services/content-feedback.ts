@@ -1,5 +1,5 @@
 import type { ExamTrackId, Question } from '../app/types'
-import { trackAppEvent } from './analytics-client'
+import { trackAppEvent, type AppEventContext } from './analytics-client'
 
 export type ContentFeedbackReason =
   | 'wrong_answer'
@@ -26,6 +26,7 @@ export interface ContentFeedbackInput {
   note?: string
   route?: string
   reviewState?: 'pre_submit' | 'review_open' | 'review_hidden' | 'confidence_pending' | 'confidence_recorded'
+  context?: AppEventContext
 }
 
 export interface StoredContentFeedback {
@@ -99,6 +100,7 @@ export const getLocalContentFeedbackReports = () => readStoredReports()
 export const trackContentFeedbackOpened = (
   question: Pick<Question, 'id' | 'examTrack' | 'category' | 'sourcePackId' | 'fixtureId' | 'visibility' | 'contentStage'>,
   route = '/',
+  context: AppEventContext = {},
 ) => {
   void trackAppEvent('feedback_opened', {
     page_path: route,
@@ -112,7 +114,7 @@ export const trackContentFeedbackOpened = (
       visibility: question.visibility ?? null,
       contentStage: question.contentStage ?? null,
     },
-  }).catch(() => undefined)
+  }, context).catch(() => undefined)
 }
 
 export const recordContentFeedback = ({
@@ -121,6 +123,7 @@ export const recordContentFeedback = ({
   note,
   route = '/',
   reviewState,
+  context = {},
 }: ContentFeedbackInput): StoredContentFeedback => {
   const record: StoredContentFeedback = {
     id: `feedback_${safeRandomId()}`,
@@ -160,7 +163,7 @@ export const recordContentFeedback = ({
       learnerVisible: question.learnerVisible ?? null,
       reviewState: reviewState ?? null,
     },
-  }).catch(() => undefined)
+  }, context).catch(() => undefined)
 
   return record
 }
