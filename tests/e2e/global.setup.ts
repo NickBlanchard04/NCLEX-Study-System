@@ -29,6 +29,11 @@ async function globalSetup(config: FullConfig) {
       )
     }
 
+    const welcomeSignIn = page.getByRole('button', { name: /^Sign in$/i })
+    if (await welcomeSignIn.first().isVisible().catch(() => false)) {
+      await welcomeSignIn.first().click()
+    }
+
     await page.getByLabel(/^Email$/i).fill(email)
     await page.getByLabel(/^Password$/i).fill(password)
 

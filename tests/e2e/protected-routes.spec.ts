@@ -1,14 +1,54 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
 const protectedRoutes = [
   { path: '/dashboard', text: /Next Action|Today.s Plan|Weak Areas/i },
   { path: '/quick-study', text: /Start 10-minute drill|Current action/i },
+  { path: '/practice-questions', text: /Question Bank|Start focused set|Start adaptive set|Practice Set/i },
   { path: '/weak-areas', text: /Repair the pattern|Selected repair|No weak area signal/i },
   { path: '/test-mode', text: /Start a serious exam block|exam block/i },
   { path: '/exam-prep', text: /Choose your exam lane|Current Track/i },
   { path: '/my-materials', text: /Your Study Library|Materials library/i },
   { path: '/study-plan', text: /Today first|Next Action/i },
 ]
+
+async function dismissVisibleSession(page: Page) {
+  const exitControls = page.getByRole('button', { name: /Discard|Close session/i })
+  const count = await exitControls.count()
+  for (let index = 0; index < count; index += 1) {
+    const control = exitControls.nth(index)
+    if (await control.isVisible().catch(() => false)) {
+      await control.click()
+      await page.waitForTimeout(300)
+      return
+    }
+  }
+}
+
+async function clickFirstVisibleButton(page: Page, name: RegExp, label: string) {
+  const controls = page.getByRole('button', { name })
+  const count = await controls.count()
+  for (let index = 0; index < count; index += 1) {
+    const control = controls.nth(index)
+    if (await control.isVisible().catch(() => false)) {
+      await control.click()
+      return
+    }
+  }
+  throw new Error(`${label} was not visible.`)
+}
+
+async function createStaleExamSession(page: Page) {
+  await page.goto('/test-mode')
+  await dismissVisibleSession(page)
+  await page.goto('/test-mode')
+  await clickFirstVisibleButton(page, /Start exam/i, 'Start exam')
+  await expect(page.getByRole('button', { name: /^Submit answer$/i })).toBeVisible()
+}
+
+async function expectQuestionRunner(page: Page) {
+  await expect(page.getByRole('button', { name: /^Submit answer$/i })).toBeVisible()
+  await expect(page.getByText(/Question \d+ of/i).first()).toBeVisible()
+}
 
 test.describe('authenticated protected route smoke', () => {
   for (const route of protectedRoutes) {
@@ -23,6 +63,8 @@ test.describe('authenticated protected route smoke', () => {
         consoleIssues.push(`pageerror: ${error.message}`)
       })
 
+      await page.goto(route.path)
+      await dismissVisibleSession(page)
       await page.goto(route.path)
       await expect(page).toHaveTitle(/Nurse Command/)
       await expect(page.locator('main').getByText(route.text).first()).toBeVisible()
@@ -75,6 +117,35 @@ test.describe('authenticated mobile navigation', () => {
       scrollWidth: document.documentElement.scrollWidth,
     }))
     expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth + 1)
+    expect(consoleIssues).toEqual([])
+  })
+})
+
+test.describe('session start regression', () => {
+  test('Quick Study and Question Bank start over a stale Exam session', async ({ page }, testInfo) => {
+    test.skip(!testInfo.project.name.includes('desktop'), 'session-start regression runs once on desktop')
+
+    const consoleIssues: string[] = []
+    page.on('console', (message) => {
+      if (['error', 'warning'].includes(message.type())) {
+        consoleIssues.push(`${message.type()}: ${message.text()}`)
+      }
+    })
+    page.on('pageerror', (error) => {
+      consoleIssues.push(`pageerror: ${error.message}`)
+    })
+
+    await createStaleExamSession(page)
+    await page.goto('/quick-study')
+    await clickFirstVisibleButton(page, /Start 10-minute drill/i, 'Start 10-minute drill')
+    await expectQuestionRunner(page)
+
+    await createStaleExamSession(page)
+    await page.goto('/practice-questions')
+    await clickFirstVisibleButton(page, /Start adaptive set|Start here/i, 'Start adaptive set')
+    await expectQuestionRunner(page)
+    await dismissVisibleSession(page)
+
     expect(consoleIssues).toEqual([])
   })
 })
