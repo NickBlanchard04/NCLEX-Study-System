@@ -120,6 +120,17 @@ function ProfileBadges({
   )
 }
 
+function SocialActionMark() {
+  return (
+    <div
+      className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-cyan-200/42 bg-cyan-300/[0.12] text-cyan-50 shadow-[0_0_24px_rgba(34,211,238,0.18)]"
+      aria-hidden="true"
+    >
+      <UserPlus className="h-6 w-6" />
+    </div>
+  )
+}
+
 function SectionTitle({
   icon,
   label,
@@ -402,8 +413,9 @@ export function SocialPage() {
         title="Network"
         description="The right nursing connections for today."
         action={
-          <div className="flex flex-wrap gap-2">
-            <IconBadge icon={<Sparkles className="h-3.5 w-3.5" />} label={`${visibleSuggestions.length} picks`} tone="lime" />
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <SocialActionMark />
+            <IconBadge icon={<UserPlus className="h-3.5 w-3.5" />} label={`${visibleSuggestions.length} picks`} tone="lime" />
             <IconBadge icon={<UsersRound className="h-3.5 w-3.5" />} label={`${friends.length} friends`} />
             {profile.memberNumber ? (
               <IconBadge icon={<BadgeCheck className="h-3.5 w-3.5" />} label={`#${profile.memberNumber}`} tone="amber" />
@@ -444,7 +456,7 @@ export function SocialPage() {
             className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-cyan-200/24 bg-cyan-300/[0.07] px-5 py-3 text-sm font-bold text-cyan-100 transition hover:border-cyan-100/55 hover:bg-cyan-300/13 focus:outline-none focus:ring-4 focus:ring-cyan-300/18"
           >
             Search by name
-            <Search className="h-4 w-4" />
+            <UserPlus className="h-4 w-4" />
           </button>
         }
       />
@@ -452,7 +464,7 @@ export function SocialPage() {
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(20rem,0.85fr)]">
         <Surface>
           <SectionTitle
-            icon={<Sparkles className="h-5 w-5" />}
+            icon={<UserPlus className="h-5 w-5" />}
             label="Today"
             count={visibleSuggestions.length}
             action={
@@ -489,7 +501,7 @@ export function SocialPage() {
                 />
               ))
             ) : (
-              <IconEmpty icon={<Sparkles className="h-5 w-5" />} title="No picks yet" description="Refresh, search by name, or invite beta learners to create profiles." />
+              <IconEmpty icon={<UserPlus className="h-5 w-5" />} title="No picks yet" description="Refresh, search by name, or invite beta learners to create profiles." />
             )}
           </div>
         </Surface>
