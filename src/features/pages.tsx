@@ -3486,7 +3486,7 @@ export function MyMaterialsPage() {
       .join('\n\n')
 
     saveNote({
-      id: createClientId('id'),
+      id: createClientId(),
       title: `${selectedMaterial.displayTitle} review note`,
       body,
       category: selectedMaterial.sourceCategory ?? 'General',
@@ -4099,7 +4099,7 @@ export function MyMaterialsPage() {
                       type="button"
                       onClick={() => {
                         saveNote({
-                          id: createClientId('id'),
+                          id: createClientId(),
                           title: `${selectedMaterial.displayTitle} study guide`,
                           body: [
                             'Simple summary',
@@ -5314,7 +5314,7 @@ export function NotesPage() {
   const [search, setSearch] = useState('')
   const deferredSearch = useDeferredValue(search)
   const [draft, setDraft] = useState<Note>({
-    id: createClientId('id'),
+    id: createClientId(),
     title: '',
     body: '',
     category: (seedCategory as QuestionCategory) ?? 'General',
@@ -5391,7 +5391,7 @@ export function NotesPage() {
               type="button"
               onClick={() =>
                 setDraft({
-                  id: createClientId('id'),
+                  id: createClientId(),
                   title: '',
                   body: '',
                   category: 'General',

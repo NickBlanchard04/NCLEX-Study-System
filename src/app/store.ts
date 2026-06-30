@@ -460,7 +460,7 @@ const makeSyncEvent = (
   operation: SyncEvent['operation'] = 'upsert',
   payload?: unknown,
 ): SyncEvent => ({
-  id: createClientId('sync'),
+  id: createClientId(),
   entityType,
   entityId,
   operation,
@@ -1034,7 +1034,7 @@ export const useStudySystemStore = create<StudySystemState>()(
           }
 
           const attempt: QuestionAttempt = {
-            id: createClientId('attempt'),
+            id: createClientId(),
             questionId,
             examTrack: state.profile.examTrack ?? 'nclex-rn',
             selectedAnswer,
@@ -1781,7 +1781,7 @@ export const useStudySystemStore = create<StudySystemState>()(
 
           return {
             activeMaterialQuizSession: {
-              id: createClientId('material-quiz'),
+              id: createClientId(),
               materialId,
               title: config?.title ?? `Study from ${material.displayTitle}`,
               questionIds: questions.slice(0, questionCount).map((item) => item.id),

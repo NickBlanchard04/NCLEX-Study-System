@@ -684,7 +684,7 @@ export function chunkMaterialContent(materialText: string) {
 
   pairs.forEach((pair) => {
     assets.push({
-      id: createClientId('id'),
+      id: createClientId(),
       materialId: '',
       title: safeHeading(pair.term),
       content: pair.definition,
@@ -712,7 +712,7 @@ export function chunkMaterialContent(materialText: string) {
     }
 
     assets.push({
-      id: createClientId('id'),
+      id: createClientId(),
       materialId: '',
       title: currentHeading,
       content,
@@ -728,7 +728,7 @@ export function chunkMaterialContent(materialText: string) {
       .filter((sentence) => sentence.length > 40 && !isLikelyFrontMatter(sentence))
 
     assets.push({
-      id: createClientId('id'),
+      id: createClientId(),
       materialId: '',
       title: 'Overview',
       content: sentences.slice(0, 6).join(' ') || cleanExtractedStudyText(materialText),
@@ -1154,11 +1154,11 @@ export function createStudyMaterialRecord(
     assets: MaterialAsset[]
     preview: string
   },
-  materialId: string = createClientId('id'),
+  materialId: string = createClientId(),
 ): StudyMaterial {
   const assets = extracted.assets.map((asset) => ({
     ...asset,
-    id: createClientId('id'),
+    id: createClientId(),
     materialId,
   }))
 
@@ -1193,12 +1193,12 @@ export function createStudyMaterialRecordFromUrl(
     title: string
     sourceUrl: string
   },
-  materialId: string = createClientId('id'),
+  materialId: string = createClientId(),
 ): StudyMaterial {
   const source = normalizeStudyUrl(rawUrl)
   const assets = extracted.assets.map((asset) => ({
     ...asset,
-    id: createClientId('id'),
+    id: createClientId(),
     materialId,
   }))
 
@@ -1234,12 +1234,12 @@ export function createStudyMaterialRecordFromText(
     sourceUrl?: string
     title: string
   },
-  materialId: string = createClientId('id'),
+  materialId: string = createClientId(),
 ): StudyMaterial {
   const source = extracted.sourceUrl ? normalizeStudyUrl(extracted.sourceUrl) : null
   const assets = extracted.assets.map((asset) => ({
     ...asset,
-    id: createClientId('id'),
+    id: createClientId(),
     materialId,
   }))
 
@@ -1268,7 +1268,7 @@ export function createStudyMaterialRecordFromText(
 export function createPendingStudyMaterial(file: File): StudyMaterial {
   const fileType = validateMaterialFile(file)
   return {
-    id: createClientId('id'),
+    id: createClientId(),
     filename: file.name,
     displayTitle: stripExtension(file.name),
     fileType,
@@ -1286,7 +1286,7 @@ export function createPendingStudyMaterial(file: File): StudyMaterial {
 export function createPendingStudyMaterialFromUrl(rawUrl: string): StudyMaterial {
   const source = normalizeStudyUrl(rawUrl)
   return {
-    id: createClientId('id'),
+    id: createClientId(),
     filename: source.hostname,
     displayTitle: titleFromUrl(source),
     fileType: 'link',
@@ -1307,7 +1307,7 @@ export function createPendingStudyMaterialFromText(input: { sourceUrl?: string; 
   const displayTitle = input.title?.trim() || (source ? titleFromUrl(source) : 'Pasted study material')
 
   return {
-    id: createClientId('id'),
+    id: createClientId(),
     filename: source?.hostname ?? 'pasted-study-material.txt',
     displayTitle,
     fileType: source ? 'link' : 'txt',
@@ -1340,7 +1340,7 @@ export function repairStudyMaterialContent(material: StudyMaterial): StudyMateri
   const cleaned = cleanExtractedStudyText(joinedText)
   const assets = chunkMaterialContent(cleaned).map((asset) => ({
     ...asset,
-    id: createClientId('id'),
+    id: createClientId(),
     materialId: material.id,
   }))
 
@@ -1406,7 +1406,7 @@ export function generateCleanFlashcardsFromMaterial(material: StudyMaterial): Ma
   }
 
   return candidates.map((item) => ({
-    id: createClientId('id'),
+    id: createClientId(),
     sourceMaterialId: material.id,
     sourceTitle: material.displayTitle,
     front: item.front,
@@ -1446,7 +1446,7 @@ export function generateCleanQuestionsFromMaterial(
     const correctChoice = choices.find((choice) => choice.text === correctText)
 
     return {
-      id: createClientId('id'),
+      id: createClientId(),
       sourceMaterialId: material.id,
       sourceTitle: material.displayTitle,
       prompt: buildQuestionPrompt(point, index),
@@ -1527,7 +1527,7 @@ export function generateCleanFlashcardsFromMaterialLegacy(material: StudyMateria
   }
 
   return candidates.map((item) => ({
-    id: createClientId('id'),
+    id: createClientId(),
     sourceMaterialId: material.id,
     sourceTitle: material.displayTitle,
     front: item.front,
@@ -1553,7 +1553,7 @@ export function generateCleanQuestionsFromMaterialLegacy(
     const correctChoice = choices.find((choice) => choice.text === truncate(card.back, 220))
 
     return {
-      id: createClientId('id'),
+      id: createClientId(),
       sourceMaterialId: material.id,
       sourceTitle: material.displayTitle,
       prompt:
@@ -1603,7 +1603,7 @@ export function generateFlashcardsFromMaterialLegacy(material: StudyMaterial): M
   ).slice(0, 12)
 
   return candidates.map((item) => ({
-    id: createClientId('id'),
+    id: createClientId(),
     sourceMaterialId: material.id,
     sourceTitle: material.displayTitle,
     front: item.front,
@@ -1629,7 +1629,7 @@ export function generateQuestionsFromMaterialLegacy(
     const correctChoice = choices.find((choice) => choice.text === card.back)
 
     return {
-      id: createClientId('id'),
+      id: createClientId(),
       sourceMaterialId: material.id,
       sourceTitle: material.displayTitle,
       prompt:

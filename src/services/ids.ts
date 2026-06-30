@@ -1,12 +1,20 @@
-export function createClientId(prefix = 'id') {
+export function createClientId() {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID()
   }
 
-  const randomPart =
-    typeof crypto !== 'undefined' && 'getRandomValues' in crypto
-      ? Array.from(crypto.getRandomValues(new Uint32Array(2)), (value) => value.toString(36)).join('')
-      : Math.random().toString(36).slice(2)
+  const bytes = new Uint8Array(16)
+  if (typeof crypto !== 'undefined' && 'getRandomValues' in crypto && typeof crypto.getRandomValues === 'function') {
+    crypto.getRandomValues(bytes)
+  } else {
+    for (let index = 0; index < bytes.length; index += 1) {
+      bytes[index] = Math.floor(Math.random() * 256)
+    }
+  }
 
-  return `${prefix}-${Date.now().toString(36)}-${randomPart}`
+  bytes[6] = (bytes[6] & 0x0f) | 0x40
+  bytes[8] = (bytes[8] & 0x3f) | 0x80
+
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
 }

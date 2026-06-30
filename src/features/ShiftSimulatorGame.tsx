@@ -985,7 +985,7 @@ export function ShiftSimulatorGame() {
 
     recordSimulatorLevelAttempt(
       {
-        id: createClientId('id'),
+        id: createClientId(),
         levelId: activeLevel.id,
         totalScore,
         safetyScore: score.safety,
@@ -1032,7 +1032,7 @@ export function ShiftSimulatorGame() {
     setLog((current) => [
       {
         ...entry,
-        id: createClientId('id'),
+        id: createClientId(),
         time: at,
       },
       ...current,
@@ -1201,7 +1201,7 @@ export function ShiftSimulatorGame() {
 
     setDelegationAssignments((current) => [
       {
-        id: createClientId('id'),
+        id: createClientId(),
         role,
         patientId: selectedPatient.id,
         actionId: action.id,

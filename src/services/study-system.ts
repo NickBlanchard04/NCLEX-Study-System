@@ -502,7 +502,7 @@ const createSession = (
 ): ActiveSession => {
   const startedAt = new Date().toISOString()
   return {
-    id: createClientId('id'),
+    id: createClientId(),
     mode,
     examTrack,
     title,
