@@ -2490,6 +2490,10 @@ export function TestModePage() {
       },
     },
   ]
+  const launchTestSession = () => {
+    setResumeExamNow(true)
+    startTransition(() => startTestSession({ questionCount, timed, noBacktracking }))
+  }
 
   return (
     <PageStack>
@@ -2500,7 +2504,7 @@ export function TestModePage() {
         action={
           <button
             type="button"
-            onClick={() => startTransition(() => startTestSession({ questionCount, timed, noBacktracking }))}
+            onClick={launchTestSession}
             className="inline-flex min-h-[48px] items-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
           >
             {isPending ? 'Building exam...' : 'Start timed exam'}
@@ -2526,7 +2530,7 @@ export function TestModePage() {
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <button
                 type="button"
-                onClick={() => startTransition(() => startTestSession({ questionCount, timed, noBacktracking }))}
+                onClick={launchTestSession}
                 className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
               >
                 {isPending ? 'Building exam...' : 'Start exam'}
