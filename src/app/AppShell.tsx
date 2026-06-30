@@ -1,32 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import {
-  Bell,
-  BadgeDollarSign,
-  BookOpen,
-  Brain,
-  ChevronDown,
-  ChevronLeft,
-  ClipboardList,
-  Cloud,
-  CloudOff,
-  FileText,
-  Flashlight,
-  FolderOpen,
-  Gamepad2,
-  Headphones,
-  HelpCircle,
-  HeartPulse,
-  LayoutGrid,
   LockKeyhole,
-  Menu,
-  NotebookPen,
-  RefreshCw,
-  Settings,
-  SquareStack,
-  Target,
-  Trophy,
-  Users,
-  X,
 } from 'lucide-react'
 import { lazy, Suspense, useEffect, useMemo, useState, type ComponentType, type FormEvent, type ReactNode } from 'react'
 import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
@@ -55,6 +29,32 @@ import { getExamTrack } from '../data/exam-tracks'
 import { useStudySystemStore } from './store'
 import { AuthGate } from './AuthGate'
 import {
+  LetsArrowLeft,
+  LetsBell,
+  LetsBookCheck,
+  LetsBookOpen,
+  LetsBookmark,
+  LetsCalendar,
+  LetsChart,
+  LetsChemistry,
+  LetsChevronDown,
+  LetsClose,
+  LetsCloud,
+  LetsDashboard,
+  LetsExam,
+  LetsFolder,
+  LetsHelp,
+  LetsMenu,
+  LetsNotebook,
+  LetsRefresh,
+  LetsSettings,
+  LetsShield,
+  LetsStethoscope,
+  LetsTarget,
+  LetsTrophy,
+  LetsUserCircle,
+} from '../features/lets-icons'
+import {
   checkAdminAccess,
   hasStoredAdminPreviewPasskeyAccess,
   isAdminPanelEnabled,
@@ -81,44 +81,44 @@ const nurseLabRoutePaths = [
 ]
 
 const commandNavigation: NavigationItem[] = [
-  { label: 'Home', icon: LayoutGrid, to: '/' },
-  { label: 'Dashboard', icon: LayoutGrid, to: '/dashboard' },
-  { label: 'Study Plan', icon: BookOpen, to: '/study-plan' },
+  { label: 'Home', icon: LetsDashboard, to: '/' },
+  { label: 'Dashboard', icon: LetsChart, to: '/dashboard' },
+  { label: 'Study Plan', icon: LetsCalendar, to: '/study-plan' },
 ]
 
 const practiceNavigation: NavigationItem[] = [
-  { label: 'Question Bank', icon: ClipboardList, to: '/practice-questions' },
-  { label: 'Quick Study', icon: Flashlight, to: '/quick-study' },
-  { label: 'Exam Prep', icon: Target, to: '/exam-prep' },
-  { label: 'Exams', icon: Target, to: '/test-mode' },
+  { label: 'Question Bank', icon: LetsBookCheck, to: '/practice-questions' },
+  { label: 'Quick Study', icon: LetsTarget, to: '/quick-study' },
+  { label: 'Exam Prep', icon: LetsBookOpen, to: '/exam-prep' },
+  { label: 'Exams', icon: LetsExam, to: '/test-mode' },
 ]
 
 const reviewNavigation: NavigationItem[] = [
-  { label: 'Remediation', icon: FileText, to: '/weak-areas' },
-  { label: 'Performance', icon: Trophy, to: '/performance-analytics' },
+  { label: 'Remediation', icon: LetsStethoscope, to: '/weak-areas' },
+  { label: 'Performance', icon: LetsTrophy, to: '/performance-analytics' },
 ]
 
 const libraryNavigation: NavigationItem[] = [
-  { label: 'My Materials', icon: FolderOpen, to: '/my-materials' },
-  { label: 'Flashcards', icon: SquareStack, to: '/flashcards' },
-  { label: 'Notes', icon: NotebookPen, to: '/notes' },
-  { label: 'Resources', icon: Brain, to: '/strategy-training' },
+  { label: 'My Materials', icon: LetsFolder, to: '/my-materials' },
+  { label: 'Flashcards', icon: LetsBookmark, to: '/flashcards' },
+  { label: 'Notes', icon: LetsNotebook, to: '/notes' },
+  { label: 'Resources', icon: LetsBookOpen, to: '/strategy-training' },
 ]
 
 const communityNavigation: NavigationItem[] = [
-  { label: 'Nurse Lab', icon: Gamepad2, to: '/nurse-command-lab', activePaths: nurseLabRoutePaths },
-  { label: 'Social', icon: Users, to: '/social' },
+  { label: 'Nurse Lab', icon: LetsChemistry, to: '/nurse-command-lab', activePaths: nurseLabRoutePaths },
+  { label: 'Social', icon: LetsUserCircle, to: '/social' },
 ]
 
 const labNavigation: NavigationItem[] = [
-  { label: 'Shift Game', icon: HeartPulse, to: '/shift-command' },
-  { label: 'Hospitalvania', icon: Gamepad2, to: '/hospitalvania' },
-  { label: 'Tycoon', icon: BadgeDollarSign, to: '/nurse-tycoon' },
-  { label: 'Simulator', icon: Brain, to: '/clinical-simulator' },
+  { label: 'Shift Game', icon: LetsStethoscope, to: '/shift-command' },
+  { label: 'Hospitalvania', icon: LetsChemistry, to: '/hospitalvania' },
+  { label: 'Tycoon', icon: LetsChart, to: '/nurse-tycoon' },
+  { label: 'Simulator', icon: LetsShield, to: '/clinical-simulator' },
 ]
 
 const secondaryNavigation: NavigationItem[] = [
-  { label: 'Settings', icon: Settings, to: '/settings' },
+  { label: 'Settings', icon: LetsSettings, to: '/settings' },
 ]
 
 const mainNavigation = [
@@ -140,10 +140,10 @@ const sidebarNavigationGroups = [
 ]
 
 const mobilePrimaryNavigation: NavigationItem[] = [
-  { label: 'Dashboard', icon: LayoutGrid, to: '/dashboard' },
-  { label: 'Quick Study', icon: Flashlight, to: '/quick-study' },
-  { label: 'Question Bank', icon: ClipboardList, to: '/practice-questions' },
-  { label: 'Library', icon: FolderOpen, to: '/my-materials' },
+  { label: 'Today', icon: LetsDashboard, to: '/dashboard' },
+  { label: 'Quick', icon: LetsTarget, to: '/quick-study' },
+  { label: 'Bank', icon: LetsBookCheck, to: '/practice-questions' },
+  { label: 'Library', icon: LetsFolder, to: '/my-materials' },
 ]
 
 const mobilePrimaryRoutes = new Set(mobilePrimaryNavigation.map((item) => item.to))
@@ -196,7 +196,7 @@ function RouteLoadingScreen({ label = 'Loading module' }: { label?: string }) {
     <div className="grid min-h-screen place-items-center bg-[#04101f] px-6 text-center text-white">
       <div>
         <div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-2xl border border-cyan-300/30 bg-cyan-400/10 text-cyan-200">
-          <RefreshCw className="h-5 w-5 animate-spin" />
+          <LetsRefresh className="h-5 w-5 animate-spin" />
         </div>
         <p className="nc-eyebrow text-sky-200/72">
           {label}
@@ -442,7 +442,7 @@ function NclexAppShell() {
               onClick={() => setSupportOpen(true)}
               className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-200 transition hover:bg-white/8 hover:text-white"
             >
-              <HelpCircle className="h-4 w-4" />
+              <LetsHelp className="h-4 w-4" />
               Help & Support
             </button>
           </div>
@@ -458,7 +458,7 @@ function NclexAppShell() {
                   className="hidden h-10 w-10 items-center justify-center rounded-xl border border-sky-300/24 bg-white/5 text-sky-100/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition hover:border-sky-200/60 hover:text-sky-200 md:inline-flex"
                   aria-label="Go back"
                 >
-                  <ChevronLeft className="h-4 w-4" />
+                  <LetsArrowLeft className="h-4 w-4" />
                 </button>
                 <button
                   type="button"
@@ -466,7 +466,7 @@ function NclexAppShell() {
                   className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-sky-300/24 bg-white/5 text-sky-100/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] lg:hidden"
                   aria-label="Open navigation"
                 >
-                  <Menu className="h-4 w-4" />
+                  <LetsMenu className="h-4 w-4" />
                 </button>
                 <div className="min-w-0">
                     <p className="nc-eyebrow text-sky-200/60">
@@ -494,7 +494,7 @@ function NclexAppShell() {
                   )}
                   title={syncBadgeTitle}
                 >
-                  {isDemoMode ? <CloudOff className="h-4 w-4" /> : <Cloud className="h-4 w-4" />}
+                  <LetsCloud className="h-4 w-4" />
                   {syncBadgeLabel}
                 </button>
                 <button
@@ -509,7 +509,7 @@ function NclexAppShell() {
                   className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-sky-300/24 bg-white/5 text-sky-100/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition hover:text-sky-200"
                   aria-label="Notifications"
                 >
-                  <Bell className="h-4 w-4" />
+                  <LetsBell className="h-4 w-4" />
                   <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-rose-400 ring-2 ring-[#04101f]" />
                 </button>
                 <button
@@ -531,7 +531,7 @@ function NclexAppShell() {
                     <p className="text-sm font-semibold text-white">{profile.name}</p>
                     <p className="text-xs text-sky-200/62">{activeExamTrack.shortName} learner</p>
                   </div>
-                  <ChevronDown className="hidden h-4 w-4 text-sky-200/60 md:block" />
+                  <LetsChevronDown className="hidden h-4 w-4 text-sky-200/60 md:block" />
                 </button>
               </div>
             </div>
@@ -557,7 +557,7 @@ function NclexAppShell() {
                     onClick={() => void syncNow()}
                     className="nclex-btn-secondary inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold"
                   >
-                    <RefreshCw className="h-4 w-4" />
+                    <LetsRefresh className="h-4 w-4" />
                     Sync now
                   </button>
                   {authUser ? (
@@ -674,7 +674,7 @@ function NclexAppShell() {
                   className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/6 focus:outline-none focus:ring-2 focus:ring-cyan-200/60"
                   aria-label="Close navigation"
                 >
-                  <X className="h-4 w-4" />
+                  <LetsClose className="h-4 w-4" />
                 </button>
               </div>
               <nav className="mt-6 flex-1 space-y-4 overflow-y-auto pr-1">
@@ -689,7 +689,7 @@ function NclexAppShell() {
               <div className="space-y-1.5 border-t border-white/10 pt-5">
                 <SidebarLink
                   label="Settings"
-                  icon={<Settings className="h-4 w-4" />}
+                  icon={<LetsSettings className="h-4 w-4" />}
                   to="/settings"
                   tone="slate"
                   onClick={() => setMobileMenuOpen(false)}
@@ -702,7 +702,7 @@ function NclexAppShell() {
                   }}
                   className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-200 transition hover:bg-white/8 hover:text-white"
                 >
-                  <Headphones className="h-4 w-4" />
+                  <LetsHelp className="h-4 w-4" />
                   Help & Support
                 </button>
               </div>
@@ -744,7 +744,7 @@ function NclexAppShell() {
                   className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-sky-300/24 bg-white/5 text-sky-100/72 focus:outline-none focus:ring-2 focus:ring-cyan-200/60"
                   aria-label="Close more navigation"
                 >
-                  <X className="h-4 w-4" />
+                  <LetsClose className="h-4 w-4" />
                 </button>
               </div>
               <div className="mt-5 min-h-0 space-y-5 overflow-y-auto pr-1">
@@ -794,7 +794,7 @@ function NclexAppShell() {
                   className="flex items-center justify-between rounded-2xl border border-sky-300/20 bg-white/[0.04] px-4 py-3.5 text-left text-sky-100/76 focus:outline-none focus:ring-2 focus:ring-cyan-200/55"
                 >
                   <span className="flex items-center gap-3 text-sm font-semibold">
-                    <Headphones className="h-4 w-4" />
+                    <LetsHelp className="h-4 w-4" />
                     Help & Support
                   </span>
                 </button>
@@ -1168,7 +1168,7 @@ function MobileTabBar({
           aria-label="Open more navigation"
           aria-current={moreActive ? 'page' : undefined}
         >
-          <Menu className="h-4 w-4" />
+          <LetsMenu className="h-4 w-4" />
           <span>More</span>
         </button>
       </div>
@@ -1247,7 +1247,7 @@ function SupportSheet({ open, onClose }: { open: boolean; onClose: () => void })
                 className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-sky-300/24 bg-white/5 text-sky-100/72 focus:outline-none focus:ring-2 focus:ring-cyan-200/60"
                 aria-label="Close help and support"
               >
-                <X className="h-4 w-4" />
+                <LetsClose className="h-4 w-4" />
               </button>
             </div>
             <div className="mt-5 grid gap-3">
