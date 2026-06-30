@@ -6,6 +6,7 @@ import type { ExamTrackId } from './types'
 import { useStudySystemStore } from './store'
 import nursingCommandLogo from '../assets/brand/nursing-command-logo.png'
 import { createBetaTermsConsent } from './beta-terms'
+import { trackAppEvent } from '../services/analytics-client'
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const authInitialized = useStudySystemStore((state) => state.authInitialized)
@@ -82,6 +83,11 @@ function AuthLanding() {
       } else if (mode === 'signin') {
         await signIn(email, password)
       } else {
+        void trackAppEvent('signup_started', {
+          page_path: '/',
+          feature_name: 'Beta Account',
+          exam_track: examTrack === 'na' ? undefined : examTrack,
+        })
         await signUp(email, password, {
           name: trimmedName,
           nursingSchool: trimmedSchool,

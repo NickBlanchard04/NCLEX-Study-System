@@ -15,6 +15,10 @@ export type ExamTrackId = 'nclex-rn' | 'nclex-pn' | 'teas' | 'fnp' | 'ccma'
 export type AnalyticsScope = 'selected-track' | 'all-tracks'
 export type ContentQualityStatus = 'generated-starter' | 'authored-draft' | 'editor-reviewed' | 'sme-review-ready' | 'sme-reviewed' | 'published'
 export type ContentAuthorType = 'system-generated' | 'clinical-editor-draft' | 'sme-authored'
+export type ContentVisibility = 'learner' | 'internal'
+export type ContentStage = 'standard_bank' | 'beta_draft'
+export type ClinicalReviewStatus = 'not_sme_reviewed' | 'sme_reviewed'
+export type SourceReviewStatus = 'source_needed' | 'source_mapped' | 'source_checked'
 export type SessionMode = 'practice' | 'quick-study' | 'test' | 'clinical-thinking'
 export type PracticeSessionStatus = 'active' | 'completed' | 'discarded'
 export type MasteryLevel = 'fragile' | 'developing' | 'strong'
@@ -94,6 +98,19 @@ export interface Question {
   authorType?: ContentAuthorType
   sourceRefs?: string[]
   sourceTopic?: string
+  sourceStatus?: SourceReviewStatus
+  sourceMapStatus?: string
+  clinicalReviewStatus?: ClinicalReviewStatus
+  learnerVisible?: boolean
+  visibility?: ContentVisibility
+  contentStage?: ContentStage
+  countsTowardOfficialReadiness?: boolean
+  sourceNeededClaims?: string[]
+  remediationRouteIds?: string[]
+  relatedFlashcardIds?: string[]
+  sourcePackId?: string
+  fixtureId?: string
+  feedbackEnabled?: boolean
   testTakingTrap?: string
   blueprintMapped?: boolean
   sourceBacked?: boolean

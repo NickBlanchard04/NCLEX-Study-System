@@ -19,6 +19,14 @@ import { clsx } from 'clsx'
 import type { ActiveSession, ConfidenceLevel, MasteryLevel } from '../app/types'
 import { useStudySystemStore } from '../app/store'
 import {
+  contentFeedbackReasonLabels,
+  contentFeedbackReasons,
+  recordContentFeedback,
+  trackContentFeedbackOpened,
+  type ContentFeedbackReason,
+} from '../services/content-feedback'
+import { trackAppEvent } from '../services/analytics-client'
+import {
   getQuestionCategoryBreakdown,
   getMissReason,
   getQuestionTutorInsight,
@@ -630,6 +638,9 @@ export function QuestionSessionRunner({
   const finishSession = useStudySystemStore((state) => state.finishSession)
   const startPracticeSession = useStudySystemStore((state) => state.startPracticeSession)
   const attempts = useStudySystemStore((state) => state.attempts)
+  const profile = useStudySystemStore((state) => state.profile)
+  const authUser = useStudySystemStore((state) => state.authUser)
+  const isDemoMode = useStudySystemStore((state) => state.isDemoMode)
   const navigate = useNavigate()
   const questionId = session.questionIds[session.currentIndex]
   const question = questionId ? questionLookup[questionId] : undefined
@@ -639,9 +650,12 @@ export function QuestionSessionRunner({
   const [showRationale, setShowRationale] = useState(Boolean(existingResponse))
   const [flagged, setFlagged] = useState(existingResponse?.flagged ?? false)
   const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null)
+  const [feedbackOpen, setFeedbackOpen] = useState(false)
+  const [feedbackReason, setFeedbackReason] = useState<ContentFeedbackReason>('wrong_answer')
+  const [feedbackNote, setFeedbackNote] = useState('')
+  const [feedbackSubmittedId, setFeedbackSubmittedId] = useState<string | null>(null)
   const isLastQuestion = session.currentIndex === session.questionIds.length - 1
   const currentIsCorrect = question ? getQuestionResult(questionId, selectedAnswers) : false
-
   useEffect(() => {
     if (!session.config.timed || !session.config.timeLimitMinutes || session.endedAt) return
     const totalSeconds = session.config.timeLimitMinutes * 60
@@ -902,6 +916,22 @@ export function QuestionSessionRunner({
   const openReviewForCurrentAnswer = () => {
     setSubmitted(true)
     setShowRationale(true)
+    void trackAppEvent(
+      'rationale_opened',
+      {
+        page_path: typeof window === 'undefined' ? '/practice-questions' : window.location.pathname,
+        feature_name: 'Answer Rationale',
+        exam_track: profile.examTrack ?? 'nclex-rn',
+        question_category: question.category,
+        question_result: currentIsCorrect ? 'correct' : 'incorrect',
+        is_demo_user: isDemoMode,
+        metadata: {
+          question_id: questionId,
+          review_state: 'answer_submitted',
+        },
+      },
+      { userId: authUser?.id, isDemoUser: isDemoMode },
+    )
   }
 
   const toggleChoice = (choiceId: string) => {
@@ -930,6 +960,71 @@ export function QuestionSessionRunner({
     })
   }
 
+  const resetFeedbackForm = () => {
+    setFeedbackOpen(false)
+    setFeedbackReason('wrong_answer')
+    setFeedbackNote('')
+    setFeedbackSubmittedId(null)
+  }
+
+  const setQuestionUiState = (targetQuestionId?: string) => {
+    const targetResponse = targetQuestionId
+      ? session.responses.find((response) => response.questionId === targetQuestionId)
+      : null
+    setSelectedAnswers(targetResponse?.selectedAnswer ?? [])
+    setSubmitted(Boolean(targetResponse))
+    setShowRationale(Boolean(targetResponse))
+    setFlagged(targetResponse?.flagged ?? false)
+    resetFeedbackForm()
+  }
+
+  const goToQuestionIndex = (index: number) => {
+    setQuestionUiState(session.questionIds[index])
+    goToSessionQuestion(index)
+  }
+
+  const goToNextQuestion = () => {
+    setQuestionUiState(session.questionIds[Math.min(session.currentIndex + 1, session.questionIds.length - 1)])
+    nextQuestion()
+  }
+
+  const goToPreviousQuestion = () => {
+    setQuestionUiState(session.questionIds[Math.max(session.currentIndex - 1, 0)])
+    previousQuestion()
+  }
+
+  const route = typeof window === 'undefined' ? '/practice-questions' : window.location.pathname
+  const feedbackReviewState = !submitted
+    ? 'pre_submit'
+    : showRationale
+      ? 'review_open'
+      : existingResponse
+        ? 'confidence_recorded'
+        : 'confidence_pending'
+
+  const openContentFeedback = () => {
+    if (!question) return
+    setFeedbackOpen((current) => {
+      const next = !current
+      if (next) trackContentFeedbackOpened(question, route)
+      return next
+    })
+  }
+
+  const submitContentFeedback = () => {
+    if (!question) return
+    const record = recordContentFeedback({
+      question,
+      reason: feedbackReason,
+      note: feedbackNote,
+      route,
+      reviewState: feedbackReviewState,
+    })
+    setFeedbackSubmittedId(record.id)
+    setFeedbackOpen(false)
+    setFeedbackNote('')
+  }
+
   const finalResponse = existingResponse ?? null
   const confidenceChosen = Boolean(finalResponse)
   const finalAttempt = finalResponse ? getAttemptForResponse(finalResponse) : null
@@ -948,6 +1043,11 @@ export function QuestionSessionRunner({
     selectedAnswers.some((answerId) => question.correctAnswer.includes(answerId))
   const resultLabel = currentIsCorrect ? 'Correct' : hasPartialSignal ? 'Partial' : 'Incorrect'
   const resultTone: 'green' | 'amber' | 'red' = currentIsCorrect ? 'green' : hasPartialSignal ? 'amber' : 'red'
+  const answerReviewClass = currentIsCorrect
+    ? 'border-emerald-300/24 bg-[#051f25]'
+    : hasPartialSignal
+      ? 'border-amber-300/28 bg-[#1f1a0a]'
+      : 'border-rose-300/28 bg-[#210f1d]'
   const evidenceLevel = question.blueprintMapped && question.sourceBacked ? 'Readiness evidence' : 'Practice evidence'
   const qualityStatus = question.contentQuality?.replaceAll('-', ' ') ?? 'draft item'
   const reviewState = submitted ? (showRationale ? 'Review open' : 'Review hidden') : 'Answer pending'
@@ -982,26 +1082,26 @@ export function QuestionSessionRunner({
 
   return (
     <div className="space-y-6 pb-44 xl:pb-0">
-      <Surface className="p-4 md:p-5">
+      <Surface className="border-cyan-200/20 bg-[#061b31]/72 p-4 md:p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-blue)]">
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-200">
               {modeLabel}
             </p>
-            <h3 className="mt-1 font-serif text-2xl text-[var(--nclex-text)] md:text-3xl">
+            <h3 className="mt-1 text-2xl font-black tracking-[-0.03em] text-white md:text-3xl">
               {session.title}
             </h3>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--nclex-text-muted)]">
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-sky-100/68">
               {session.subtitle}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <div className="rounded-xl border border-[var(--nclex-border)] bg-[var(--nclex-card-muted)] px-4 py-2 text-sm font-semibold text-[var(--nclex-text-secondary)]">
+            <div className="rounded-xl border border-amber-200/28 bg-amber-300/[0.08] px-4 py-2 text-sm font-black text-amber-100">
               Question {session.currentIndex + 1} of {session.questionIds.length}
             </div>
             {session.config.timed && remainingSeconds !== null ? (
-              <div className="inline-flex items-center gap-2 rounded-xl border border-[var(--nclex-border)] bg-[var(--nclex-card-muted)] px-4 py-2 text-sm font-semibold text-[var(--nclex-text-secondary)]">
-                <Clock3 className="h-4 w-4 text-[var(--nclex-blue)]" />
+              <div className="inline-flex items-center gap-2 rounded-xl border border-cyan-200/24 bg-cyan-300/[0.08] px-4 py-2 text-sm font-black text-cyan-100">
+                <Clock3 className="h-4 w-4" />
                 {Math.floor(remainingSeconds / 60)}:{String(remainingSeconds % 60).padStart(2, '0')}
               </div>
             ) : null}
@@ -1019,7 +1119,7 @@ export function QuestionSessionRunner({
                 type="button"
                 onClick={() => {
                   if (session.config.noBacktracking) return
-                  goToSessionQuestion(index)
+                  goToQuestionIndex(index)
                 }}
                 disabled={session.config.noBacktracking}
                 className={clsx(
@@ -1028,7 +1128,7 @@ export function QuestionSessionRunner({
                     ? 'border-amber-200/70 bg-amber-300/22 text-amber-50 shadow-[0_0_18px_rgba(251,191,36,0.18)]'
                     : answered
                       ? 'border-emerald-300/34 bg-emerald-300/[0.08] text-emerald-100'
-                      : 'border-[var(--nclex-border)] bg-white text-[var(--nclex-text-muted)]',
+                      : 'border-cyan-200/18 bg-white/[0.04] text-sky-100/58',
                   session.config.noBacktracking && 'cursor-not-allowed opacity-60',
                 )}
               >
@@ -1040,13 +1140,13 @@ export function QuestionSessionRunner({
       </Surface>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
-        <Surface className="nclex-surface-muted">
+        <Surface className="border-cyan-200/18 bg-[#041629]/78">
           {question.scenario ? (
-            <div className="rounded-[16px] border border-[#cfe1f7] bg-[#eef5ff] p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-blue)]">
+            <div className="rounded-[16px] border border-cyan-200/20 bg-cyan-300/[0.07] p-4">
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-100">
                 Clinical scenario
               </p>
-              <p className="mt-2 text-sm leading-7 text-[var(--nclex-text-secondary)]">{question.scenario}</p>
+              <p className="mt-2 text-sm leading-7 text-sky-100/76">{question.scenario}</p>
             </div>
           ) : null}
 
@@ -1065,10 +1165,10 @@ export function QuestionSessionRunner({
               onClick={() => setFlagged((current) => !current)}
               disabled={Boolean(existingResponse)}
               className={clsx(
-                'inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em]',
+                'inline-flex min-h-8 items-center gap-2 rounded-full border px-3 py-1 text-xs font-black uppercase tracking-[0.14em]',
                 flagged
-                  ? 'border-[#ffd9ae] bg-[var(--nclex-warning-soft)] text-[var(--nclex-warning)]'
-                  : 'border-[var(--nclex-border)] bg-white text-[var(--nclex-text-muted)]',
+                  ? 'border-amber-200/40 bg-amber-300/12 text-amber-100'
+                  : 'border-cyan-200/18 bg-white/[0.04] text-sky-100/58',
               )}
             >
               <Flag className="h-3.5 w-3.5" />
@@ -1076,11 +1176,11 @@ export function QuestionSessionRunner({
             </button>
           </div>
 
-          <h4 className="mt-5 font-serif text-[1.7rem] leading-tight text-[var(--nclex-text)] md:text-[2rem]">
+          <h4 className="mt-5 text-[1.6rem] font-black leading-tight tracking-[-0.03em] text-white md:text-[2rem]">
             {question.prompt}
           </h4>
 
-          <div className="mt-6 space-y-3">
+          <div className="mt-6 space-y-3.5">
             {question.choices.map((choice) => {
               const selected = selectedAnswers.includes(choice.id)
               const correct = question.correctAnswer.includes(choice.id)
@@ -1101,7 +1201,7 @@ export function QuestionSessionRunner({
                       : undefined
                   }
                   className={clsx(
-                    'nclex-answer flex min-h-[64px] w-full items-start gap-4 rounded-[16px] border p-4 text-left transition active:scale-[0.995] sm:min-h-0',
+                    'nclex-answer flex min-h-[72px] w-full items-start gap-4 rounded-[16px] border p-4 text-left transition active:scale-[0.995]',
                     selected && 'nclex-answer-selected',
                     submitted && correct && 'nclex-answer-correct',
                     incorrectSelection && 'nclex-answer-incorrect',
@@ -1110,17 +1210,17 @@ export function QuestionSessionRunner({
                 >
                   <span
                     className={clsx(
-                      'mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-xs font-semibold',
+                      'mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-xs font-black',
                       selected
                         ? 'border-amber-200/70 bg-amber-300/22 text-amber-50 shadow-[0_0_16px_rgba(251,191,36,0.16)]'
-                        : 'border-[var(--nclex-border-strong)] bg-white text-[var(--nclex-text-muted)]',
+                        : 'border-cyan-200/24 bg-white/[0.04] text-sky-100/58',
                       submitted && correct && 'border-[var(--nclex-success)] bg-[var(--nclex-success)] text-white',
                       incorrectSelection && 'border-[var(--nclex-danger)] bg-[var(--nclex-danger)] text-white',
                     )}
                   >
                     {choice.id}
                   </span>
-                  <span className="text-sm leading-7 text-[var(--nclex-text-secondary)]">{choice.text}</span>
+                  <span className="text-base leading-7 text-sky-50/84">{choice.text}</span>
                 </button>
               )
             })}
@@ -1140,7 +1240,7 @@ export function QuestionSessionRunner({
               !isLastQuestion ? (
                 <button
                   type="button"
-                  onClick={nextQuestion}
+                  onClick={goToNextQuestion}
                   className={clsx(practiceActionButton.next, 'flex-[1.2] md:flex-none')}
                 >
                   Next question
@@ -1164,7 +1264,31 @@ export function QuestionSessionRunner({
             {submitted ? (
               <button
                 type="button"
-                onClick={() => setShowRationale((current) => !current)}
+                onClick={() =>
+                  setShowRationale((current) => {
+                    const next = !current
+                    if (next) {
+                      void trackAppEvent(
+                        'rationale_opened',
+                        {
+                          page_path: typeof window === 'undefined' ? '/practice-questions' : window.location.pathname,
+                          feature_name: 'Answer Rationale',
+                          exam_track: profile.examTrack ?? 'nclex-rn',
+                          question_category: question.category,
+                          question_result: currentIsCorrect ? 'correct' : 'incorrect',
+                          confidence_level: finalResponse?.confidence,
+                          is_demo_user: isDemoMode,
+                          metadata: {
+                            question_id: questionId,
+                            review_state: finalResponse ? 'confidence_recorded' : 'confidence_pending',
+                          },
+                        },
+                        { userId: authUser?.id, isDemoUser: isDemoMode },
+                      )
+                    }
+                    return next
+                  })
+                }
                 className={clsx(practiceActionButton.review, 'flex-1 md:flex-none')}
               >
                 <Eye className="h-4 w-4" />
@@ -1179,13 +1303,13 @@ export function QuestionSessionRunner({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 8 }}
-                className="mt-5 rounded-[16px] border border-cyan-300/18 bg-[#071b2f] p-4 text-white shadow-[0_12px_30px_rgba(2,18,34,0.18)] md:p-5"
+                className={clsx('mt-5 rounded-[16px] border p-4 text-white shadow-[0_12px_30px_rgba(2,18,34,0.18)] md:p-5', answerReviewClass)}
               >
                 <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                   <div>
-                    <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-200/70">Answer Review</p>
+                    <p className="text-xs font-black uppercase tracking-[0.16em] text-sky-200/70">Answer review</p>
                     <p className="mt-1 text-sm leading-6 text-sky-100/70">
-                      Confirm confidence, review the rationale, then move to the next best action.
+                      Confirm confidence, read the clinical rationale, then move to the next best action.
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -1235,45 +1359,136 @@ export function QuestionSessionRunner({
                 ) : null}
 
                 {showRationale ? (
-                  <div className="mt-4 grid gap-3 md:grid-cols-2">
-                    <div className="md:col-span-2">
-                      <RationaleCard
-                        title="Best answer"
-                        tone="green"
-                        body={question.rationale.whyCorrect}
-                      />
-                    </div>
-                    {!currentIsCorrect ? (
+                  <>
+                    <div className="mt-4 grid gap-3 md:grid-cols-2">
                       <div className="md:col-span-2">
                         <RationaleCard
-                          title="Miss pattern"
-                          tone="rose"
-                          body={getMissReason(questionId, selectedAnswers)}
+                          title="Correct answer"
+                          tone="green"
+                          body={question.rationale.whyCorrect}
                         />
                       </div>
-                    ) : null}
+                      {!currentIsCorrect ? (
+                        <div className="md:col-span-2">
+                          <RationaleCard
+                            title="Miss pattern"
+                            tone="rose"
+                            body={getMissReason(questionId, selectedAnswers)}
+                          />
+                        </div>
+                      ) : null}
                     {finalRemediation ? (
                       <div className="md:col-span-2">
                         <RationaleCard
-                          title="Next repair"
-                          tone="rose"
-                          body={finalRemediation.nextActionCopy}
-                          badges={[finalRemediation.routeLabel]}
+                            title="Next repair"
+                            tone="rose"
+                            body={finalRemediation.nextActionCopy}
+                            badges={[finalRemediation.routeLabel]}
                         />
                       </div>
                     ) : null}
+                    {question.relatedFlashcardIds?.length ? (
+                      <div className="md:col-span-2 rounded-[14px] border border-cyan-300/16 bg-white/[0.04] p-4">
+                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                          <div>
+                            <p className="text-sm font-black text-white">Linked remediation card</p>
+                            <p className="mt-1 text-sm leading-6 text-sky-100/64">
+                              Open the matching flashcard for this missed pattern.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              navigate(`/flashcards?cardId=${encodeURIComponent(question.relatedFlashcardIds![0])}`)
+                            }
+                            className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-violet-300/24 bg-violet-300/[0.08] px-4 py-2 text-sm font-black text-violet-100 transition hover:bg-violet-300/14"
+                          >
+                            <Lightbulb className="h-4 w-4" />
+                            Open linked card
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
                     <RationaleCard
-                      title="Why others fall away"
+                      title="Why the other options fall away"
                       tone="amber"
-                      body={question.rationale.whyOthers}
-                    />
-                    <RationaleCard
-                      title="Test-taking cue"
-                      tone="violet"
-                      body={`${question.nclexTip} ${tutorInsight.reviewTarget}. Watch for: ${tutorInsight.trap}`}
-                      badges={evidenceBadges}
-                    />
-                  </div>
+                        body={question.rationale.whyOthers}
+                      />
+                      <RationaleCard
+                        title="Test-taking cue"
+                        tone="violet"
+                        body={`${question.nclexTip} ${tutorInsight.reviewTarget}. Watch for: ${tutorInsight.trap}`}
+                        badges={evidenceBadges}
+                      />
+                    </div>
+                    {question.feedbackEnabled ? (
+                      <div className="mt-4 rounded-[14px] border border-cyan-300/16 bg-white/[0.04] p-4">
+                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                          <div>
+                            <p className="text-sm font-black text-white">Report content issue</p>
+                            <p className="mt-1 text-sm leading-6 text-sky-100/64">
+                              Flag answer, rationale, wording, typo, or source concerns for internal review.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={openContentFeedback}
+                            className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-cyan-300/24 bg-cyan-300/[0.08] px-4 py-2 text-sm font-black text-cyan-100 transition hover:bg-cyan-300/14"
+                          >
+                            <Flag className="h-4 w-4" />
+                            {feedbackOpen ? 'Close report' : 'Open report'}
+                          </button>
+                        </div>
+                        {feedbackSubmittedId ? (
+                          <div className="mt-3 rounded-xl border border-emerald-300/24 bg-emerald-300/[0.08] px-3 py-2 text-sm font-semibold text-emerald-100">
+                            Report saved for internal review.
+                          </div>
+                        ) : null}
+                        {feedbackOpen ? (
+                          <div className="mt-4 grid gap-3">
+                            <label className="block">
+                              <span className="mb-2 block text-xs font-black uppercase tracking-[0.14em] text-sky-100/58">
+                                Issue type
+                              </span>
+                              <select
+                                value={feedbackReason}
+                                onChange={(event) => setFeedbackReason(event.target.value as ContentFeedbackReason)}
+                                className="min-h-[44px] w-full rounded-xl border border-cyan-300/20 bg-[#061b31] px-3 py-2 text-sm font-semibold text-white"
+                              >
+                                {contentFeedbackReasons.map((reason) => (
+                                  <option key={reason} value={reason}>
+                                    {contentFeedbackReasonLabels[reason]}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                            <label className="block">
+                              <span className="mb-2 block text-xs font-black uppercase tracking-[0.14em] text-sky-100/58">
+                                Note
+                              </span>
+                              <textarea
+                                value={feedbackNote}
+                                onChange={(event) => setFeedbackNote(event.target.value)}
+                                maxLength={500}
+                                rows={3}
+                                placeholder="Optional. Do not enter patient identifiers or private info."
+                                className="w-full resize-none rounded-xl border border-cyan-300/20 bg-[#061b31] px-3 py-2 text-sm font-semibold leading-6 text-white placeholder:text-sky-100/38"
+                              />
+                            </label>
+                            <div className="flex justify-end">
+                              <button
+                                type="button"
+                                onClick={submitContentFeedback}
+                                className="inline-flex min-h-[42px] items-center justify-center rounded-xl border border-emerald-300/28 bg-emerald-300/[0.1] px-4 py-2 text-sm font-black text-emerald-100 transition hover:bg-emerald-300/16"
+                              >
+                                Submit report
+                              </button>
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </>
                 ) : null}
               </motion.div>
             ) : null}
@@ -1317,7 +1532,7 @@ export function QuestionSessionRunner({
               <div className="flex flex-wrap gap-3">
                 <button
                   type="button"
-                  onClick={previousQuestion}
+                  onClick={goToPreviousQuestion}
                   disabled={session.currentIndex === 0 || Boolean(session.config.noBacktracking)}
                   className="nclex-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40"
                 >
@@ -1368,7 +1583,7 @@ export function QuestionSessionRunner({
             !isLastQuestion ? (
               <button
                 type="button"
-                onClick={nextQuestion}
+                onClick={goToNextQuestion}
                 className={clsx(practiceActionButton.next, 'w-full')}
               >
                 Next question
@@ -1393,7 +1608,7 @@ export function QuestionSessionRunner({
         <div className="mt-2 flex flex-wrap gap-3">
           <button
             type="button"
-            onClick={previousQuestion}
+            onClick={goToPreviousQuestion}
             disabled={session.currentIndex === 0 || Boolean(session.config.noBacktracking)}
             className="nclex-btn-secondary inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-black disabled:cursor-not-allowed disabled:opacity-40"
           >
