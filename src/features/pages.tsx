@@ -2647,13 +2647,17 @@ export function WeakAreasPage() {
     return { label: 'Needs reps', tone: 'rose' as const, icon: <Target className="h-3.5 w-3.5" /> }
   }
   const repairActionVerb = (index: number) => (index === 0 ? 'Train' : index === 1 ? 'Review' : 'Practice')
+  const priorityStatus = priorityArea ? getRepairStatus(priorityArea) : null
+  const priorityRepairCount = priorityArea ? getRepairCountForCategory(priorityArea.category) : 0
+  const priorityConcepts = priorityArea?.commonMistakes.slice(0, 3) ?? []
+  const repairQueue = weakAreas.slice(0, 3)
 
   return (
     <PageStack>
       <PageHeader
         eyebrow="Remediation"
-        title="Repair the pattern, then prove transfer."
-        description={`${activeTrack.shortName} weak areas now start with the next repair action. Details stay below the fold so remediation feels direct, not punitive.`}
+        title="Remediation"
+        description={`Repair the pattern by turning ${activeTrack.shortName} misses into one action at a time, then prove the pattern changed.`}
         action={
           priorityArea ? (
             <button
@@ -2669,26 +2673,27 @@ export function WeakAreasPage() {
       />
 
       {priorityArea ? (
-        <FocusPanel className="border-rose-200/32 bg-[#061426] text-white shadow-[0_0_40px_rgba(244,63,94,0.12)]">
-          <div className="grid gap-5 p-5 md:p-6 xl:grid-cols-[1fr_0.76fr] xl:items-center">
-            <div>
+        <FocusPanel className="border-rose-200/32 bg-[linear-gradient(135deg,rgba(244,63,94,0.16),rgba(6,20,38,0.95)_38%,rgba(2,8,18,0.96))] text-white shadow-[0_0_40px_rgba(244,63,94,0.12)]">
+          <div className="grid gap-5 p-4 sm:p-5 md:p-6 xl:grid-cols-[minmax(0,1fr)_21rem]">
+            <div className="min-w-0">
               <div className="flex flex-wrap gap-2">
-                <CommandBadge tone="amber" icon={<Sparkles className="h-3.5 w-3.5" />}>Selected repair</CommandBadge>
-                <CommandBadge tone={getRepairStatus(priorityArea).tone} icon={getRepairStatus(priorityArea).icon}>
-                  {getRepairStatus(priorityArea).label}
+                <CommandBadge tone="amber" icon={<Sparkles className="h-3.5 w-3.5" />}>Next repair</CommandBadge>
+                <CommandBadge tone={priorityStatus?.tone ?? 'rose'} icon={priorityStatus?.icon}>
+                  {priorityStatus?.label}
                 </CommandBadge>
               </div>
-              <h3 className="mt-3 text-3xl font-bold tracking-normal text-white md:text-5xl">
-                Train {shortCategoryLabel(priorityArea.category)}
+              <h3 className="mt-4 text-3xl font-bold tracking-normal text-white md:text-4xl">
+                Repair {shortCategoryLabel(priorityArea.category)}
               </h3>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-sky-100/72">
-                {priorityArea.suggestedAction} Then answer a short transfer set to prove the pattern changed.
+                {priorityArea.suggestedAction} Keep this short: train the pattern, check the rationale, then prove transfer.
               </p>
-              <div className="mt-5 flex flex-wrap gap-2">
-                {priorityArea.commonMistakes.slice(0, 3).map((mistake) => (
-                  <span key={mistake} className="rounded-full border border-rose-300/30 bg-rose-300/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.14em] text-rose-100">
-                    {mistake}
-                  </span>
+              <div className="mt-5 grid gap-2 sm:grid-cols-3">
+                {priorityConcepts.map((mistake) => (
+                  <div key={mistake} className="rounded-xl border border-rose-200/20 bg-rose-300/[0.075] p-3">
+                    <p className="text-xs font-bold uppercase text-rose-100/70">Repair cue</p>
+                    <p className="mt-1 min-w-0 break-words text-sm font-bold leading-5 text-white">{mistake}</p>
+                  </div>
                 ))}
               </div>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -2710,10 +2715,24 @@ export function WeakAreasPage() {
                 </button>
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-2 xl:grid-cols-1">
+            <div className="rounded-[1rem] border border-white/10 bg-[#031426]/74 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-100/58">Proof target</p>
+                  <h4 className="mt-2 text-xl font-bold text-white">Short transfer set</h4>
+                </div>
+                <CommandBadge tone={priorityArea.accuracy >= 0.72 ? 'emerald' : 'rose'}>
+                  {Math.round(priorityArea.accuracy * 100)}%
+                </CommandBadge>
+              </div>
+              <div className="mt-4">
+                <ProgressBar value={priorityArea.accuracy} tone={priorityArea.accuracy >= 0.72 ? 'green' : 'red'} />
+              </div>
+              <div className="mt-4 grid grid-cols-3 gap-2 xl:grid-cols-1">
               <CommandStatTile label="Accuracy" value={`${Math.round(priorityArea.accuracy * 100)}%`} detail={`${priorityArea.attemptCount} attempts`} tone={priorityArea.accuracy >= 0.72 ? 'emerald' : 'rose'} icon={<BadgeCheck className="h-4 w-4" />} />
-              <CommandStatTile label="Open repairs" value={`${getRepairCountForCategory(priorityArea.category)}`} detail="active misses" tone="rose" icon={<AlertTriangle className="h-4 w-4" />} />
-              <CommandStatTile label="Mismatch" value={`${Math.round(priorityArea.confidenceMismatchScore * 100)}%`} detail="confidence risk" tone="violet" icon={<BrainCircuit className="h-4 w-4" />} />
+              <CommandStatTile label="Repairs" value={`${priorityRepairCount}`} detail="open misses" tone="rose" icon={<AlertTriangle className="h-4 w-4" />} />
+              <CommandStatTile label="Risk" value={`${Math.round(priorityArea.confidenceMismatchScore * 100)}%`} detail="confidence gap" tone="violet" icon={<BrainCircuit className="h-4 w-4" />} />
+              </div>
             </div>
           </div>
         </FocusPanel>
@@ -2736,12 +2755,12 @@ export function WeakAreasPage() {
       <DetailGrid>
         <Surface>
           <SectionHeading
-            title="Repair queue"
-            description="Train the first item now. The rest are backup lanes, not equal priorities."
+            title="Repair actions"
+            description="Three lanes only: train the priority, review the next pattern, then practice one backup."
             action={<span className="nclex-chip nclex-chip-warning">{activeRepairs.length} active</span>}
           />
           <div className="mt-5 grid gap-4">
-            {weakAreas.slice(0, 4).map((area, index) => (
+            {repairQueue.map((area, index) => (
               <div
                 key={area.category}
                 className={clsx(
@@ -2756,7 +2775,7 @@ export function WeakAreasPage() {
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <span className={clsx('rounded-full border px-2.5 py-1 text-xs font-bold', index === 0 ? 'border-amber-200/36 bg-amber-300/12 text-amber-100' : 'border-rose-200/28 bg-rose-300/10 text-rose-100')}>
-                        {index === 0 ? 'Next' : `Later ${index}`}
+                        {index === 0 ? 'Next' : index === 1 ? 'Review next' : 'Backup'}
                       </span>
                       <CommandBadge tone={getRepairStatus(area).tone} icon={getRepairStatus(area).icon}>
                         {getRepairStatus(area).label}
@@ -2806,6 +2825,12 @@ export function WeakAreasPage() {
                 </div>
               </div>
             ))}
+            {!repairQueue.length ? (
+              <div className="rounded-2xl border border-cyan-200/18 bg-cyan-300/[0.055] p-5">
+                <p className="font-bold text-white">No repair queue yet.</p>
+                <p className="mt-2 text-sm leading-6 text-sky-100/64">Run a short practice set to create a trustworthy remediation signal.</p>
+              </div>
+            ) : null}
           </div>
         </Surface>
 
