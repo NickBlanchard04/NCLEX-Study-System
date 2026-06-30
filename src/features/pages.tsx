@@ -5486,21 +5486,16 @@ const clinicalScenarios = [
 
 const nurseCommandLabModules = [
   {
-    title: 'Shift Game',
-    description: 'Practice prioritization under time pressure in a hospital shift loop.',
-    to: '/shift-command',
-    icon: HeartPulse,
-    action: 'Start shift',
-    meta: 'Prioritization',
-    accent: 'from-rose-400/28 to-cyan-400/10',
-  },
-  {
     title: 'Hospitalvania',
-    description: 'Run the side-scrolling clinical judgment prototype.',
+    description: 'Run the side-scrolling clinical judgment prototype when you want fast pressure reps.',
     to: '/hospitalvania',
     icon: Zap,
     action: 'Enter Hospitalvania',
-    meta: 'Arcade drill',
+    skill: 'Rapid clinical judgment',
+    sessionLength: '8-12 min',
+    status: 'Experimental prototype',
+    statusTone: 'rose' as const,
+    tone: 'violet' as const,
     accent: 'from-violet-400/28 to-cyan-400/10',
   },
   {
@@ -5509,7 +5504,11 @@ const nurseCommandLabModules = [
     to: '/nurse-tycoon',
     icon: BarChart3,
     action: 'Open tycoon',
-    meta: 'Systems thinking',
+    skill: 'Systems thinking',
+    sessionLength: '10-15 min',
+    status: 'Ready',
+    statusTone: 'emerald' as const,
+    tone: 'violet' as const,
     accent: 'from-amber-300/28 to-emerald-400/10',
   },
   {
@@ -5518,8 +5517,25 @@ const nurseCommandLabModules = [
     to: '/clinical-simulator',
     icon: Target,
     action: 'Train first actions',
-    meta: 'Patient scenarios',
+    skill: 'Assessment and escalation',
+    sessionLength: '6-10 min',
+    status: 'Recommended',
+    statusTone: 'amber' as const,
+    tone: 'amber' as const,
     accent: 'from-emerald-300/28 to-cyan-400/10',
+  },
+  {
+    title: 'Shift Game',
+    description: 'Practice prioritization under time pressure in a hospital shift loop.',
+    to: '/shift-command',
+    icon: HeartPulse,
+    action: 'Start shift',
+    skill: 'Prioritization',
+    sessionLength: '10-12 min',
+    status: 'Ready',
+    statusTone: 'emerald' as const,
+    tone: 'rose' as const,
+    accent: 'from-rose-400/28 to-cyan-400/10',
   },
 ]
 
@@ -5539,54 +5555,63 @@ export function NurseCommandLabPage() {
   return (
     <PageStack>
       <PageHeader
-        eyebrow="Nurse Command Lab"
-        title="Simulation, games, and clinical reps in one lab."
-        description="The lab keeps experimental practice modes grouped together so the core study app stays focused and the game surfaces still feel intentional."
+        eyebrow="Nurse Lab"
+        title="Nurse Lab"
+        description="Simulation and game-based clinical practice, grouped away from the core study workflow."
         action={
-          <Link
-            to={featuredLabModule.to}
-            className="nclex-btn-primary inline-flex min-h-[48px] items-center gap-2 rounded-xl px-5 py-3 text-sm font-bold"
-          >
-            Start featured lab
-            <ArrowRight className="h-4 w-4" />
-          </Link>
+          <CommandRouteLink to={featuredLabModule.to} emphasis="primary" icon={<ArrowRight className="h-4 w-4" />}>
+            Enter Nurse Lab
+          </CommandRouteLink>
         }
       />
 
-      <FocusPanel className="nclex-dark-panel text-white">
+      <CommandFocusPanel tone="violet">
         <div className="grid gap-5 p-5 md:p-6 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-stretch">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-200">Featured lab</p>
+            <div className="flex flex-wrap gap-2">
+              <CommandBadge tone="amber" icon={<Target className="h-3.5 w-3.5" />}>Recommended module</CommandBadge>
+              <CommandBadge tone="violet" icon={<FlaskConical className="h-3.5 w-3.5" />}>Simulation</CommandBadge>
+            </div>
             <h3 className="mt-3 max-w-3xl text-3xl font-bold tracking-normal text-white md:text-5xl">
               {featuredLabModule.title}
             </h3>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-sky-100/72">
               {featuredLabModule.description} Use this first when you want a clinical judgment loop instead of another question set.
             </p>
+            <div className="mt-5 grid gap-2 sm:grid-cols-3">
+              <CommandStatTile label="Skill" value="Assess" detail={featuredLabModule.skill} tone="violet" icon={<BrainCircuit className="h-4 w-4" />} />
+              <CommandStatTile label="Length" value={featuredLabModule.sessionLength} detail="typical run" tone="cyan" icon={<Clock3 className="h-4 w-4" />} />
+              <CommandStatTile label="Status" value="Ready" detail="recommended" tone="emerald" icon={<ShieldCheck className="h-4 w-4" />} />
+            </div>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <Link
-                to={featuredLabModule.to}
-                className="nclex-btn-primary inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold"
-              >
+              <CommandRouteLink to={featuredLabModule.to} emphasis="primary" icon={<ArrowRight className="h-4 w-4" />}>
                 {featuredLabModule.action}
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link
+              </CommandRouteLink>
+              <CommandRouteLink
                 to="/quick-study"
-                className="nclex-btn-secondary inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold"
+                tone="cyan"
+                icon={<BookOpen className="h-4 w-4" />}
               >
                 Back to questions
-                <BookOpen className="h-4 w-4" />
-              </Link>
+              </CommandRouteLink>
             </div>
           </div>
-          <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-            <QuickMetric label="Modes" value="4" detail="Games, simulation, and management reps." />
-            <QuickMetric label="Use for" value="Flow" detail="Priority, escalation, and patient-state decisions." />
-            <QuickMetric label="Core app" value="Clean" detail="Lab tools stay grouped away from study nav." />
+          <div className="grid gap-3">
+            <CommandInsightPanel
+              eyebrow="Why this lab exists"
+              title="Practice the messy middle."
+              description="These modules train priority, escalation, flow, and patient-state decisions that do not fit neatly inside a normal question set."
+              tone="violet"
+            />
+            <CommandStatusRow
+              icon={<ShieldCheck className="h-4 w-4" />}
+              title="Core app stays clean"
+              detail="Games and simulations stay one layer down so navigation does not become a link dump."
+              tone="emerald"
+            />
           </div>
         </div>
-      </FocusPanel>
+      </CommandFocusPanel>
 
       <div>
         <SectionHeading
@@ -5596,30 +5621,42 @@ export function NurseCommandLabPage() {
       </div>
 
       <div className="grid gap-5 md:grid-cols-2">
-        {nurseCommandLabModules.map(({ title, description, to, icon: Icon, action, meta, accent }) => (
+        {nurseCommandLabModules.map(({ title, description, to, icon: Icon, action, skill, sessionLength, status, statusTone, tone, accent }) => (
           <Surface key={to} className="group flex min-h-[260px] flex-col justify-between p-0">
             <div className={clsx('h-1.5 bg-gradient-to-r', accent)} />
             <div>
               <div className="p-5 md:p-6">
                 <div className="flex items-start justify-between gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-[16px] border border-cyan-300/25 bg-cyan-300/12 text-cyan-100 shadow-[0_0_24px_rgba(56,189,248,0.16)]">
+                  <div
+                    className={clsx(
+                      'flex h-12 w-12 items-center justify-center rounded-[16px] border shadow-[0_0_24px_rgba(56,189,248,0.12)]',
+                      tone === 'amber'
+                        ? 'border-amber-300/30 bg-amber-300/14 text-amber-100'
+                        : tone === 'rose'
+                          ? 'border-rose-300/28 bg-rose-300/12 text-rose-100'
+                          : 'border-violet-300/28 bg-violet-300/12 text-violet-100',
+                    )}
+                  >
                     <Icon className="h-5 w-5" />
                   </div>
-                  <span className="rounded-full border border-cyan-300/25 bg-white/[0.04] px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-sky-100/64">
-                    {meta}
-                  </span>
+                  <CommandBadge tone={statusTone}>{status}</CommandBadge>
                 </div>
                 <h2 className="mt-5 text-2xl font-bold tracking-normal text-white">{title}</h2>
                 <p className="mt-3 text-sm leading-6 text-sky-100/66">{description}</p>
+                <div className="mt-5 grid gap-2 sm:grid-cols-2">
+                  <CommandStatusRow icon={<BrainCircuit className="h-4 w-4" />} title="Skill trained" detail={skill} tone="violet" />
+                  <CommandStatusRow icon={<Clock3 className="h-4 w-4" />} title="Session length" detail={sessionLength} tone="cyan" />
+                </div>
               </div>
             </div>
-            <Link
+            <CommandRouteLink
               to={to}
-              className="mx-5 mb-5 inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl border border-cyan-300/24 bg-white/[0.04] px-4 py-3 text-sm font-bold text-cyan-100 transition group-hover:border-cyan-200/60 group-hover:bg-cyan-300/12 md:mx-6 md:mb-6"
+              tone={tone === 'rose' ? 'rose' : tone === 'amber' ? 'amber' : 'violet'}
+              className="mx-5 mb-5 md:mx-6 md:mb-6"
+              icon={<ArrowRight className="h-4 w-4" />}
             >
               {action}
-              <ArrowRight className="h-4 w-4" />
-            </Link>
+            </CommandRouteLink>
           </Surface>
         ))}
       </div>
