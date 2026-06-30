@@ -1,13 +1,22 @@
 import { motion } from 'framer-motion'
-import { Eye, EyeOff, FileText, LockKeyhole, ShieldCheck, UserPlus } from 'lucide-react'
+import {
+  Apple,
+  ArrowRight,
+  Eye,
+  EyeOff,
+  FileText,
+  LockKeyhole,
+  Mail,
+  ShieldCheck,
+  UserPlus,
+} from 'lucide-react'
 import { useState } from 'react'
-import { examTracks } from '../data/exam-tracks'
-import type { ExamTrackId } from './types'
 import { useStudySystemStore } from './store'
 import nursingCommandLogo from '../assets/brand/nursing-command-logo.png'
 import { createBetaTermsConsent } from './beta-terms'
 import { trackAppEvent } from '../services/analytics-client'
-import type { OAuthProvider } from '../services/auth-service'
+
+type AuthMode = 'welcome' | 'signin' | 'signup' | 'reset'
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const authInitialized = useStudySystemStore((state) => state.authInitialized)
@@ -39,24 +48,21 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 function AuthLanding() {
   const authConfigured = useStudySystemStore((state) => state.authConfigured)
   const signIn = useStudySystemStore((state) => state.signIn)
-  const signInWithOAuth = useStudySystemStore((state) => state.signInWithOAuth)
   const signUp = useStudySystemStore((state) => state.signUp)
   const requestPasswordReset = useStudySystemStore((state) => state.requestPasswordReset)
   const authError = useStudySystemStore((state) => state.authError)
-  const [mode, setMode] = useState<'signin' | 'signup' | 'reset'>('signin')
+  const [mode, setMode] = useState<AuthMode>('welcome')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [passwordVisible, setPasswordVisible] = useState(false)
   const [name, setName] = useState('')
-  const [nursingSchool, setNursingSchool] = useState('')
-  const [examTrack, setExamTrack] = useState<ExamTrackId | 'na'>('na')
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [termsCopyRequested, setTermsCopyRequested] = useState(false)
 
-  const agreementRequired = mode !== 'reset'
-  const canSubmit = !busy && authConfigured && (!agreementRequired || termsAccepted)
+  const agreementRequired = mode === 'signup'
+  const canSubmit = mode !== 'welcome' && !busy && authConfigured && (!agreementRequired || termsAccepted)
   const inputClass =
     'mt-2 w-full rounded-2xl border border-sky-300/20 bg-[#04101f]/82 px-4 py-3 text-sm text-white outline-none transition placeholder:text-sky-100/34 focus:border-cyan-200/70 focus:ring-4 focus:ring-cyan-300/16'
 
@@ -72,9 +78,8 @@ function AuthLanding() {
       return
     }
     const trimmedName = name.trim()
-    const trimmedSchool = nursingSchool.trim()
-    if (mode === 'signup' && !trimmedSchool) {
-      setMessage('Please enter your name and the college or nursing program you are in before continuing.')
+    if (mode === 'signup' && !trimmedName) {
+      setMessage('Please enter your name before continuing.')
       return
     }
     setBusy(true)
@@ -84,16 +89,13 @@ function AuthLanding() {
         setMessage('Password reset email sent if that account exists. Open the link from that inbox to set a new password.')
       } else if (mode === 'signin') {
         await signIn(email, password)
-      } else {
+      } else if (mode === 'signup') {
         void trackAppEvent('signup_started', {
           page_path: '/',
           feature_name: 'Beta Account',
-          exam_track: examTrack === 'na' ? undefined : examTrack,
         })
         await signUp(email, password, {
           name: trimmedName,
-          nursingSchool: trimmedSchool,
-          examTrack: examTrack === 'na' ? undefined : examTrack,
         }, createBetaTermsConsent(termsCopyRequested))
         setMessage(
           termsCopyRequested
@@ -108,64 +110,55 @@ function AuthLanding() {
     }
   }
 
-  const startSocialSignIn = async (provider: OAuthProvider) => {
-    setMessage('')
-    if (!authConfigured) {
-      setMessage('Nurse Command beta access requires cloud authentication. Supabase is not configured in this build.')
-      return
-    }
-    if (agreementRequired && !termsAccepted) {
-      setMessage('Please accept the beta terms, privacy notice, and study-support limitations before continuing.')
-      return
-    }
-    setBusy(true)
-    try {
-      const providerLabel = provider === 'google' ? 'Google OAuth' : 'Apple OAuth'
-      if (mode === 'signup') {
-        void trackAppEvent('signup_started', {
-          page_path: '/',
-          feature_name: providerLabel,
-          exam_track: examTrack !== 'na' ? examTrack : undefined,
-        })
-      } else {
-        void trackAppEvent('feature_opened', {
-          page_path: '/',
-          feature_name: providerLabel,
-        })
-      }
-      await signInWithOAuth(provider)
-    } catch {
-      // Store owns the visible error copy.
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const changeMode = (nextMode: 'signin' | 'signup' | 'reset') => {
+  const changeMode = (nextMode: AuthMode) => {
     setMode(nextMode)
     setMessage('')
+    setPasswordVisible(false)
     if (nextMode !== 'signup') {
+      setTermsAccepted(false)
       setTermsCopyRequested(false)
     }
   }
 
-  const title = mode === 'signin' ? 'Welcome back' : mode === 'signup' ? 'Create beta account' : 'Reset password'
+  const title =
+    mode === 'welcome'
+      ? 'Welcome to Nurse Command'
+      : mode === 'signin'
+        ? 'Sign in'
+        : mode === 'signup'
+          ? 'Create account'
+          : 'Reset password'
+  const eyebrow = mode === 'reset' ? 'Account recovery' : 'Beta account access'
+  const helperText =
+    mode === 'welcome'
+      ? 'We are excited to help you track progress, repair weak areas, and study from your own materials.'
+      : mode === 'signin'
+        ? 'Welcome back to Nurse Command.'
+        : mode === 'signup'
+          ? 'Start a clean beta profile. We will send a verification email before your account is active.'
+          : 'Enter the email linked to your account and we will send a secure reset link.'
   const submitLabel =
     mode === 'reset'
       ? 'Send password reset email'
       : mode === 'signin'
         ? 'Sign in'
-        : 'Send verification email'
+        : 'Create account'
+  const formIcon =
+    mode === 'signup'
+      ? <UserPlus className="h-5 w-5" />
+      : mode === 'reset'
+        ? <Mail className="h-5 w-5" />
+        : <LockKeyhole className="h-5 w-5" />
 
   return (
-    <div className="nurse-command-app relative min-h-screen overflow-hidden bg-[#04101f] px-4 py-6 text-white sm:px-6 lg:px-8">
+    <div className="nurse-command-app relative min-h-screen overflow-x-hidden bg-[#04101f] px-4 py-6 font-['Google_Sans','Product_Sans','Inter',sans-serif] text-white sm:px-6 lg:px-8">
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(56,189,248,0.22),transparent_30%),radial-gradient(circle_at_78%_22%,rgba(163,230,53,0.12),transparent_26%),linear-gradient(180deg,#071d34_0%,#04101f_52%,#020812_100%)]" />
       <div className="pointer-events-none fixed inset-0 bg-[linear-gradient(90deg,rgba(125,211,252,0.08)_1px,transparent_1px),linear-gradient(180deg,rgba(125,211,252,0.06)_1px,transparent_1px)] bg-[length:72px_72px] opacity-40" />
       <div className="relative z-10 mx-auto grid min-h-[calc(100vh-3rem)] max-w-6xl items-center gap-8 lg:grid-cols-[minmax(0,0.92fr)_minmax(360px,0.58fr)]">
         <motion.section
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="min-w-0 text-center lg:text-left"
+          className="order-2 min-w-0 text-center lg:order-1 lg:text-left"
         >
           <img
             src={nursingCommandLogo}
@@ -182,263 +175,283 @@ function AuthLanding() {
           <p className="mx-auto mt-5 max-w-2xl text-base leading-8 text-sky-50/76 lg:mx-0">
             A free timesaving nursing study command center for focused practice, weak-area repair, performance signals, and study materials in one place.
           </p>
-          <div id="beta-terms" className="mx-auto mt-7 max-w-2xl rounded-2xl border border-cyan-200/18 bg-[#071d34]/68 p-5 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] lg:mx-0">
-            <p className="text-sm font-black text-white">Open beta notice</p>
-            <p className="mt-2 text-sm leading-7 text-sky-100/68">
-              Nurse Command is currently in open beta. Features, content, analytics, and availability may change while we test and improve the product.
-            </p>
-            <p className="mt-3 text-sm leading-7 text-sky-100/68">
-              By accessing the beta, users agree not to copy, scrape, reverse engineer, resell, redistribute, or use Nurse Command content or interface patterns to train or build competing systems.
-            </p>
-            <p className="mt-3 text-sm leading-7 text-sky-100/68">
-              Nurse Command is study support only. It is not clinical advice, patient care guidance, licensure prediction, or a substitute for official exam guidance.
-            </p>
-          </div>
+          <details id="beta-terms" className="mx-auto mt-7 max-w-2xl rounded-2xl border border-cyan-200/18 bg-[#071d34]/68 p-5 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition open:border-cyan-200/28 lg:mx-0">
+            <summary className="cursor-pointer text-sm font-black text-white">
+              Open beta notice
+            </summary>
+            <div className="mt-3 space-y-3 text-sm leading-7 text-sky-100/68">
+              <p>
+                Nurse Command is currently in open beta. Features, content, analytics, and availability may change while we test and improve the product.
+              </p>
+              <p>
+                By accessing the beta, users agree not to copy, scrape, reverse engineer, resell, redistribute, or use Nurse Command content or interface patterns to train or build competing systems.
+              </p>
+              <p>
+                Nurse Command is study support only. It is not clinical advice, patient care guidance, licensure prediction, or a substitute for official exam guidance.
+              </p>
+            </div>
+          </details>
         </motion.section>
 
         <motion.section
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.08 }}
-          className="rounded-[28px] border border-cyan-200/20 bg-[#071d34]/88 p-6 shadow-[0_28px_80px_rgba(0,0,0,0.34),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur md:p-7"
+          className="order-1 mx-auto w-full max-w-[430px] rounded-[32px] border border-cyan-200/20 bg-[#071d34]/88 p-6 shadow-[0_28px_80px_rgba(0,0,0,0.34),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur md:p-7 lg:order-2"
         >
-          <div className="flex items-center justify-between gap-3">
+          <div className="mb-7 flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <img
+                src={nursingCommandLogo}
+                alt="Nurse Command"
+                className="h-12 w-12 shrink-0 object-contain drop-shadow-[0_12px_32px_rgba(14,165,233,0.32)]"
+              />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-black uppercase tracking-[0.18em] text-white">
+                  Nurse Command
+                </p>
+                <p className="truncate text-[11px] font-black uppercase tracking-[0.2em] text-cyan-100/56">
+                  Study. Practice. Lead.
+                </p>
+              </div>
+            </div>
+            <div className="rounded-2xl border border-cyan-200/24 bg-cyan-300/10 p-3 text-cyan-100">
+              {formIcon}
+            </div>
+          </div>
+
+          <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-xs font-black uppercase tracking-normal text-cyan-200/72">
-                Beta account access
+                {eyebrow}
               </p>
-              <h2 className="mt-2 text-3xl font-black text-white">
+              <h2 className="mt-2 text-3xl font-black leading-tight text-white">
                 {title}
               </h2>
             </div>
-            <div className="rounded-2xl border border-cyan-200/24 bg-cyan-300/10 p-3 text-cyan-100">
-              {mode === 'signup' ? <UserPlus className="h-5 w-5" /> : <LockKeyhole className="h-5 w-5" />}
-            </div>
           </div>
+          <p className="mt-3 text-sm font-semibold leading-6 text-sky-100/66">
+            {helperText}
+          </p>
+
+          {mode === 'welcome' ? (
+            <div className="mt-8 space-y-5">
+              <button
+                type="button"
+                onClick={() => changeMode('signin')}
+                className="flex min-h-[50px] w-full items-center justify-center rounded-2xl bg-[#0e638d] px-5 py-3 text-sm font-black text-white shadow-[0_16px_34px_rgba(14,99,141,0.24)] transition hover:-translate-y-0.5 hover:bg-[#1181b8] focus:outline-none focus:ring-4 focus:ring-cyan-300/18"
+              >
+                Sign in
+              </button>
+              <button
+                type="button"
+                onClick={() => changeMode('signup')}
+                className="group mx-auto flex min-h-11 items-center justify-center gap-2 rounded-full px-4 text-sm font-black text-cyan-200 transition hover:[transform:translateY(-2px)] hover:text-white focus:outline-none focus:ring-4 focus:ring-lime-200/14"
+              >
+                Create an account
+                <ArrowRight className="h-4 w-4 transition group-hover:[transform:translateX(4px)]" />
+              </button>
+            </div>
+          ) : null}
+
           {!authConfigured ? (
             <div className="mt-5 rounded-2xl border border-amber-200/30 bg-amber-300/10 px-4 py-3 text-sm leading-6 text-amber-100">
               Cloud authentication is required for beta access. This build is missing Supabase configuration.
             </div>
           ) : null}
 
-          {mode !== 'reset' ? (
-            <div className="mt-6">
-              <div className="grid gap-3">
-                <SocialAuthButton
-                  provider="google"
-                  disabled={busy || !authConfigured}
-                  onClick={() => void startSocialSignIn('google')}
+          {mode !== 'welcome' ? (
+            <form onSubmit={submit} className="mt-6 space-y-4">
+              <label className="block">
+                <span className="text-xs font-black uppercase tracking-normal text-sky-100/58">Email</span>
+                <input
+                  type="email"
+                  required
+                  autoComplete="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  className={inputClass}
+                  placeholder="you@example.com"
                 />
-                <SocialAuthButton
-                  provider="apple"
-                  disabled={busy || !authConfigured}
-                  onClick={() => void startSocialSignIn('apple')}
+              </label>
+              {mode === 'signup' ? (
+                <>
+                  <label className="block">
+                    <span className="text-xs font-black uppercase tracking-normal text-sky-100/58">Name</span>
+                    <input
+                      type="text"
+                      required
+                      autoComplete="name"
+                      value={name}
+                      onChange={(event) => setName(event.target.value)}
+                      className={inputClass}
+                      placeholder="Your name"
+                    />
+                  </label>
+                </>
+              ) : null}
+              {mode !== 'reset' ? (
+                <PasswordField
+                  label="Password"
+                  value={password}
+                  visible={passwordVisible}
+                  onVisibleChange={setPasswordVisible}
+                  onChange={setPassword}
+                  placeholder="At least 6 characters"
+                  autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                  tone="dark"
                 />
+              ) : null}
+              {mode === 'signin' ? (
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => changeMode('reset')}
+                    className="min-h-11 text-xs font-black text-cyan-200 transition hover:text-white focus:outline-none focus:ring-4 focus:ring-cyan-300/18"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+              ) : null}
+              {mode === 'signup' ? (
+                <>
+                  <div className="rounded-2xl border border-cyan-200/16 bg-cyan-300/8 px-4 py-3 text-sm leading-6 text-sky-100/70">
+                    We will send a verification email. Your account starts with a clean profile after verification.
+                  </div>
+                  <label className="flex cursor-pointer gap-3 rounded-2xl border border-cyan-200/18 bg-[#04101f]/58 p-4">
+                    <input
+                      type="checkbox"
+                      checked={termsAccepted}
+                      onChange={(event) => setTermsAccepted(event.target.checked)}
+                      className="mt-1 h-5 w-5 shrink-0 accent-cyan-300"
+                    />
+                    <span className="text-sm leading-6 text-sky-100/70">
+                      I agree to the beta terms, privacy notice, and study-support limitations.
+                    </span>
+                  </label>
+                  <label className="flex cursor-pointer gap-3 rounded-2xl border border-lime-200/18 bg-lime-300/8 p-4">
+                    <input
+                      type="checkbox"
+                      checked={termsCopyRequested}
+                      onChange={(event) => setTermsCopyRequested(event.target.checked)}
+                      className="mt-1 h-5 w-5 shrink-0 accent-lime-300"
+                    />
+                    <span className="text-sm leading-6 text-sky-100/72">
+                      <span className="font-black text-white">Email me a copy of these terms.</span> Include the current open beta terms in my verification email.
+                    </span>
+                  </label>
+                </>
+              ) : null}
+
+              {authError || message ? (
+                <div role="status" className="rounded-2xl border border-cyan-200/20 bg-cyan-300/10 px-4 py-3 text-sm leading-6 text-sky-50/80">
+                  {authError ?? message}
+                </div>
+              ) : null}
+
+              <button
+                type="submit"
+                disabled={!canSubmit}
+                className={mode === 'signup'
+                  ? 'group flex min-h-[50px] w-full items-center justify-center gap-2 rounded-2xl border border-lime-200/24 bg-[linear-gradient(135deg,#0ea5e9,#14b8a6)] px-5 py-3 text-sm font-black text-white shadow-[0_18px_42px_rgba(14,165,233,0.24)] transition hover:[transform:translateY(-2px)] hover:border-lime-200/60 hover:brightness-110 hover:shadow-[0_24px_60px_rgba(20,184,166,0.34)] focus:outline-none focus:ring-4 focus:ring-lime-200/18 disabled:cursor-not-allowed disabled:border-transparent disabled:bg-slate-500/70 disabled:opacity-45 disabled:shadow-none disabled:hover:transform-none disabled:hover:brightness-100'
+                  : 'group flex min-h-[50px] w-full items-center justify-center gap-2 rounded-2xl bg-[#0e638d] px-5 py-3 text-sm font-black text-white shadow-[0_16px_34px_rgba(14,99,141,0.24)] transition hover:-translate-y-0.5 hover:bg-[#1181b8] focus:outline-none focus:ring-4 focus:ring-cyan-300/18 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0'}
+              >
+                {busy ? 'Working...' : submitLabel}
+                {!busy ? <ArrowRight className="h-4 w-4 transition group-hover:[transform:translateX(4px)]" /> : null}
+              </button>
+            </form>
+          ) : null}
+
+          {mode === 'signin' ? (
+            <>
+              <div className="my-5 flex items-center gap-3 text-[11px] font-black uppercase tracking-normal text-sky-100/42">
+                <span className="h-px flex-1 bg-cyan-200/16" />
+                Social sign-in
+                <span className="h-px flex-1 bg-cyan-200/16" />
               </div>
-              <div className="my-5 flex items-center gap-3 text-xs font-black uppercase tracking-normal text-sky-100/44">
-                <span className="h-px flex-1 bg-sky-300/16" />
-                <span>or use email</span>
-                <span className="h-px flex-1 bg-sky-300/16" />
+              <div className="space-y-3">
+                <ProviderButton provider="Google" />
+                <ProviderButton provider="Apple" />
               </div>
+              <p className="mt-3 text-center text-xs font-semibold leading-5 text-sky-100/50">
+                Google and Apple sign-in are coming soon. Use email and password for beta access.
+              </p>
+            </>
+          ) : null}
+
+          {mode !== 'welcome' ? (
+            <div className="mt-5 flex justify-center">
+              {mode === 'signin' ? (
+                <button
+                  type="button"
+                  onClick={() => changeMode('signup')}
+                  className="min-h-11 text-sm font-black text-cyan-200 transition hover:text-white focus:outline-none focus:ring-4 focus:ring-cyan-300/18"
+                >
+                  Create an account
+                </button>
+              ) : null}
+              {mode === 'signup' ? (
+                <button
+                  type="button"
+                  onClick={() => changeMode('signin')}
+                  className="min-h-11 text-sm font-black text-cyan-200 transition hover:text-white focus:outline-none focus:ring-4 focus:ring-cyan-300/18"
+                >
+                  Already have an account? Sign in
+                </button>
+              ) : null}
+              {mode === 'reset' ? (
+                <button
+                  type="button"
+                  onClick={() => changeMode('signin')}
+                  className="min-h-11 text-sm font-black text-cyan-200 transition hover:text-white focus:outline-none focus:ring-4 focus:ring-cyan-300/18"
+                >
+                  Back to sign in
+                </button>
+              ) : null}
             </div>
           ) : null}
 
-          <form onSubmit={submit} className={mode === 'reset' ? 'mt-6 space-y-4' : 'space-y-4'}>
-            <label className="block">
-              <span className="text-xs font-black uppercase tracking-normal text-sky-100/58">Email</span>
-              <input
-                type="email"
-                required
-                autoComplete="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                className={inputClass}
-                placeholder="you@example.com"
-              />
-            </label>
-            {mode === 'signup' ? (
-              <>
-                <label className="block">
-                  <span className="text-xs font-black uppercase tracking-normal text-sky-100/58">Name</span>
-                  <input
-                    type="text"
-                    required
-                    autoComplete="name"
-                    value={name}
-                    onChange={(event) => setName(event.target.value)}
-                    className={inputClass}
-                    placeholder="Your name"
-                  />
-                </label>
-                <label className="block">
-                  <span className="text-xs font-black uppercase tracking-normal text-sky-100/58">College / nursing program</span>
-                  <input
-                    type="text"
-                    required
-                    autoComplete="organization"
-                    value={nursingSchool}
-                    onChange={(event) => setNursingSchool(event.target.value)}
-                    className={inputClass}
-                    placeholder="Your college or nursing program"
-                  />
-                </label>
-                <label className="block">
-                  <span className="text-xs font-black uppercase tracking-normal text-sky-100/58">Exam track</span>
-                  <select
-                    value={examTrack}
-                    onChange={(event) => setExamTrack(event.target.value as ExamTrackId | 'na')}
-                    className={inputClass}
-                  >
-                    <option value="na">N/A / just exploring</option>
-                    {examTracks.map((track) => (
-                      <option key={track.id} value={track.id}>
-                        {track.shortName}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </>
-            ) : null}
-            {mode !== 'reset' ? (
-              <PasswordField
-                label="Password"
-                value={password}
-                visible={passwordVisible}
-                onVisibleChange={setPasswordVisible}
-                onChange={setPassword}
-                placeholder="At least 6 characters"
-                autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-                tone="dark"
-              />
-            ) : null}
-            {agreementRequired ? (
-              <label className="flex cursor-pointer gap-3 rounded-2xl border border-cyan-200/18 bg-[#04101f]/58 p-4">
-                <input
-                  type="checkbox"
-                  checked={termsAccepted}
-                  onChange={(event) => setTermsAccepted(event.target.checked)}
-                  className="mt-1 h-5 w-5 shrink-0 accent-cyan-300"
-                />
-                <span className="text-sm leading-6 text-sky-100/70">
-                  I agree to the beta terms, privacy notice, and study-support limitations. I understand Nurse Command may change during open beta and that account access is required.
-                </span>
-              </label>
-            ) : null}
-            {mode === 'signup' ? (
-              <label className="flex cursor-pointer gap-3 rounded-2xl border border-lime-200/18 bg-lime-300/8 p-4">
-                <input
-                  type="checkbox"
-                  checked={termsCopyRequested}
-                  onChange={(event) => setTermsCopyRequested(event.target.checked)}
-                  className="mt-1 h-5 w-5 shrink-0 accent-lime-300"
-                />
-                <span className="text-sm leading-6 text-sky-100/72">
-                  <span className="font-black text-white">Email me a copy of these terms.</span> Include the current open beta terms in my verification email.
-                </span>
-              </label>
-            ) : null}
-
-            {authError || message ? (
-              <div className="rounded-2xl border border-cyan-200/20 bg-cyan-300/10 px-4 py-3 text-sm leading-6 text-sky-50/80">
-                {authError ?? message}
-              </div>
-            ) : null}
-
-            <button
-              type="submit"
-              disabled={!canSubmit}
-              className="nclex-btn-primary flex min-h-[48px] w-full items-center justify-center rounded-2xl px-5 py-3 text-sm font-black disabled:cursor-not-allowed disabled:opacity-45"
-            >
-              {busy ? 'Working...' : submitLabel}
-            </button>
-          </form>
-
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-            <button
-              type="button"
-              onClick={() => changeMode(mode === 'signup' ? 'signin' : 'signup')}
-              className="text-sm font-bold text-cyan-200"
-            >
-              {mode === 'signup' ? 'Already have an account?' : 'Need an account?'}
-            </button>
-            <button type="button" onClick={() => changeMode(mode === 'reset' ? 'signin' : 'reset')} className="text-sm font-bold text-sky-100/60">
-              {mode === 'reset' ? 'Back to sign in' : 'Reset password'}
-            </button>
-          </div>
-
-          <div className="mt-6 rounded-[18px] border border-sky-200/14 bg-[#04101f]/56 px-4 py-3 text-xs leading-5 text-sky-100/56">
-            <div className="mb-2 flex items-center gap-2 text-sky-100/78">
+          <details className="mt-6 rounded-[18px] border border-sky-200/14 bg-[#04101f]/56 px-4 py-3 text-xs leading-5 text-sky-100/56 transition open:border-cyan-200/24">
+            <summary className="flex cursor-pointer items-center gap-2 text-sky-100/78">
               <FileText className="h-4 w-4" />
-              <p className="font-black uppercase tracking-normal">Privacy and terms summary</p>
+              <span className="font-black uppercase tracking-normal">Privacy and terms summary</span>
+            </summary>
+            <div className="mt-3 space-y-2">
+              <p>
+                Privacy: cloud accounts store your email and synced study activity. Do not upload protected health information, patient-identifying data, or clinical records.
+              </p>
+              <p>
+                Terms: beta access is personal. Do not copy, scrape, reverse engineer, redistribute, resell, or train competing systems from Nurse Command content, interfaces, or study logic.
+              </p>
+              <p>
+                Support: <a className="font-semibold text-cyan-200" href="mailto:support@nursecommand.com">support@nursecommand.com</a>.
+              </p>
             </div>
-            <p>
-              Privacy: cloud accounts store your email and synced study activity. Do not upload protected health information, patient-identifying data, or clinical records.
-            </p>
-            <p className="mt-2">
-              Terms: beta access is personal. Do not copy, scrape, reverse engineer, redistribute, resell, or train competing systems from Nurse Command content, interfaces, or study logic.
-            </p>
-            <p className="mt-2">
-              Support: <a className="font-semibold text-cyan-200" href="mailto:support@nursecommand.com">support@nursecommand.com</a>.
-            </p>
-          </div>
+          </details>
         </motion.section>
       </div>
     </div>
   )
 }
 
-function SocialAuthButton({
-  provider,
-  disabled,
-  onClick,
-}: {
-  provider: OAuthProvider
-  disabled: boolean
-  onClick: () => void
-}) {
-  const isGoogle = provider === 'google'
+function ProviderButton({ provider }: { provider: 'Google' | 'Apple' }) {
   return (
     <button
       type="button"
-      disabled={disabled}
-      onClick={onClick}
-      className="flex min-h-[48px] w-full items-center justify-center gap-3 rounded-2xl border border-sky-200/18 bg-white/[0.96] px-5 py-3 text-sm font-black text-[#061426] shadow-[0_14px_32px_rgba(0,0,0,0.18)] transition hover:-translate-y-0.5 hover:border-cyan-200 hover:shadow-[0_18px_40px_rgba(56,189,248,0.18)] disabled:cursor-not-allowed disabled:opacity-45"
+      disabled
+      aria-label={`${provider} sign-in coming soon`}
+      className="flex min-h-11 w-full cursor-not-allowed items-center justify-center gap-3 rounded-2xl border border-sky-100/12 bg-white/80 px-4 text-sm font-bold text-slate-900 shadow-[0_12px_26px_rgba(0,0,0,0.14)]"
     >
-      {isGoogle ? <GoogleIcon className="h-5 w-5" /> : <AppleIcon className="h-5 w-5 text-[#061426]" />}
-      {isGoogle ? 'Continue with Google' : 'Continue with Apple'}
+      {provider === 'Google' ? (
+        <span aria-hidden="true" className="grid h-4 w-4 place-items-center text-sm font-black text-[#4285f4]">G</span>
+      ) : (
+        <Apple aria-hidden="true" className="h-4 w-4" />
+      )}
+      <span className="min-w-0 flex-1 text-left">Continue with {provider}</span>
+      <span className="rounded-full bg-slate-900/10 px-2 py-1 text-[10px] font-black uppercase tracking-normal text-slate-700">
+        Coming soon
+      </span>
     </button>
-  )
-}
-
-function GoogleIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
-      <path
-        fill="#4285F4"
-        d="M21.805 10.041h-9.58v3.96h5.51c-.237 1.27-.96 2.347-2.04 3.067v2.55h3.3c1.93-1.78 3.045-4.4 3.045-7.5 0-.72-.065-1.414-.235-2.077Z"
-      />
-      <path
-        fill="#34A853"
-        d="M12.225 22c2.755 0 5.07-.913 6.76-2.482l-3.3-2.55c-.913.612-2.08.972-3.46.972-2.66 0-4.913-1.795-5.717-4.21h-3.41v2.635C4.78 19.708 8.235 22 12.225 22Z"
-      />
-      <path
-        fill="#FBBC05"
-        d="M6.508 13.73A6.016 6.016 0 0 1 6.19 12c0-.6.115-1.185.318-1.73V7.635h-3.41A9.984 9.984 0 0 0 2.04 12c0 1.615.387 3.145 1.058 4.365l3.41-2.635Z"
-      />
-      <path
-        fill="#EA4335"
-        d="M12.225 6.06c1.498 0 2.842.515 3.902 1.527l2.93-2.93C17.29 3.013 14.975 2 12.225 2 8.235 2 4.78 4.292 3.098 7.635l3.41 2.635c.804-2.415 3.057-4.21 5.717-4.21Z"
-      />
-    </svg>
-  )
-}
-
-function AppleIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden="true">
-      <path d="M16.37 12.18c-.02-2.12 1.73-3.14 1.81-3.19-1-.1-2.57-1.18-3.92-1.18-1.65 0-2.39.99-3.56.99-1.2 0-2.12-.97-3.47-.94-1.79.03-3.43 1.04-4.35 2.64-1.86 3.23-.47 8 1.34 10.62.89 1.28 1.94 2.72 3.33 2.67 1.33-.05 1.84-.86 3.46-.86 1.61 0 2.07.86 3.48.83 1.44-.02 2.35-1.31 3.23-2.6 1.02-1.49 1.44-2.93 1.46-3-.03-.01-2.79-1.07-2.81-4Z" />
-      <path d="M13.18 5.99c.73-.88 1.22-2.11 1.08-3.33-1.05.04-2.33.7-3.08 1.58-.68.78-1.27 2.03-1.11 3.22 1.17.09 2.37-.6 3.11-1.47Z" />
-    </svg>
   )
 }
 
@@ -469,22 +482,23 @@ function PasswordRecoveryLanding() {
   }
 
   return (
-    <div className="nclex-shell-bg flex min-h-screen items-center justify-center px-5 py-8 text-[var(--nclex-text)]">
+    <div className="nurse-command-app relative flex min-h-screen items-center justify-center overflow-hidden bg-[#04101f] px-5 py-8 font-['Google_Sans','Product_Sans','Inter',sans-serif] text-white">
+      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(56,189,248,0.22),transparent_30%),linear-gradient(180deg,#071d34_0%,#04101f_52%,#020812_100%)]" />
       <motion.section
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="nclex-surface w-full max-w-[460px] rounded-[28px] p-6 md:p-7"
+        className="relative z-10 w-full max-w-[460px] rounded-[28px] border border-cyan-200/20 bg-[#071d34]/88 p-6 shadow-[0_28px_80px_rgba(0,0,0,0.34),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur md:p-7"
       >
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-blue)]">
+            <p className="text-xs font-black uppercase tracking-normal text-cyan-200/72">
               Password Recovery
             </p>
-            <h2 className="mt-2 font-serif text-3xl text-[var(--nclex-text)]">
+            <h2 className="mt-2 text-3xl font-black text-white">
               Set a new password
             </h2>
           </div>
-          <div className="rounded-2xl bg-[var(--nclex-blue-soft)] p-3 text-[var(--nclex-blue)]">
+          <div className="rounded-2xl border border-cyan-200/24 bg-cyan-300/10 p-3 text-cyan-100">
             <LockKeyhole className="h-5 w-5" />
           </div>
         </div>
@@ -497,6 +511,7 @@ function PasswordRecoveryLanding() {
             onChange={setPassword}
             placeholder="At least 6 characters"
             autoComplete="new-password"
+            tone="dark"
           />
           <PasswordField
             label="Confirm password"
@@ -506,16 +521,17 @@ function PasswordRecoveryLanding() {
             onChange={setConfirmPassword}
             placeholder="Retype password"
             autoComplete="new-password"
+            tone="dark"
           />
           {authError || message ? (
-            <div className="rounded-2xl border border-[#d4e4f7] bg-[var(--nclex-blue-soft)] px-4 py-3 text-sm leading-6 text-[var(--nclex-text-secondary)]">
+            <div role="status" className="rounded-2xl border border-cyan-200/20 bg-cyan-300/10 px-4 py-3 text-sm leading-6 text-sky-50/80">
               {authError ?? message}
             </div>
           ) : null}
           <button
             type="submit"
             disabled={busy}
-            className="nclex-btn-primary flex min-h-[48px] w-full items-center justify-center rounded-2xl px-5 py-3 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex min-h-[50px] w-full items-center justify-center gap-2 rounded-2xl bg-[#0e638d] px-5 py-3 text-sm font-black text-white shadow-[0_16px_34px_rgba(14,99,141,0.24)] transition hover:-translate-y-0.5 hover:bg-[#1181b8] focus:outline-none focus:ring-4 focus:ring-cyan-300/18 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0"
           >
             {busy ? 'Updating...' : 'Update password'}
           </button>
