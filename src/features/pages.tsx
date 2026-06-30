@@ -102,7 +102,6 @@ import {
   ChecklistItem,
   CommandActionCard,
   CommandBadge,
-  CommandPageIntro,
   CommandStatTile,
   DetailGrid,
   EmptyState,
@@ -2983,95 +2982,92 @@ export function PerformanceAnalyticsPage() {
         : primaryFocusCategory
           ? `${shortCategoryLabel(primaryFocusCategory.category)} is the clearest score-lift opportunity right now.`
           : 'Keep building signal with short focused sessions before reading too much into the trend.'
+  const recommendedAction = repairQueueCount
+    ? 'Repair weakest pattern'
+    : readiness.status === 'ready'
+      ? 'Start transfer proof'
+      : 'Build practice evidence'
+  const recommendedActionDetail = primaryFocusCategory
+    ? `${shortCategoryLabel(primaryFocusCategory.category)} is the best place to spend the next focused block.`
+    : readiness.nextBestAction
+  const trendTakeaway = primaryFocusCategory
+    ? `Accuracy trend is useful only when paired with the current weak pattern: ${shortCategoryLabel(primaryFocusCategory.category)}.`
+    : 'Accuracy trend is a signal check, not the whole story.'
 
   return (
-    <div className="space-y-6">
-      <CommandPageIntro
-        title="One readout. One next move."
-        description={`${performanceTakeaway} Readiness is practice evidence from Nurse Command activity, not a licensure prediction or official exam guarantee.`}
-        badges={
-          <>
-            <CommandBadge tone="cyan" icon={<BarChart3 className="h-3.5 w-3.5" />}>
-              Performance
-            </CommandBadge>
-            <CommandBadge tone="emerald" icon={<ShieldCheck className="h-3.5 w-3.5" />}>
-              Practice evidence
-            </CommandBadge>
-            <CommandBadge tone="amber" icon={<Target className="h-3.5 w-3.5" />}>
-              {activeTrack.shortName}
-            </CommandBadge>
-          </>
-        }
+    <PageStack>
+      <PageHeader
+        eyebrow="Performance"
+        title="Performance"
+        description="One main insight, one recommended move, and enough evidence to decide what to do next."
         action={
-          <>
-            <div className="inline-flex rounded-xl border border-cyan-300/20 bg-white/[0.04] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
-              {[
-                { label: 'Selected exam', value: 'selected-track' as const },
-                { label: 'All exams', value: 'all-tracks' as const },
-              ].map((item) => (
-                <button
-                  key={item.value}
-                  type="button"
-                  onClick={() =>
-                    updateProfile({
-                      preferences: {
-                        ...profile.preferences,
-                        analyticsScope: item.value,
-                      },
-                    })
-                  }
-                  className={clsx(
-                    'rounded-lg px-3 py-2 text-xs font-bold transition',
-                    analyticsScope === item.value
-                      ? 'bg-cyan-300 text-[#04101f] shadow-[0_0_18px_rgba(56,189,248,0.28)]'
-                      : 'text-sky-100/62 hover:text-sky-100',
-                  )}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-            <Link
-              to="/weak-areas"
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-cyan-100/45 bg-[linear-gradient(180deg,#24b8ff_0%,#0b83d6_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_12px_34px_rgba(14,165,233,0.24)] transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-cyan-200/55"
-            >
-              Open remediation
-              <Target className="h-4 w-4" />
-            </Link>
-            <Link
-              to="/practice-questions"
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-sky-200/22 bg-white/[0.06] px-5 py-3 text-sm font-bold text-sky-100 transition hover:border-sky-200/45 hover:bg-white/[0.09]"
-            >
-              Start practice
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </>
-        }
-        aside={
-          <div className="h-full rounded-[1rem] border border-emerald-200/24 bg-emerald-300/[0.07] p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-100/70">Readiness</p>
-                <p className="mt-2 text-3xl font-bold text-white">{readinessLabel}</p>
-                <p className="text-sm font-semibold text-sky-100/75">{readinessPercent}% readiness score</p>
-              </div>
-              <span className="rounded-lg border border-white/12 bg-white/8 px-2.5 py-1 text-[0.68rem] font-bold uppercase text-emerald-100">
-                Signal
-              </span>
-            </div>
-            <p className="mt-2 text-xs font-bold uppercase tracking-[0.14em] text-sky-100/60">
-              Practice evidence only
-            </p>
-            <div className="mt-4">
-              <ProgressBar
-                value={readiness.readinessScore}
-                tone={readiness.status === 'ready' ? 'green' : readiness.status === 'approaching' ? 'blue' : 'amber'}
-              />
-            </div>
+          <div className="inline-flex rounded-xl border border-cyan-300/20 bg-white/[0.04] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+            {[
+              { label: 'Selected exam', value: 'selected-track' as const },
+              { label: 'All exams', value: 'all-tracks' as const },
+            ].map((item) => (
+              <button
+                key={item.value}
+                type="button"
+                onClick={() =>
+                  updateProfile({
+                    preferences: {
+                      ...profile.preferences,
+                      analyticsScope: item.value,
+                    },
+                  })
+                }
+                className={clsx(
+                  'rounded-lg px-3 py-2 text-xs font-bold transition',
+                  analyticsScope === item.value
+                    ? 'bg-cyan-300 text-[#04101f] shadow-[0_0_18px_rgba(56,189,248,0.28)]'
+                    : 'text-sky-100/62 hover:text-sky-100',
+                )}
+              >
+                {item.label}
+              </button>
+            ))}
           </div>
         }
-        stats={
-          <>
+      />
+
+      <FocusPanel className="border-violet-200/30 bg-[linear-gradient(135deg,rgba(168,85,247,0.16),rgba(6,28,49,0.94)_42%,rgba(2,8,18,0.96))] text-white shadow-[0_0_40px_rgba(168,85,247,0.12)]">
+        <div className="grid gap-5 p-5 md:p-6 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-end">
+          <div>
+            <div className="flex flex-wrap gap-2">
+              <CommandBadge tone="violet" icon={<BarChart3 className="h-3.5 w-3.5" />}>Analytics</CommandBadge>
+              <CommandBadge tone="emerald" icon={<ShieldCheck className="h-3.5 w-3.5" />}>Practice evidence</CommandBadge>
+              <CommandBadge tone="amber" icon={<Target className="h-3.5 w-3.5" />}>{activeTrack.shortName}</CommandBadge>
+            </div>
+            <h3 className="mt-4 max-w-3xl text-3xl font-bold tracking-normal text-white md:text-4xl">
+              {performanceTakeaway}
+            </h3>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-sky-100/70">
+              Readiness is practice evidence from Nurse Command activity, not a licensure prediction or official exam guarantee.
+            </p>
+            <div className="mt-5 rounded-2xl border border-amber-200/24 bg-amber-300/[0.09] p-4">
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-100/70">Recommended next action</p>
+              <p className="mt-2 text-xl font-black tracking-normal text-white">{recommendedAction}</p>
+              <p className="mt-1 text-sm leading-6 text-sky-100/66">{recommendedActionDetail}</p>
+            </div>
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <Link
+                to="/weak-areas"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
+              >
+                Repair weakest pattern
+                <Target className="h-4 w-4" />
+              </Link>
+              <Link
+                to="/practice-questions"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-violet-200/24 bg-violet-300/[0.09] px-5 py-3 text-sm font-bold text-violet-100 transition hover:border-violet-100/45 hover:bg-violet-300/[0.14] focus:outline-none focus:ring-4 focus:ring-violet-300/18"
+              >
+                Start transfer proof
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-3 xl:grid-cols-1">
             <CommandStatTile
               label="Accuracy"
               value={`${Math.round(readiness.practiceAccuracy * 100)}%`}
@@ -3080,27 +3076,27 @@ export function PerformanceAnalyticsPage() {
               tone={readiness.practiceAccuracy >= 0.75 ? 'emerald' : 'amber'}
             />
             <CommandStatTile
-              label="Trusted"
-              value={`${readiness.trustedAttemptCount}`}
-              detail={`${readiness.practiceAttemptCount} practice attempts`}
+              label="Readiness"
+              value={readinessLabel}
+              detail={`${readinessPercent}% signal`}
               icon={<BadgeCheck className="h-4 w-4" />}
-              tone={readiness.status === 'ready' ? 'emerald' : 'cyan'}
+              tone={readiness.status === 'ready' ? 'emerald' : 'violet'}
             />
             <CommandStatTile
               label="Repair"
               value={`${repairQueueCount}`}
-              detail="Transfer proof needed"
+              detail="transfer proof"
               icon={<Target className="h-4 w-4" />}
               tone={repairQueueCount ? 'rose' : 'emerald'}
             />
-          </>
-        }
-      />
+          </div>
+        </div>
+      </FocusPanel>
 
       <Surface>
         <SectionHeading
           title="Accuracy Trend"
-          description="The single chart worth checking first: daily accuracy over the last seven days."
+          description={trendTakeaway}
           action={<span className="nclex-chip nclex-chip-info">daily</span>}
         />
         <div className="mt-5 h-[320px] min-h-[320px] min-w-0">
@@ -3141,16 +3137,16 @@ export function PerformanceAnalyticsPage() {
                 <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                   <Link
                     to="/weak-areas"
-                    className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-cyan-300/24 bg-cyan-300/10 px-4 py-2 text-sm font-bold text-cyan-100 transition hover:border-cyan-200/60 hover:bg-cyan-300/16"
+                    className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-amber-200/30 bg-amber-300/[0.1] px-4 py-2 text-sm font-bold text-amber-100 transition hover:border-amber-100/55 hover:bg-amber-300/16"
                   >
-                    Repair target
+                    Repair weakest pattern
                     <Target className="h-4 w-4" />
                   </Link>
                   <Link
                     to="/practice-questions"
-                    className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-bold text-sky-100/76 transition hover:border-cyan-200/40 hover:text-white"
+                    className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-violet-200/24 bg-violet-300/[0.075] px-4 py-2 text-sm font-bold text-violet-100 transition hover:border-violet-100/45 hover:bg-violet-300/[0.12]"
                   >
-                    Practice set
+                    Start transfer proof
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                 </div>
@@ -3217,7 +3213,7 @@ export function PerformanceAnalyticsPage() {
           </div>
         </details>
       </Surface>
-    </div>
+    </PageStack>
   )
 }
 
