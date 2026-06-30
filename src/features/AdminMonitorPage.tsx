@@ -1482,9 +1482,13 @@ function OverviewPage({
         <Panel title="Live Ops" subtitle="Who is active, what just happened, and whether access is healthy." icon={Activity} section={section}>
           <div className="space-y-3">
             <StatusCard
-              tone={!dataAccess?.signedIn || dataAccess?.isAdmin === false ? 'watch' : model.totalEvents ? 'good' : 'muted'}
+              tone={!dataAccess?.configured || !dataAccess.signedIn || dataAccess.isAdmin === false ? 'watch' : model.totalEvents ? 'good' : 'muted'}
               title={
-                !dataAccess?.signedIn
+                !dataAccess
+                  ? 'Checking live data access'
+                  : !dataAccess.configured
+                    ? 'Supabase not configured'
+                    : !dataAccess.signedIn
                   ? 'Admin sign-in needed for live rows'
                   : dataAccess.isAdmin === false
                     ? 'Admin role needed for live rows'
@@ -1493,7 +1497,11 @@ function OverviewPage({
                     : 'No live events in this filter'
               }
               body={
-                !dataAccess?.signedIn
+                !dataAccess
+                  ? 'Checking whether this build can read live app_events.'
+                  : !dataAccess.configured
+                    ? 'Supabase environment variables are missing, so only local preview events can be shown in this build.'
+                    : !dataAccess.signedIn
                   ? 'The pass key opens the cockpit, but Supabase only releases app_events to a signed-in admin session.'
                   : dataAccess.isAdmin === false
                     ? `${dataAccess.email ?? 'This account'} is signed in, but Supabase does not report an active admin role.`
@@ -2087,7 +2095,9 @@ function SecurityPage({
             body={
               dataAccess?.signedIn && dataAccess?.isAdmin
                 ? `${dataAccess.email ?? 'Signed-in admin'} can read live app_events.`
-                : dataAccess?.signedIn
+                : dataAccess && !dataAccess.configured
+                  ? 'Supabase is not configured for this build, so live app_events cannot load here.'
+                  : dataAccess?.signedIn
                   ? `${dataAccess.email ?? 'This account'} is signed in but is not authorized for app_events.`
                   : 'The pass key opens the cockpit. Sign into the main app with the admin account to let Supabase RLS return live rows.'
             }
@@ -2192,7 +2202,11 @@ export function AdminMonitorPage() {
             : remoteEvents.length
               ? 'Live Supabase app_events'
               : 'No live events recorded'
-  const sourceLabel = usingLocalFallback ? 'Local browser storage' : 'Supabase app_events'
+  const sourceLabel = usingLocalFallback
+    ? 'Local browser storage'
+    : dataAccess && !dataAccess.configured
+      ? 'Supabase not configured'
+      : 'Supabase app_events'
 
   const loadEvents = useCallback(async () => {
     setLoading(true)

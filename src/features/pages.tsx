@@ -3609,6 +3609,17 @@ export function MyMaterialsPage() {
             >
               <MaterialUploadAsset active={dragActive} onBrowse={() => fileInputRef.current?.click()} />
             </div>
+            <div className="mt-4 rounded-2xl border border-amber-200/28 bg-amber-300/[0.08] p-4">
+              <div className="flex gap-3">
+                <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-amber-100" />
+                <div>
+                  <p className="text-sm font-black text-white">Upload privacy check</p>
+                  <p className="mt-1 text-sm leading-6 text-sky-100/68">
+                    Use study notes, guides, outlines, or public references only. Do not upload protected health information, patient-identifying data, clinical records, or private school records.
+                  </p>
+                </div>
+              </div>
+            </div>
             {isUploading ? (
               <p className="mt-4 rounded-2xl border border-sky-300/25 bg-sky-400/10 px-4 py-3 text-sm font-semibold text-sky-100">
                 <LoaderCircle className="mr-2 inline h-4 w-4 animate-spin" />
