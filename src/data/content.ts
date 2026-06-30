@@ -1385,6 +1385,7 @@ const makeGeneratedQuestion = (
     testTakingTrap: wrong[index % wrong.length],
     blueprintMapped: true,
     sourceBacked: true,
+    feedbackEnabled: true,
     updatedAt: '2026-06-18',
     subcategory: system,
     difficulty,
@@ -1428,7 +1429,7 @@ const buildTrackBank = (examTrack: ExamTrackId): Question[] => {
       ...generated
         .filter((question) => !qualityIds.has(question.id))
         .slice(0, generatedQuestionCount - qualityPack.length - internalDraftQuestions.length),
-    ]
+    ].map((question) => ({ ...question, feedbackEnabled: question.feedbackEnabled ?? true }))
   }
 
   const authoredRnQuestions = [...internalDraftQuestions, ...qualityPack, ...nclexRnBaseQuestions]
@@ -1436,7 +1437,7 @@ const buildTrackBank = (examTrack: ExamTrackId): Question[] => {
   return [
     ...authoredRnQuestions,
     ...generated.filter((question) => !generatedIds.has(question.id)).slice(0, generatedQuestionCount - authoredRnQuestions.length),
-  ]
+  ].map((question) => ({ ...question, feedbackEnabled: question.feedbackEnabled ?? true }))
 }
 
 export const examQuestionBanks: Record<ExamTrackId, Question[]> = {
