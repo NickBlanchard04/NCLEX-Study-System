@@ -1010,6 +1010,7 @@ function AdminPanelShell({
   activeSection,
   setActiveSection,
   dataMode,
+  sourceLabel,
   totalEvents,
   loading,
   refresh,
@@ -1019,6 +1020,7 @@ function AdminPanelShell({
   activeSection: AdminSection
   setActiveSection: (sectionId: AdminSectionId) => void
   dataMode: string
+  sourceLabel: string
   totalEvents: number
   loading: boolean
   refresh: () => void
@@ -1138,7 +1140,7 @@ function AdminPanelShell({
             <div className="mb-5 flex flex-wrap items-center gap-2 text-xs font-bold text-slate-400">
               <span>Last refresh: {lastRefresh ? lastRefresh.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'not loaded'}</span>
               <span className="text-slate-600">/</span>
-              <span>Source: Supabase app_events</span>
+              <span>Source: {sourceLabel}</span>
               <span className="text-slate-600">/</span>
               <span>No seeded preview data</span>
             </div>
@@ -1465,7 +1467,7 @@ function OverviewPage({
           tone={model.highConfidenceMisses ? 'critical' : model.questionAnswered ? 'good' : 'muted'}
         />
       </div>
-      {model.cohortMode === 'signup_fallback' ? (
+      {model.cohortMode === 'signup_fallback' && model.signupCandidates > 0 ? (
         <div className="rounded-2xl border border-amber-300/30 bg-amber-300/12 p-4">
           <p className="text-sm font-black text-white">User visibility fallback is active</p>
           <p className="mt-1 text-xs font-bold leading-5 text-amber-100/80">
@@ -1506,7 +1508,7 @@ function OverviewPage({
             <StatusCard
               tone="good"
               title="Private content excluded"
-              body="Timeline details show behavior fields only, not notes, uploads, passwords, or emails."
+              body="Event timeline details show behavior fields only, not notes, upload text, passwords, tokens, or patient identifiers."
             />
             <StatusCard
               tone={model.lastEvent ? 'info' : 'muted'}
@@ -2072,7 +2074,7 @@ function SecurityPage({
           <StatusCard
             tone="good"
             title="Admin route is gated"
-            body="The public admin panel requires admin access or the temporary pass key before it renders."
+            body="The admin cockpit requires admin access or the temporary preview pass key before it renders."
           />
           <StatusCard
             tone={usingLocalFallback ? 'watch' : model.totalEvents ? 'good' : 'muted'}
@@ -2106,8 +2108,8 @@ function SecurityPage({
       <Panel title="Privacy Guardrails" subtitle="Behavior analytics without private study content." icon={ShieldCheck} section={section}>
         <div className="grid gap-3">
           {[
-            ['Allowed', 'Page path, source, campaign, feature, exam track, quiz outcome, confidence, timestamps, signed-in account IDs.'],
-            ['Blocked', 'Emails, names, passwords, tokens, note body, upload text, filenames, patient/PHI-looking fields.'],
+            ['Allowed', 'Page path, source, campaign, feature, exam track, quiz outcome, confidence, timestamps, signed-in account IDs, and admin-only account directory identity.'],
+            ['Blocked', 'Passwords, tokens, note body, upload text, filenames, patient/PHI-looking fields, and private study content.'],
             ['User timeline', 'Shows exact app behavior and sequence, but not private notes or uploaded document text.'],
             ['Next security step', 'Move temporary pass key to owner-only auth once beta traffic grows.'],
           ].map(([title, body]) => (
@@ -2190,6 +2192,7 @@ export function AdminMonitorPage() {
             : remoteEvents.length
               ? 'Live Supabase app_events'
               : 'No live events recorded'
+  const sourceLabel = usingLocalFallback ? 'Local browser storage' : 'Supabase app_events'
 
   const loadEvents = useCallback(async () => {
     setLoading(true)
@@ -2241,6 +2244,7 @@ export function AdminMonitorPage() {
       activeSection={activeSection}
       setActiveSection={navigateSection}
       dataMode={dataMode}
+      sourceLabel={sourceLabel}
       totalEvents={model.totalEvents}
       loading={loading}
       refresh={loadEvents}

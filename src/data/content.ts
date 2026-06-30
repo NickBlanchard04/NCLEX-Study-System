@@ -41,6 +41,7 @@ const q = (question: QuestionDraft): Question => ({
   testTakingTrap: 'Choosing a routine task before stabilizing or assessing the immediate safety issue.',
   blueprintMapped: true,
   sourceBacked: true,
+  feedbackEnabled: true,
   updatedAt: '2026-06-18',
   difficultyProfile: inferDifficultyProfile(question),
   ...question,
