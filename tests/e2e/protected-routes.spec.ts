@@ -37,12 +37,46 @@ async function clickFirstVisibleButton(page: Page, name: RegExp, label: string) 
   throw new Error(`${label} was not visible.`)
 }
 
+async function clickLastVisibleButton(page: Page, name: RegExp, label: string) {
+  const controls = page.getByRole('button', { name })
+  const count = await controls.count()
+  for (let index = count - 1; index >= 0; index -= 1) {
+    const control = controls.nth(index)
+    if (await control.isVisible().catch(() => false)) {
+      await control.click()
+      return
+    }
+  }
+  throw new Error(`${label} was not visible.`)
+}
+
 async function createStaleExamSession(page: Page) {
   await page.goto('/test-mode')
   await dismissVisibleSession(page)
   await page.goto('/test-mode')
-  await clickFirstVisibleButton(page, /Start exam/i, 'Start exam')
-  await expect(page.getByRole('button', { name: /^Submit answer$/i })).toBeVisible()
+  const submitAnswer = page.getByRole('button', { name: /^Submit answer$/i })
+  const startExam = page.getByRole('button', { name: /^Start exam$/i }).first()
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await expect(submitAnswer.or(startExam).first()).toBeVisible()
+    if (await submitAnswer.isVisible().catch(() => false)) {
+      return
+    }
+
+    try {
+      await startExam.click({ timeout: 5_000 })
+    } catch (error) {
+      if (await submitAnswer.isVisible().catch(() => false)) {
+        return
+      }
+      if (attempt === 2) throw error
+      await page.waitForTimeout(300)
+      continue
+    }
+
+    await expectQuestionRunner(page)
+    return
+  }
 }
 
 async function expectQuestionRunner(page: Page) {
@@ -137,7 +171,7 @@ test.describe('session start regression', () => {
 
     await createStaleExamSession(page)
     await page.goto('/quick-study')
-    await clickFirstVisibleButton(page, /Start 10-minute drill/i, 'Start 10-minute drill')
+    await clickLastVisibleButton(page, /Start 10-minute drill/i, 'Start 10-minute drill')
     await expectQuestionRunner(page)
 
     await createStaleExamSession(page)

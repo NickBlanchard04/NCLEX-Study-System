@@ -5,6 +5,12 @@ import { loadQaEnv, requireQaEnv } from './support/env'
 
 const authStatePath = resolve(process.cwd(), 'playwright/.auth/qa-user.json')
 
+const futureDateInputValue = () => {
+  const date = new Date()
+  date.setDate(date.getDate() + 90)
+  return date.toISOString().slice(0, 10)
+}
+
 async function globalSetup(config: FullConfig) {
   loadQaEnv()
 
@@ -29,12 +35,13 @@ async function globalSetup(config: FullConfig) {
       )
     }
 
-    const welcomeSignIn = page.getByRole('button', { name: /^Sign in$/i })
-    if (await welcomeSignIn.first().isVisible().catch(() => false)) {
-      await welcomeSignIn.first().click()
+    const emailField = page.getByLabel(/^Email$/i)
+    if (!(await emailField.isVisible().catch(() => false))) {
+      await page.getByRole('button', { name: /^Sign in$/i }).click()
+      await expect(emailField).toBeVisible()
     }
 
-    await page.getByLabel(/^Email$/i).fill(email)
+    await emailField.fill(email)
     await page.getByLabel(/^Password$/i).fill(password)
 
     const terms = page.getByLabel(/I agree to the beta terms/i)
@@ -50,6 +57,12 @@ async function globalSetup(config: FullConfig) {
         `QA account could not sign in. Confirm ${email} exists, is email-confirmed, and matches PLAYWRIGHT_QA_PASSWORD.`,
       )
     })
+
+    if (await page.getByRole('heading', { name: /Finish profile setup/i }).isVisible({ timeout: 5_000 }).catch(() => false)) {
+      await page.getByLabel(/School or program/i).fill('Nurse Command QA Program')
+      await page.getByLabel(/Goal date/i).fill(futureDateInputValue())
+      await page.getByRole('button', { name: /^Finish setup$/i }).click()
+    }
 
     await expect(page.getByText('Start Today').first()).toBeVisible({ timeout: 25_000 })
     await expect(page.getByText(/OPEN BETA TESTING/i)).toHaveCount(0)

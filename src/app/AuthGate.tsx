@@ -10,13 +10,25 @@ import {
   ShieldCheck,
   UserPlus,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useStudySystemStore } from './store'
 import nursingCommandLogo from '../assets/brand/nursing-command-logo.png'
 import { createBetaTermsConsent } from './beta-terms'
 import { trackAppEvent } from '../services/analytics-client'
+import { examTracks } from '../data/exam-tracks'
+import type { ExamTrackId, StudyIntensity } from './types'
 
 type AuthMode = 'welcome' | 'signin' | 'signup' | 'reset'
+
+const studyIntensityOptions: Array<{
+  value: StudyIntensity
+  label: string
+  detail: string
+}> = [
+  { value: 'steady', label: 'Steady', detail: 'Light daily practice' },
+  { value: 'focused', label: 'Focused', detail: 'Balanced study rhythm' },
+  { value: 'accelerated', label: 'Accelerated', detail: 'Higher-intensity prep' },
+]
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const authInitialized = useStudySystemStore((state) => state.authInitialized)
@@ -39,10 +51,239 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   }
 
   if (authUser) {
-    return children
+    return <ProfileOnboardingGate>{children}</ProfileOnboardingGate>
   }
 
   return <AuthLanding />
+}
+
+function ProfileOnboardingGate({ children }: { children: React.ReactNode }) {
+  const authUser = useStudySystemStore((state) => state.authUser)
+  const isDemoMode = useStudySystemStore((state) => state.isDemoMode)
+  const profile = useStudySystemStore((state) => state.profile)
+  const updateProfile = useStudySystemStore((state) => state.updateProfile)
+  const [nursingSchool, setNursingSchool] = useState(profile.nursingSchool ?? '')
+  const [examTrack, setExamTrack] = useState<ExamTrackId>(profile.examTrack ?? 'nclex-rn')
+  const [examDate, setExamDate] = useState(profile.examDate)
+  const [studyIntensity, setStudyIntensity] = useState<StudyIntensity>(profile.studyIntensity)
+
+  const hasRequiredSetup =
+    Boolean(profile.nursingSchool?.trim()) &&
+    Boolean(profile.examTrack) &&
+    Boolean(profile.examDate) &&
+    Boolean(profile.studyIntensity)
+  const needsOnboarding =
+    Boolean(authUser) &&
+    !isDemoMode &&
+    !profile.preferences.onboardingCompletedAt &&
+    !hasRequiredSetup
+
+  useEffect(() => {
+    if (!needsOnboarding) return
+    void trackAppEvent(
+      'onboarding_started',
+      {
+        page_path: '/onboarding',
+        exam_track: profile.examTrack ?? 'nclex-rn',
+        feature_name: 'Profile Setup',
+      },
+      { userId: authUser?.id, isDemoUser: false },
+    )
+  }, [authUser?.id, needsOnboarding, profile.examTrack])
+
+  const completeOnboarding = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const completedAt = new Date().toISOString()
+    updateProfile({
+      nursingSchool: nursingSchool.trim(),
+      examTrack,
+      examDate,
+      studyIntensity,
+      preferences: {
+        ...profile.preferences,
+        onboardingCompletedAt: completedAt,
+      },
+    })
+    void trackAppEvent(
+      'onboarding_completed',
+      {
+        page_path: '/onboarding',
+        exam_track: examTrack,
+        feature_name: 'Profile Setup',
+        metadata: {
+          has_school: Boolean(nursingSchool.trim()),
+          has_goal_date: Boolean(examDate),
+          study_intensity: studyIntensity,
+        },
+      },
+      { userId: authUser?.id, isDemoUser: false },
+    )
+  }
+
+  const skipOnboarding = () => {
+    const completedAt = new Date().toISOString()
+    updateProfile({
+      preferences: {
+        ...profile.preferences,
+        onboardingCompletedAt: completedAt,
+      },
+    })
+    void trackAppEvent(
+      'onboarding_completed',
+      {
+        page_path: '/onboarding',
+        exam_track: profile.examTrack ?? 'nclex-rn',
+        feature_name: 'Profile Setup',
+        metadata: { skipped: true },
+      },
+      { userId: authUser?.id, isDemoUser: false },
+    )
+  }
+
+  if (!needsOnboarding) return children
+
+  const inputClass =
+    'mt-2 w-full rounded-2xl border border-sky-300/20 bg-[#04101f]/82 px-4 py-3 text-sm text-white outline-none transition placeholder:text-sky-100/34 focus:border-cyan-200/70 focus:ring-4 focus:ring-cyan-300/16'
+
+  return (
+    <div className="nurse-command-app relative min-h-screen overflow-x-hidden bg-[#04101f] px-4 py-6 font-['Google_Sans','Product_Sans','Inter',sans-serif] text-white sm:px-6 lg:px-8">
+      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(56,189,248,0.22),transparent_30%),radial-gradient(circle_at_78%_22%,rgba(163,230,53,0.12),transparent_26%),linear-gradient(180deg,#071d34_0%,#04101f_52%,#020812_100%)]" />
+      <div className="pointer-events-none fixed inset-0 bg-[linear-gradient(90deg,rgba(125,211,252,0.08)_1px,transparent_1px),linear-gradient(180deg,rgba(125,211,252,0.06)_1px,transparent_1px)] bg-[length:72px_72px] opacity-40" />
+      <div className="relative z-10 mx-auto grid min-h-[calc(100vh-3rem)] max-w-5xl items-center gap-8 lg:grid-cols-[minmax(0,0.78fr)_minmax(360px,0.62fr)]">
+        <motion.section
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="min-w-0 text-center lg:text-left"
+        >
+          <img
+            src={nursingCommandLogo}
+            alt="Nursing Command"
+            className="mx-auto w-[min(17rem,76vw)] object-contain drop-shadow-[0_30px_80px_rgba(0,0,0,0.42)] lg:mx-0 lg:w-[22rem]"
+          />
+          <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-cyan-200/28 bg-cyan-300/10 px-4 py-2 text-xs font-black uppercase tracking-normal text-cyan-100">
+            <ShieldCheck className="h-4 w-4" />
+            Profile setup
+          </div>
+          <h1 className="mt-5 max-w-3xl text-4xl font-black leading-tight text-white md:text-6xl">
+            Set your study command center.
+          </h1>
+          <p className="mx-auto mt-5 max-w-2xl text-base leading-8 text-sky-50/76 lg:mx-0">
+            A few details help Nurse Command point your dashboard, study plan, and practice tools at the right exam path.
+          </p>
+          <div className="mx-auto mt-7 grid max-w-2xl gap-3 sm:grid-cols-3 lg:mx-0">
+            {studyIntensityOptions.map((option) => (
+              <div key={option.value} className="rounded-2xl border border-sky-300/18 bg-white/[0.04] p-4">
+                <p className="font-black text-white">{option.label}</p>
+                <p className="mt-1 text-sm font-semibold text-sky-100/62">{option.detail}</p>
+              </div>
+            ))}
+          </div>
+        </motion.section>
+
+        <motion.section
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.08 }}
+          className="mx-auto w-full max-w-[460px] rounded-[32px] border border-cyan-200/20 bg-[#071d34]/88 p-6 shadow-[0_28px_80px_rgba(0,0,0,0.34),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur md:p-7"
+        >
+          <p className="text-xs font-black uppercase tracking-normal text-cyan-200/72">
+            After verification
+          </p>
+          <h2 className="mt-2 text-3xl font-black leading-tight text-white">
+            Finish profile setup
+          </h2>
+          <p className="mt-3 text-sm font-semibold leading-6 text-sky-100/66">
+            You can change this later in Settings. No patient or private school records.
+          </p>
+
+          <form onSubmit={completeOnboarding} className="mt-6 space-y-4">
+            <label className="block">
+              <span className="text-xs font-black uppercase tracking-normal text-sky-100/58">
+                School or program
+              </span>
+              <input
+                type="text"
+                required
+                autoComplete="organization"
+                value={nursingSchool}
+                onChange={(event) => setNursingSchool(event.target.value)}
+                className={inputClass}
+                placeholder="Your college or nursing program"
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs font-black uppercase tracking-normal text-sky-100/58">
+                Exam track
+              </span>
+              <select
+                value={examTrack}
+                onChange={(event) => setExamTrack(event.target.value as ExamTrackId)}
+                className={inputClass}
+              >
+                {examTracks.map((track) => (
+                  <option key={track.id} value={track.id}>
+                    {track.shortName}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className="text-xs font-black uppercase tracking-normal text-sky-100/58">
+                Goal date
+              </span>
+              <input
+                type="date"
+                required
+                value={examDate}
+                onChange={(event) => setExamDate(event.target.value)}
+                className={inputClass}
+              />
+            </label>
+            <fieldset className="space-y-2">
+              <legend className="text-xs font-black uppercase tracking-normal text-sky-100/58">
+                Study intensity
+              </legend>
+              <div className="grid gap-2">
+                {studyIntensityOptions.map((option) => (
+                  <label
+                    key={option.value}
+                    className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-cyan-200/16 bg-[#04101f]/58 p-4 text-sm transition has-[:checked]:border-cyan-200/60 has-[:checked]:bg-cyan-300/10"
+                  >
+                    <span>
+                      <span className="block font-black text-white">{option.label}</span>
+                      <span className="mt-1 block font-semibold text-sky-100/56">{option.detail}</span>
+                    </span>
+                    <input
+                      type="radio"
+                      name="study-intensity"
+                      value={option.value}
+                      checked={studyIntensity === option.value}
+                      onChange={() => setStudyIntensity(option.value)}
+                      className="h-5 w-5 accent-cyan-300"
+                    />
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+            <button
+              type="submit"
+              className="group flex min-h-[50px] w-full items-center justify-center gap-2 rounded-2xl border border-lime-200/24 bg-[linear-gradient(135deg,#0ea5e9,#14b8a6)] px-5 py-3 text-sm font-black text-white shadow-[0_18px_42px_rgba(14,165,233,0.24)] transition hover:[transform:translateY(-2px)] hover:border-lime-200/60 hover:brightness-110 hover:shadow-[0_24px_60px_rgba(20,184,166,0.34)] focus:outline-none focus:ring-4 focus:ring-lime-200/18"
+            >
+              Finish setup
+              <ArrowRight className="h-4 w-4 transition group-hover:[transform:translateX(4px)]" />
+            </button>
+            <button
+              type="button"
+              onClick={skipOnboarding}
+              className="mx-auto flex min-h-11 items-center justify-center px-4 text-sm font-black text-cyan-200 transition hover:text-white focus:outline-none focus:ring-4 focus:ring-cyan-300/18"
+            >
+              Skip for now
+            </button>
+          </form>
+        </motion.section>
+      </div>
+    </div>
+  )
 }
 
 function AuthLanding() {
