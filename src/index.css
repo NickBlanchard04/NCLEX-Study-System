@@ -847,7 +847,7 @@ textarea {
 }
 
 .safe-bottom {
-  padding-bottom: max(env(safe-area-inset-bottom), 0px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--safe-bottom-offset, 0.5rem));
 }
 
 .page-mobile-pad {

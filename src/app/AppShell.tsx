@@ -139,10 +139,9 @@ const sidebarNavigationGroups = [
 ]
 
 const mobilePrimaryNavigation: NavigationItem[] = [
-  { label: 'Today', icon: CoolHome, to: '/dashboard' },
-  { label: 'Quick', icon: CoolTimer, to: '/quick-study' },
-  { label: 'Bank', icon: CoolChecklist, to: '/practice-questions' },
-  { label: 'Library', icon: CoolFolder, to: '/my-materials' },
+  { label: 'Dashboard', icon: CoolHome, to: '/dashboard' },
+  { label: 'Quick Study', icon: CoolTimer, to: '/quick-study' },
+  { label: 'Question Bank', icon: CoolChecklist, to: '/practice-questions' },
 ]
 
 const mobilePrimaryRoutes = new Set(mobilePrimaryNavigation.map((item) => item.to))
@@ -726,7 +725,7 @@ function NclexAppShell() {
               initial={{ y: 24, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 24, opacity: 0 }}
-              className="safe-bottom fixed inset-x-0 bottom-0 flex max-h-[calc(100vh-1rem)] flex-col rounded-t-[28px] border border-sky-300/20 bg-[#04101f]/95 px-4 pb-6 pt-4 shadow-[0_-18px_44px_rgba(0,0,0,0.34)] backdrop-blur-xl"
+              className="safe-bottom fixed inset-x-0 bottom-0 flex max-h-[calc(100vh-1rem)] flex-col rounded-t-[28px] border border-sky-300/20 bg-[#04101f]/95 px-4 pb-6 pt-4 shadow-[0_-18px_44px_rgba(0,0,0,0.34)] backdrop-blur-xl [--safe-bottom-offset:1.5rem]"
               onClick={(event) => event.stopPropagation()}
             >
               <div className="mx-auto mb-4 h-1.5 w-14 rounded-full bg-sky-300/24" />
@@ -1127,8 +1126,8 @@ function MobileTabBar({
   const moreActive = !mobilePrimaryNavigation.some(({ to }) => (to === '/' ? pathname === '/' : pathname.startsWith(to)))
 
   return (
-    <div className="mobile-bottom-bar safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-sky-300/20 bg-[#020812]/92 px-3 py-2 backdrop-blur-xl lg:hidden">
-      <div className="mx-auto flex max-w-[560px] items-end justify-between gap-1">
+    <div className="mobile-bottom-bar safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-sky-300/20 bg-[#020812]/92 pt-2 backdrop-blur-xl lg:hidden">
+      <div className="mx-auto grid max-w-[520px] grid-cols-4">
         {mobilePrimaryNavigation.map(({ label, icon: Icon, to, emphasis }) => {
           const active = to === '/' ? pathname === '/' : pathname.startsWith(to)
           return (
@@ -1144,7 +1143,7 @@ function MobileTabBar({
                 navigate(to)
               }}
               className={clsx(
-                'flex min-h-[3.75rem] min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-[18px] px-1.5 py-2 text-[10px] font-semibold leading-tight transition active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-cyan-200/55 min-[390px]:text-[11px]',
+                'flex min-h-[58px] min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-0 py-2 text-center text-[10px] font-medium leading-tight transition active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-cyan-200/55',
                 emphasis
                   ? 'nclex-btn-primary -mt-5 px-3 py-3 text-white'
                   : active
@@ -1153,7 +1152,7 @@ function MobileTabBar({
               )}
             >
               <Icon className={clsx('h-4 w-4', emphasis && 'h-5 w-5')} />
-              <span className="max-w-[4.7rem] whitespace-normal text-center">{label}</span>
+              <span className="block w-full text-center leading-[1.05]">{label}</span>
             </button>
           )
         })}
@@ -1161,14 +1160,13 @@ function MobileTabBar({
           type="button"
           onClick={onOpenMore}
           className={clsx(
-            'flex min-h-[3.75rem] flex-1 flex-col items-center justify-center gap-1 rounded-[18px] px-1.5 py-2 text-[10px] font-semibold leading-tight active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-cyan-200/55 min-[390px]:text-[11px]',
+            'flex min-h-[58px] min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-0 py-2 text-center text-[10px] font-medium leading-tight active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-cyan-200/55',
             moreActive ? 'bg-sky-400/12 text-sky-200 shadow-[inset_0_-2px_0_#1d9bff]' : 'text-sky-100/56',
           )}
-          aria-label="Open more navigation"
           aria-current={moreActive ? 'page' : undefined}
         >
           <CoolMenu className="h-4 w-4" />
-          <span>More</span>
+          <span className="block w-full text-center leading-[1.05]">More</span>
         </button>
       </div>
     </div>

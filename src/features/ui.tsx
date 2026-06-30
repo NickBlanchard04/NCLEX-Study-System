@@ -1623,7 +1623,7 @@ export function QuestionSessionRunner({
         </div>
       </div>
 
-      <div className="safe-bottom mobile-quiz-actions rounded-[16px] border border-cyan-300/20 bg-[#061b31]/80 p-3 text-white xl:hidden">
+      <div className="safe-bottom mobile-quiz-actions rounded-[16px] border border-cyan-300/20 bg-[#061b31]/80 p-3 text-white xl:hidden [--safe-bottom-offset:0.75rem]">
         <div className="flex items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.14em] text-sky-100/62">
           <span>Progress</span>
           <span>
