@@ -33,6 +33,7 @@ import { lazy, Suspense, useEffect, useMemo, useState, type ComponentType, type 
 import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { clsx } from 'clsx'
 import { SocialPage } from '../features/SocialPage'
+import { isPublicLaunchPath, PublicLaunchPage } from '../features/PublicLaunchPages'
 import nursingCommandLogo from '../assets/brand/nursing-command-logo.png'
 import {
   DashboardPage,
@@ -225,6 +226,10 @@ function LazyRoute({
 
 export function AppShell() {
   const location = useLocation()
+
+  if (isPublicLaunchPath(location.pathname)) {
+    return <PublicLaunchPage />
+  }
 
   if (location.pathname.startsWith('/admin')) {
     return (
