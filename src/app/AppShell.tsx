@@ -73,6 +73,12 @@ type NavigationItem = {
   activePaths?: string[]
 }
 
+type NavigationGroup = {
+  title: string
+  tone: NavigationTone
+  items: NavigationItem[]
+}
+
 const nurseLabRoutePaths = [
   '/nurse-command-lab',
   '/shift-command',
@@ -132,12 +138,12 @@ const mainNavigation = [
 
 const studyToolsNavigation = [...practiceNavigation, ...reviewNavigation, ...libraryNavigation]
 
-const sidebarNavigationGroups = [
-  { title: 'Start', tone: 'cyan' as const, items: commandNavigation },
-  { title: 'Practice', tone: 'emerald' as const, items: practiceNavigation },
-  { title: 'Review', tone: 'amber' as const, items: reviewNavigation },
-  { title: 'Library', tone: 'rose' as const, items: libraryNavigation },
-  { title: 'Connect', tone: 'violet' as const, items: communityNavigation },
+const sidebarNavigationGroups: NavigationGroup[] = [
+  { title: 'Start', tone: 'cyan', items: commandNavigation },
+  { title: 'Practice', tone: 'emerald', items: practiceNavigation },
+  { title: 'Review', tone: 'amber', items: reviewNavigation },
+  { title: 'Library', tone: 'rose', items: libraryNavigation },
+  { title: 'Connect', tone: 'violet', items: communityNavigation },
 ]
 
 const mobilePrimaryNavigation: NavigationItem[] = [
@@ -151,15 +157,8 @@ const mobilePrimaryNavigation: NavigationItem[] = [
   },
 ]
 
-const mobilePrimaryRoutes = new Set(mobilePrimaryNavigation.map((item) => item.to))
-
 const mobileMoreNavigationGroups = [
-  ...sidebarNavigationGroups
-    .map((group) => ({
-      ...group,
-      items: group.items.filter((item) => !mobilePrimaryRoutes.has(item.to)),
-    }))
-    .filter((group) => group.items.length),
+  ...sidebarNavigationGroups,
   { title: 'Account', tone: 'slate' as const, items: secondaryNavigation },
 ]
 
@@ -169,6 +168,9 @@ const isNavigationItemActive = (pathname: string, item: NavigationItem) =>
   item.to === '/'
     ? pathname === '/'
     : pathname.startsWith(item.to) || item.activePaths?.some((path) => pathname.startsWith(path))
+
+const isNavigationGroupActive = (pathname: string, group: NavigationGroup) =>
+  group.items.some((item) => isNavigationItemActive(pathname, item))
 
 const RetroMedicalDashboard = lazy(() =>
   import('../features/RetroMedicalDashboard').then((module) => ({
@@ -289,6 +291,12 @@ function NclexAppShell() {
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false)
   const [supportOpen, setSupportOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
+  const [expandedNavigationGroups, setExpandedNavigationGroups] = useState<Record<string, boolean>>({})
+
+  const activeNavigationGroupTitle = useMemo(
+    () => sidebarNavigationGroups.find((group) => isNavigationGroupActive(location.pathname, group))?.title ?? 'Start',
+    [location.pathname],
+  )
 
   useEffect(() => {
     void initializeAuth()
@@ -379,6 +387,14 @@ function NclexAppShell() {
         ? 'Local draft build using this browser only'
         : 'Live build using local browser storage'
       : 'Cloud sync is active')
+  const getNavigationGroupExpanded = (title: string) =>
+    title === activeNavigationGroupTitle || expandedNavigationGroups[title] === true
+  const toggleNavigationGroup = (title: string) => {
+    setExpandedNavigationGroups((current) => ({
+      ...current,
+      [title]: title === activeNavigationGroupTitle ? true : !current[title],
+    }))
+  }
 
   if (location.pathname === '/') {
     return (
@@ -433,9 +449,16 @@ function NclexAppShell() {
       <div className="flex min-h-screen w-full">
         <aside className="nclex-sidebar hidden w-[264px] shrink-0 px-4 py-5 text-white lg:flex lg:flex-col">
           <BrandLockup />
-          <nav className="mt-6 flex-1 space-y-4 overflow-y-auto pr-1">
+          <nav className="mt-5 flex-1 space-y-2.5 overflow-y-auto pr-1" aria-label="Command hub">
             {sidebarNavigationGroups.map((group) => (
-              <SidebarNavigationGroup key={group.title} group={group} />
+              <SidebarNavigationGroup
+                key={group.title}
+                group={group}
+                collapsible
+                expanded={getNavigationGroupExpanded(group.title)}
+                idPrefix="desktop-hub"
+                onToggle={() => toggleNavigationGroup(group.title)}
+              />
             ))}
           </nav>
           <div className="space-y-1.5 border-t border-white/10 pt-5">
@@ -685,11 +708,15 @@ function NclexAppShell() {
                   <X className="h-4 w-4" />
                 </button>
               </div>
-              <nav className="mt-6 flex-1 space-y-4 overflow-y-auto pr-1">
+              <nav className="mt-6 flex-1 space-y-2.5 overflow-y-auto pr-1" aria-label="Command hub">
                 {sidebarNavigationGroups.map((group) => (
                   <SidebarNavigationGroup
                     key={group.title}
                     group={group}
+                    collapsible
+                    expanded={getNavigationGroupExpanded(group.title)}
+                    idPrefix="mobile-hub"
+                    onToggle={() => toggleNavigationGroup(group.title)}
                     onNavigate={() => setMobileMenuOpen(false)}
                   />
                 ))}
@@ -744,7 +771,7 @@ function NclexAppShell() {
                   <p className="nc-eyebrow text-sky-200/62">
                     More
                   </p>
-                  <h2 className="nc-section-title text-xl text-white">Study tools</h2>
+                  <h2 className="nc-section-title text-xl text-white">Command hub</h2>
                 </div>
                 <button
                   type="button"
@@ -758,8 +785,9 @@ function NclexAppShell() {
               <div className="mt-5 min-h-0 space-y-4 overflow-y-auto pr-1">
                 {mobileMoreNavigationGroups.map((group) => (
                   <div key={group.title}>
-                    <p className="nc-eyebrow px-1 pb-2 text-[10px] text-sky-100/44">
-                      {group.title}
+                    <p className={clsx('nc-eyebrow flex items-center gap-2 px-1 pb-2 text-[10px]', navigationToneClasses[group.tone].group)}>
+                      <span className={clsx('h-1.5 w-1.5 rounded-full', navigationToneClasses[group.tone].dot)} />
+                      <span>{group.title}</span>
                     </p>
                     <div className="grid gap-2">
                       {group.items.map((item) => {
@@ -1052,22 +1080,59 @@ const navigationToneClasses: Record<
 
 function SidebarNavigationGroup({
   group,
+  collapsible = false,
+  expanded = true,
+  idPrefix = 'hub',
+  onToggle,
   onNavigate,
 }: {
-  group: { title: string; tone: NavigationTone; items: NavigationItem[] }
+  group: NavigationGroup
+  collapsible?: boolean
+  expanded?: boolean
+  idPrefix?: string
+  onToggle?: () => void
   onNavigate?: () => void
 }) {
+  const location = useLocation()
   const tone = navigationToneClasses[group.tone]
+  const active = isNavigationGroupActive(location.pathname, group)
+  const panelId = `${idPrefix}-${group.title.toLowerCase()}`
 
   return (
-    <div>
-      <div className="mb-2 flex items-center gap-2 px-3">
-        <span className={clsx('h-1.5 w-1.5 rounded-full', tone.dot)} />
-        <p className={clsx('nc-eyebrow text-[10px]', tone.group)}>
-          {group.title}
-        </p>
-      </div>
-      <div className="space-y-1">
+    <div className={clsx(collapsible && 'rounded-2xl border border-white/[0.045] bg-white/[0.018] p-1')}>
+      {collapsible ? (
+        <button
+          type="button"
+          aria-controls={panelId}
+          aria-expanded={expanded}
+          onClick={onToggle}
+          className={clsx(
+            'flex w-full items-center justify-between gap-3 rounded-xl px-2.5 py-2 text-left transition focus:outline-none focus:ring-2 focus:ring-cyan-200/55',
+            active ? 'bg-white/[0.055]' : 'hover:bg-white/[0.04]',
+          )}
+        >
+          <span className="flex min-w-0 items-center gap-2">
+            <span className={clsx('h-1.5 w-1.5 rounded-full', tone.dot)} />
+            <span className={clsx('nc-eyebrow truncate text-[10px]', tone.group)}>
+              {group.title}
+            </span>
+          </span>
+          <ChevronDown
+            className={clsx(
+              'h-4 w-4 shrink-0 text-sky-100/48 transition',
+              expanded && 'rotate-180 text-sky-100/72',
+            )}
+          />
+        </button>
+      ) : (
+        <div className="mb-2 flex items-center gap-2 px-3">
+          <span className={clsx('h-1.5 w-1.5 rounded-full', tone.dot)} />
+          <p className={clsx('nc-eyebrow text-[10px]', tone.group)}>
+            {group.title}
+          </p>
+        </div>
+      )}
+      <div id={panelId} className={clsx('space-y-1', collapsible && 'mt-1', collapsible && !expanded && 'hidden')}>
         {group.items.map(({ label, icon: Icon, to, activePaths }) => (
           <SidebarLink
             key={to}
