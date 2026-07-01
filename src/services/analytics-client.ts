@@ -1,5 +1,6 @@
 import type { ExamTrackId } from '../app/types'
 import { pushAppEventToDataLayer } from './google-tag-manager'
+import { pushMetaPixelEvent } from './meta-pixel'
 import { isSupabaseConfigured, supabase } from './supabase'
 
 export type AppEventName =
@@ -7,6 +8,7 @@ export type AppEventName =
   | 'demo_started'
   | 'signup_started'
   | 'signup_completed'
+  | 'activation_choice_clicked'
   | 'onboarding_started'
   | 'onboarding_completed'
   | 'exam_track_selected'
@@ -262,6 +264,7 @@ export async function trackAppEvent(
   const event = createStoredEvent(eventName, payload, context)
   appendLocalEvent(event)
   pushAppEventToDataLayer(event)
+  pushMetaPixelEvent(event)
 
   if (debugAnalytics) {
     console.info('[Nurse Command analytics]', event)

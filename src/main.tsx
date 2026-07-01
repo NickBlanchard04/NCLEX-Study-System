@@ -4,6 +4,7 @@ import './index.css'
 import App from './App.tsx'
 import { disableServiceWorkerInstallSupport } from './services/pwa'
 import { initializeGoogleTagManager } from './services/google-tag-manager'
+import { initializeMetaPixel } from './services/meta-pixel'
 
 const redirectTarget = new URLSearchParams(window.location.search).get('redirect')
 
@@ -12,6 +13,7 @@ if (redirectTarget) {
 }
 
 initializeGoogleTagManager()
+initializeMetaPixel()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
