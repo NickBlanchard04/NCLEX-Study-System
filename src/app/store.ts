@@ -403,6 +403,52 @@ const upsertPracticeSession = (
   ...sessions.filter((item) => item.id !== session.id),
 ]
 
+const getPracticeSessionTime = (session: ActiveSession) =>
+  Date.parse(session.updatedAt ?? session.lastActivityAt ?? session.startedAt) || 0
+
+const mergePracticeSessions = (cloudSessions: ActiveSession[], localSessions: ActiveSession[]) => {
+  const sessionsById = new Map<string, ActiveSession>()
+
+  for (const session of [...cloudSessions, ...localSessions].map(preparePracticeSession)) {
+    const existing = sessionsById.get(session.id)
+    if (!existing || getPracticeSessionTime(session) >= getPracticeSessionTime(existing)) {
+      sessionsById.set(session.id, session)
+    }
+  }
+
+  return [...sessionsById.values()].sort(
+    (left, right) => getPracticeSessionTime(right) - getPracticeSessionTime(left),
+  )
+}
+
+const createSessionStartUpdate = (
+  state: StudySystemState,
+  session: ActiveSession,
+  nextMode: SessionMode,
+) => {
+  const activeSession = state.activeSession
+  if (shouldKeepCurrentSession(activeSession, nextMode)) return state
+
+  const previousSession = activeSession && isUnfinishedPracticeSession(activeSession)
+    ? createDiscardedPracticeSession(activeSession)
+    : null
+  const nextSession = preparePracticeSession(session)
+  const nextPracticeSessions = previousSession
+    ? upsertPracticeSession(upsertPracticeSession(state.practiceSessions, previousSession), nextSession)
+    : upsertPracticeSession(state.practiceSessions, nextSession)
+  const nextSyncEvents = [
+    ...state.syncEvents,
+    ...(previousSession ? [makeSyncEvent('practice-session', previousSession.id, 'delete', previousSession)] : []),
+    makeSyncEvent('practice-session', nextSession.id, 'upsert', nextSession),
+  ]
+
+  return {
+    activeSession: nextSession,
+    practiceSessions: nextPracticeSessions,
+    syncEvents: nextSyncEvents,
+  }
+}
+
 const findResumablePracticeSession = (sessions: ActiveSession[]) =>
   sessions.find((session) => isUnfinishedPracticeSession(session) && session.questionIds.length > 0) ?? null
 
@@ -749,21 +795,28 @@ export const useStudySystemStore = create<StudySystemState>()(
           if (!cloudHasData) {
             const freshProfile = createFreshProfileForAuthUser(user)
             set((state) => {
-              const localActiveSession =
+              const hasLocalActiveSession =
                 state.activeSession &&
                 state.activeSession.id !== activeSessionIdAtHydrateStart &&
                 isUnfinishedPracticeSession(state.activeSession)
-                  ? preparePracticeSession(state.activeSession)
-                  : null
+              const localPracticeSessions = hasLocalActiveSession
+                ? [
+                    ...state.practiceSessions,
+                    ...(state.activeSession &&
+                    !state.practiceSessions.some((session) => session.id === state.activeSession?.id)
+                      ? [state.activeSession]
+                      : []),
+                  ]
+                : []
+              const practiceSessions = mergePracticeSessions([], localPracticeSessions)
 
               return {
                 ...createCleanAccountState(freshProfile),
-                activeSession: localActiveSession,
-                practiceSessions: localActiveSession
-                  ? upsertPracticeSession(state.practiceSessions, localActiveSession)
-                  : [],
-              syncStatus: 'idle',
-              syncError: null,
+                activeSession: findResumablePracticeSession(practiceSessions),
+                practiceSessions,
+                syncEvents: state.syncEvents,
+                syncStatus: 'idle',
+                syncError: null,
               }
             })
             await saveProfile(user.id, freshProfile)
@@ -775,15 +828,20 @@ export const useStudySystemStore = create<StudySystemState>()(
             : cloud.profile ?? createFreshProfileForAuthUser(user)
 
           set((state) => {
-            const localActiveSession =
+            const hasLocalActiveSession =
               state.activeSession &&
               state.activeSession.id !== activeSessionIdAtHydrateStart &&
               isUnfinishedPracticeSession(state.activeSession)
-                ? preparePracticeSession(state.activeSession)
-                : null
-            const practiceSessions = localActiveSession
-              ? upsertPracticeSession(cloud.practiceSessions, localActiveSession)
-              : cloud.practiceSessions
+            const localPracticeSessions = hasLocalActiveSession
+              ? [
+                  ...state.practiceSessions,
+                  ...(state.activeSession &&
+                  !state.practiceSessions.some((session) => session.id === state.activeSession?.id)
+                    ? [state.activeSession]
+                    : []),
+                ]
+              : []
+            const practiceSessions = mergePracticeSessions(cloud.practiceSessions, localPracticeSessions)
 
             return {
               ...createCleanAccountState(profile),
@@ -797,12 +855,13 @@ export const useStudySystemStore = create<StudySystemState>()(
               materialFlashcards: cloud.materialFlashcards,
               materialQuestions: cloud.materialQuestions,
               practiceSessions,
-              activeSession: localActiveSession ?? findResumablePracticeSession(practiceSessions),
+              activeSession: findResumablePracticeSession(practiceSessions),
               activeMaterialQuizSession: findRunnableMaterialQuizSession(
                 cloud.materialQuizSessions,
                 cloud.materials,
                 cloud.materialQuestions,
               ),
+              syncEvents: state.syncEvents,
               passwordRecoveryRequired: state.passwordRecoveryRequired,
               syncStatus: 'idle',
               syncError: null,
@@ -959,11 +1018,6 @@ export const useStudySystemStore = create<StudySystemState>()(
       },
       startQuickStudy: (category) => {
         const state = get()
-        const activeSession = state.activeSession
-        if (shouldKeepCurrentSession(activeSession, 'quick-study')) return
-        const replacedSession = activeSession && isUnfinishedPracticeSession(activeSession)
-          ? createDiscardedPracticeSession(activeSession)
-          : null
         void trackAppEvent(
           'quiz_started',
           {
@@ -978,27 +1032,11 @@ export const useStudySystemStore = create<StudySystemState>()(
         const session = preparePracticeSession(
           generateQuickStudySession(state.attempts, state.profile.examTrack ?? 'nclex-rn', category),
         )
-        set((state) => ({
-          activeSession: session,
-          practiceSessions: upsertPracticeSession(
-            replacedSession ? upsertPracticeSession(state.practiceSessions, replacedSession) : state.practiceSessions,
-            session,
-          ),
-          syncEvents: [
-            ...state.syncEvents,
-            ...(replacedSession ? [makeSyncEvent('practice-session', replacedSession.id, 'delete', replacedSession)] : []),
-            makeSyncEvent('practice-session', session.id, 'upsert', session),
-          ],
-        }))
+        set((state) => createSessionStartUpdate(state, session, 'quick-study'))
         void get().syncNow()
       },
       startPracticeSession: (filters) => {
         const state = get()
-        const activeSession = state.activeSession
-        if (shouldKeepCurrentSession(activeSession, 'practice')) return
-        const replacedSession = activeSession && isUnfinishedPracticeSession(activeSession)
-          ? createDiscardedPracticeSession(activeSession)
-          : null
         void trackAppEvent(
           'quiz_started',
           {
@@ -1013,27 +1051,11 @@ export const useStudySystemStore = create<StudySystemState>()(
         const session = preparePracticeSession(
           generatePracticeSet(state.attempts, state.profile.examTrack ?? 'nclex-rn', filters),
         )
-        set((state) => ({
-          activeSession: session,
-          practiceSessions: upsertPracticeSession(
-            replacedSession ? upsertPracticeSession(state.practiceSessions, replacedSession) : state.practiceSessions,
-            session,
-          ),
-          syncEvents: [
-            ...state.syncEvents,
-            ...(replacedSession ? [makeSyncEvent('practice-session', replacedSession.id, 'delete', replacedSession)] : []),
-            makeSyncEvent('practice-session', session.id, 'upsert', session),
-          ],
-        }))
+        set((state) => createSessionStartUpdate(state, session, 'practice'))
         void get().syncNow()
       },
       startTestSession: (config) => {
         const state = get()
-        const activeSession = state.activeSession
-        if (shouldKeepCurrentSession(activeSession, 'test')) return
-        const replacedSession = activeSession && isUnfinishedPracticeSession(activeSession)
-          ? createDiscardedPracticeSession(activeSession)
-          : null
         void trackAppEvent(
           'quiz_started',
           {
@@ -1052,27 +1074,11 @@ export const useStudySystemStore = create<StudySystemState>()(
         const session = preparePracticeSession(
           generateTestSession(state.attempts, state.profile.examTrack ?? 'nclex-rn', config),
         )
-        set((state) => ({
-          activeSession: session,
-          practiceSessions: upsertPracticeSession(
-            replacedSession ? upsertPracticeSession(state.practiceSessions, replacedSession) : state.practiceSessions,
-            session,
-          ),
-          syncEvents: [
-            ...state.syncEvents,
-            ...(replacedSession ? [makeSyncEvent('practice-session', replacedSession.id, 'delete', replacedSession)] : []),
-            makeSyncEvent('practice-session', session.id, 'upsert', session),
-          ],
-        }))
+        set((state) => createSessionStartUpdate(state, session, 'test'))
         void get().syncNow()
       },
       startClinicalThinking: (focus) => {
         const state = get()
-        const activeSession = state.activeSession
-        if (shouldKeepCurrentSession(activeSession, 'clinical-thinking')) return
-        const replacedSession = activeSession && isUnfinishedPracticeSession(activeSession)
-          ? createDiscardedPracticeSession(activeSession)
-          : null
         void trackAppEvent(
           'quiz_started',
           {
@@ -1087,18 +1093,7 @@ export const useStudySystemStore = create<StudySystemState>()(
         const session = preparePracticeSession(
           generateClinicalThinkingSession(state.attempts, state.profile.examTrack ?? 'nclex-rn', focus),
         )
-        set((state) => ({
-          activeSession: session,
-          practiceSessions: upsertPracticeSession(
-            replacedSession ? upsertPracticeSession(state.practiceSessions, replacedSession) : state.practiceSessions,
-            session,
-          ),
-          syncEvents: [
-            ...state.syncEvents,
-            ...(replacedSession ? [makeSyncEvent('practice-session', replacedSession.id, 'delete', replacedSession)] : []),
-            makeSyncEvent('practice-session', session.id, 'upsert', session),
-          ],
-        }))
+        set((state) => createSessionStartUpdate(state, session, 'clinical-thinking'))
         void get().syncNow()
       },
       goToSessionQuestion: (index) => {
