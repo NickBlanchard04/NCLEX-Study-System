@@ -15,6 +15,7 @@ import type {
   Note,
   QuestionAttempt,
   QuestionCategory,
+  SessionMode,
   SimulatorLevelAttempt,
   SimulatorLevelId,
   SimulatorProgressState,
@@ -358,6 +359,25 @@ const findRunnableMaterialQuizSession = (
 const isUnfinishedPracticeSession = (session: ActiveSession | null | undefined) =>
   Boolean(session && !session.endedAt && session.status !== 'discarded' && !session.deletedAt)
 
+const createDiscardedPracticeSession = (session: ActiveSession) => {
+  const now = new Date().toISOString()
+  return preparePracticeSession({
+    ...session,
+    status: 'discarded',
+    deletedAt: now,
+    lastActivityAt: now,
+    updatedAt: now,
+  })
+}
+
+const shouldKeepCurrentSession = (
+  session: ActiveSession | null | undefined,
+  nextMode: SessionMode,
+) => isUnfinishedPracticeSession(session) && session?.mode === nextMode && session.questionIds.length > 0
+
+let cloudSyncInFlight = false
+let cloudSyncQueued = false
+
 const preparePracticeSession = (session: ActiveSession): ActiveSession => ({
   ...session,
   status: session.status ?? (session.endedAt ? 'completed' : 'active'),
@@ -396,6 +416,15 @@ const isBlockedMaterialImportError = (error: unknown) => {
 
   return false
 }
+
+const isTransientFetchFailure = (error: unknown) =>
+  Boolean(
+    error &&
+      typeof error === 'object' &&
+      'message' in error &&
+      typeof error.message === 'string' &&
+      /Failed to fetch|NetworkError|Load failed/i.test(error.message),
+  )
 
 const baseState = {
   authUser: null as AuthUser | null,
@@ -590,30 +619,6 @@ export const useStudySystemStore = create<StudySystemState>()(
             },
             { userId: snapshot.user?.id, isDemoUser: false },
           )
-          void trackAppEvent(
-            'onboarding_completed',
-            {
-              page_path: '/',
-              exam_track: freshProfile.examTrack,
-              feature_name: 'Beta Onboarding',
-              metadata: {
-                has_school: Boolean(freshProfile.nursingSchool?.trim()),
-                has_name: Boolean(freshProfile.name?.trim()),
-              },
-            },
-            { userId: snapshot.user?.id, isDemoUser: false },
-          )
-          if (freshProfile.examTrack) {
-            void trackAppEvent(
-              'exam_track_selected',
-              {
-                page_path: '/',
-                exam_track: freshProfile.examTrack,
-                feature_name: 'Exam Track',
-              },
-              { userId: snapshot.user?.id, isDemoUser: false },
-            )
-          }
           if (!snapshot.user || !snapshot.session) {
             set({
               ...createCleanAccountState(freshProfile),
@@ -725,6 +730,7 @@ export const useStudySystemStore = create<StudySystemState>()(
       hydrateCloudState: async () => {
         const user = get().authUser
         if (!user) return
+        const activeSessionIdAtHydrateStart = get().activeSession?.id ?? null
         set({ syncStatus: 'syncing', syncError: null })
         try {
           const cloud = await loadCloudState(user.id)
@@ -742,10 +748,23 @@ export const useStudySystemStore = create<StudySystemState>()(
 
           if (!cloudHasData) {
             const freshProfile = createFreshProfileForAuthUser(user)
-            set({
-              ...createCleanAccountState(freshProfile),
+            set((state) => {
+              const localActiveSession =
+                state.activeSession &&
+                state.activeSession.id !== activeSessionIdAtHydrateStart &&
+                isUnfinishedPracticeSession(state.activeSession)
+                  ? preparePracticeSession(state.activeSession)
+                  : null
+
+              return {
+                ...createCleanAccountState(freshProfile),
+                activeSession: localActiveSession,
+                practiceSessions: localActiveSession
+                  ? upsertPracticeSession(state.practiceSessions, localActiveSession)
+                  : [],
               syncStatus: 'idle',
               syncError: null,
+              }
             })
             await saveProfile(user.id, freshProfile)
             return
@@ -755,34 +774,48 @@ export const useStudySystemStore = create<StudySystemState>()(
             ? createFreshProfileForAuthUser(user)
             : cloud.profile ?? createFreshProfileForAuthUser(user)
 
-          set((state) => ({
-            ...createCleanAccountState(profile),
-            attempts: cloud.attempts,
-            notes: cloud.notes,
-            flashcardReview: cloud.flashcardReview,
-            flashcardProgress: Object.fromEntries(
-              Object.entries(cloud.flashcardReview).map(([id, review]) => [id, review.status]),
-            ),
-            materials: cloud.materials,
-            materialFlashcards: cloud.materialFlashcards,
-            materialQuestions: cloud.materialQuestions,
-            practiceSessions: cloud.practiceSessions,
-            activeSession: findResumablePracticeSession(cloud.practiceSessions),
-            activeMaterialQuizSession: findRunnableMaterialQuizSession(
-              cloud.materialQuizSessions,
-              cloud.materials,
-              cloud.materialQuestions,
-            ),
-            passwordRecoveryRequired: state.passwordRecoveryRequired,
-            syncStatus: 'idle',
-            syncError: null,
-            migrationPromptVisible: false,
-          }))
+          set((state) => {
+            const localActiveSession =
+              state.activeSession &&
+              state.activeSession.id !== activeSessionIdAtHydrateStart &&
+              isUnfinishedPracticeSession(state.activeSession)
+                ? preparePracticeSession(state.activeSession)
+                : null
+            const practiceSessions = localActiveSession
+              ? upsertPracticeSession(cloud.practiceSessions, localActiveSession)
+              : cloud.practiceSessions
+
+            return {
+              ...createCleanAccountState(profile),
+              attempts: cloud.attempts,
+              notes: cloud.notes,
+              flashcardReview: cloud.flashcardReview,
+              flashcardProgress: Object.fromEntries(
+                Object.entries(cloud.flashcardReview).map(([id, review]) => [id, review.status]),
+              ),
+              materials: cloud.materials,
+              materialFlashcards: cloud.materialFlashcards,
+              materialQuestions: cloud.materialQuestions,
+              practiceSessions,
+              activeSession: localActiveSession ?? findResumablePracticeSession(practiceSessions),
+              activeMaterialQuizSession: findRunnableMaterialQuizSession(
+                cloud.materialQuizSessions,
+                cloud.materials,
+                cloud.materialQuestions,
+              ),
+              passwordRecoveryRequired: state.passwordRecoveryRequired,
+              syncStatus: 'idle',
+              syncError: null,
+              migrationPromptVisible: false,
+            }
+          })
           if (cloudProfileIsSeeded) {
             await saveProfile(user.id, profile)
           }
         } catch (error) {
-          reportSafeError('cloud-hydrate', error)
+          if (!isTransientFetchFailure(error)) {
+            reportSafeError('cloud-hydrate', error)
+          }
           set({
             syncStatus: navigator.onLine ? 'error' : 'offline',
             syncError: getSafeErrorCopy('cloud-hydrate'),
@@ -797,36 +830,58 @@ export const useStudySystemStore = create<StudySystemState>()(
       },
       dismissMigrationPrompt: () => set({ migrationPromptVisible: false }),
       syncNow: async () => {
-        const state = get()
-        const user = state.authUser
-        if (!user || state.isDemoMode || !isSupabaseConfigured) return
+        if (cloudSyncInFlight) {
+          cloudSyncQueued = true
+          return
+        }
 
-        set({ syncStatus: 'syncing', syncError: null })
+        cloudSyncInFlight = true
+
         try {
-          await Promise.all([
-            saveProfile(user.id, state.profile),
-            saveAttempts(user.id, state.attempts),
-            saveNotes(user.id, state.notes),
-            saveFlashcardReviews(user.id, state.flashcardReview),
-            saveMaterials(
-              user.id,
-              state.materials,
-              state.materialFlashcards,
-              state.materialQuestions,
-              state.activeMaterialQuizSession,
-            ),
-            savePracticeSessions(user.id, [
-              ...state.practiceSessions,
-              ...(state.activeSession &&
-              !state.practiceSessions.some((session) => session.id === state.activeSession?.id)
-                ? [state.activeSession]
-                : []),
-            ]),
-            saveSyncEvents(user.id, state.syncEvents),
-          ])
-          set({ syncStatus: 'idle', syncError: null, syncEvents: [] })
+          do {
+            cloudSyncQueued = false
+            const state = get()
+            const user = state.authUser
+            if (!user || state.isDemoMode || !isSupabaseConfigured) return
+
+            const savedSyncEventIds = new Set(state.syncEvents.map((event) => event.id))
+
+            set({ syncStatus: 'syncing', syncError: null })
+            await Promise.all([
+              saveProfile(user.id, state.profile),
+              saveAttempts(user.id, state.attempts),
+              saveNotes(user.id, state.notes),
+              saveFlashcardReviews(user.id, state.flashcardReview),
+              saveMaterials(
+                user.id,
+                state.materials,
+                state.materialFlashcards,
+                state.materialQuestions,
+                state.activeMaterialQuizSession,
+              ),
+              savePracticeSessions(user.id, [
+                ...state.practiceSessions,
+                ...(state.activeSession &&
+                !state.practiceSessions.some((session) => session.id === state.activeSession?.id)
+                  ? [state.activeSession]
+                  : []),
+              ]),
+              saveSyncEvents(user.id, state.syncEvents),
+            ])
+            set((current) => ({
+              syncStatus: cloudSyncQueued ? 'syncing' : 'idle',
+              syncError: null,
+              syncEvents: current.syncEvents.filter((event) => !savedSyncEventIds.has(event.id)),
+            }))
+          } while (cloudSyncQueued)
         } catch (error) {
-          reportSafeError('cloud-sync', error)
+          const failedState = get()
+          const user = failedState.authUser
+          if (!user) return
+          cloudSyncQueued = false
+          if (!isTransientFetchFailure(error)) {
+            reportSafeError('cloud-sync', error)
+          }
           set((current) => ({
             syncStatus: navigator.onLine ? 'error' : 'offline',
             syncError: getSafeErrorCopy('cloud-sync'),
@@ -834,6 +889,8 @@ export const useStudySystemStore = create<StudySystemState>()(
               ? current.syncEvents
               : [makeSyncEvent('profile', user.id, 'upsert', current.profile)],
           }))
+        } finally {
+          cloudSyncInFlight = false
         }
       },
       initializeMaterials: async () => {
@@ -902,7 +959,11 @@ export const useStudySystemStore = create<StudySystemState>()(
       },
       startQuickStudy: (category) => {
         const state = get()
-        if (isUnfinishedPracticeSession(state.activeSession)) return
+        const activeSession = state.activeSession
+        if (shouldKeepCurrentSession(activeSession, 'quick-study')) return
+        const replacedSession = activeSession && isUnfinishedPracticeSession(activeSession)
+          ? createDiscardedPracticeSession(activeSession)
+          : null
         void trackAppEvent(
           'quiz_started',
           {
@@ -919,14 +980,25 @@ export const useStudySystemStore = create<StudySystemState>()(
         )
         set((state) => ({
           activeSession: session,
-          practiceSessions: upsertPracticeSession(state.practiceSessions, session),
-          syncEvents: [...state.syncEvents, makeSyncEvent('practice-session', session.id, 'upsert', session)],
+          practiceSessions: upsertPracticeSession(
+            replacedSession ? upsertPracticeSession(state.practiceSessions, replacedSession) : state.practiceSessions,
+            session,
+          ),
+          syncEvents: [
+            ...state.syncEvents,
+            ...(replacedSession ? [makeSyncEvent('practice-session', replacedSession.id, 'delete', replacedSession)] : []),
+            makeSyncEvent('practice-session', session.id, 'upsert', session),
+          ],
         }))
         void get().syncNow()
       },
       startPracticeSession: (filters) => {
         const state = get()
-        if (isUnfinishedPracticeSession(state.activeSession)) return
+        const activeSession = state.activeSession
+        if (shouldKeepCurrentSession(activeSession, 'practice')) return
+        const replacedSession = activeSession && isUnfinishedPracticeSession(activeSession)
+          ? createDiscardedPracticeSession(activeSession)
+          : null
         void trackAppEvent(
           'quiz_started',
           {
@@ -943,14 +1015,25 @@ export const useStudySystemStore = create<StudySystemState>()(
         )
         set((state) => ({
           activeSession: session,
-          practiceSessions: upsertPracticeSession(state.practiceSessions, session),
-          syncEvents: [...state.syncEvents, makeSyncEvent('practice-session', session.id, 'upsert', session)],
+          practiceSessions: upsertPracticeSession(
+            replacedSession ? upsertPracticeSession(state.practiceSessions, replacedSession) : state.practiceSessions,
+            session,
+          ),
+          syncEvents: [
+            ...state.syncEvents,
+            ...(replacedSession ? [makeSyncEvent('practice-session', replacedSession.id, 'delete', replacedSession)] : []),
+            makeSyncEvent('practice-session', session.id, 'upsert', session),
+          ],
         }))
         void get().syncNow()
       },
       startTestSession: (config) => {
         const state = get()
-        if (isUnfinishedPracticeSession(state.activeSession)) return
+        const activeSession = state.activeSession
+        if (shouldKeepCurrentSession(activeSession, 'test')) return
+        const replacedSession = activeSession && isUnfinishedPracticeSession(activeSession)
+          ? createDiscardedPracticeSession(activeSession)
+          : null
         void trackAppEvent(
           'quiz_started',
           {
@@ -971,14 +1054,25 @@ export const useStudySystemStore = create<StudySystemState>()(
         )
         set((state) => ({
           activeSession: session,
-          practiceSessions: upsertPracticeSession(state.practiceSessions, session),
-          syncEvents: [...state.syncEvents, makeSyncEvent('practice-session', session.id, 'upsert', session)],
+          practiceSessions: upsertPracticeSession(
+            replacedSession ? upsertPracticeSession(state.practiceSessions, replacedSession) : state.practiceSessions,
+            session,
+          ),
+          syncEvents: [
+            ...state.syncEvents,
+            ...(replacedSession ? [makeSyncEvent('practice-session', replacedSession.id, 'delete', replacedSession)] : []),
+            makeSyncEvent('practice-session', session.id, 'upsert', session),
+          ],
         }))
         void get().syncNow()
       },
       startClinicalThinking: (focus) => {
         const state = get()
-        if (isUnfinishedPracticeSession(state.activeSession)) return
+        const activeSession = state.activeSession
+        if (shouldKeepCurrentSession(activeSession, 'clinical-thinking')) return
+        const replacedSession = activeSession && isUnfinishedPracticeSession(activeSession)
+          ? createDiscardedPracticeSession(activeSession)
+          : null
         void trackAppEvent(
           'quiz_started',
           {
@@ -995,8 +1089,15 @@ export const useStudySystemStore = create<StudySystemState>()(
         )
         set((state) => ({
           activeSession: session,
-          practiceSessions: upsertPracticeSession(state.practiceSessions, session),
-          syncEvents: [...state.syncEvents, makeSyncEvent('practice-session', session.id, 'upsert', session)],
+          practiceSessions: upsertPracticeSession(
+            replacedSession ? upsertPracticeSession(state.practiceSessions, replacedSession) : state.practiceSessions,
+            session,
+          ),
+          syncEvents: [
+            ...state.syncEvents,
+            ...(replacedSession ? [makeSyncEvent('practice-session', replacedSession.id, 'delete', replacedSession)] : []),
+            makeSyncEvent('practice-session', session.id, 'upsert', session),
+          ],
         }))
         void get().syncNow()
       },

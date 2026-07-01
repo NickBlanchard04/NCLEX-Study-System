@@ -496,6 +496,7 @@ export interface UserProfile extends CloudOwnedEntity {
     reducedMotion: boolean
     notifications: boolean
     analyticsScope: AnalyticsScope
+    onboardingCompletedAt?: string
   }
 }
 

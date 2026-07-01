@@ -26,9 +26,9 @@ const safeErrorCopy: Record<SafeErrorContext, string> = {
   'cloud-file-upload': 'We could not save that file to cloud storage right now.',
   'cloud-material-delete': 'We could not update that cloud material right now.',
   'material-ai-generation': 'AI generation is not available right now. We used local study-tool generation instead.',
-  'material-assisted-import': 'We could not import that pasted study text. Check that it includes nursing terms, definitions, or notes, then try again.',
+  'material-assisted-import': 'That pasted text did not have enough nursing study content yet. Paste the visible terms, definitions, or notes, then try again.',
   'material-file-import': 'We could not import this file. Check the file type and try again.',
-  'material-link-import': 'We could not import this link. Check the URL and try again.',
+  'material-link-import': 'This link did not give us clean study text. Use assisted paste, upload the source file, or try another public study page.',
 }
 
 export const getSafeErrorCopy = (context: SafeErrorContext) => safeErrorCopy[context]
@@ -40,6 +40,7 @@ export const reportSafeError = (context: SafeErrorContext, error: unknown) => {
     error && typeof error === 'object'
       ? {
           name: 'name' in error && typeof error.name === 'string' ? error.name : undefined,
+          message: 'message' in error && typeof error.message === 'string' ? error.message : undefined,
           code: 'code' in error && typeof error.code === 'string' ? error.code : undefined,
           status: 'status' in error && typeof error.status === 'number' ? error.status : undefined,
         }

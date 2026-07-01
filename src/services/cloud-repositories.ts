@@ -161,6 +161,7 @@ export async function loadCloudState(userId: string): Promise<CloudStateBundle> 
             reducedMotion: profilePreferences?.reducedMotion ?? false,
             notifications: profilePreferences?.notifications ?? true,
             analyticsScope: profilePreferences?.analyticsScope ?? 'selected-track',
+            onboardingCompletedAt: profilePreferences?.onboardingCompletedAt,
           },
           userId,
           createdAt: profileResult.data.created_at,

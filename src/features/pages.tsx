@@ -1600,7 +1600,6 @@ export function PracticeQuestionsPage() {
   const activeSession = useStudySystemStore((state) => state.activeSession)
   const startPracticeSession = useStudySystemStore((state) => state.startPracticeSession)
   const abandonSession = useStudySystemStore((state) => state.abandonSession)
-  const activeSessionIsOpen = isActiveSessionOpen(activeSession)
   const [isPending, startTransition] = useTransition()
   const [category, setCategory] = useState<QuestionCategory | 'All'>('All')
   const [system, setSystem] = useState<string | 'All'>('All')
@@ -1614,10 +1613,6 @@ export function PracticeQuestionsPage() {
   const trackSystems = getExamSystems(activeTrack.id)
   const launchPracticeSession = (overrides: Partial<Parameters<typeof startPracticeSession>[0]> = {}) =>
     startTransition(() => {
-      if (activeSessionIsOpen && activeSession?.mode !== 'practice') {
-        abandonSession()
-      }
-      if (activeSessionIsOpen && activeSession?.mode === 'practice') return
       startPracticeSession({
         category,
         system,
@@ -2248,14 +2243,8 @@ export function QuickStudyPage() {
       icon: <Target className="h-4 w-4" />,
     },
   ] as const
-  const activeSessionIsOpen = isActiveSessionOpen(activeSession)
   const launchQuickStudy = (category?: QuestionCategory) => {
-    if (activeSessionIsOpen && activeSession?.mode !== 'quick-study') {
-      abandonSession()
-    }
-    if (!(activeSessionIsOpen && activeSession?.mode === 'quick-study')) {
-      startQuickStudy(category)
-    }
+    startQuickStudy(category)
   }
 
   if (activeSession?.mode === 'quick-study' && isRenderableSession(activeSession)) {
@@ -2485,8 +2474,6 @@ export function TestModePage() {
     : latestExam
       ? 'Send weak patterns to remediation before the next simulation.'
       : 'Your first completed block will unlock a review queue.'
-  const activeSessionIsOpen = isActiveSessionOpen(activeSession)
-
   if (
     activeSession?.mode === 'test' &&
     isRenderableSession(activeSession) &&
@@ -2535,12 +2522,7 @@ export function TestModePage() {
   const launchTestSession = () => {
     setResumeExamNow(true)
     startTransition(() => {
-      if (activeSessionIsOpen && activeSession?.mode !== 'test') {
-        abandonSession()
-      }
-      if (!(activeSessionIsOpen && activeSession?.mode === 'test')) {
-        startTestSession({ questionCount, timed, noBacktracking })
-      }
+      startTestSession({ questionCount, timed, noBacktracking })
     })
   }
 
@@ -3951,7 +3933,7 @@ export function MyMaterialsPage() {
       setAssistedSourceUrl(trimmedUrl)
       setBlockedImportSourceUrl(trimmedUrl)
       setUploadMessage(
-        'Quizlet-style study sites usually block direct import. Assisted import is open: copy the visible terms and definitions from the set, then paste or read clipboard below.',
+        'Assisted import is ready for this study set. Open the source, copy the visible terms and definitions, then paste or read clipboard below.',
       )
       return
     }
@@ -3973,7 +3955,7 @@ export function MyMaterialsPage() {
         setAssistedImportOpen(true)
         setAssistedSourceUrl(materialUrl)
         setBlockedImportSourceUrl(materialUrl)
-        setUploadMessage('This site blocks direct import. Assisted import is open: copy the visible terms, definitions, or notes from the page, then paste or read clipboard below.')
+        setUploadMessage('This page needs assisted import. Copy the visible terms, definitions, or notes from the page, then paste or read clipboard below.')
       } else {
         setBlockedImportSourceUrl('')
         setUploadMessage(getSafeErrorCopy('material-link-import'))
@@ -4246,7 +4228,7 @@ export function MyMaterialsPage() {
               </Field>
               <p className="mt-3 text-xs leading-5 text-sky-200/60">
                 {materialUrlNeedsAssistedImport
-                  ? 'Quizlet-style sites usually block scraping. We will open Assisted import so you can copy the visible set once and keep moving.'
+                  ? 'Paste the link, then use Assisted import to copy the visible set once and keep moving.'
                   : 'Works best with public text-heavy study pages. If a site blocks direct import, copy the visible terms or notes and use Assisted import.'}
               </p>
               <button
@@ -4581,7 +4563,7 @@ export function MyMaterialsPage() {
                 <NextActionPanel
                   eyebrow="Fix source"
                   title="This material needs a cleaner input."
-                  description="Direct scraping failed or the text was unreadable. Use assisted paste for Quizlet-style pages, retry the source, or remove the failed import from your library."
+                  description="The link did not provide clean study text. Use assisted paste, retry the source, upload the file, or remove this attempt from your library."
                   tone="amber"
                   primary={
                     <button
@@ -4606,7 +4588,7 @@ export function MyMaterialsPage() {
                           type="button"
                           onClick={() => {
                             setMaterialUrl(selectedMaterial.sourceUrl ?? '')
-                            setUploadMessage('Source link restored. Import again or open assisted import if the site blocks scraping.')
+                            setUploadMessage('Source link restored. Retry direct import, or use assisted paste if the page blocks clean text.')
                           }}
                           className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-cyan-200/24 bg-cyan-300/[0.07] px-5 py-3 text-sm font-bold text-cyan-100 transition hover:border-cyan-100/55 hover:bg-cyan-300/13 focus:outline-none focus:ring-4 focus:ring-cyan-300/18"
                         >
@@ -4614,6 +4596,14 @@ export function MyMaterialsPage() {
                           <RefreshCw className="h-4 w-4" />
                         </button>
                       ) : null}
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-violet-200/24 bg-violet-300/[0.08] px-5 py-3 text-sm font-bold text-violet-100 transition hover:bg-violet-300/14 focus:outline-none focus:ring-4 focus:ring-violet-300/18"
+                      >
+                        Upload file instead
+                        <Upload className="h-4 w-4" />
+                      </button>
                       <button
                         type="button"
                         onClick={() => void deleteStudyMaterial(selectedMaterial.id)}

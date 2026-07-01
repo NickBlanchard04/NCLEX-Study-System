@@ -143,7 +143,12 @@ const sidebarNavigationGroups = [
 const mobilePrimaryNavigation: NavigationItem[] = [
   { label: 'Dashboard', icon: LayoutDashboard, to: '/dashboard' },
   { label: 'Quick Study', icon: Timer, to: '/quick-study' },
-  { label: 'Question Bank', icon: ClipboardList, to: '/practice-questions' },
+  {
+    label: 'Library',
+    icon: FolderOpen,
+    to: '/my-materials',
+    activePaths: ['/flashcards', '/notes', '/strategy-training'],
+  },
 ]
 
 const mobilePrimaryRoutes = new Set(mobilePrimaryNavigation.map((item) => item.to))
@@ -820,7 +825,7 @@ function getFeatureNameFromPath(pathname: string) {
   if (pathname.startsWith('/performance-analytics')) return 'Performance Analytics'
   if (pathname.startsWith('/flashcards')) return 'Flashcards'
   if (pathname.startsWith('/notes')) return 'Notes'
-  if (pathname.startsWith('/my-materials')) return 'Material Upload'
+  if (pathname.startsWith('/my-materials')) return 'My Materials'
   if (pathname.startsWith('/exam-prep')) return 'Exam Prep'
   if (pathname.startsWith('/test-mode')) return 'Test Mode'
   if (pathname.startsWith('/clinical-simulator')) return 'Clinical Simulator'
@@ -1125,13 +1130,14 @@ function MobileTabBar({
   onOpenQuickStudy: () => void
 }) {
   const navigate = useNavigate()
-  const moreActive = !mobilePrimaryNavigation.some(({ to }) => (to === '/' ? pathname === '/' : pathname.startsWith(to)))
+  const moreActive = !mobilePrimaryNavigation.some((item) => isNavigationItemActive(pathname, item))
 
   return (
     <div className="mobile-bottom-bar safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-sky-300/20 bg-[#020812]/92 pt-2 backdrop-blur-xl lg:hidden">
       <div className="mx-auto grid max-w-[520px] grid-cols-4">
-        {mobilePrimaryNavigation.map(({ label, icon: Icon, to, emphasis }) => {
-          const active = to === '/' ? pathname === '/' : pathname.startsWith(to)
+        {mobilePrimaryNavigation.map((item) => {
+          const { label, icon: Icon, to, emphasis } = item
+          const active = isNavigationItemActive(pathname, item)
           return (
             <button
               key={to}
