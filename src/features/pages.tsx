@@ -6424,33 +6424,39 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <PageStack>
       <PageHeader
         eyebrow="Settings"
-        title="Tune the system to your study style."
+        title="Profile and settings"
         description="Manage your exam track, study preferences, and cloud sync status from one place."
       />
       <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-        <Surface>
-          <h3 className="nc-section-title text-3xl text-[#163042]">Profile preferences</h3>
+        <Surface className="border-cyan-200/18 bg-cyan-300/[0.045]">
+          <SectionHeading
+            title="Profile"
+            description="Your visible learner identity, exam lane, and study cadence."
+          />
           <div className="mt-6 grid gap-4">
-            <div className="rounded-[20px] border border-[var(--nclex-border)] bg-[var(--nclex-card-muted)] p-4">
+            <div className="rounded-[20px] border border-cyan-200/16 bg-[#031426]/72 p-4">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-[#b8d7f4] bg-[linear-gradient(180deg,#0f7aff_0%,#062d63_100%)] text-xl font-bold text-white shadow-[0_12px_28px_rgba(43,148,255,0.22)]">
+                  <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-cyan-300/30 bg-[linear-gradient(135deg,rgba(34,211,238,0.32),rgba(168,85,247,0.2)_45%,rgba(3,20,38,0.95))] text-xl font-bold text-white shadow-[0_12px_28px_rgba(43,148,255,0.22)]">
                     {profile.profileImageDataUrl ? (
                       <img src={profile.profileImageDataUrl} alt="" className="h-full w-full object-cover" />
                     ) : (
-                      profileInitials
+                      <>
+                        <UserRound className="absolute h-11 w-11 text-cyan-100/18" />
+                        <span className="relative z-10">{profileInitials}</span>
+                      </>
                     )}
                   </div>
                   <div>
-                    <p className="font-semibold text-[var(--nclex-text)]">Profile picture</p>
-                    <p className="mt-1 text-sm leading-6 text-[var(--nclex-text-muted)]">
+                    <p className="font-semibold text-white">Profile picture</p>
+                    <p className="mt-1 text-sm leading-6 text-sky-100/64">
                       Shows on the Home title screen and account menu.
                     </p>
                     {profile.memberNumber ? (
-                      <span className="mt-3 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700">
+                      <span className="mt-3 inline-flex items-center gap-2 rounded-full border border-amber-200/28 bg-amber-300/[0.08] px-3 py-1.5 text-xs font-bold text-amber-100">
                         <BadgeCheck className="h-4 w-4" />
                         Founding learner #{profile.memberNumber}
                       </span>
@@ -6489,7 +6495,7 @@ export function SettingsPage() {
                 </div>
               </div>
               {profilePhotoMessage ? (
-                <p className="mt-3 rounded-xl border border-[#d7e6f7] bg-white px-3 py-2 text-sm font-semibold text-[var(--nclex-text-muted)]">
+                <p className="mt-3 rounded-xl border border-cyan-200/18 bg-cyan-300/[0.06] px-3 py-2 text-sm font-semibold text-cyan-100">
                   {profilePhotoMessage}
                 </p>
               ) : null}
@@ -6534,18 +6540,21 @@ export function SettingsPage() {
             <ToggleRow label="Study reminders" description="Future-ready notification preference for backend integration." checked={profile.preferences.notifications} onChange={(value) => updateProfile({ preferences: { ...profile.preferences, notifications: value } })} />
           </div>
         </Surface>
-        <Surface>
-          <h3 className="nc-section-title text-3xl text-[#163042]">Cloud account & sync</h3>
-          <div className="mt-5 rounded-[20px] border border-[var(--nclex-border)] bg-[var(--nclex-card-muted)] p-5">
+        <Surface className="border-violet-200/18 bg-violet-300/[0.045]">
+          <SectionHeading
+            title="Account"
+            description="Cloud sync, beta account status, privacy, and support."
+          />
+          <div className="mt-5 rounded-[20px] border border-cyan-200/16 bg-[#031426]/72 p-5">
             <div className="flex items-start gap-4">
-              <div className="rounded-2xl bg-[var(--nclex-blue-soft)] p-3 text-[var(--nclex-blue)]">
+              <div className="rounded-2xl border border-cyan-200/18 bg-cyan-300/[0.08] p-3 text-cyan-100">
                 {isDemoMode ? <CloudOff className="h-5 w-5" /> : <Cloud className="h-5 w-5" />}
               </div>
               <div>
-                <p className="font-semibold text-[var(--nclex-text)]">
+                <p className="font-semibold text-white">
                   {authUser ? authUser.email : authConfigured ? 'Local demo mode' : 'Supabase not configured'}
                 </p>
-                <p className="mt-1 text-sm leading-6 text-[var(--nclex-text-muted)]">
+                <p className="mt-1 text-sm leading-6 text-sky-100/64">
                   {authUser
                     ? `Cloud sync is ${syncStatus === 'syncing' ? 'running' : syncStatus}.`
                     : authConfigured
@@ -6573,21 +6582,21 @@ export function SettingsPage() {
                 <button
                   type="button"
                   onClick={() => void signOut()}
-                  className="rounded-xl border border-[#ffd1d1] bg-[var(--nclex-danger-soft)] px-4 py-2.5 text-sm font-semibold text-[var(--nclex-danger)]"
+                  className="rounded-xl border border-rose-200/25 bg-rose-300/[0.08] px-4 py-2.5 text-sm font-semibold text-rose-100 transition hover:bg-rose-300/14"
                 >
                   Sign out
                 </button>
               ) : null}
             </div>
           </div>
-          <h3 className="mt-7 nc-section-title text-3xl text-[#163042]">Monetization-ready structure</h3>
+          <h3 className="mt-7 nc-section-title text-2xl text-white">Beta account status</h3>
           <div className="mt-6 grid gap-4 md:grid-cols-2">
             <FeatureCallout title="User accounts" description="Supabase Auth now provides real account sessions and password recovery entry points." />
             <FeatureCallout title="Saved progress" description="Attempts, flashcards, notes, materials, and generated study tools can sync to Postgres." />
-            <FeatureCallout title="Premium tiers" description="Feature gating can layer on top of existing page and session boundaries." />
+            <FeatureCallout title="Beta access" description="Open beta features can be adjusted as the product stabilizes and feedback comes in." />
             <FeatureCallout title="Retention hooks" description="Quick Study, streaks, weak-area review, and notes already support daily return behavior." />
           </div>
-          <h3 className="mt-7 nc-section-title text-3xl text-[#163042]">Privacy, terms & support</h3>
+          <h3 className="mt-7 nc-section-title text-2xl text-white">Privacy, terms & support</h3>
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             <FeatureCallout title="Privacy" description="Cloud accounts store your email and synced study activity. Do not upload protected health information or patient-identifying material." />
             <FeatureCallout title="Terms" description="Nurse Command is practice study support only. Readiness and adaptive signals are practice evidence, not clinical advice or licensure guarantees." />
@@ -6596,13 +6605,13 @@ export function SettingsPage() {
           <button
             type="button"
             onClick={resetProgress}
-            className="mt-6 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700"
+            className="mt-6 rounded-xl border border-rose-200/25 bg-rose-300/[0.08] px-4 py-2 text-sm font-semibold text-rose-100 transition hover:bg-rose-300/14"
           >
             Reset local progress
           </button>
         </Surface>
       </div>
-    </div>
+    </PageStack>
   )
 }
 
@@ -6942,9 +6951,9 @@ function ToggleRow({
 
 function FeatureCallout({ title, description }: { title: string; description: string }) {
   return (
-    <div className="nclex-soft-panel rounded-[18px] p-4">
-      <p className="font-semibold text-[var(--nclex-text)]">{title}</p>
-      <p className="mt-2 text-sm leading-6 text-[var(--nclex-text-muted)]">{description}</p>
+    <div className="rounded-[18px] border border-cyan-200/16 bg-white/[0.045] p-4">
+      <p className="font-semibold text-white">{title}</p>
+      <p className="mt-2 text-sm leading-6 text-sky-100/64">{description}</p>
     </div>
   )
 }

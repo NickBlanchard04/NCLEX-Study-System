@@ -525,11 +525,14 @@ function NclexAppShell() {
                   aria-haspopup="menu"
                   className="flex items-center gap-2 rounded-xl border border-sky-300/24 bg-white/5 px-2 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition hover:border-sky-200/60"
                 >
-                  <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-cyan-300/30 bg-[linear-gradient(180deg,#0f7aff_0%,#062d63_100%)] text-sm font-bold text-white shadow-[0_0_20px_rgba(43,148,255,0.28)]">
+                  <div className="relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-cyan-300/30 bg-[linear-gradient(135deg,rgba(34,211,238,0.34),rgba(168,85,247,0.2)_46%,rgba(3,20,38,0.96))] text-sm font-bold text-white shadow-[0_0_20px_rgba(43,148,255,0.28)]">
                     {profile.profileImageDataUrl ? (
                       <img src={profile.profileImageDataUrl} alt="" className="h-full w-full object-cover" />
                     ) : (
-                      initials
+                      <>
+                        <UsersRound className="absolute h-5 w-5 text-cyan-100/18" />
+                        <span className="relative z-10">{initials}</span>
+                      </>
                     )}
                   </div>
                   <div className="hidden text-left md:block">
