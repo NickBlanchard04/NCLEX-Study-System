@@ -38,3 +38,15 @@ For GitHub Pages, add these same values as repository secrets:
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
+- `VITE_GTM_CONTAINER_ID` after the Google Tag Manager container is created
+
+## Launch Search And Analytics
+
+The app supports Google Tag Manager through `VITE_GTM_CONTAINER_ID`. GTM loads only when that value is present, and app events are pushed to `dataLayer` through the sanitized analytics client.
+
+Production verification checklist after deployment:
+
+- `https://nursecommand.com/robots.txt` returns `200`.
+- `https://nursecommand.com/sitemap.xml` returns `200`.
+- GTM Preview sees allowlisted events after the GTM container secret is configured.
+- GA4 Realtime receives events through GTM after the GA4 destination is configured.

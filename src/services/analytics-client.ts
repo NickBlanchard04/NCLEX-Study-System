@@ -1,4 +1,5 @@
 import type { ExamTrackId } from '../app/types'
+import { pushAppEventToDataLayer } from './google-tag-manager'
 import { isSupabaseConfigured, supabase } from './supabase'
 
 export type AppEventName =
@@ -260,6 +261,7 @@ export async function trackAppEvent(
 ) {
   const event = createStoredEvent(eventName, payload, context)
   appendLocalEvent(event)
+  pushAppEventToDataLayer(event)
 
   if (debugAnalytics) {
     console.info('[Nurse Command analytics]', event)
