@@ -481,8 +481,8 @@ export function StudyMenuPage() {
       tone: 'violet',
       tools: [
         {
-          title: 'My Materials',
-          description: 'Turn files and links into cards and questions.',
+          title: 'Study Library',
+          description: 'Turn files and links into reviewed study tools.',
           action: 'Open',
           route: '/my-materials',
           icon: <UploadCloud className="h-4 w-4" />,
@@ -552,7 +552,7 @@ export function StudyMenuPage() {
       for (const file of incomingFiles) {
         await importStudyMaterial(file)
       }
-      setImportMessage('Study tools generated. Open My Materials to review and approve them before saving.')
+      setImportMessage('Study tools generated. Open Your Study Library to review and approve them before saving.')
     } finally {
       setIsImporting(false)
     }
@@ -565,7 +565,7 @@ export function StudyMenuPage() {
     try {
       await importStudyMaterialFromUrl(materialUrl)
       setMaterialUrl('')
-      setImportMessage('Link imported. Review and approve the generated tools in My Materials.')
+      setImportMessage('Link imported. Review and approve the generated tools in Your Study Library.')
     } catch (error) {
       reportSafeError('material-link-import', error)
       setImportMessage(getSafeErrorCopy('material-link-import'))
@@ -3502,7 +3502,7 @@ export function FlashcardsPage() {
             className="nclex-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold"
           >
             <FolderOpen className="h-4 w-4" />
-            Open My Materials
+            Open Study Library
           </button>
         }
       />
@@ -4059,7 +4059,7 @@ export function MyMaterialsPage() {
   return (
     <PageStack>
       <PageHeader
-        eyebrow="My Materials"
+        eyebrow="Study Library"
         title="Your Study Library"
         description="Keep your uploaded notes, guides, and generated study tools in one calmer library."
         action={
@@ -4348,11 +4348,6 @@ export function MyMaterialsPage() {
                 {uploadMessage}
               </div>
             ) : null}
-            <div className="mt-5 rounded-2xl border border-violet-200/20 bg-violet-300/[0.06] p-4">
-                <p className="text-xs font-bold uppercase tracking-[0.14em] text-violet-100/70">User-added material total</p>
-                <p className="mt-2 text-3xl font-bold text-white">{materials.length}</p>
-                <p className="text-sm font-semibold text-sky-100/66">uploaded files and links in your library</p>
-            </div>
             </div>
           </NurseCommandBackdrop>
 
@@ -4632,7 +4627,7 @@ export function MyMaterialsPage() {
               <div className="grid gap-4 md:grid-cols-[0.9fr_1.1fr]">
                 <Surface className="border-cyan-200/14 bg-white/[0.035] p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-sky-100/58">
-                    Material settings
+                    Library settings
                   </p>
                   <div className="mt-4 grid gap-4">
                     <Field label="Assign category">
@@ -4676,7 +4671,7 @@ export function MyMaterialsPage() {
 
                 <Surface className="border-cyan-200/14 bg-white/[0.035] p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-sky-100/58">
-                    Manage material
+                    Manage library item
                   </p>
                   <p className="mt-2 text-sm leading-6 text-sky-100/60">
                     Keep study actions in the workspace above. Use these when you want to move, rebuild, or remove the source.
@@ -4702,7 +4697,7 @@ export function MyMaterialsPage() {
                     <button
                       type="button"
                       onClick={() => void deleteStudyMaterial(selectedMaterial.id)}
-                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700 sm:col-span-2"
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-rose-200/25 bg-rose-300/[0.08] px-4 py-3 text-sm font-semibold text-rose-100 transition hover:bg-rose-300/14 sm:col-span-2"
                     >
                       <Trash2 className="h-4 w-4" />
                       Delete
@@ -4712,13 +4707,13 @@ export function MyMaterialsPage() {
               </div>
 
               {studyGuideOpen && selectedStudyGuide ? (
-                <Surface className="nclex-surface-muted p-4">
+                <Surface className="border-violet-200/16 bg-violet-300/[0.045] p-4">
                   <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-blue)]">
+                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-violet-100/70">
                         Nursing exam study guide
                       </p>
-                      <h4 className="mt-2 nc-section-title text-2xl text-[var(--nclex-text)]">
+                      <h4 className="mt-2 nc-section-title text-2xl text-white">
                         {selectedMaterial.displayTitle}
                       </h4>
                     </div>
@@ -4750,16 +4745,16 @@ export function MyMaterialsPage() {
                     </button>
                   </div>
                   <div className="mt-5 grid gap-4 lg:grid-cols-3">
-                    <div className="rounded-[18px] border border-[var(--nclex-border)] bg-white p-4 lg:col-span-2">
-                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]">
+                    <div className="rounded-[18px] border border-violet-200/14 bg-[#031426]/72 p-4 lg:col-span-2">
+                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-violet-100/62">
                         Simple summary
                       </p>
-                      <p className="mt-2 text-sm leading-7 text-[var(--nclex-text-secondary)]">
+                      <p className="mt-2 text-sm leading-7 text-sky-100/70">
                         {selectedStudyGuide.summary}
                       </p>
                     </div>
-                    <div className="rounded-[18px] border border-[var(--nclex-border)] bg-white p-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]">
+                    <div className="rounded-[18px] border border-violet-200/14 bg-[#031426]/72 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-violet-100/62">
                         Key terms
                       </p>
                       <div className="mt-3 flex flex-wrap gap-2">
@@ -4770,15 +4765,15 @@ export function MyMaterialsPage() {
                         ))}
                       </div>
                     </div>
-                    <div className="rounded-[18px] border border-[var(--nclex-border)] bg-white p-4 lg:col-span-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]">
+                    <div className="rounded-[18px] border border-violet-200/14 bg-[#031426]/72 p-4 lg:col-span-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-violet-100/62">
                         Study outline
                       </p>
                       <div className="mt-3 grid gap-2 md:grid-cols-2">
                         {selectedStudyGuide.outline.map((item) => (
                           <div
                             key={item}
-                            className="rounded-xl bg-[var(--nclex-card-muted)] px-4 py-3 text-sm leading-6 text-[var(--nclex-text-secondary)]"
+                            className="rounded-xl border border-cyan-200/10 bg-cyan-300/[0.055] px-4 py-3 text-sm leading-6 text-sky-100/70"
                           >
                             {item}
                           </div>
@@ -4789,13 +4784,13 @@ export function MyMaterialsPage() {
                 </Surface>
               ) : null}
 
-              <Surface className="nclex-surface-muted p-4">
+              <Surface className="border-cyan-200/14 bg-cyan-300/[0.04] p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-cyan-100/60">
                       Extracted text preview
                     </p>
-                    <h4 className="mt-2 text-lg font-semibold text-[var(--nclex-text)]">
+                    <h4 className="mt-2 text-lg font-semibold text-white">
                       Open extracted text
                     </h4>
                   </div>
@@ -4807,8 +4802,8 @@ export function MyMaterialsPage() {
                     {previewExpanded ? 'Show less' : 'Show more'}
                   </button>
                 </div>
-                <div className="mt-4 max-h-[360px] overflow-y-auto rounded-[18px] border border-[var(--nclex-border)] bg-white p-4">
-                  <pre className="whitespace-pre-wrap text-sm leading-7 text-[var(--nclex-text-secondary)]">
+                <div className="mt-4 max-h-[360px] overflow-y-auto rounded-[18px] border border-cyan-200/12 bg-[#031426]/76 p-4">
+                  <pre className="whitespace-pre-wrap text-sm leading-7 text-sky-100/70">
                     {selectedPreviewText || selectedMaterial.preview || 'No readable text preview is available yet.'}
                   </pre>
                 </div>
@@ -4816,7 +4811,7 @@ export function MyMaterialsPage() {
             </div>
           ) : (
             <EmptyState
-              title="Drop your first study guide here."
+              title="Add your first study material."
               description="Your uploads will show up with extracted text and proposed study tools to review before saving."
             />
           )}
@@ -4906,8 +4901,8 @@ function MaterialQualityMessages({ issues }: { issues: MaterialQualityIssue[] })
           className={clsx(
             'rounded-xl border px-3 py-2 text-xs font-semibold leading-5',
             issue.severity === 'blocker'
-              ? 'border-rose-200 bg-rose-50 text-rose-800'
-              : 'border-amber-200 bg-amber-50 text-amber-800',
+              ? 'border-rose-200/25 bg-rose-300/[0.08] text-rose-100'
+              : 'border-amber-200/25 bg-amber-300/[0.08] text-amber-100',
           )}
         >
           {issue.message}
@@ -5001,16 +4996,16 @@ function MaterialReviewPanel({
   }
 
   return (
-    <Surface className="border-[#bfdbfe] bg-[#eff6ff] p-4">
+    <Surface className="border-violet-200/18 bg-violet-300/[0.045] p-4">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-blue)]">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-100/70">
             Review before saving
           </p>
-          <h4 className="mt-2 nc-section-title text-2xl text-[var(--nclex-text)]">
+          <h4 className="mt-2 nc-section-title text-2xl text-white">
             Approve generated study tools
           </h4>
-          <p className="mt-2 max-w-3xl text-sm leading-7 text-[var(--nclex-text-muted)]">
+          <p className="mt-2 max-w-3xl text-sm leading-7 text-sky-100/64">
             These cards and quiz items were generated from {material.displayTitle}. Edit or remove weak items before they enter your flashcard deck and material quiz bank.
           </p>
         </div>
@@ -5029,10 +5024,10 @@ function MaterialReviewPanel({
         className={clsx(
           'mt-4 rounded-2xl border px-4 py-3 text-sm font-semibold',
           qualitySummary.blockerCount
-            ? 'border-rose-200 bg-rose-50 text-rose-800'
+            ? 'border-rose-200/25 bg-rose-300/[0.08] text-rose-100'
             : qualitySummary.warningCount
-              ? 'border-amber-200 bg-amber-50 text-amber-800'
-              : 'border-emerald-200 bg-emerald-50 text-emerald-800',
+              ? 'border-amber-200/25 bg-amber-300/[0.08] text-amber-100'
+              : 'border-emerald-200/22 bg-emerald-300/[0.075] text-emerald-100',
         )}
       >
         {qualitySummary.blockerCount
@@ -5043,13 +5038,13 @@ function MaterialReviewPanel({
       </div>
 
       <div className="mt-5 grid gap-5 xl:grid-cols-2">
-        <div className="rounded-[18px] border border-[var(--nclex-border)] bg-white p-4">
+        <div className="rounded-[18px] border border-cyan-200/14 bg-[#031426]/72 p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-cyan-100/60">
                 Flashcards
               </p>
-              <h5 className="mt-1 font-semibold text-[var(--nclex-text)]">
+              <h5 className="mt-1 font-semibold text-white">
                 {flashcardDrafts.length} proposed cards
               </h5>
             </div>
@@ -5058,15 +5053,15 @@ function MaterialReviewPanel({
           <div className="mt-4 max-h-[460px] space-y-4 overflow-y-auto pr-1">
             {flashcardDrafts.length ? (
               flashcardDrafts.map((card, index) => (
-                <div key={card.id} className="rounded-[16px] border border-[var(--nclex-border)] bg-[var(--nclex-card-muted)] p-4">
+                <div key={card.id} className="rounded-[16px] border border-cyan-200/12 bg-cyan-300/[0.045] p-4">
                   <div className="mb-3 flex items-center justify-between gap-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-blue)]">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-cyan-100/65">
                       Card {index + 1}
                     </p>
                     <button
                       type="button"
                       onClick={() => setFlashcardDrafts((current) => current.filter((item) => item.id !== card.id))}
-                      className="text-xs font-semibold text-rose-600"
+                      className="text-xs font-semibold text-rose-200"
                     >
                       Remove
                     </button>
@@ -5101,13 +5096,13 @@ function MaterialReviewPanel({
           </div>
         </div>
 
-        <div className="rounded-[18px] border border-[var(--nclex-border)] bg-white p-4">
+        <div className="rounded-[18px] border border-violet-200/14 bg-[#031426]/72 p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-violet-100/62">
                 Quiz questions
               </p>
-              <h5 className="mt-1 font-semibold text-[var(--nclex-text)]">
+              <h5 className="mt-1 font-semibold text-white">
                 {questionDrafts.length} proposed items
               </h5>
             </div>
@@ -5116,15 +5111,15 @@ function MaterialReviewPanel({
           <div className="mt-4 max-h-[460px] space-y-4 overflow-y-auto pr-1">
             {questionDrafts.length ? (
               questionDrafts.map((question, index) => (
-                <div key={question.id} className="rounded-[16px] border border-[var(--nclex-border)] bg-[var(--nclex-card-muted)] p-4">
+                <div key={question.id} className="rounded-[16px] border border-violet-200/12 bg-violet-300/[0.045] p-4">
                   <div className="mb-3 flex items-center justify-between gap-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-blue)]">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-violet-100/65">
                       Question {index + 1}
                     </p>
                     <button
                       type="button"
                       onClick={() => setQuestionDrafts((current) => current.filter((item) => item.id !== question.id))}
-                      className="text-xs font-semibold text-rose-600"
+                      className="text-xs font-semibold text-rose-200"
                     >
                       Remove
                     </button>
@@ -5138,14 +5133,14 @@ function MaterialReviewPanel({
                       className={textareaClass}
                     />
                   </Field>
-                  <div className="mt-3 rounded-xl border border-[var(--nclex-border)] bg-white p-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]">
+                  <div className="mt-3 rounded-xl border border-violet-200/12 bg-[#031426]/72 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-violet-100/60">
                       Choices
                     </p>
                     <div className="mt-2 space-y-2">
                       {question.choices.map((choice) => (
-                        <div key={choice.id} className="flex flex-col gap-2 rounded-xl border border-[var(--nclex-border)] bg-[var(--nclex-card-muted)] p-2 sm:flex-row sm:items-center">
-                          <label className="inline-flex min-h-9 shrink-0 items-center gap-2 rounded-lg border border-[var(--nclex-border)] bg-white px-3 text-xs font-semibold text-[var(--nclex-text-secondary)]">
+                        <div key={choice.id} className="flex flex-col gap-2 rounded-xl border border-violet-200/12 bg-violet-300/[0.04] p-2 sm:flex-row sm:items-center">
+                          <label className="inline-flex min-h-9 shrink-0 items-center gap-2 rounded-lg border border-violet-200/14 bg-[#031426]/80 px-3 text-xs font-semibold text-sky-100/70">
                             <input
                               type="radio"
                               name={`correct-answer-${question.id}`}
@@ -5157,7 +5152,7 @@ function MaterialReviewPanel({
                           <input
                             value={choice.text}
                             onChange={(event) => updateQuestionChoiceDraft(question.id, choice.id, event.target.value)}
-                            className="min-h-10 flex-1 rounded-lg border border-[var(--nclex-border)] bg-white px-3 py-2 text-sm text-[var(--nclex-text)] outline-none transition focus:border-[#93c5fd] focus:ring-4 focus:ring-[#dbeafe]"
+                            className="min-h-10 flex-1 rounded-lg border border-violet-200/14 bg-[#031426]/80 px-3 py-2 text-sm text-sky-50 outline-none transition placeholder:text-sky-100/36 focus:border-violet-200/55 focus:ring-4 focus:ring-violet-300/14"
                           />
                         </div>
                       ))}
@@ -6593,7 +6588,7 @@ function MaterialQuizRunner() {
             }}
             className="nclex-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold"
           >
-            Back to My Materials
+            Back to Study Library
           </button>
         </div>
       </div>
@@ -6604,7 +6599,7 @@ function MaterialQuizRunner() {
     return (
       <EmptyState
         title="This material quiz has no available questions."
-        description="Go back to My Materials and regenerate the study tools for this file."
+        description="Go back to Your Study Library and regenerate the study tools for this file."
       />
     )
   }
@@ -6624,10 +6619,10 @@ function MaterialQuizRunner() {
             abandonMaterialQuiz()
             navigate('/my-materials')
           }}
-          className="inline-flex items-center gap-2 rounded-xl border border-[var(--nclex-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--nclex-text-secondary)]"
+          className="inline-flex items-center gap-2 rounded-xl border border-cyan-200/20 bg-white/[0.045] px-4 py-2.5 text-sm font-semibold text-cyan-100 transition hover:border-cyan-200/45 hover:bg-cyan-300/10"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to My Materials
+          Back to Study Library
         </button>
         <span className="nclex-chip nclex-chip-info">
           Question {activeMaterialQuizSession.currentIndex + 1} of {activeMaterialQuizSession.questionIds.length}

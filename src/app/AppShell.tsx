@@ -100,7 +100,7 @@ const reviewNavigation: NavigationItem[] = [
 ]
 
 const libraryNavigation: NavigationItem[] = [
-  { label: 'My Materials', icon: FolderOpen, to: '/my-materials' },
+  { label: 'Study Library', icon: FolderOpen, to: '/my-materials' },
   { label: 'Flashcards', icon: Layers, to: '/flashcards' },
   { label: 'Notes', icon: NotebookPen, to: '/notes' },
   { label: 'Resources', icon: BookOpen, to: '/strategy-training' },
@@ -825,7 +825,7 @@ function getFeatureNameFromPath(pathname: string) {
   if (pathname.startsWith('/performance-analytics')) return 'Performance Analytics'
   if (pathname.startsWith('/flashcards')) return 'Flashcards'
   if (pathname.startsWith('/notes')) return 'Notes'
-  if (pathname.startsWith('/my-materials')) return 'My Materials'
+  if (pathname.startsWith('/my-materials')) return 'Study Library'
   if (pathname.startsWith('/exam-prep')) return 'Exam Prep'
   if (pathname.startsWith('/test-mode')) return 'Test Mode'
   if (pathname.startsWith('/clinical-simulator')) return 'Clinical Simulator'
