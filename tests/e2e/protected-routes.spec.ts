@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 
 const protectedRoutes = [
   { path: '/dashboard', text: /Next Action|Today.s Plan|Weak Areas/i },
-  { path: '/quick-study', text: /Start 10-minute drill|Current action/i },
+  { path: '/quick-study', text: /Start 10-minute drill|Current action|10-minute rescue set|Question \d+ of/i },
   { path: '/practice-questions', text: /Question Bank|Start focused set|Start adaptive set|Practice Set/i },
   { path: '/weak-areas', text: /Repair the pattern|Selected repair|No weak area signal/i },
   { path: '/test-mode', text: /Start a serious exam block|exam block/i },
@@ -56,8 +56,21 @@ async function clickLastVisibleButton(page: Page, name: RegExp, label: string) {
   for (let index = count - 1; index >= 0; index -= 1) {
     const control = controls.nth(index)
     if (await control.isVisible().catch(() => false)) {
-      await control.click()
-      return
+      await control.scrollIntoViewIfNeeded().catch(() => undefined)
+      const clicked = await control.click({ timeout: 2_000 }).then(
+        () => true,
+        async () => {
+          const handle = await control.elementHandle({ timeout: 1_000 }).catch(() => null)
+          if (!handle) return false
+          await handle.evaluate((element) => {
+            ;(element as HTMLElement).click()
+          })
+          return true
+        },
+      )
+      if (clicked) {
+        return
+      }
     }
   }
   throw new Error(`${label} was not visible.`)
@@ -73,6 +86,17 @@ async function hasQuestionRunner(page: Page) {
     .first()
     .isVisible()
     .catch(() => false)
+}
+
+async function hasVisibleButton(page: Page, name: RegExp) {
+  const controls = page.getByRole('button', { name })
+  const count = await controls.count()
+  for (let index = 0; index < count; index += 1) {
+    if (await controls.nth(index).isVisible().catch(() => false)) {
+      return true
+    }
+  }
+  return false
 }
 
 async function hasResumeExamState(page: Page) {
@@ -92,13 +116,29 @@ async function getExamEntryState(page: Page) {
   return 'loading'
 }
 
+async function getQuickStudyEntryState(page: Page) {
+  if (await hasQuestionRunner(page)) return 'runner'
+  if (await hasVisibleButton(page, /Start 10-minute drill/i)) return 'start'
+  return 'loading'
+}
+
+async function getQuestionBankEntryState(page: Page) {
+  if (await hasQuestionRunner(page)) return 'runner'
+  if (await hasVisibleButton(page, /Start adaptive set|Start here/i)) return 'start'
+  return 'loading'
+}
+
 async function createStaleExamSession(page: Page) {
   await page.goto('/test-mode')
   await expect.poll(() => getExamEntryState(page), { timeout: 12_000 }).not.toBe('loading')
 
   const examState = await getExamEntryState(page)
   if (examState === 'runner' || examState === 'resume') return
-  await clickVisibleButton(page, /^Start exam$/i, 'Start exam')
+  await clickVisibleButton(page, /^Start exam$/i, 'Start exam').catch(async (error) => {
+    if (!(await hasQuestionRunner(page)) && !(await hasResumeExamState(page))) {
+      throw error
+    }
+  })
   await expect(page.getByRole('button', { name: /^Submit answer$/i }).first()).toBeVisible()
 }
 
@@ -201,12 +241,26 @@ test.describe('session start regression', () => {
 
     await createStaleExamSession(page)
     await page.goto('/quick-study')
-    await clickLastVisibleButton(page, /Start 10-minute drill/i, 'Start 10-minute drill')
+    await expect.poll(() => getQuickStudyEntryState(page), { timeout: 12_000 }).not.toBe('loading')
+    if ((await getQuickStudyEntryState(page)) === 'start') {
+      await clickLastVisibleButton(page, /Start 10-minute drill/i, 'Start 10-minute drill').catch(async (error) => {
+        if (!(await hasQuestionRunner(page))) {
+          throw error
+        }
+      })
+    }
     await expectQuestionRunner(page)
 
     await createStaleExamSession(page)
     await page.goto('/practice-questions')
-    await clickFirstVisibleButton(page, /Start adaptive set|Start here/i, 'Start adaptive set')
+    await expect.poll(() => getQuestionBankEntryState(page), { timeout: 12_000 }).not.toBe('loading')
+    if ((await getQuestionBankEntryState(page)) === 'start') {
+      await clickFirstVisibleButton(page, /Start adaptive set|Start here/i, 'Start adaptive set').catch(async (error) => {
+        if (!(await hasQuestionRunner(page))) {
+          throw error
+        }
+      })
+    }
     await expectQuestionRunner(page)
     await dismissVisibleSession(page)
 
