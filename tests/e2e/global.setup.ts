@@ -1,9 +1,19 @@
 import { chromium, expect, type FullConfig } from '@playwright/test'
-import { mkdir } from 'node:fs/promises'
+import { access, mkdir } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { loadQaEnv, requireQaEnv } from './support/env'
 
 const authStatePath = resolve(process.cwd(), 'playwright/.auth/qa-user.json')
+const authenticatedAppSignal = /Start Today|Dashboard|Study Plan/i
+
+async function fileExists(path: string) {
+  try {
+    await access(path)
+    return true
+  } catch {
+    return false
+  }
+}
 
 const futureDateInputValue = () => {
   const date = new Date()
@@ -22,9 +32,25 @@ async function globalSetup(config: FullConfig) {
   await mkdir(dirname(authStatePath), { recursive: true })
 
   const browser = await chromium.launch()
-  const page = await browser.newPage({ viewport: { width: 1280, height: 720 } })
 
   try {
+    if (await fileExists(authStatePath)) {
+      const existingContext = await browser.newContext({
+        storageState: authStatePath,
+        viewport: { width: 1280, height: 720 },
+      })
+      const existingPage = await existingContext.newPage()
+      try {
+        await existingPage.goto(baseURL)
+        await expect(existingPage.getByText(authenticatedAppSignal).first()).toBeVisible({ timeout: 8_000 })
+        await existingContext.close()
+        return
+      } catch {
+        await existingContext.close()
+      }
+    }
+
+    const page = await browser.newPage({ viewport: { width: 1280, height: 720 } })
     await page.goto(baseURL)
     await expect(page).toHaveTitle(/Nurse Command/)
 
