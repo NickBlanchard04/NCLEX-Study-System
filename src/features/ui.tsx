@@ -310,6 +310,43 @@ export function CommandActionCard({
   )
 }
 
+export function CommandMetricGroup({
+  metrics,
+  columns = '3',
+  className,
+}: {
+  metrics: Array<{
+    label: string
+    value: string
+    detail: string
+    icon?: React.ReactNode
+    tone?: CommandTone
+  }>
+  columns?: '2' | '3' | '4'
+  className?: string
+}) {
+  const columnClass = {
+    '2': 'sm:grid-cols-2',
+    '3': 'sm:grid-cols-3',
+    '4': 'sm:grid-cols-2 lg:grid-cols-4',
+  }[columns]
+
+  return (
+    <div className={clsx('grid gap-2', columnClass, className)}>
+      {metrics.map((metric) => (
+        <CommandStatTile
+          key={`${metric.label}-${metric.value}`}
+          label={metric.label}
+          value={metric.value}
+          detail={metric.detail}
+          icon={metric.icon}
+          tone={metric.tone}
+        />
+      ))}
+    </div>
+  )
+}
+
 export function CommandFocusPanel({
   tone = 'cyan',
   className,
@@ -503,6 +540,33 @@ export function CommandLibraryCard({
       </div>
       {children ? <div className="mt-4">{children}</div> : null}
       {action ? <div className="mt-4">{action}</div> : null}
+    </div>
+  )
+}
+
+export function CommandEmptyState({
+  title,
+  description,
+  action,
+  tone = 'cyan',
+}: {
+  title: string
+  description: string
+  action?: React.ReactNode
+  tone?: CommandTone
+}) {
+  return (
+    <div className={clsx('rounded-2xl border border-dashed p-5', commandToneStyles[tone].action)}>
+      <div className="flex flex-col items-start gap-4 sm:flex-row">
+        <span className={clsx('inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border', commandToneStyles[tone].icon)}>
+          <Lightbulb className="h-5 w-5" />
+        </span>
+        <div className="min-w-0">
+          <h3 className="text-2xl font-black text-white">{title}</h3>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-sky-100/64">{description}</p>
+          {action ? <div className="mt-4">{action}</div> : null}
+        </div>
+      </div>
     </div>
   )
 }

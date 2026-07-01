@@ -103,8 +103,10 @@ import {
   ChecklistItem,
   CommandActionCard,
   CommandBadge,
+  CommandEmptyState,
   CommandFocusPanel,
   CommandInsightPanel,
+  CommandMetricGroup,
   CommandModeControl,
   CommandRouteLink,
   CommandStatTile,
@@ -1996,11 +1998,14 @@ export function ExamPrepPage() {
             <p className="mt-3 max-w-2xl text-sm leading-7 text-sky-100/72">
               {prepActionDetail} Keep blueprint details available, but let the next action stay obvious.
             </p>
-            <div className="mt-5 grid gap-2 sm:grid-cols-3">
-              <CommandStatTile label="Question Bank" value={`${selectedBankSize}`} detail="ready now" tone="cyan" icon={<ClipboardList className="h-4 w-4" />} />
-              <CommandStatTile label="Boards" value={`${selectedTrack.boards.length}`} detail={selectedTrack.boards.join(' + ')} tone="violet" icon={<BookOpen className="h-4 w-4" />} />
-              <CommandStatTile label="Status" value={selectedTrack.status === 'live' ? 'Live' : 'Ready'} detail="content lane" tone={selectedTrack.status === 'live' ? 'emerald' : 'amber'} icon={<ShieldCheck className="h-4 w-4" />} />
-            </div>
+            <CommandMetricGroup
+              className="mt-5"
+              metrics={[
+                { label: 'Question Bank', value: `${selectedBankSize}`, detail: 'ready now', tone: 'cyan', icon: <ClipboardList className="h-4 w-4" /> },
+                { label: 'Boards', value: `${selectedTrack.boards.length}`, detail: selectedTrack.boards.join(' + '), tone: 'violet', icon: <BookOpen className="h-4 w-4" /> },
+                { label: 'Status', value: selectedTrack.status === 'live' ? 'Live' : 'Ready', detail: 'content lane', tone: selectedTrack.status === 'live' ? 'emerald' : 'amber', icon: <ShieldCheck className="h-4 w-4" /> },
+              ]}
+            />
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <button
                 type="button"
@@ -4910,9 +4915,10 @@ export function MyMaterialsPage() {
               </Surface>
             </div>
           ) : (
-            <EmptyState
+            <CommandEmptyState
               title="Add your first study material."
               description="Your uploads will show up with extracted text and proposed study tools to review before saving."
+              tone="violet"
             />
           )}
         </Surface>
