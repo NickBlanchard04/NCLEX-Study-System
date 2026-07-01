@@ -26,6 +26,10 @@ type PublicPage = {
     title: string
     body: string
   }>
+  faqs?: Array<{
+    question: string
+    answer: string
+  }>
   ctaLabel: string
   ctaPath: string
 }
@@ -37,8 +41,8 @@ const publicPages: Record<PublicPageKey, PublicPage> = {
     eyebrow: 'Open beta pricing',
     title: 'Focused NCLEX prep without enterprise bloat.',
     description:
-      'Nurse Command is built for nursing students who need practice, remediation, and study momentum in one clear workspace.',
-    bullets: ['Open beta access', 'NCLEX-RN and NCLEX-PN tracks', 'Practice analytics and remediation'],
+      'Nurse Command gives nursing students a focused NCLEX practice system with remediation, study planning, and progress signals in one workspace.',
+    bullets: ['Open beta access', 'NCLEX-RN and NCLEX-PN tracks', 'Practice analytics, flashcards, and remediation'],
     ctaLabel: 'Start studying',
     ctaPath: '/',
     sections: [
@@ -48,11 +52,21 @@ const publicPages: Record<PublicPageKey, PublicPage> = {
       },
       {
         title: 'Who it is for',
-        body: 'Use it when you want a practical study command center for nursing exams, not a pile of disconnected notes, files, and question attempts.',
+        body: 'Use it when you want a practical study command center for nursing exams, not a pile of disconnected notes, files, flashcards, and question attempts.',
       },
       {
         title: 'Beta posture',
         body: 'Launch pricing and packaging can change as the product matures. The current goal is to validate learning value before adding noisy plan tiers.',
+      },
+    ],
+    faqs: [
+      {
+        question: 'Is Nurse Command only for NCLEX?',
+        answer: 'The launch pages focus on NCLEX-RN and NCLEX-PN prep, while the app also supports study planning, flashcards, notes, and uploaded material review.',
+      },
+      {
+        question: 'Is there a free beta?',
+        answer: 'The current launch posture is open beta access while packaging is validated. Pricing and plan structure can change as the product matures.',
       },
     ],
   },
@@ -60,24 +74,38 @@ const publicPages: Record<PublicPageKey, PublicPage> = {
     key: 'nclex-rn',
     path: '/nclex-rn',
     eyebrow: 'NCLEX-RN prep',
-    title: 'Train for RN judgment, prioritization, and safe decisions.',
+    title: 'NCLEX-RN prep for clinical judgment and prioritization.',
     description:
-      'Nurse Command helps NCLEX-RN learners practice clinical judgment, review weak areas, and turn each missed question into a next action.',
-    bullets: ['RN-focused categories', 'Readiness and weak-area signals', 'Remediation after practice'],
+      'Practice NCLEX-RN questions, strengthen clinical judgment, review weak areas, and turn each missed item into a clear study action.',
+    bullets: ['RN-focused practice categories', 'Weak-area and readiness signals', 'Rationales, flashcards, and remediation'],
     ctaLabel: 'Open RN study mode',
     ctaPath: '/',
     sections: [
       {
-        title: 'RN practice focus',
-        body: 'Practice covers prioritization, delegation, safety, pharmacology, med-surg, maternal-newborn, pediatrics, mental health, and clinical judgment cues.',
+        title: 'Who this helps',
+        body: 'Built for RN candidates who need more than random questions: prioritization practice, clinical judgment review, and a repeatable routine before test day.',
       },
       {
-        title: 'Learning loop',
-        body: 'Each session feeds dashboards, weak-area prompts, and review tools so your next study block is based on evidence instead of guesswork.',
+        title: 'What to practice',
+        body: 'Work through safety, delegation, pharmacology, med-surg, maternal-newborn, pediatrics, mental health, and Next Gen clinical judgment cues.',
       },
       {
-        title: 'Study support',
-        body: 'Nurse Command is practice support. It does not guarantee licensure outcomes or replace your school, instructor, or official exam guidance.',
+        title: 'How review improves',
+        body: 'Each session feeds dashboards, weak-area prompts, rationales, and review tools so your next study block is based on evidence instead of guesswork.',
+      },
+    ],
+    faqs: [
+      {
+        question: 'Does Nurse Command include NCLEX-RN style questions?',
+        answer: 'Yes. The RN route is built around exam-style practice, clinical judgment cues, prioritization, safety, and rationale review.',
+      },
+      {
+        question: 'Can it help me find weak areas?',
+        answer: 'Yes. Practice sessions feed weak-area and readiness signals so you can decide what to repair next.',
+      },
+      {
+        question: 'Does this guarantee passing the NCLEX-RN?',
+        answer: 'No. Nurse Command is study support and practice reflection. It does not replace official exam guidance, your program, or instructor judgment.',
       },
     ],
   },
@@ -85,24 +113,38 @@ const publicPages: Record<PublicPageKey, PublicPage> = {
     key: 'nclex-pn',
     path: '/nclex-pn',
     eyebrow: 'NCLEX-PN prep',
-    title: 'Build PN exam confidence with focused practice and review.',
+    title: 'NCLEX-PN prep for fundamentals, safety, and practical nursing priorities.',
     description:
-      'Use Nurse Command to organize PN practice, reinforce fundamentals, and keep remediation tied to the topics that need attention.',
-    bullets: ['PN-focused practice', 'Daily study plan signals', 'Flashcards, notes, and uploaded materials'],
+      'Use focused NCLEX-PN practice, rationales, flashcards, and study signals to reinforce fundamentals and repair weak areas.',
+    bullets: ['PN-focused practice sets', 'Daily study plan signals', 'Flashcards, notes, and uploaded-material tools'],
     ctaLabel: 'Open PN study mode',
     ctaPath: '/',
     sections: [
       {
-        title: 'PN practice focus',
+        title: 'Who this helps',
+        body: 'Built for PN candidates who want a focused routine for fundamentals, safety, practical nursing priorities, and steady review between classes or shifts.',
+      },
+      {
+        title: 'What to practice',
         body: 'Review safety, basic care, pharmacology, adult health, maternal-newborn, pediatrics, psychosocial integrity, and practical nursing priorities.',
       },
       {
         title: 'Repeatable routine',
         body: 'Plan a session, answer questions, review the rationale, and come back to the weak-area work that matters most.',
       },
+    ],
+    faqs: [
       {
-        title: 'Clear boundaries',
-        body: 'The app supports studying and practice reflection. It is not clinical advice, school recordkeeping, or a substitute for official NCLEX resources.',
+        question: 'Does Nurse Command support NCLEX-PN study?',
+        answer: 'Yes. The PN route focuses on practical nursing priorities, fundamentals, safety, and category-based review.',
+      },
+      {
+        question: 'Can I use it for quick daily practice?',
+        answer: 'Yes. Short practice sets, flashcards, notes, and study-plan signals are designed for repeatable daily review.',
+      },
+      {
+        question: 'Is this official NCLEX guidance?',
+        answer: 'No. Nurse Command supports studying and practice reflection. Always defer to official exam bodies, instructors, and program guidance.',
       },
     ],
   },
@@ -329,6 +371,33 @@ export function PublicLaunchPage() {
           ))}
         </div>
       </section>
+
+      {page.faqs?.length ? (
+        <section className="mx-auto grid w-full max-w-7xl gap-5 px-5 py-8 md:px-8 lg:grid-cols-[0.82fr_1.18fr]">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-200">Quick answers</p>
+            <h2 className="mt-3 text-3xl font-black tracking-normal text-white">Before you start studying.</h2>
+            <p className="mt-3 max-w-xl text-sm leading-7 text-sky-100/68">
+              Clear expectations for nursing students comparing NCLEX prep options.
+            </p>
+            <Link
+              to={page.ctaPath}
+              className="mt-5 inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-cyan-300 px-5 py-3 text-sm font-black text-[#04101f] transition hover:bg-cyan-200"
+            >
+              {page.ctaLabel}
+              <Sparkles className="h-4 w-4" />
+            </Link>
+          </div>
+          <div className="grid gap-3">
+            {page.faqs.map((faq) => (
+              <article key={faq.question} className="rounded-[1rem] border border-cyan-100/14 bg-[#071d34]/76 p-5">
+                <h3 className="text-base font-black text-white">{faq.question}</h3>
+                <p className="mt-2 text-sm leading-7 text-sky-100/70">{faq.answer}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <footer className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-5 py-8 text-sm text-sky-100/58 md:flex-row md:items-center md:justify-between md:px-8">
         <div className="flex items-center gap-2">
