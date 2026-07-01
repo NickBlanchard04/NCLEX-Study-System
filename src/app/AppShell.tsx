@@ -24,6 +24,8 @@ import {
   NotebookPen,
   RefreshCw,
   Settings,
+  SidebarClose,
+  SidebarOpen,
   Stethoscope,
   Timer,
   UsersRound,
@@ -364,6 +366,13 @@ function NclexAppShell() {
   const [supportOpen, setSupportOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
   const [expandedNavigationGroups, setExpandedNavigationGroups] = useState<Record<string, boolean>>({})
+  const [desktopHubCollapsed, setDesktopHubCollapsed] = useState(() => {
+    try {
+      return window.localStorage.getItem('nurse-command-desktop-hub-collapsed') === 'true'
+    } catch {
+      return false
+    }
+  })
 
   const activeNavigationGroupTitle = useMemo(
     () => sidebarNavigationGroups.find((group) => isNavigationGroupActive(location.pathname, group))?.title ?? 'Start',
@@ -467,6 +476,17 @@ function NclexAppShell() {
       [title]: !(current[title] ?? title === activeNavigationGroupTitle),
     }))
   }
+  const toggleDesktopHubCollapsed = () => {
+    setDesktopHubCollapsed((current) => {
+      const next = !current
+      try {
+        window.localStorage.setItem('nurse-command-desktop-hub-collapsed', String(next))
+      } catch {
+        // Ignore storage failures; the UI still toggles for this session.
+      }
+      return next
+    })
+  }
 
   if (location.pathname === '/') {
     return (
@@ -519,31 +539,89 @@ function NclexAppShell() {
     <AuthGate>
     <div className="nurse-command-app nclex-shell-bg min-h-screen text-[var(--nclex-text)]">
       <div className="flex min-h-screen w-full">
-        <aside className="nclex-sidebar hidden w-[264px] shrink-0 px-4 py-5 text-white lg:flex lg:flex-col">
-          <BrandLockup />
-          <nav className="mt-5 flex-1 space-y-2.5 overflow-y-auto pr-1" aria-label="Command hub">
-            {sidebarNavigationGroups.map((group) => (
-              <SidebarNavigationGroup
-                key={group.title}
-                group={group}
-                collapsible
-                expanded={getNavigationGroupExpanded(group.title)}
-                idPrefix="desktop-hub"
-                onToggle={() => toggleNavigationGroup(group.title)}
-              />
-            ))}
+        <aside
+          className={clsx(
+            'nclex-sidebar hidden shrink-0 py-5 text-white transition-[width,padding] duration-200 lg:flex lg:flex-col',
+            desktopHubCollapsed ? 'w-[80px] px-3' : 'w-[264px] px-4',
+          )}
+        >
+          <div className={clsx('flex gap-3', desktopHubCollapsed ? 'flex-col items-center' : 'items-start')}>
+            <button
+              type="button"
+              onClick={toggleDesktopHubCollapsed}
+              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-cyan-300/24 bg-white/[0.055] text-sky-100/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition hover:border-sky-200/60 hover:text-sky-100 focus:outline-none focus:ring-2 focus:ring-cyan-200/60"
+              aria-label={desktopHubCollapsed ? 'Expand command hub' : 'Collapse command hub'}
+              aria-pressed={desktopHubCollapsed}
+              title={desktopHubCollapsed ? 'Expand command hub' : 'Collapse command hub'}
+            >
+              {desktopHubCollapsed ? <SidebarOpen className="h-4 w-4" /> : <SidebarClose className="h-4 w-4" />}
+            </button>
+            {desktopHubCollapsed ? (
+              <div
+                className="relative grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-cyan-300/30 bg-[#092845] shadow-[0_0_22px_rgba(43,148,255,0.22)]"
+                title="Nurse Command"
+              >
+                <img src={nursingCommandLogo} alt="" className="h-9 w-9 object-contain" />
+              </div>
+            ) : (
+              <BrandLockup />
+            )}
+          </div>
+          <nav
+            className={clsx(
+              'mt-5 flex-1 overflow-y-auto',
+              desktopHubCollapsed ? 'space-y-2' : 'space-y-2.5 pr-1',
+            )}
+            aria-label="Command hub"
+          >
+            {desktopHubCollapsed
+              ? sidebarNavigationGroups.flatMap((group) =>
+                  group.items.map(({ label, icon: Icon, to, activePaths }) => (
+                    <SidebarLink
+                      key={`${group.title}-${to}`}
+                      label={label}
+                      icon={<Icon className="h-4 w-4" />}
+                      to={to}
+                      activePaths={activePaths}
+                      tone={group.tone}
+                      compact
+                    />
+                  )),
+                )
+              : sidebarNavigationGroups.map((group) => (
+                  <SidebarNavigationGroup
+                    key={group.title}
+                    group={group}
+                    collapsible
+                    expanded={getNavigationGroupExpanded(group.title)}
+                    idPrefix="desktop-hub"
+                    onToggle={() => toggleNavigationGroup(group.title)}
+                  />
+                ))}
           </nav>
-          <div className="space-y-1.5 border-t border-white/10 pt-5">
+          <div className={clsx('space-y-1.5 border-t border-white/10 pt-5', desktopHubCollapsed && 'flex flex-col items-center')}>
             {secondaryNavigation.map(({ label, icon: Icon, to }) => (
-              <SidebarLink key={to} label={label} icon={<Icon className="h-4 w-4" />} to={to} tone="slate" />
+              <SidebarLink
+                key={to}
+                label={label}
+                icon={<Icon className="h-4 w-4" />}
+                to={to}
+                tone="slate"
+                compact={desktopHubCollapsed}
+              />
             ))}
             <button
               type="button"
               onClick={() => setSupportOpen(true)}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-200 transition hover:bg-white/8 hover:text-white"
+              className={clsx(
+                'flex items-center rounded-xl text-sm font-medium text-slate-200 transition hover:bg-white/8 hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-200/55',
+                desktopHubCollapsed ? 'h-11 w-11 justify-center' : 'w-full gap-3 px-3 py-2.5',
+              )}
+              aria-label="Help and support"
+              title="Help and support"
             >
               <CircleHelp className="h-4 w-4" />
-              Help & Support
+              <span className={desktopHubCollapsed ? 'sr-only' : undefined}>Help & Support</span>
             </button>
           </div>
         </aside>
@@ -1228,6 +1306,7 @@ function SidebarLink({
   activePaths,
   tone = 'cyan',
   onClick,
+  compact = false,
 }: {
   label: string
   icon: React.ReactNode
@@ -1235,6 +1314,7 @@ function SidebarLink({
   activePaths?: string[]
   tone?: NavigationTone
   onClick?: () => void
+  compact?: boolean
 }) {
   const location = useLocation()
   const activeByPath = activePaths?.some((path) => location.pathname.startsWith(path)) ?? false
@@ -1245,9 +1325,12 @@ function SidebarLink({
       to={to}
       end={to === '/'}
       onClick={onClick}
+      aria-label={compact ? label : undefined}
+      title={compact ? label : undefined}
       className={({ isActive }) =>
         clsx(
-          'group flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-cyan-200/55',
+          'group flex items-center rounded-xl border border-transparent text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-cyan-200/55',
+          compact ? 'h-11 w-11 justify-center' : 'gap-3 px-3 py-2.5',
           isActive || activeByPath
             ? toneClass.active
             : 'text-slate-200/88 hover:border-white/10 hover:bg-white/[0.055] hover:text-white',
@@ -1255,7 +1338,7 @@ function SidebarLink({
       }
     >
       <span className={clsx('transition group-hover:text-white', toneClass.icon)}>{icon}</span>
-      <span className="truncate">{label}</span>
+      <span className={compact ? 'sr-only' : 'truncate'}>{label}</span>
     </NavLink>
   )
 }
