@@ -183,8 +183,6 @@ const publicPages: Record<PublicPageKey, PublicPage> = {
   },
 }
 
-const publicPagePaths = new Set<string>(Object.values(publicPages).map((page) => page.path))
-
 const iconCards = [
   { label: 'Practice', icon: ClipboardList },
   { label: 'Review', icon: BookOpenCheck },
@@ -201,8 +199,6 @@ const pageFromPath = (pathname: string) => {
   const normalized = normalizePath(pathname)
   return Object.values(publicPages).find((page) => page.path === normalized) ?? publicPages.about
 }
-
-export const isPublicLaunchPath = (pathname: string) => publicPagePaths.has(normalizePath(pathname))
 
 function usePublicPageMeta(page: PublicPage) {
   useEffect(() => {
