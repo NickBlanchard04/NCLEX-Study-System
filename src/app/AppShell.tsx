@@ -33,7 +33,8 @@ import { lazy, Suspense, useEffect, useMemo, useState, type ComponentType, type 
 import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { clsx } from 'clsx'
 import { SocialPage } from '../features/SocialPage'
-import { isPublicLaunchPath, PublicLaunchPage } from '../features/PublicLaunchPages'
+import { PublicLaunchPage } from '../features/PublicLaunchPages'
+import { isPublicLaunchPath } from '../features/publicLaunchPaths'
 import nursingCommandLogo from '../assets/brand/nursing-command-logo.png'
 import {
   DashboardPage,
@@ -393,11 +394,11 @@ function NclexAppShell() {
         : 'Live build using local browser storage'
       : 'Cloud sync is active')
   const getNavigationGroupExpanded = (title: string) =>
-    title === activeNavigationGroupTitle || expandedNavigationGroups[title] === true
+    expandedNavigationGroups[title] ?? title === activeNavigationGroupTitle
   const toggleNavigationGroup = (title: string) => {
     setExpandedNavigationGroups((current) => ({
       ...current,
-      [title]: title === activeNavigationGroupTitle ? true : !current[title],
+      [title]: !(current[title] ?? title === activeNavigationGroupTitle),
     }))
   }
 
