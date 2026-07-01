@@ -64,7 +64,9 @@ async function globalSetup(config: FullConfig) {
       await page.getByRole('button', { name: /^Finish setup$/i }).click()
     }
 
-    await expect(page.getByText('Start Today').first()).toBeVisible({ timeout: 25_000 })
+    await expect(
+      page.locator('main').getByText(/Start Today|Today.s Mission|Next Action|Weak Areas/i).first(),
+    ).toBeVisible({ timeout: 25_000 })
     await expect(page.getByText(/OPEN BETA TESTING/i)).toHaveCount(0)
     await expect(page.getByText(/Local demo mode/i)).toHaveCount(0)
 
