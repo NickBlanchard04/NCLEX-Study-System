@@ -1604,6 +1604,331 @@ const sourceRefsForTrack = (examTrack: ExamTrackId) =>
           ? ['NCSBN 2026 NCLEX-PN test plan']
           : ['NCSBN 2026 NCLEX-RN test plan']
 
+const betaDraftFlashcardMeta = {
+  sourceStatus: 'source_needed',
+  sourceMapStatus: 'candidate_mapped_not_verified',
+  clinicalReviewStatus: 'not_sme_reviewed',
+  learnerVisible: true,
+  visibility: 'learner',
+  contentStage: 'beta_draft',
+  countsTowardOfficialReadiness: false,
+  sourceNeededClaims: [
+    'Category expansion cards remain source-needed until source hardening and clinical review are complete.',
+  ],
+  feedbackEnabled: true,
+} satisfies Pick<
+  Flashcard,
+  | 'sourceStatus'
+  | 'sourceMapStatus'
+  | 'clinicalReviewStatus'
+  | 'learnerVisible'
+  | 'visibility'
+  | 'contentStage'
+  | 'countsTowardOfficialReadiness'
+  | 'sourceNeededClaims'
+  | 'feedbackEnabled'
+>
+
+interface CategoryCoverageSeed {
+  idPrefix: string
+  category: QuestionCategory | 'Strategy'
+  examTrack?: ExamTrackId
+  sourceTopic?: string
+  cards: Array<readonly [front: string, back: string]>
+}
+
+const categoryCoverageSeeds: CategoryCoverageSeed[] = [
+  {
+    idPrefix: 'fc-min-leadership',
+    category: 'Leadership / Prioritization / Delegation',
+    sourceTopic: 'Leadership / Prioritization / Delegation / category minimum',
+    cards: [
+      ['Unstable client first', 'See the client with changing airway, breathing, circulation, neuro, or perfusion cues before stable teaching or comfort tasks.'],
+      ['Keep RN judgment', 'Assessment, teaching, evaluation, triage, and escalation decisions stay with the RN.'],
+      ['Delegation handoff', 'Name the task, client limits, expected result, and report-back cue before delegating.'],
+      ['Float nurse assignment', 'Match floated staff to stable clients and familiar skills; keep unfamiliar high-risk care with trained staff.'],
+      ['LPN/LVN assignment cue', 'Think stable and predictable, with data collection or reinforcement rather than initial RN planning.'],
+      ['UAP report-back cue', 'Give specific findings to report, such as pain change, dizziness, abnormal vitals, or unsafe mobility.'],
+    ],
+  },
+  {
+    idPrefix: 'fc-min-safe-effective',
+    category: 'Safe and Effective Care Environment',
+    sourceTopic: 'Safe and Effective Care Environment / category minimum',
+    cards: [
+      ['Room safety scan', 'Before leaving, check bed position, call light access, needed items, and ordered safety supports.'],
+      ['Fall risk action', 'Pair fall precautions with the current risk: mentation, gait, medications, tubes, and toileting urgency.'],
+      ['Two identifiers', 'Use two accepted identifiers before medications, procedures, specimens, or blood products.'],
+      ['Alarm response', 'Treat alarms as assessment cues first; silence only after checking the client and equipment.'],
+      ['Equipment concern', 'If equipment seems unsafe or inaccurate, remove it from use and follow the reporting pathway.'],
+      ['Restraint first thought', 'Try safer alternatives and reassessment before restraint use when the situation allows.'],
+      ['Near-miss response', 'Protect the client first, then report the near miss through the facility safety process.'],
+      ['Sharps safety', 'Activate safety devices promptly and dispose of sharps directly into the correct container.'],
+      ['Handoff safety', 'Prioritize unstable changes, pending tests, high-risk meds, allergies, and required follow-up.'],
+      ['Emergency priority', 'Call for help while starting the first life-preserving action within role and policy.'],
+    ],
+  },
+  {
+    idPrefix: 'fc-min-health-maintenance',
+    category: 'Health Promotion and Maintenance',
+    sourceTopic: 'Health Promotion and Maintenance / category minimum',
+    cards: [
+      ['Teaching readiness', 'Check pain, anxiety, literacy, language needs, and timing before assuming teaching will stick.'],
+      ['Teach-back check', 'Ask the client to explain or demonstrate the plan in their own words.'],
+      ['Screening follow-up', 'Abnormal screening results need clear follow-up timing, responsible clinician, and warning signs.'],
+      ['Lifestyle plan', 'Turn broad advice into one realistic action the client can repeat this week.'],
+      ['Vaccine teaching', 'Use current source guidance and contraindication screening before giving vaccine-specific advice.'],
+      ['Discharge red flags', 'Teach the symptoms that should trigger urgent contact, not just the routine home steps.'],
+      ['Developmental teaching', 'Match teaching to age, caregiver role, and expected developmental abilities.'],
+      ['Medication routine', 'Connect the medication schedule to meals, sleep, work, or another daily anchor when appropriate.'],
+      ['Nutrition counseling', 'Start with the client\'s usual pattern, then adjust one high-impact habit at a time.'],
+      ['Barrier question', 'Ask what may make the plan hard to follow before repeating instructions.'],
+    ],
+  },
+  {
+    idPrefix: 'fc-min-pharm',
+    category: 'Pharmacology',
+    sourceTopic: 'Pharmacology / category minimum',
+    cards: [
+      ['New med allergy check', 'Verify allergies and reaction type before giving a first dose or a related medication.'],
+      ['Peak and trough timing', 'Timing matters because the result is only useful when drawn in the ordered window.'],
+      ['High-alert double check', 'High-alert medications need extra verification of the client, drug, dose, route, timing, and reason.'],
+      ['Diuretic timing', 'Morning dosing is often preferred for routine diuretics so sleep is not disrupted by nocturia.'],
+      ['Opioid sedation check', 'Assess sedation and breathing before and after opioids, especially when doses change.'],
+      ['Antibiotic culture cue', 'When cultures are ordered, collect them before starting antibiotics if doing so does not delay urgent care.'],
+    ],
+  },
+  {
+    idPrefix: 'fc-min-labs',
+    category: 'Lab Values / Clinical Judgment',
+    sourceTopic: 'Lab Values / Clinical Judgment / category minimum',
+    cards: [
+      ['Trend beats one value', 'A fast change can matter more than a single value that is only slightly abnormal.'],
+      ['Specimen quality', 'Question results that do not fit the client when collection or handling problems are possible.'],
+      ['Critical lab response', 'Verify the result, assess the client, and escalate through the required reporting pathway.'],
+      ['Creatinine med cue', 'Renal function changes can affect medication safety, dosing, and contrast-study risk.'],
+      ['WBC context', 'Interpret white blood cell changes with temperature, symptoms, immunosuppression, and medication effects.'],
+      ['Glucose symptoms', 'Pair the number with mental status, sweating, shakiness, thirst, urination, and treatment context.'],
+    ],
+  },
+  {
+    idPrefix: 'fc-min-fundamentals',
+    category: 'Fundamentals & Safety',
+    sourceTopic: 'Fundamentals & Safety / category minimum',
+    cards: [
+      ['Sterile field break', 'If sterility is broken or uncertain, stop and replace the contaminated item.'],
+      ['Before ambulation', 'Check stability, lines, footwear, assistive devices, and ordered activity limits before walking.'],
+      ['Pain reassessment', 'After an intervention, reassess pain and function within the expected time frame for that intervention.'],
+      ['Pressure injury plan', 'Repositioning, support surfaces, moisture control, nutrition, and skin checks work together.'],
+      ['Enteral tube caution', 'Pause feeding and assess if the client has new respiratory distress, vomiting, or tube-position concern.'],
+      ['Intake and output', 'Measure what matters: oral intake, IV fluids, drains, emesis, urine, and meaningful losses.'],
+      ['Oxygen setup check', 'Verify the delivery device, ordered flow or settings, skin safety, and response to therapy.'],
+    ],
+  },
+  {
+    idPrefix: 'fc-min-strategy',
+    category: 'Strategy',
+    sourceTopic: 'NCLEX and TEAS test strategy / category minimum',
+    cards: [
+      ['First action verb', 'If the stem asks first, choose the action that prevents harm or gathers essential data before routine care.'],
+      ['Expected vs unexpected', 'Expected findings can wait; unexpected worsening or instability moves up the list.'],
+      ['Do not add data', 'Pick from the information given instead of inventing a condition that would make another answer true.'],
+      ['SATA discipline', 'Judge each option as true or false on its own before worrying about how many are selected.'],
+      ['Priority tie-breaker', 'When two choices seem right, pick the one that addresses the most immediate risk.'],
+      ['Client quote', 'A direct quote often signals the client concern the test writer wants you to address.'],
+      ['After intervention', 'If an action was already done, the next best answer is often reassessment or evaluation.'],
+    ],
+  },
+  {
+    idPrefix: 'fc-min-maternal',
+    category: 'Maternal-Newborn',
+    sourceTopic: 'Maternal-Newborn / category minimum',
+    cards: [
+      ['Postpartum bleeding first look', 'Assess fundus tone, amount of bleeding, vital signs, and symptoms before treating bleeding as routine.'],
+      ['Severe headache in pregnancy', 'Severe headache, vision changes, or epigastric pain needs prompt assessment and escalation.'],
+      ['Fetal movement concern', 'Reduced movement should be assessed promptly according to gestational age and local guidance.'],
+      ['Newborn temperature', 'Cold stress can worsen oxygen and glucose demand, so protect warmth during assessment and care.'],
+      ['Breastfeeding latch cue', 'A good latch transfers milk with rhythmic sucking and less nipple pain.'],
+      ['Rh teaching frame', 'Rh immune globulin is prescribed when indicated to reduce sensitization risk in Rh-negative clients.'],
+      ['Labor infection cue', 'Maternal fever, fetal tachycardia, foul fluid, or uterine tenderness can signal infection risk.'],
+    ],
+  },
+  {
+    idPrefix: 'fc-min-peds',
+    category: 'Pediatrics',
+    sourceTopic: 'Pediatrics / category minimum',
+    cards: [
+      ['Weight-based dosing', 'Pediatric medication safety starts with current weight, ordered dose, concentration, and dose-range check.'],
+      ['Parent presence', 'Use caregivers as comfort and history partners while still assessing the child directly.'],
+      ['Dehydration clue', 'Watch intake, output, mucous membranes, tears, weight trend, and behavior together.'],
+      ['Respiratory distress in kids', 'Retractions, nasal flaring, grunting, color change, or fatigue can signal worsening work of breathing.'],
+      ['Age-appropriate explanation', 'Use simple concrete language for young children and more control or choice for older children.'],
+      ['Small-object safety', 'Choking risk rises when small objects, foods, or toys match the child\'s developmental behavior.'],
+      ['Fever teaching caution', 'Use current pediatric guidance for antipyretic dosing and urgent evaluation red flags.'],
+      ['Immunization comfort', 'Prepare the caregiver, position securely, use comfort measures, and observe for immediate reaction.'],
+    ],
+  },
+  {
+    idPrefix: 'fc-min-mental',
+    category: 'Mental Health',
+    sourceTopic: 'Mental Health / category minimum',
+    cards: [
+      ['Hallucination response', 'Acknowledge the experience without agreeing it is real, then assess safety and distress.'],
+      ['Anxiety grounding', 'Use calm presence, short directions, breathing support, and reduced stimulation.'],
+      ['Mania safety', 'Protect sleep, nutrition, hydration, boundaries, and low-stimulation structure.'],
+      ['Withdrawal cue', 'New tremor, agitation, sweating, confusion, or seizures during withdrawal risk needs prompt assessment.'],
+      ['Eating disorder priority', 'Physiologic stability, electrolytes, cardiac risk, and nutrition safety come before insight work.'],
+      ['Abuse screening tone', 'Ask privately, directly, and without blame; safety planning matters more than forcing disclosure.'],
+      ['Boundary setting', 'Use clear limits with a brief reason and a consistent consequence.'],
+      ['Adherence question', 'Ask what gets in the way of taking medication before assuming refusal or lack of insight.'],
+    ],
+  },
+  {
+    idPrefix: 'fc-min-adult-med-surg',
+    category: 'Adult Health / Med-Surg',
+    sourceTopic: 'Adult Health / Med-Surg / category minimum',
+    cards: [
+      ['Stroke timing', 'Time last known well matters because it shapes urgent stroke evaluation and treatment options.'],
+      ['Chest pain first data', 'Assess pain features, vital signs, oxygenation, ECG access, and ordered emergency actions.'],
+      ['COPD oxygenation cue', 'Treat worsening work of breathing, mental-status change, and low oxygenation as priority cues.'],
+      ['Sepsis cluster', 'Infection plus perfusion changes, mental-status changes, or worsening vitals should raise concern quickly.'],
+      ['GI bleed concern', 'Black stool, bright red bleeding, dizziness, tachycardia, or hypotension can signal unstable blood loss.'],
+      ['Fluid overload clue', 'New crackles, edema, dyspnea, weight gain, or jugular venous distention can point to excess fluid.'],
+      ['Post-op calf pain', 'New unilateral calf pain or swelling after surgery needs assessment for clot risk.'],
+    ],
+  },
+  {
+    idPrefix: 'fc-min-teas-science',
+    category: 'Science',
+    examTrack: 'teas',
+    sourceTopic: 'ATI TEAS 7 / Science / category minimum',
+    cards: [
+      ['Negative feedback', 'Negative feedback reduces a change and helps keep body conditions near a set range.'],
+      ['Osmosis', 'Osmosis is the movement of water across a semipermeable membrane toward higher solute concentration.'],
+      ['Enzyme temperature', 'Enzymes work best in a specific range; extreme temperature can change shape and reduce function.'],
+      ['Gas exchange', 'Oxygen and carbon dioxide move by diffusion across thin respiratory surfaces.'],
+    ],
+  },
+  {
+    idPrefix: 'fc-min-teas-math',
+    category: 'Mathematics',
+    examTrack: 'teas',
+    sourceTopic: 'ATI TEAS 7 / Mathematics / category minimum',
+    cards: [
+      ['Ratio setup', 'Write ratios in the same order on both sides before solving.'],
+      ['Unit cancellation', 'Arrange conversion factors so the unwanted unit cancels and the target unit remains.'],
+      ['Decimal safety', 'A misplaced decimal can change an answer by a factor of 10, 100, or 1,000.'],
+      ['Mean vs median', 'Mean is the arithmetic average; median is the middle value when data are ordered.'],
+      ['Proportion cross-check', 'After solving a proportion, estimate whether the answer should be larger or smaller.'],
+      ['mL to L', '1 liter equals 1,000 milliliters, so divide milliliters by 1,000 to convert to liters.'],
+      ['Rectangle area', 'Area of a rectangle equals length times width.'],
+      ['Estimate first', 'A quick estimate helps catch impossible answers before final calculation.'],
+    ],
+  },
+  {
+    idPrefix: 'fc-min-teas-reading',
+    category: 'Reading',
+    examTrack: 'teas',
+    sourceTopic: 'ATI TEAS 7 / Reading / category minimum',
+    cards: [
+      ['Inference boundary', 'A valid inference is supported by the passage even when it is not stated word for word.'],
+      ['Topic vs main idea', 'The topic is what the passage is about; the main idea says what the author claims about it.'],
+      ['Evidence question', 'Return to the exact line or detail that proves the answer.'],
+      ['Tone clue', 'Word choice shows whether the author sounds neutral, critical, concerned, amused, or persuasive.'],
+      ['Sequence signal', 'Words like first, after, before, finally, and meanwhile organize event order.'],
+      ['Compare passage', 'For paired texts, identify what both authors agree on before looking for differences.'],
+      ['Author claim', 'A claim is the point the author wants the reader to accept.'],
+      ['Best summary', 'The best summary covers the whole passage without minor details or new opinions.'],
+    ],
+  },
+  {
+    idPrefix: 'fc-min-teas-english',
+    category: 'English and Language Usage',
+    examTrack: 'teas',
+    sourceTopic: 'ATI TEAS 7 / English and Language Usage / category minimum',
+    cards: [
+      ['Comma splice', 'A comma alone cannot join two complete sentences.'],
+      ['Pronoun antecedent', 'A pronoun should clearly refer to one noun and agree in number.'],
+      ['Parallel structure', 'Items in a list should use the same grammatical pattern.'],
+      ['Apostrophe possession', 'Use apostrophes to show possession, not to make ordinary plurals.'],
+      ['Modifier placement', 'Place descriptive phrases near the word they describe.'],
+      ['Verb tense consistency', 'Keep tense consistent unless the timing of the action changes.'],
+      ['Concise revision', 'Choose the shortest option that is complete, clear, and grammatically correct.'],
+      ['Context vocabulary', 'Use nearby words and sentence logic to test the meaning of an unfamiliar word.'],
+    ],
+  },
+  {
+    idPrefix: 'fc-min-management-care',
+    category: 'Management of Care',
+    sourceTopic: 'Management of Care / category minimum',
+    cards: [
+      ['Assignment fairness', 'Balance acuity, complexity, staff competence, and continuity when dividing client assignments.'],
+      ['Incident report purpose', 'An incident report supports safety review; document objective client facts in the medical record.'],
+      ['Chain of command', 'Escalate unresolved safety concerns through the next appropriate leader or policy pathway.'],
+      ['Confidentiality handoff', 'Share client information only with people involved in care and only what they need to know.'],
+      ['Informed consent role', 'The provider explains the procedure; the nurse verifies understanding, witnesses, and advocates.'],
+    ],
+  },
+  {
+    idPrefix: 'fc-min-safety-infection',
+    category: 'Safety and Infection Control',
+    sourceTopic: 'Safety and Infection Control / category minimum',
+    cards: [
+      ['Clean to dirty', 'Move from cleaner areas to dirtier areas during care to reduce contamination spread.'],
+      ['Isolation transport', 'Limit transport, use required barriers, and notify receiving staff of precautions before arrival.'],
+    ],
+  },
+  {
+    idPrefix: 'fc-min-health-promotion',
+    category: 'Health Promotion',
+    sourceTopic: 'Health Promotion / category minimum',
+    cards: [
+      ['Primary prevention', 'Primary prevention aims to stop a problem before it starts.'],
+      ['Secondary prevention', 'Secondary prevention detects a problem early so treatment can start sooner.'],
+    ],
+  },
+  {
+    idPrefix: 'fc-min-psychosocial',
+    category: 'Psychosocial Integrity',
+    sourceTopic: 'Psychosocial Integrity / category minimum',
+    cards: [
+      ['Grief response', 'Use presence, silence, and open prompts instead of trying to fix the loss.'],
+      ['Cultural humility', 'Ask about preferences and meaning instead of assuming beliefs from identity alone.'],
+      ['Coping assessment', 'Ask what has helped before, who supports the client, and what feels hardest right now.'],
+      ['Body image support', 'Acknowledge the change, invite feelings, and avoid minimizing the client\'s concern.'],
+    ],
+  },
+  {
+    idPrefix: 'fc-min-physiological',
+    category: 'Physiological Integrity',
+    sourceTopic: 'Physiological Integrity / category minimum',
+    cards: [
+      ['Airway assessment', 'Noisy breathing, choking, inability to speak, or falling oxygenation makes airway assessment urgent.'],
+      ['Perfusion clue', 'Cool skin, weak pulses, low urine output, dizziness, or mentation change can point to poor perfusion.'],
+      ['Pain with instability', 'Treat pain seriously, but unstable vital signs or new neuro changes move assessment higher.'],
+      ['Response to treatment', 'After an intervention, reassess the finding that made the client unstable or symptomatic.'],
+    ],
+  },
+]
+
+const categoryMinimumFlashcards: Flashcard[] = categoryCoverageSeeds.flatMap((group) =>
+  group.cards.map(([front, back], index): Flashcard => {
+    const examTrack = group.examTrack ?? 'nclex-rn'
+    return {
+      ...betaDraftFlashcardMeta,
+      id: `${group.idPrefix}-${String(index + 1).padStart(2, '0')}`,
+      examTrack,
+      category: group.category,
+      sourceTopic: group.sourceTopic ?? `${group.category}`,
+      sourceRefs: sourceRefsForTrack(examTrack),
+      contentQuality: 'authored-draft',
+      front,
+      back,
+      status: 'new',
+    }
+  }),
+)
+
 const makeTrackStarterFlashcards = (examTrack: ExamTrackId): Flashcard[] => {
   const track = getExamTrack(examTrack)
   const blueprint = trackQuestionBlueprints[examTrack]
@@ -1648,7 +1973,7 @@ const makeTrackStarterFlashcards = (examTrack: ExamTrackId): Flashcard[] => {
   })
 }
 
-const normalizedAuthoredFlashcards = authoredFlashcards.map((card): Flashcard => ({
+const normalizedAuthoredFlashcards = [...authoredFlashcards, ...categoryMinimumFlashcards].map((card): Flashcard => ({
   examTrack: 'nclex-rn',
   sourceTopic: `${card.category}`,
   sourceRefs: sourceRefsForTrack('nclex-rn'),

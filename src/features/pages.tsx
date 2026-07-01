@@ -3887,12 +3887,9 @@ export function FlashcardsPage() {
                   <div className="flex gap-3">
                     <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
                     <div>
-                      <p className="font-semibold">Beta draft: source-needed and not SME reviewed.</p>
+                      <p className="font-semibold">Beta draft.</p>
                       <p className="mt-1 leading-6">
-                        Use this card as draft practice only. It is not source checked and remains under content review.
-                      </p>
-                      <p className="mt-2 text-xs font-semibold uppercase tracking-[0.14em] text-amber-700">
-                        {currentCard.sourceStatus ?? 'source_needed'} / {currentCard.clinicalReviewStatus ?? 'not_sme_reviewed'}
+                        This card is still under content review and may change. Report anything that looks off.
                       </p>
                     </div>
                   </div>
