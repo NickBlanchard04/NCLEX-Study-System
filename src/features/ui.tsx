@@ -494,6 +494,31 @@ export function CommandInsightPanel({
   )
 }
 
+export function CommandDisclosurePanel({
+  eyebrow = 'Optional details',
+  title,
+  description,
+  children,
+}: {
+  eyebrow?: string
+  title: string
+  description: string
+  children: React.ReactNode
+}) {
+  return (
+    <Surface className="p-0">
+      <details>
+        <summary className="flex cursor-pointer list-none flex-col gap-2 p-5 md:p-6">
+          <span className="text-xs font-black uppercase tracking-[0.16em] text-sky-100/58">{eyebrow}</span>
+          <span className="text-2xl font-black tracking-normal text-white">{title}</span>
+          <span className="text-sm leading-6 text-sky-100/64">{description}</span>
+        </summary>
+        <div className="border-t border-cyan-200/14 p-5 md:p-6">{children}</div>
+      </details>
+    </Surface>
+  )
+}
+
 export function CommandSetPreview({
   title,
   detail,

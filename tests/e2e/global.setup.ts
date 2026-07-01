@@ -1,10 +1,13 @@
 import { chromium, expect, type FullConfig } from '@playwright/test'
-import { access, mkdir } from 'node:fs/promises'
+import { execFile } from 'node:child_process'
+import { access, mkdir, rm } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
+import { promisify } from 'node:util'
 import { loadQaEnv, requireQaEnv } from './support/env'
 
 const authStatePath = resolve(process.cwd(), 'playwright/.auth/qa-user.json')
 const authenticatedAppSignal = /Start Today|Dashboard|Study Plan/i
+const execFileAsync = promisify(execFile)
 
 async function fileExists(path: string) {
   try {
@@ -21,6 +24,20 @@ const futureDateInputValue = () => {
   return date.toISOString().slice(0, 10)
 }
 
+async function resetCloudQaState() {
+  const { stdout, stderr } = await execFileAsync(
+    process.execPath,
+    ['scripts/reset-playwright-qa-state.mjs'],
+    {
+      cwd: process.cwd(),
+      env: process.env,
+      maxBuffer: 1024 * 1024,
+    },
+  )
+  if (stdout.trim()) console.log(stdout.trim())
+  if (stderr.trim()) console.warn(stderr.trim())
+}
+
 async function globalSetup(config: FullConfig) {
   loadQaEnv()
 
@@ -30,6 +47,10 @@ async function globalSetup(config: FullConfig) {
   if (!baseURL) throw new Error('Missing Playwright baseURL.')
 
   await mkdir(dirname(authStatePath), { recursive: true })
+  await resetCloudQaState()
+  if (process.env.PLAYWRIGHT_REUSE_AUTH_STATE !== '1') {
+    await rm(authStatePath, { force: true })
+  }
 
   const browser = await chromium.launch()
 

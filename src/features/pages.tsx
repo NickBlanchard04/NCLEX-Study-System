@@ -103,6 +103,7 @@ import {
   ChecklistItem,
   CommandActionCard,
   CommandBadge,
+  CommandDisclosurePanel,
   CommandEmptyState,
   CommandFocusPanel,
   CommandInsightPanel,
@@ -1101,6 +1102,20 @@ export function DashboardPage() {
       ?? fallbackCategoryAccent
   }
   const normalizedReadinessScore = Math.max(0, Math.min(1, readinessScore))
+  const personalizedEngineAction = priorityRepair
+    ? `Repair ${priorityRepair.routeLabel}`
+    : primaryCoverageGap
+      ? `Build evidence in ${coverageGapLabel}`
+      : weakestArea
+        ? `Train ${shortCategoryLabel(primaryCategory)}`
+        : readinessSnapshot.nextBestAction
+  const personalizedEngineCopy = priorityRepair
+    ? priorityRepair.nextActionCopy
+    : primaryCoverageGap
+      ? `${formatEngineReasonLabel(primaryCoverageGap.gapType)} is blocking a stronger readiness signal. Use a short set before adding more reading.`
+      : primaryConfidenceRisk
+        ? `${confidenceRiskLabel} is the confidence pattern to watch on the next session.`
+        : readinessSnapshot.nextBestAction
   const readinessCircleSize = 124
   const readinessCircleStroke = 9
   const readinessCircleRadius = (readinessCircleSize - readinessCircleStroke) / 2
@@ -1402,6 +1417,50 @@ export function DashboardPage() {
           ) : null}
         </section>
       ) : null}
+
+      <CommandFocusPanel tone={readinessTone}>
+        <div className="grid gap-5 p-5 md:grid-cols-[minmax(0,1fr)_18rem] md:p-6 md:items-center">
+          <div>
+            <div className="flex flex-wrap gap-2">
+              <CommandBadge tone={readinessTone} icon={<Activity className="h-3.5 w-3.5" />}>
+                Engine signal
+              </CommandBadge>
+              <CommandBadge tone={repairQueueCount ? 'amber' : 'emerald'} icon={<ShieldCheck className="h-3.5 w-3.5" />}>
+                {readinessSnapshot.trustedAttemptCount} trusted attempts
+              </CommandBadge>
+            </div>
+            <h3 className="mt-4 text-2xl font-bold tracking-normal text-white md:text-3xl">
+              {personalizedEngineAction}
+            </h3>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-sky-100/68">
+              {personalizedEngineCopy}
+            </p>
+          </div>
+          <div className="grid grid-cols-3 gap-2 md:grid-cols-1">
+            <CommandStatTile
+              label="Readiness"
+              value={`${readinessPercent}%`}
+              detail={readinessBadge}
+              tone={readinessTone}
+              icon={<BadgeCheck className="h-4 w-4" />}
+            />
+            <CommandStatTile
+              label="Repair"
+              value={`${repairQueueCount}`}
+              detail="open fixes"
+              tone={repairQueueCount ? 'amber' : 'emerald'}
+              icon={<Target className="h-4 w-4" />}
+            />
+            <CommandStatTile
+              label="Evidence"
+              value={`${readinessSnapshot.practiceAttemptCount}`}
+              detail="practice attempts"
+              tone="cyan"
+              icon={<ClipboardList className="h-4 w-4" />}
+            />
+          </div>
+        </div>
+      </CommandFocusPanel>
 
       <section
         className="dashboard-section-mastery rounded-[1.25rem] border border-emerald-300/22 p-4 shadow-[0_18px_50px_rgba(16,185,129,0.08)] md:p-5"
@@ -3419,37 +3478,29 @@ export function PerformanceAnalyticsPage() {
         </Surface>
       </DetailGrid>
 
-      <Surface className="p-0">
-        <details>
-          <summary className="flex cursor-pointer list-none flex-col gap-2 p-5 md:p-6">
-            <span className="text-xs font-black uppercase tracking-[0.16em] text-sky-100/58">Optional details</span>
-            <span className="text-2xl font-black tracking-normal text-white">History and method notes</span>
-            <span className="text-sm leading-6 text-sky-100/64">
-              Open this after the main takeaway when you need the evidence count, scope, and methodology.
-            </span>
-          </summary>
-          <div className="border-t border-cyan-200/14 p-5 md:p-6">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <MetricChip label="Questions" value={`${analytics.questionsCompleted}`} />
-                <MetricChip label="Trusted attempts" value={`${readiness.trustedAttemptCount}`} />
-                <MetricChip label="Coverage gaps" value={`${readiness.coverageGaps.length}`} />
-                <MetricChip label="Scope" value={(profile.preferences.analyticsScope ?? 'selected-track') === 'selected-track' ? activeTrack.shortName : 'All exams'} />
-              </div>
-              <div>
-                <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-sky-100/56">Analysis scope</p>
-                {scopeControl}
-              </div>
-            </div>
-            <div className="mt-5 rounded-2xl border border-cyan-200/15 bg-sky-300/[0.045] p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-100/56">Method note</p>
-              <p className="mt-2 text-sm leading-7 text-sky-100/70">
-                Performance separates practice attempts, trusted evidence, confidence mismatches, and coverage gaps so the next action stays about learning behavior rather than a single chart line.
-              </p>
-            </div>
+      <CommandDisclosurePanel
+        title="History and method notes"
+        description="Open this after the main takeaway when you need the evidence count, scope, and methodology."
+      >
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <MetricChip label="Questions" value={`${analytics.questionsCompleted}`} />
+            <MetricChip label="Trusted attempts" value={`${readiness.trustedAttemptCount}`} />
+            <MetricChip label="Coverage gaps" value={`${readiness.coverageGaps.length}`} />
+            <MetricChip label="Scope" value={(profile.preferences.analyticsScope ?? 'selected-track') === 'selected-track' ? activeTrack.shortName : 'All exams'} />
           </div>
-        </details>
-      </Surface>
+          <div>
+            <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-sky-100/56">Analysis scope</p>
+            {scopeControl}
+          </div>
+        </div>
+        <div className="mt-5 rounded-2xl border border-cyan-200/15 bg-sky-300/[0.045] p-4">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-100/56">Method note</p>
+          <p className="mt-2 text-sm leading-7 text-sky-100/70">
+            Performance separates practice attempts, trusted evidence, confidence mismatches, and coverage gaps so the next action stays about learning behavior rather than a single chart line.
+          </p>
+        </div>
+      </CommandDisclosurePanel>
     </PageStack>
   )
 }

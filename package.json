@@ -12,6 +12,8 @@
     "qa:question-formatting": "node scripts/question-render-quality-report.mjs",
     "preview": "vite preview",
     "qa:create-user": "node scripts/create-playwright-qa-user.mjs",
+    "qa:reset-user": "node scripts/reset-playwright-qa-state.mjs",
+    "qa:bundle-report": "node scripts/report-build-chunks.mjs",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed"
