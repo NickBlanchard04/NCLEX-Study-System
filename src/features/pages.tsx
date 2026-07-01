@@ -3128,41 +3128,50 @@ export function PerformanceAnalyticsPage() {
   const trendTakeaway = primaryFocusCategory
     ? `Accuracy trend is useful only when paired with the current weak pattern: ${shortCategoryLabel(primaryFocusCategory.category)}.`
     : 'Accuracy trend is a signal check, not the whole story.'
+  const scopeControl = (
+    <div className="inline-flex rounded-xl border border-cyan-300/20 bg-white/[0.04] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+      {[
+        { label: 'Selected exam', value: 'selected-track' as const },
+        { label: 'All exams', value: 'all-tracks' as const },
+      ].map((item) => (
+        <button
+          key={item.value}
+          type="button"
+          onClick={() =>
+            updateProfile({
+              preferences: {
+                ...profile.preferences,
+                analyticsScope: item.value,
+              },
+            })
+          }
+          className={clsx(
+            'rounded-lg px-3 py-2 text-xs font-bold transition',
+            analyticsScope === item.value
+              ? 'bg-cyan-300 text-[#04101f] shadow-[0_0_18px_rgba(56,189,248,0.28)]'
+              : 'text-sky-100/62 hover:text-sky-100',
+          )}
+        >
+          {item.label}
+        </button>
+      ))}
+    </div>
+  )
 
   return (
     <PageStack>
       <PageHeader
         eyebrow="Performance"
-        title="Performance"
+        title="Performance Signals"
         description="One main insight, one recommended move, and enough evidence to decide what to do next."
         action={
-          <div className="inline-flex rounded-xl border border-cyan-300/20 bg-white/[0.04] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
-            {[
-              { label: 'Selected exam', value: 'selected-track' as const },
-              { label: 'All exams', value: 'all-tracks' as const },
-            ].map((item) => (
-              <button
-                key={item.value}
-                type="button"
-                onClick={() =>
-                  updateProfile({
-                    preferences: {
-                      ...profile.preferences,
-                      analyticsScope: item.value,
-                    },
-                  })
-                }
-                className={clsx(
-                  'rounded-lg px-3 py-2 text-xs font-bold transition',
-                  analyticsScope === item.value
-                    ? 'bg-cyan-300 text-[#04101f] shadow-[0_0_18px_rgba(56,189,248,0.28)]'
-                    : 'text-sky-100/62 hover:text-sky-100',
-                )}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
+          <CommandRouteLink
+            to={repairQueueCount ? '/weak-areas' : '/practice-questions'}
+            emphasis="primary"
+            icon={<ArrowRight className="h-4 w-4" />}
+          >
+            {recommendedAction}
+          </CommandRouteLink>
         }
       />
 
@@ -3335,11 +3344,17 @@ export function PerformanceAnalyticsPage() {
             </span>
           </summary>
           <div className="border-t border-cyan-200/14 p-5 md:p-6">
-            <div className="grid gap-3 md:grid-cols-4">
-              <MetricChip label="Questions" value={`${analytics.questionsCompleted}`} />
-              <MetricChip label="Trusted attempts" value={`${readiness.trustedAttemptCount}`} />
-              <MetricChip label="Coverage gaps" value={`${readiness.coverageGaps.length}`} />
-              <MetricChip label="Scope" value={(profile.preferences.analyticsScope ?? 'selected-track') === 'selected-track' ? activeTrack.shortName : 'All exams'} />
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <MetricChip label="Questions" value={`${analytics.questionsCompleted}`} />
+                <MetricChip label="Trusted attempts" value={`${readiness.trustedAttemptCount}`} />
+                <MetricChip label="Coverage gaps" value={`${readiness.coverageGaps.length}`} />
+                <MetricChip label="Scope" value={(profile.preferences.analyticsScope ?? 'selected-track') === 'selected-track' ? activeTrack.shortName : 'All exams'} />
+              </div>
+              <div>
+                <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-sky-100/56">Analysis scope</p>
+                {scopeControl}
+              </div>
             </div>
             <div className="mt-5 rounded-2xl border border-cyan-200/15 bg-sky-300/[0.045] p-4">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-100/56">Method note</p>
@@ -5651,7 +5666,7 @@ const nurseCommandLabModules = [
     sessionLength: '8-12 min',
     status: 'Experimental prototype',
     statusTone: 'rose' as const,
-    tone: 'violet' as const,
+    tone: 'rose' as const,
     accent: 'from-violet-400/28 to-cyan-400/10',
   },
   {
@@ -5713,10 +5728,10 @@ export function NurseCommandLabPage() {
       <PageHeader
         eyebrow="Nurse Lab"
         title="Nurse Lab"
-        description="Simulation and game-based clinical practice, grouped away from the core study workflow."
+        description="Simulation and game-based clinical practice for priority, escalation, flow, and first-action thinking."
         action={
           <CommandRouteLink to={featuredLabModule.to} emphasis="primary" icon={<ArrowRight className="h-4 w-4" />}>
-            Enter Nurse Lab
+            Enter recommended module
           </CommandRouteLink>
         }
       />
@@ -5729,15 +5744,15 @@ export function NurseCommandLabPage() {
               <CommandBadge tone="violet" icon={<FlaskConical className="h-3.5 w-3.5" />}>Simulation</CommandBadge>
             </div>
             <h3 className="mt-3 max-w-3xl text-3xl font-bold tracking-normal text-white md:text-5xl">
-              {featuredLabModule.title}
+              Start with {featuredLabModule.title}
             </h3>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-sky-100/72">
-              {featuredLabModule.description} Use this first when you want a clinical judgment loop instead of another question set.
+              Use this when you want a clinical judgment loop instead of another question set. It trains {featuredLabModule.skill.toLowerCase()} in a short, contained run.
             </p>
             <div className="mt-5 grid gap-2 sm:grid-cols-3">
-              <CommandStatTile label="Skill" value="Assess" detail={featuredLabModule.skill} tone="violet" icon={<BrainCircuit className="h-4 w-4" />} />
+              <CommandStatTile label="Skill" value="First action" detail={featuredLabModule.skill} tone="violet" icon={<BrainCircuit className="h-4 w-4" />} />
               <CommandStatTile label="Length" value={featuredLabModule.sessionLength} detail="typical run" tone="cyan" icon={<Clock3 className="h-4 w-4" />} />
-              <CommandStatTile label="Status" value="Ready" detail="recommended" tone="emerald" icon={<ShieldCheck className="h-4 w-4" />} />
+              <CommandStatTile label="Status" value={featuredLabModule.status} detail="recommended" tone={featuredLabModule.statusTone} icon={<ShieldCheck className="h-4 w-4" />} />
             </div>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <CommandRouteLink to={featuredLabModule.to} emphasis="primary" icon={<ArrowRight className="h-4 w-4" />}>
@@ -5771,8 +5786,8 @@ export function NurseCommandLabPage() {
 
       <div>
         <SectionHeading
-          title="Lab modes"
-          description="Choose the simulation surface by the kind of thinking you want to practice."
+          title="Choose a lab module"
+          description="Each module has a job: what it trains, how long it takes, and whether it is ready for regular practice."
         />
       </div>
 

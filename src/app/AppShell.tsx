@@ -32,28 +32,9 @@ import {
 import { lazy, Suspense, useEffect, useMemo, useState, type ComponentType, type FormEvent, type ReactNode } from 'react'
 import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { clsx } from 'clsx'
-import { SocialPage } from '../features/SocialPage'
 import { PublicLaunchPage } from '../features/PublicLaunchPages'
 import { isPublicLaunchPath } from '../features/publicLaunchPaths'
 import nursingCommandLogo from '../assets/brand/nursing-command-logo.png'
-import {
-  DashboardPage,
-  ClinicalSimulatorPage,
-  ExamPrepPage,
-  FlashcardsPage,
-  MyMaterialsPage,
-  NurseCommandLabPage,
-  NotesPage,
-  PerformanceAnalyticsPage,
-  PracticeQuestionsPage,
-  QuickStudyPage,
-  SettingsPage,
-  StrategyTrainingPage,
-  StudyMenuPage,
-  StudyPlanPage,
-  TestModePage,
-  WeakAreasPage,
-} from '../features/pages'
 import { getExamTrack } from '../data/exam-tracks'
 import { useStudySystemStore } from './store'
 import { AuthGate } from './AuthGate'
@@ -197,6 +178,91 @@ const NurseTycoonGame = lazy(() =>
 const AdminMonitorPage = lazy(() =>
   import('../features/AdminMonitorPage').then((module) => ({
     default: module.AdminMonitorPage,
+  })),
+)
+const StudyMenuPage = lazy(() =>
+  import('../features/pages').then((module) => ({
+    default: module.StudyMenuPage,
+  })),
+)
+const DashboardPage = lazy(() =>
+  import('../features/pages').then((module) => ({
+    default: module.DashboardPage,
+  })),
+)
+const ExamPrepPage = lazy(() =>
+  import('../features/pages').then((module) => ({
+    default: module.ExamPrepPage,
+  })),
+)
+const PracticeQuestionsPage = lazy(() =>
+  import('../features/pages').then((module) => ({
+    default: module.PracticeQuestionsPage,
+  })),
+)
+const TestModePage = lazy(() =>
+  import('../features/pages').then((module) => ({
+    default: module.TestModePage,
+  })),
+)
+const NurseCommandLabPage = lazy(() =>
+  import('../features/pages').then((module) => ({
+    default: module.NurseCommandLabPage,
+  })),
+)
+const ClinicalSimulatorPage = lazy(() =>
+  import('../features/pages').then((module) => ({
+    default: module.ClinicalSimulatorPage,
+  })),
+)
+const QuickStudyPage = lazy(() =>
+  import('../features/pages').then((module) => ({
+    default: module.QuickStudyPage,
+  })),
+)
+const WeakAreasPage = lazy(() =>
+  import('../features/pages').then((module) => ({
+    default: module.WeakAreasPage,
+  })),
+)
+const PerformanceAnalyticsPage = lazy(() =>
+  import('../features/pages').then((module) => ({
+    default: module.PerformanceAnalyticsPage,
+  })),
+)
+const FlashcardsPage = lazy(() =>
+  import('../features/pages').then((module) => ({
+    default: module.FlashcardsPage,
+  })),
+)
+const StudyPlanPage = lazy(() =>
+  import('../features/pages').then((module) => ({
+    default: module.StudyPlanPage,
+  })),
+)
+const StrategyTrainingPage = lazy(() =>
+  import('../features/pages').then((module) => ({
+    default: module.StrategyTrainingPage,
+  })),
+)
+const NotesPage = lazy(() =>
+  import('../features/pages').then((module) => ({
+    default: module.NotesPage,
+  })),
+)
+const MyMaterialsPage = lazy(() =>
+  import('../features/pages').then((module) => ({
+    default: module.MyMaterialsPage,
+  })),
+)
+const SettingsPage = lazy(() =>
+  import('../features/pages').then((module) => ({
+    default: module.SettingsPage,
+  })),
+)
+const SocialPage = lazy(() =>
+  import('../features/SocialPage').then((module) => ({
+    default: module.SocialPage,
   })),
 )
 
@@ -655,23 +721,23 @@ function NclexAppShell() {
                   transition={{ duration: 0.22, ease: 'easeOut' }}
                 >
                   <Routes location={location}>
-                    <Route path="/" element={<StudyMenuPage />} />
-                    <Route path="/dashboard" element={<DashboardPage />} />
-                    <Route path="/exam-prep" element={<ExamPrepPage />} />
-                    <Route path="/practice-questions" element={<PracticeQuestionsPage />} />
-                    <Route path="/test-mode" element={<TestModePage />} />
-                    <Route path="/nurse-command-lab" element={<NurseCommandLabPage />} />
-                    <Route path="/clinical-simulator" element={<ClinicalSimulatorPage />} />
-                    <Route path="/quick-study" element={<QuickStudyPage />} />
-                    <Route path="/weak-areas" element={<WeakAreasPage />} />
-                    <Route path="/performance-analytics" element={<PerformanceAnalyticsPage />} />
-                    <Route path="/flashcards" element={<FlashcardsPage />} />
-                    <Route path="/study-plan" element={<StudyPlanPage />} />
-                    <Route path="/strategy-training" element={<StrategyTrainingPage />} />
-                    <Route path="/notes" element={<NotesPage />} />
-                    <Route path="/my-materials" element={<MyMaterialsPage />} />
-                    <Route path="/social" element={<SocialPage />} />
-                    <Route path="/settings" element={<SettingsPage />} />
+                    <Route path="/" element={<LazyRoute label="Loading command hub"><StudyMenuPage /></LazyRoute>} />
+                    <Route path="/dashboard" element={<LazyRoute label="Loading dashboard"><DashboardPage /></LazyRoute>} />
+                    <Route path="/exam-prep" element={<LazyRoute label="Loading exam prep"><ExamPrepPage /></LazyRoute>} />
+                    <Route path="/practice-questions" element={<LazyRoute label="Loading question bank"><PracticeQuestionsPage /></LazyRoute>} />
+                    <Route path="/test-mode" element={<LazyRoute label="Loading exam simulation"><TestModePage /></LazyRoute>} />
+                    <Route path="/nurse-command-lab" element={<LazyRoute label="Loading nurse lab"><NurseCommandLabPage /></LazyRoute>} />
+                    <Route path="/clinical-simulator" element={<LazyRoute label="Loading clinical simulator"><ClinicalSimulatorPage /></LazyRoute>} />
+                    <Route path="/quick-study" element={<LazyRoute label="Loading quick study"><QuickStudyPage /></LazyRoute>} />
+                    <Route path="/weak-areas" element={<LazyRoute label="Loading remediation"><WeakAreasPage /></LazyRoute>} />
+                    <Route path="/performance-analytics" element={<LazyRoute label="Loading performance signals"><PerformanceAnalyticsPage /></LazyRoute>} />
+                    <Route path="/flashcards" element={<LazyRoute label="Loading flashcards"><FlashcardsPage /></LazyRoute>} />
+                    <Route path="/study-plan" element={<LazyRoute label="Loading study plan"><StudyPlanPage /></LazyRoute>} />
+                    <Route path="/strategy-training" element={<LazyRoute label="Loading resources"><StrategyTrainingPage /></LazyRoute>} />
+                    <Route path="/notes" element={<LazyRoute label="Loading notes"><NotesPage /></LazyRoute>} />
+                    <Route path="/my-materials" element={<LazyRoute label="Loading study library"><MyMaterialsPage /></LazyRoute>} />
+                    <Route path="/social" element={<LazyRoute label="Loading social"><SocialPage /></LazyRoute>} />
+                    <Route path="/settings" element={<LazyRoute label="Loading settings"><SettingsPage /></LazyRoute>} />
                   </Routes>
                 </motion.div>
               </AnimatePresence>
