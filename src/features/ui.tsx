@@ -1366,7 +1366,7 @@ export function QuestionSessionRunner({
     : hasPartialSignal
       ? 'border-amber-300/28 bg-[#1f1a0a]'
       : 'border-rose-300/28 bg-[#210f1d]'
-  const evidenceLevel = question.blueprintMapped && question.sourceBacked ? 'Readiness evidence' : 'Practice evidence'
+  const evidenceLevel = question.blueprintMapped && question.sourceBacked ? 'Practice evidence - stronger source' : 'Practice evidence only'
   const qualityStatus = question.contentQuality?.replaceAll('-', ' ') ?? 'draft item'
   const reviewState = submitted ? (showRationale ? 'Review open' : 'Review hidden') : 'Answer pending'
   const confidenceState = confidenceChosen ? `Confidence: ${finalResponse?.confidence}` : submitted ? 'Confidence not chosen' : 'Confidence pending'

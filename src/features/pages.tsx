@@ -72,7 +72,7 @@ import type {
 import { useStudySystemStore } from '../app/store'
 import { createClientId } from '../services/ids'
 import { getSafeErrorCopy, reportSafeError } from '../services/safe-errors'
-import { summarizeMaterialQuality, type MaterialQualityIssue } from '../services/material-quality'
+import { filterMaterialStudyTools, summarizeMaterialQuality, type MaterialQualityIssue } from '../services/material-quality'
 import {
   contentFeedbackReasonLabels,
   contentFeedbackReasons,
@@ -562,15 +562,25 @@ export function StudyMenuPage() {
 
   const handleUrlImport = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    const trimmedUrl = materialUrl.trim()
+    if (isAssistedImportStudyHost(trimmedUrl)) {
+      navigate(`/my-materials?importUrl=${encodeURIComponent(trimmedUrl)}`)
+      return
+    }
+
     setIsImporting(true)
     setImportMessage('Reading this link and generating study tools...')
     try {
-      await importStudyMaterialFromUrl(materialUrl)
+      await importStudyMaterialFromUrl(trimmedUrl)
       setMaterialUrl('')
       setImportMessage('Link imported. Review and approve the generated tools in Your Study Library.')
     } catch (error) {
       reportSafeError('material-link-import', error)
-      setImportMessage(getSafeErrorCopy('material-link-import'))
+      if (isBlockedMaterialImport(error)) {
+        navigate(`/my-materials?importUrl=${encodeURIComponent(trimmedUrl)}`)
+      } else {
+        setImportMessage(getSafeErrorCopy('material-link-import'))
+      }
     } finally {
       setIsImporting(false)
     }
@@ -1418,6 +1428,19 @@ export function DashboardPage() {
             Analytics
           </Link>
         </div>
+        <div className="mb-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+          {[
+            { label: 'Gold', detail: 'strong signal', className: 'border-amber-200/28 bg-amber-300/[0.09] text-amber-100' },
+            { label: 'Silver', detail: 'improving', className: 'border-slate-200/24 bg-slate-300/[0.075] text-slate-100' },
+            { label: 'Blue', detail: 'needs reps', className: 'border-sky-200/26 bg-sky-300/[0.08] text-sky-100' },
+            { label: 'Locked', detail: 'practice to unlock', className: 'border-white/14 bg-white/[0.045] text-sky-100/70' },
+          ].map((item) => (
+            <div key={item.label} className={clsx('min-w-0 rounded-xl border px-3 py-2', item.className)}>
+              <p className="text-xs font-black uppercase tracking-[0.14em]">{item.label}</p>
+              <p className="mt-0.5 text-xs font-semibold leading-5 opacity-75">{item.detail}</p>
+            </div>
+          ))}
+        </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {masteryBadges.map((badge) => (
             <div key={badge.category} className={clsx('relative overflow-hidden rounded-[1rem] border p-3.5 sm:p-4', badge.theme.ring)}>
@@ -1888,6 +1911,7 @@ export function ExamPrepPage() {
   const navigate = useNavigate()
   const profile = useStudySystemStore((state) => state.profile)
   const activeSession = useStudySystemStore((state) => state.activeSession)
+  const practiceSessions = useStudySystemStore((state) => state.practiceSessions)
   const updateProfile = useStudySystemStore((state) => state.updateProfile)
   const startPracticeSession = useStudySystemStore((state) => state.startPracticeSession)
   const [selectedTrackId, setSelectedTrackId] = useState<ExamTrackId>(profile.examTrack ?? 'nclex-rn')
@@ -1901,6 +1925,11 @@ export function ExamPrepPage() {
   const isFnp = selectedTrack.id === 'fnp'
   const selectedBankSize = getExamQuestionBank(selectedTrack.id).length
   const qualitySummary = getExamContentQualitySummary(selectedTrack.id)
+  const activePracticeSummary = activeSession?.mode === 'practice' ? getActiveSessionSummary(activeSession) : null
+  const recentPracticeHistory = useMemo(
+    () => getPracticeHistory(practiceSessions, 3).filter((session) => session.mode === 'practice'),
+    [practiceSessions],
+  )
   const createFnpPracticeTest = () => {
     updateProfile({ examTrack: 'fnp' })
     const sessionIsOpen = isActiveSessionOpen(activeSession)
@@ -1976,6 +2005,62 @@ export function ExamPrepPage() {
           </button>
         }
       />
+
+      {activePracticeSummary || recentPracticeHistory.length ? (
+        <Surface className="border-emerald-200/18 bg-emerald-300/[0.045]">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.8fr)]">
+            <div className="min-w-0">
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-100/68">
+                Practice progress
+              </p>
+              <h3 className="mt-2 text-2xl font-bold text-white">
+                {activePracticeSummary ? 'Resume before you reset the lane.' : 'Use recent results before starting another block.'}
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-sky-100/66">
+                {activePracticeSummary
+                  ? `${activePracticeSummary.answeredCount}/${activePracticeSummary.questionCount} answered in ${activePracticeSummary.topCategory}. Finish or discard it before creating a clean set.`
+                  : 'Completed review blocks stay tied to the account, so use the trail before choosing the next exam-prep move.'}
+              </p>
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                {activePracticeSummary ? (
+                  <button
+                    type="button"
+                    onClick={() => navigate(activePracticeSummary.route)}
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-emerald-100/30 bg-emerald-300/[0.12] px-4 py-2 text-sm font-bold text-emerald-100 transition hover:bg-emerald-300/18"
+                  >
+                    Resume practice
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                ) : null}
+                <Link
+                  to="/performance-analytics"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-cyan-200/20 bg-cyan-300/[0.08] px-4 py-2 text-sm font-bold text-cyan-100 transition hover:bg-cyan-300/14"
+                >
+                  View history
+                  <BarChart3 className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>
+            {recentPracticeHistory.length ? (
+              <div className="grid gap-2">
+                {recentPracticeHistory.slice(0, 2).map((session) => (
+                  <div key={session.id} className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="truncate text-sm font-bold text-white">{session.title || session.label}</p>
+                      <span className="shrink-0 rounded-lg border border-emerald-200/24 bg-emerald-300/10 px-2.5 py-1 text-xs font-bold text-emerald-100">
+                        {Math.round(session.score * 100)}%
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs font-semibold text-sky-100/56">
+                      {session.topCategory} - {new Date(session.completedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        </Surface>
+      ) : null}
 
       <CommandFocusPanel tone="amber">
         <div className="grid gap-5 p-5 md:p-6 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-stretch">
@@ -3932,6 +4017,7 @@ const isAssistedImportStudyHost = (value: string) => {
 
 export function MyMaterialsPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const profile = useStudySystemStore((state) => state.profile)
   const materialsHydrated = useStudySystemStore((state) => state.materialsHydrated)
   const materials = useStudySystemStore((state) => state.materials)
@@ -3950,16 +4036,25 @@ export function MyMaterialsPage() {
   const saveNote = useStudySystemStore((state) => state.saveNote)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const materialReviewRef = useRef<HTMLDivElement | null>(null)
+  const initialImportUrl = searchParams.get('importUrl')?.trim() ?? ''
+  const initialImportUrlNeedsAssistedImport = isAssistedImportStudyHost(initialImportUrl)
   const [selectedMaterialId, setSelectedMaterialId] = useState<string | null>(null)
   const [dragActive, setDragActive] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
-  const [materialUrl, setMaterialUrl] = useState('')
-  const [assistedImportOpen, setAssistedImportOpen] = useState(false)
+  const [materialUrl, setMaterialUrl] = useState(initialImportUrl)
+  const [assistedImportOpen, setAssistedImportOpen] = useState(Boolean(initialImportUrl))
   const [assistedImportText, setAssistedImportText] = useState('')
   const [assistedImportMode, setAssistedImportMode] = useState<MaterialImportMode>('full')
-  const [assistedSourceUrl, setAssistedSourceUrl] = useState('')
-  const [blockedImportSourceUrl, setBlockedImportSourceUrl] = useState('')
-  const [uploadMessage, setUploadMessage] = useState('')
+  const [assistedSourceUrl, setAssistedSourceUrl] = useState(initialImportUrl)
+  const [blockedImportSourceUrl, setBlockedImportSourceUrl] = useState(
+    initialImportUrlNeedsAssistedImport ? initialImportUrl : '',
+  )
+  const [uploadMessage, setUploadMessage] = useState(() => {
+    if (!initialImportUrl) return ''
+    return initialImportUrlNeedsAssistedImport
+      ? 'This study site usually blocks direct import. Open the source, copy the visible terms and definitions, then paste or read clipboard below.'
+      : 'Assisted import is open. Paste study text from this link or upload the source file instead.'
+  })
   const [previewExpanded, setPreviewExpanded] = useState(false)
   const [studyGuideOpen, setStudyGuideOpen] = useState(false)
   const trackCategories = getExamCategories(profile.examTrack ?? 'nclex-rn')
@@ -5104,10 +5199,12 @@ function MaterialReviewPanel({
   const approveDrafts = async () => {
     setIsApproving(true)
     try {
-      await onApprove(
-        flashcardDrafts.filter((card) => card.front.trim() && card.back.trim()),
-        questionDrafts.filter((question) => question.prompt.trim() && question.rationale.trim()),
+      const nonEmptyFlashcards = flashcardDrafts.filter((card) => card.front.trim() && card.back.trim())
+      const nonEmptyQuestions = questionDrafts.filter(
+        (question) => question.prompt.trim() && question.rationale.trim(),
       )
+      const filtered = filterMaterialStudyTools(nonEmptyFlashcards, nonEmptyQuestions)
+      await onApprove(filtered.flashcards, filtered.questions)
     } finally {
       setIsApproving(false)
     }
@@ -6069,6 +6166,50 @@ export function StrategyTrainingPage() {
           </Link>
         }
       />
+      <Surface className="border-violet-200/18 bg-violet-300/[0.045]">
+        <SectionHeading
+          title="Choose support by need"
+          description="Resources stay in the Library bucket, but each option should point to a study action."
+        />
+        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <CommandActionCard
+            title="Strategy drills"
+            description="Practice prioritization, delegation, and first-action decisions."
+            meta="Practice"
+            icon={<Target className="h-4 w-4" />}
+            tone="cyan"
+            action="Start"
+            onClick={() => launchClinicalThinking('Prioritization')}
+          />
+          <CommandActionCard
+            title="Safety cues"
+            description="Train immediate risk, infection control, and escalation patterns."
+            meta="Safety"
+            icon={<ShieldCheck className="h-4 w-4" />}
+            tone="emerald"
+            action="Drill"
+            onClick={() => launchClinicalThinking('Patient Safety')}
+          />
+          <CommandActionCard
+            title="Content refresh"
+            description="Turn notes, guides, and links into editable review tools."
+            meta="Library"
+            icon={<FolderOpen className="h-4 w-4" />}
+            tone="violet"
+            action="Import"
+            to="/my-materials"
+          />
+          <CommandActionCard
+            title="Exam logistics"
+            description="Choose a credential lane before starting longer test work."
+            meta="Exam"
+            icon={<CalendarClock className="h-4 w-4" />}
+            tone="amber"
+            action="Prep"
+            to="/exam-prep"
+          />
+        </div>
+      </Surface>
       <Surface className="overflow-hidden p-0">
         <div className="flex flex-col gap-5 bg-[linear-gradient(135deg,#ffffff_0%,#eef5ff_100%)] px-5 py-6 lg:flex-row lg:items-end lg:justify-between md:px-6">
           <div>
@@ -6356,7 +6497,7 @@ export function NotesPage() {
               <input value={draft.title} onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))} placeholder="What concept are you trying to remember?" className={inputClass} />
             </Field>
             <Field label="Category">
-              <select value={draft.category} onChange={(event) => setDraft((current) => ({ ...current, category: event.target.value as Note['category'] }))} className={selectClass}>
+              <select id="note-category-select" value={draft.category} onChange={(event) => setDraft((current) => ({ ...current, category: event.target.value as Note['category'] }))} className={selectClass}>
                 <option value="General">General</option>
                 {trackCategories.map((item) => (
                   <option key={item} value={item}>{item}</option>
@@ -6374,6 +6515,23 @@ export function NotesPage() {
               className="nclex-btn-primary rounded-xl px-4 py-2.5 text-sm font-semibold"
             >
               Save note
+            </button>
+            <button
+              type="button"
+              onClick={() => document.getElementById('note-category-select')?.focus()}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-violet-200/24 bg-violet-300/[0.08] px-4 py-2.5 text-sm font-bold text-violet-100 transition hover:bg-violet-300/14"
+            >
+              Attach to topic
+              <Target className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => void convertDraftToMaterial('full')}
+              disabled={!draftHasContent}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-cyan-200/24 bg-cyan-300/[0.08] px-4 py-2.5 text-sm font-bold text-cyan-100 transition hover:bg-cyan-300/14 disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              Make cards + quiz
+              <Sparkles className="h-4 w-4" />
             </button>
             <button
               type="button"
