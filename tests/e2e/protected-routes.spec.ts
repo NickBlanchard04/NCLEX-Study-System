@@ -208,7 +208,7 @@ test.describe('authenticated mobile navigation', () => {
     await expect(page.locator('main').getByText(/Manage your exam track|Profile picture|Account/i).first()).toBeVisible()
 
     await page.getByRole('button', { name: /^More$/i }).click()
-    await expect(page.getByRole('heading', { name: /Study tools/i })).toBeVisible()
+    await expect(page.getByRole('heading', { name: /Command hub/i })).toBeVisible()
     await page.getByRole('button', { name: /Remediation/i }).click()
     await expect(page).toHaveURL(/\/weak-areas\/?$/)
     await expect(page.locator('main').getByText(/Repair the pattern|Selected repair|No weak area signal/i).first()).toBeVisible()
