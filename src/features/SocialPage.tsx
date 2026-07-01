@@ -490,6 +490,37 @@ export function SocialPage() {
         }
       />
 
+      <div className="grid gap-3 md:grid-cols-3">
+        {[
+          {
+            title: 'Works now',
+            detail: 'Search beta learners, send requests, accept requests, and keep messages tied to signed-in accounts.',
+            icon: <Check className="h-4 w-4" />,
+            tone: 'border-lime-200/22 bg-lime-300/[0.07] text-lime-100',
+          },
+          {
+            title: 'Best next move',
+            detail: 'Use search when you know a classmate. Suggestions can be quiet until more learners join.',
+            icon: <Search className="h-4 w-4" />,
+            tone: 'border-cyan-200/22 bg-cyan-300/[0.07] text-cyan-100',
+          },
+          {
+            title: 'Coming later',
+            detail: 'Richer groups, study rooms, moderation tools, and better matching will ship after beta feedback.',
+            icon: <Inbox className="h-4 w-4" />,
+            tone: 'border-violet-200/22 bg-violet-300/[0.07] text-violet-100',
+          },
+        ].map((item) => (
+          <div key={item.title} className={`rounded-[18px] border p-4 ${item.tone}`}>
+            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em]">
+              {item.icon}
+              {item.title}
+            </div>
+            <p className="mt-2 text-sm font-semibold leading-6 text-sky-100/68">{item.detail}</p>
+          </div>
+        ))}
+      </div>
+
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(20rem,0.85fr)]">
         <Surface>
           <SectionTitle

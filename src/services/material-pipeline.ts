@@ -611,6 +611,9 @@ export async function extractMaterialTextFromUrl(rawUrl: string) {
       'This link looks like source code or a software page. Import a nursing study article, class handout, or text-heavy clinical reference instead.',
     )
   }
+  if (isBlockedStudyLinkHost(source)) {
+    throw new MaterialImportBlockedError(source.toString(), 'assisted-import-required')
+  }
 
   const edgeImport = await importStudyLinkFromEdge(source)
   if (edgeImport) return edgeImport
