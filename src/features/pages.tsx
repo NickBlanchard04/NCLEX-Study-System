@@ -1941,84 +1941,138 @@ export function ExamPrepPage() {
     { label: 'Pharmacology', value: 0.62, tone: 'amber' as const, detail: 'Focus on prescribing safety and adverse effects.' },
     { label: 'Health Promotion', value: 0.86, tone: 'green' as const, detail: 'Strong domain. Keep in spaced review.' },
   ]
+  const selectedTrackIsActive = selectedTrack.id === activeTrack.id
+  const prepActionTitle = selectedTrackIsActive
+    ? `Start ${selectedTrack.shortName} high-yield review`
+    : `Switch to ${selectedTrack.shortName}`
+  const prepActionDetail = selectedTrackIsActive
+    ? 'Your active exam lane is set. Start with a focused block, then review misses.'
+    : `Use ${selectedTrack.shortName} before starting so questions, performance, and remediation stay aligned.`
+  const applySelectedTrack = () => {
+    if (profile.examTrack !== selectedTrackId) {
+      updateProfile({ examTrack: selectedTrackId })
+    }
+  }
+  const startSelectedPractice = () => {
+    applySelectedTrack()
+    navigate('/practice-questions')
+  }
+  const startSelectedExam = () => {
+    applySelectedTrack()
+    navigate('/test-mode')
+  }
 
   return (
-    <div className="space-y-6">
+    <PageStack>
       <PageHeader
         eyebrow="Exam Prep"
-        title="Choose your exam lane."
-        description="Pick the credential you are preparing for, then start a high-yield review or practice block without digging through a long document page."
+        title="Exam Prep"
+        description="Plan the next high-yield review before you start testing."
         action={
           <button
             type="button"
-            onClick={() => updateProfile({ examTrack: selectedTrackId })}
-            className="nclex-btn-primary inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold"
+            onClick={startSelectedPractice}
+            className="inline-flex min-h-[48px] items-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
           >
-            Use {selectedTrack.shortName}
-            <CheckCircle2 className="h-4 w-4" />
-          </button>
-        }
-      />
-
-      <Surface className="border-cyan-200/18 bg-[#061426]">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-100/68">
-              Current Track
-            </p>
-            <h3 className="mt-2 nc-section-title text-3xl text-white">
-              {activeTrack.title}
-            </h3>
-            <p className="mt-2 max-w-3xl text-sm leading-7 text-sky-100/64">
-              {activeTrack.subtitle}
-            </p>
-          </div>
-          <span className={activeTrack.status === 'live' ? 'nclex-chip nclex-chip-success' : 'nclex-chip nclex-chip-warning'}>
-            {activeTrack.status === 'live' ? 'Live content' : 'Expansion ready'}
-          </span>
-        </div>
-      </Surface>
-
-      <NextActionPanel
-        eyebrow="What to do next"
-        title={`Practice in ${selectedTrack.shortName}`}
-        description="Pick the exam lane, then move into questions. Track details stay collapsed until you need to inspect coverage."
-        tone="amber"
-        primary={
-          <button
-            type="button"
-            onClick={() => {
-              updateProfile({ examTrack: selectedTrackId })
-              navigate('/practice-questions')
-            }}
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
-          >
-            Start practice
+            Start high-yield review
             <ArrowRight className="h-4 w-4" />
           </button>
         }
-        secondary={
-          <button
-            type="button"
-            onClick={() => {
-              updateProfile({ examTrack: selectedTrackId })
-              navigate('/test-mode')
-            }}
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-cyan-200/24 bg-cyan-300/[0.07] px-5 py-3 text-sm font-bold text-cyan-100 transition hover:border-cyan-100/55 hover:bg-cyan-300/13 focus:outline-none focus:ring-4 focus:ring-cyan-300/18"
-          >
-            Start exam
-            <Target className="h-4 w-4" />
-          </button>
-        }
       />
 
-      <div className="grid gap-6 xl:grid-cols-[0.82fr_1.18fr]">
-        <Surface className="border-cyan-200/18 bg-cyan-300/[0.045]">
+      <CommandFocusPanel tone="amber">
+        <div className="grid gap-5 p-5 md:p-6 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-stretch">
+          <div>
+            <div className="flex flex-wrap gap-2">
+              <CommandBadge tone="amber" icon={<Sparkles className="h-3.5 w-3.5" />}>Recommended prep</CommandBadge>
+              <CommandBadge tone="cyan" icon={<BadgeCheck className="h-3.5 w-3.5" />}>{selectedTrack.shortName}</CommandBadge>
+              {selectedTrackIsActive ? (
+                <CommandBadge tone="emerald" icon={<CheckCircle2 className="h-3.5 w-3.5" />}>Active lane</CommandBadge>
+              ) : null}
+            </div>
+            <h3 className="mt-4 max-w-3xl text-3xl font-bold tracking-normal text-white md:text-4xl">
+              {prepActionTitle}
+            </h3>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-sky-100/72">
+              {prepActionDetail} Keep blueprint details available, but let the next action stay obvious.
+            </p>
+            <div className="mt-5 grid gap-2 sm:grid-cols-3">
+              <CommandStatTile label="Question Bank" value={`${selectedBankSize}`} detail="ready now" tone="cyan" icon={<ClipboardList className="h-4 w-4" />} />
+              <CommandStatTile label="Boards" value={`${selectedTrack.boards.length}`} detail={selectedTrack.boards.join(' + ')} tone="violet" icon={<BookOpen className="h-4 w-4" />} />
+              <CommandStatTile label="Status" value={selectedTrack.status === 'live' ? 'Live' : 'Ready'} detail="content lane" tone={selectedTrack.status === 'live' ? 'emerald' : 'amber'} icon={<ShieldCheck className="h-4 w-4" />} />
+            </div>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <button
+                type="button"
+                onClick={startSelectedPractice}
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
+              >
+                Start review block
+                <ArrowRight className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={startSelectedExam}
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-cyan-200/24 bg-cyan-300/[0.07] px-5 py-3 text-sm font-bold text-cyan-100 transition hover:border-cyan-100/55 hover:bg-cyan-300/13 focus:outline-none focus:ring-4 focus:ring-cyan-300/18"
+              >
+                Start exam simulation
+                <Target className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+          <div className="grid gap-3">
+            <CommandInsightPanel
+              eyebrow="Active track"
+              title={activeTrack.shortName}
+              description={activeTrack.subtitle}
+              tone="cyan"
+            />
+            <CommandStatusRow
+              icon={<Target className="h-4 w-4" />}
+              title="Prep rule"
+              detail="Pick the credential first, start a short block, then let misses feed remediation."
+              tone="amber"
+            />
+          </div>
+        </div>
+      </CommandFocusPanel>
+
+      <div className="grid gap-5 xl:grid-cols-3">
+        <Surface className="border-amber-200/22 bg-amber-300/[0.055]">
           <SectionHeading
-            title="Choose exam"
-            description="Cyan is navigation: choose the prep path before building a session."
+            title="High-Yield Review"
+            description="Recommended work before a longer exam block."
           />
           <div className="mt-5 grid gap-3">
+            <CommandStatusRow
+              icon={<Sparkles className="h-4 w-4" />}
+              title={`Review in ${selectedTrack.shortName}`}
+              detail="Start with questions, not reading. The results will point to the next repair."
+              tone="amber"
+            />
+            <CommandStatusRow
+              icon={<Target className="h-4 w-4" />}
+              title="Repair the misses"
+              detail="Use remediation after the block instead of adding random volume."
+              tone="rose"
+            />
+            <button
+              type="button"
+              onClick={startSelectedPractice}
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(251,191,36,0.18)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
+            >
+              Start high-yield block
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
+        </Surface>
+
+        <Surface className="border-cyan-200/18 bg-cyan-300/[0.045]">
+          <SectionHeading
+            title="Test Strategy"
+            description="Choose the credential lane before you test."
+          />
+          <div className="mt-5 grid gap-2">
             {examTracks.map((track) => (
               <button
                 key={track.id}
@@ -2048,66 +2102,112 @@ export function ExamPrepPage() {
               </button>
             ))}
           </div>
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row xl:flex-col">
+            <button
+              type="button"
+              onClick={applySelectedTrack}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-cyan-200/24 bg-cyan-300/[0.08] px-4 py-2 text-sm font-bold text-cyan-100 transition hover:border-cyan-100/50 hover:bg-cyan-300/[0.14]"
+            >
+              Use {selectedTrack.shortName}
+              <CheckCircle2 className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={startSelectedExam}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-violet-200/24 bg-violet-300/[0.08] px-4 py-2 text-sm font-bold text-violet-100 transition hover:border-violet-100/50 hover:bg-violet-300/[0.14]"
+            >
+              Start exam simulation
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
         </Surface>
 
-        <Surface className="overflow-hidden border-violet-200/18 bg-[#061426] p-0">
-          <details>
-            <summary className="flex cursor-pointer list-none flex-col gap-3 px-5 py-5 text-white transition hover:bg-white/[0.035] md:flex-row md:items-center md:justify-between md:px-6">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-100/70">
-                  Track details
-                </p>
-                <h3 className="mt-2 text-2xl font-black tracking-normal text-white">
-                  Exam overview, coverage, and quality notes
-                </h3>
-                <p className="mt-1 text-sm leading-6 text-sky-100/62">
-                  Open this when you want the blueprint, domains, systems, formats, and resource list.
-                </p>
-              </div>
-              <span className="inline-flex min-h-10 items-center justify-center rounded-xl border border-violet-200/24 bg-violet-300/[0.08] px-4 py-2 text-sm font-bold text-violet-100">
-                Show details
-              </span>
-            </summary>
-          <div className="border-t border-violet-200/14 bg-[linear-gradient(135deg,#003b66_0%,#12375a_100%)] px-5 py-6 text-white md:px-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-100">
-              {selectedTrack.shortName} Exam overview
-            </p>
-            <h3 className="mt-3 nc-section-title text-4xl leading-tight">
-              {selectedTrack.title}
-            </h3>
-            <p className="mt-3 max-w-4xl text-sm leading-7 text-sky-100/85">
-              {selectedTrack.subtitle}
-            </p>
-            <div className="mt-5 grid gap-3 md:grid-cols-3">
-              <QuickMetric label="Question Bank" value={`${selectedBankSize} ready now`} detail={selectedTrack.questionTarget} />
-              <QuickMetric label="Boards" value={selectedTrack.boards.join(' + ')} detail="Exam-specific preparation path." />
-              <QuickMetric label="Formats" value={`${selectedTrack.testingFormats.length}`} detail="Testing modes and item types." />
-            </div>
+        <Surface className="border-violet-200/18 bg-violet-300/[0.045]">
+          <SectionHeading
+            title="Readiness Checks"
+            description="A quick confidence check before deep details."
+          />
+          <div className="mt-5 grid gap-3">
+            <CommandStatusRow
+              icon={<ClipboardList className="h-4 w-4" />}
+              title={`${selectedBankSize} questions ready`}
+              detail={selectedTrack.questionTarget}
+              tone="cyan"
+            />
+            <CommandStatusRow
+              icon={<ShieldCheck className="h-4 w-4" />}
+              title={`${qualitySummary.reviewReady} review-ready`}
+              detail={`${qualitySummary.smeReviewed} SME-reviewed, ${qualitySummary.authoredDraft} authored drafts.`}
+              tone={qualitySummary.reviewReady ? 'emerald' : 'amber'}
+            />
+            <CommandStatusRow
+              icon={<BarChart3 className="h-4 w-4" />}
+              title="Check performance after"
+              detail="Use the post-block insight page before deciding whether to test again."
+              tone="violet"
+            />
           </div>
-
-          <div className="grid gap-5 p-5 md:grid-cols-2 md:p-6">
-            <div className="rounded-[18px] border border-violet-200/18 bg-white/[0.045] p-4 md:col-span-2">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-100/70">
-                Content quality pass
-              </p>
-              <div className="mt-4 grid gap-3 md:grid-cols-4">
-                <MetricChip label="Review-ready" value={`${qualitySummary.reviewReady}`} />
-                <MetricChip label="Authored drafts" value={`${qualitySummary.authoredDraft}`} />
-                <MetricChip label="SME reviewed" value={`${qualitySummary.smeReviewed}`} />
-                <MetricChip label="Starter fill" value={`${qualitySummary.generatedStarter}`} />
-              </div>
-              <p className="mt-4 text-sm leading-6 text-sky-100/64">
-                Review-ready items are higher-quality clinical-editor drafts prepared for SME validation. The app does not label content as SME-authored until a real reviewer marks it reviewed.
-              </p>
-            </div>
-            <ExamTrackList title="Domains" items={selectedTrack.domains} />
-            <ExamTrackList title="Systems" items={selectedTrack.systems} />
-            <ExamTrackList title="Testing formats" items={selectedTrack.testingFormats} />
-            <ExamTrackList title="Resources" items={selectedTrack.resources} />
-          </div>
-          </details>
         </Surface>
       </div>
+
+      <Surface className="overflow-hidden border-violet-200/18 bg-[#061426] p-0">
+        <details>
+          <summary className="flex cursor-pointer list-none flex-col gap-3 px-5 py-5 text-white transition hover:bg-white/[0.035] md:flex-row md:items-center md:justify-between md:px-6">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-100/70">
+                Blueprint details
+              </p>
+              <h3 className="mt-2 text-2xl font-bold tracking-normal text-white">
+                Coverage, format, and quality notes
+              </h3>
+              <p className="mt-1 text-sm leading-6 text-sky-100/62">
+                Open this when you need the domains, systems, formats, and resource list.
+              </p>
+            </div>
+            <span className="inline-flex min-h-10 items-center justify-center rounded-xl border border-violet-200/24 bg-violet-300/[0.08] px-4 py-2 text-sm font-bold text-violet-100">
+              Show details
+            </span>
+          </summary>
+          <div className="border-t border-violet-200/14">
+            <div className="bg-[linear-gradient(135deg,#003b66_0%,#12375a_100%)] px-5 py-6 text-white md:px-6">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-100">
+                {selectedTrack.shortName} overview
+              </p>
+              <h3 className="mt-3 nc-section-title text-3xl leading-tight md:text-4xl">
+                {selectedTrack.title}
+              </h3>
+              <p className="mt-3 max-w-4xl text-sm leading-7 text-sky-100/85">
+                {selectedTrack.subtitle}
+              </p>
+              <div className="mt-5 grid gap-3 md:grid-cols-3">
+                <QuickMetric label="Question Bank" value={`${selectedBankSize} ready now`} detail={selectedTrack.questionTarget} />
+                <QuickMetric label="Boards" value={selectedTrack.boards.join(' + ')} detail="Exam-specific preparation path." />
+                <QuickMetric label="Formats" value={`${selectedTrack.testingFormats.length}`} detail="Testing modes and item types." />
+              </div>
+            </div>
+            <div className="grid gap-5 p-5 md:grid-cols-2 md:p-6">
+              <div className="rounded-[18px] border border-violet-200/18 bg-white/[0.045] p-4 md:col-span-2">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-100/70">
+                  Content quality pass
+                </p>
+                <div className="mt-4 grid gap-3 md:grid-cols-4">
+                  <MetricChip label="Review-ready" value={`${qualitySummary.reviewReady}`} />
+                  <MetricChip label="Authored drafts" value={`${qualitySummary.authoredDraft}`} />
+                  <MetricChip label="SME reviewed" value={`${qualitySummary.smeReviewed}`} />
+                  <MetricChip label="Starter fill" value={`${qualitySummary.generatedStarter}`} />
+                </div>
+                <p className="mt-4 text-sm leading-6 text-sky-100/64">
+                  Review-ready items are higher-quality clinical-editor drafts prepared for SME validation. The app does not label content as SME-authored until a real reviewer marks it reviewed.
+                </p>
+              </div>
+              <ExamTrackList title="Domains" items={selectedTrack.domains} />
+              <ExamTrackList title="Systems" items={selectedTrack.systems} />
+              <ExamTrackList title="Testing formats" items={selectedTrack.testingFormats} />
+              <ExamTrackList title="Resources" items={selectedTrack.resources} />
+            </div>
+          </div>
+        </details>
+      </Surface>
 
       {isFnp ? (
         <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
@@ -2198,7 +2298,7 @@ export function ExamPrepPage() {
           </Surface>
         </div>
       ) : null}
-    </div>
+    </PageStack>
   )
 }
 
