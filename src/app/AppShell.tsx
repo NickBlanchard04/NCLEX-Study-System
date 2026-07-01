@@ -755,13 +755,13 @@ function NclexAppShell() {
                   <X className="h-4 w-4" />
                 </button>
               </div>
-              <div className="mt-5 min-h-0 space-y-5 overflow-y-auto pr-1">
+              <div className="mt-5 min-h-0 space-y-4 overflow-y-auto pr-1">
                 {mobileMoreNavigationGroups.map((group) => (
                   <div key={group.title}>
                     <p className="nc-eyebrow px-1 pb-2 text-[10px] text-sky-100/44">
                       {group.title}
                     </p>
-                    <div className="grid gap-3">
+                    <div className="grid gap-2">
                       {group.items.map((item) => {
                         const { label, icon: Icon, to } = item
                         const active = isNavigationItemActive(location.pathname, item)
@@ -774,15 +774,15 @@ function NclexAppShell() {
                               setMobileMoreOpen(false)
                             }}
                             className={clsx(
-                              'flex items-center justify-between rounded-2xl border px-4 py-3.5 text-left focus:outline-none focus:ring-2 focus:ring-cyan-200/55',
+                              'flex min-h-12 items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left focus:outline-none focus:ring-2 focus:ring-cyan-200/55',
                               active
                                 ? 'border-sky-200/60 bg-sky-400/12 text-white shadow-[0_0_24px_rgba(56,189,248,0.16)]'
                                 : 'border-sky-300/20 bg-white/[0.04] text-sky-100/76',
                             )}
                           >
-                            <span className="flex items-center gap-3 text-sm font-semibold">
-                              <Icon className="h-4 w-4" />
-                              {label}
+                            <span className="flex min-w-0 items-center gap-3 text-sm font-semibold">
+                              <Icon className="h-4 w-4 shrink-0" />
+                              <span className="min-w-0 break-words leading-tight">{label}</span>
                             </span>
                             {active ? (
                               <span className="nclex-chip nclex-chip-info">Open</span>
@@ -799,11 +799,11 @@ function NclexAppShell() {
                     setMobileMoreOpen(false)
                     setSupportOpen(true)
                   }}
-                  className="flex items-center justify-between rounded-2xl border border-sky-300/20 bg-white/[0.04] px-4 py-3.5 text-left text-sky-100/76 focus:outline-none focus:ring-2 focus:ring-cyan-200/55"
+                  className="flex min-h-12 items-center justify-between gap-3 rounded-xl border border-sky-300/20 bg-white/[0.04] px-4 py-3 text-left text-sky-100/76 focus:outline-none focus:ring-2 focus:ring-cyan-200/55"
                 >
-                  <span className="flex items-center gap-3 text-sm font-semibold">
-                    <CircleHelp className="h-4 w-4" />
-                    Help & Support
+                  <span className="flex min-w-0 items-center gap-3 text-sm font-semibold">
+                    <CircleHelp className="h-4 w-4 shrink-0" />
+                    <span className="min-w-0 break-words leading-tight">Help & Support</span>
                   </span>
                 </button>
               </div>
@@ -1137,7 +1137,7 @@ function MobileTabBar({
 
   return (
     <div className="mobile-bottom-bar safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-sky-300/20 bg-[#020812]/92 pt-2 backdrop-blur-xl lg:hidden">
-      <div className="mx-auto grid max-w-[520px] grid-cols-4">
+      <div className="mx-auto grid max-w-[520px] grid-cols-4 gap-1 px-2">
         {mobilePrimaryNavigation.map((item) => {
           const { label, icon: Icon, to, emphasis } = item
           const active = isNavigationItemActive(pathname, item)
@@ -1154,7 +1154,7 @@ function MobileTabBar({
                 navigate(to)
               }}
               className={clsx(
-                'flex min-h-[58px] min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-0 py-2 text-center text-[10px] font-medium leading-tight transition active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-cyan-200/55',
+                'flex min-h-[58px] min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-center text-[9.5px] font-medium leading-tight transition active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-cyan-200/55',
                 emphasis
                   ? 'nclex-btn-primary -mt-5 px-3 py-3 text-white'
                   : active
@@ -1163,7 +1163,7 @@ function MobileTabBar({
               )}
             >
               <Icon className={clsx('h-4 w-4', emphasis && 'h-5 w-5')} />
-              <span className="block w-full text-center leading-[1.05]">{label}</span>
+              <span className="block w-full min-w-0 break-words text-center leading-[1.06]">{label}</span>
             </button>
           )
         })}
@@ -1171,13 +1171,13 @@ function MobileTabBar({
           type="button"
           onClick={onOpenMore}
           className={clsx(
-            'flex min-h-[58px] min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-0 py-2 text-center text-[10px] font-medium leading-tight active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-cyan-200/55',
+            'flex min-h-[58px] min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-center text-[9.5px] font-medium leading-tight active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-cyan-200/55',
             moreActive ? 'bg-sky-400/12 text-sky-200 shadow-[inset_0_-2px_0_#1d9bff]' : 'text-sky-100/56',
           )}
           aria-current={moreActive ? 'page' : undefined}
         >
           <Menu className="h-4 w-4" />
-          <span className="block w-full text-center leading-[1.05]">More</span>
+          <span className="block w-full min-w-0 break-words text-center leading-[1.06]">More</span>
         </button>
       </div>
     </div>
