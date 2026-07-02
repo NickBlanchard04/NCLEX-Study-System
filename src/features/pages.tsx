@@ -73,6 +73,7 @@ import { useStudySystemStore } from '../app/store'
 import { createClientId } from '../services/ids'
 import { getSafeErrorCopy, reportSafeError } from '../services/safe-errors'
 import { filterMaterialStudyTools, summarizeMaterialQuality, type MaterialQualityIssue } from '../services/material-quality'
+import { trackAppEvent } from '../services/analytics-client'
 import {
   contentFeedbackReasonLabels,
   contentFeedbackReasons,
@@ -833,6 +834,8 @@ export function StudyMenuPage() {
 export function DashboardPage() {
   const navigate = useNavigate()
   const profile = useStudySystemStore((state) => state.profile)
+  const authUser = useStudySystemStore((state) => state.authUser)
+  const isDemoMode = useStudySystemStore((state) => state.isDemoMode)
   const attempts = useStudySystemStore((state) => state.attempts)
   const materials = useStudySystemStore((state) => state.materials)
   const activeSession = useStudySystemStore((state) => state.activeSession)
@@ -1162,6 +1165,21 @@ export function DashboardPage() {
       }
     })
   const supportActions = planItems.slice(1, 4)
+  const showFirstSessionActivation = !attempts.length && !materials.length && !continueSession
+  const chooseActivation = (choice: 'quick_study' | 'upload_material' | 'set_goal', action: () => void) => {
+    void trackAppEvent(
+      'activation_choice_clicked',
+      {
+        page_path: '/dashboard',
+        feature_name: 'First Session Activation',
+        exam_track: activeExamTrack.id,
+        is_demo_user: isDemoMode,
+        metadata: { choice },
+      },
+      { userId: authUser?.id, isDemoUser: isDemoMode },
+    )
+    action()
+  }
 
   return (
     <PageStack className="space-y-4 md:space-y-5">
@@ -1308,6 +1326,88 @@ export function DashboardPage() {
           </div>
         </div>
       </FocusPanel>
+
+      {showFirstSessionActivation ? (
+        <section className="rounded-[1.25rem] border border-cyan-300/24 bg-[radial-gradient(circle_at_18%_18%,rgba(34,211,238,0.16),transparent_34%),linear-gradient(135deg,rgba(7,29,52,0.9),rgba(2,8,18,0.96))] p-4 shadow-[0_20px_58px_rgba(14,165,233,0.1)] md:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-cyan-100/70">
+                First-session start
+              </p>
+              <h3 className="mt-1 text-2xl font-bold text-white">
+                Pick one starting move.
+              </h3>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-sky-100/66">
+                New accounts start clean. Choose the fastest path to create your first practice signal.
+              </p>
+            </div>
+            <CommandBadge tone="emerald" icon={<ShieldCheck className="h-3.5 w-3.5" />}>
+              Practice evidence only
+            </CommandBadge>
+          </div>
+          <div className="mt-5 grid gap-3 lg:grid-cols-3">
+            {[
+              {
+                title: 'Start 5-question Quick Study',
+                description: 'Answer a short set so the dashboard has a first signal.',
+                action: 'Start practice',
+                icon: <Timer className="h-5 w-5" />,
+                tone: 'cyan',
+                onSelect: () => launchDashboardQuickStudy(primaryCategory),
+              },
+              {
+                title: 'Upload study material',
+                description: 'Turn notes or a guide into editable cards and quiz items.',
+                action: 'Add material',
+                icon: <UploadCloud className="h-5 w-5" />,
+                tone: 'violet',
+                onSelect: () => navigate('/my-materials'),
+              },
+              {
+                title: 'Set your study target',
+                description: 'Confirm exam track, goal date, and daily intensity.',
+                action: 'Set goal',
+                icon: <Settings className="h-5 w-5" />,
+                tone: 'amber',
+                onSelect: () => navigate('/settings'),
+              },
+            ].map((item) => (
+              <button
+                key={item.title}
+                type="button"
+                onClick={() =>
+                  chooseActivation(
+                    item.action === 'Start practice'
+                      ? 'quick_study'
+                      : item.action === 'Add material'
+                        ? 'upload_material'
+                        : 'set_goal',
+                    item.onSelect,
+                  )
+                }
+                className={clsx(
+                  'group flex min-h-[142px] flex-col items-start justify-between rounded-[1rem] border p-4 text-left transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-cyan-200/50',
+                  item.tone === 'cyan' && 'border-cyan-200/24 bg-cyan-300/[0.075] hover:bg-cyan-300/[0.11]',
+                  item.tone === 'violet' && 'border-violet-200/22 bg-violet-300/[0.075] hover:bg-violet-300/[0.11]',
+                  item.tone === 'amber' && 'border-amber-200/22 bg-amber-300/[0.075] hover:bg-amber-300/[0.11]',
+                )}
+              >
+                <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/12 bg-white/[0.07] text-cyan-100">
+                  {item.icon}
+                </span>
+                <span>
+                  <span className="block text-base font-bold text-white">{item.title}</span>
+                  <span className="mt-2 block text-sm leading-6 text-sky-100/64">{item.description}</span>
+                  <span className="mt-3 inline-flex items-center gap-2 text-sm font-bold text-cyan-100">
+                    {item.action}
+                    <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+                  </span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {continueSession || practiceHistory.length ? (
         <section className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">

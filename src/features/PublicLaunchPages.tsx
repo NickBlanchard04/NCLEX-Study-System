@@ -6,6 +6,7 @@ import {
   BrainCircuit,
   CheckCircle2,
   ClipboardList,
+  MailCheck,
   ShieldCheck,
   Sparkles,
   Target,
@@ -13,7 +14,7 @@ import {
 import nursingCommandLogo from '../assets/brand/nursing-command-logo.png'
 import { trackAppEvent } from '../services/analytics-client'
 
-type PublicPageKey = 'pricing' | 'nclex-rn' | 'nclex-pn' | 'about' | 'privacy' | 'terms'
+type PublicPageKey = 'beta' | 'pricing' | 'nclex-rn' | 'nclex-pn' | 'about' | 'privacy' | 'terms'
 
 type PublicPage = {
   key: PublicPageKey
@@ -35,6 +36,45 @@ type PublicPage = {
 }
 
 const publicPages: Record<PublicPageKey, PublicPage> = {
+  beta: {
+    key: 'beta',
+    path: '/beta',
+    eyebrow: 'Open beta nursing study command center',
+    title: 'Start with one focused NCLEX study action.',
+    description:
+      'Create a free beta account, verify your email, and use Nurse Command to organize practice, weak-area repair, notes, and uploaded study material in one place.',
+    bullets: ['One next action after signup', 'Editable study tools from your material', 'Practice evidence only, never licensure claims'],
+    ctaLabel: 'Create free beta account',
+    ctaPath: '/?auth=signup',
+    sections: [
+      {
+        title: 'What happens first',
+        body: 'After account verification, Nurse Command asks for a few study preferences, then points you toward one starter action: quick practice, upload material, or set a study target.',
+      },
+      {
+        title: 'What it is built around',
+        body: 'The workflow keeps practice questions, missed patterns, notes, flashcards, and material review connected so studying feels less scattered.',
+      },
+      {
+        title: 'Beta boundary',
+        body: 'Readiness labels are practice evidence only. Nurse Command is study support, not clinical advice, patient-care guidance, or a licensure prediction.',
+      },
+    ],
+    faqs: [
+      {
+        question: 'Is the beta free to try?',
+        answer: 'The current launch path is a free open beta while the product is tested and refined with nursing learners.',
+      },
+      {
+        question: 'Can I upload my own notes?',
+        answer: 'Yes. You can upload study files or use assisted import for study links, then review generated cards and questions before saving them.',
+      },
+      {
+        question: 'Does it replace official NCLEX prep guidance?',
+        answer: 'No. Nurse Command is a study support workspace. Always defer to official exam bodies, instructors, and your nursing program.',
+      },
+    ],
+  },
   pricing: {
     key: 'pricing',
     path: '/pricing',
@@ -290,6 +330,16 @@ export function PublicLaunchPage() {
   const location = useLocation()
   const page = pageFromPath(location.pathname)
   usePublicPageMeta(page)
+  const trackPublicCta = (placement: string) => {
+    void trackAppEvent('external_cta_clicked', {
+      page_path: page.path,
+      feature_name: `Public ${page.key} ${placement}`,
+      is_demo_user: true,
+      metadata: {
+        destination: page.ctaPath.startsWith('/?auth=signup') ? 'create_account' : page.ctaPath,
+      },
+    })
+  }
 
   return (
     <main className="min-h-screen bg-[#04101f] text-white">
@@ -305,6 +355,7 @@ export function PublicLaunchPage() {
           <nav className="flex flex-wrap items-center gap-2 text-sm font-semibold text-sky-100/72">
             <PublicNavLink to="/nclex-rn" label="NCLEX-RN" />
             <PublicNavLink to="/nclex-pn" label="NCLEX-PN" />
+            <PublicNavLink to="/beta" label="Beta" />
             <PublicNavLink to="/pricing" label="Pricing" />
             <PublicNavLink to="/about" label="About" />
           </nav>
@@ -323,10 +374,11 @@ export function PublicLaunchPage() {
           <div className="mt-7 flex flex-wrap gap-3">
             <Link
               to={page.ctaPath}
+              onClick={() => trackPublicCta('hero')}
               className="inline-flex items-center gap-2 rounded-2xl bg-cyan-300 px-5 py-3 text-sm font-black text-[#04101f] shadow-[0_0_30px_rgba(103,232,249,0.22)] transition hover:bg-cyan-200"
             >
               {page.ctaLabel}
-              <Sparkles className="h-4 w-4" />
+              {page.key === 'beta' ? <MailCheck className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
             </Link>
             <Link
               to="/privacy"
@@ -382,6 +434,7 @@ export function PublicLaunchPage() {
             </p>
             <Link
               to={page.ctaPath}
+              onClick={() => trackPublicCta('faq')}
               className="mt-5 inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-cyan-300 px-5 py-3 text-sm font-black text-[#04101f] transition hover:bg-cyan-200"
             >
               {page.ctaLabel}

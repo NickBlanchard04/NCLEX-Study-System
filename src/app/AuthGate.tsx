@@ -20,6 +20,15 @@ import type { ExamTrackId, StudyIntensity } from './types'
 
 type AuthMode = 'welcome' | 'signin' | 'signup' | 'reset'
 
+const getInitialAuthMode = (): AuthMode => {
+  if (typeof window === 'undefined') return 'welcome'
+  const authMode = new URLSearchParams(window.location.search).get('auth')?.toLowerCase()
+  if (authMode === 'signin' || authMode === 'login') return 'signin'
+  if (authMode === 'signup' || authMode === 'register') return 'signup'
+  if (authMode === 'reset') return 'reset'
+  return 'welcome'
+}
+
 const studyIntensityOptions: Array<{
   value: StudyIntensity
   label: string
@@ -292,7 +301,7 @@ function AuthLanding() {
   const signUp = useStudySystemStore((state) => state.signUp)
   const requestPasswordReset = useStudySystemStore((state) => state.requestPasswordReset)
   const authError = useStudySystemStore((state) => state.authError)
-  const [mode, setMode] = useState<AuthMode>('welcome')
+  const [mode, setMode] = useState<AuthMode>(() => getInitialAuthMode())
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [passwordVisible, setPasswordVisible] = useState(false)

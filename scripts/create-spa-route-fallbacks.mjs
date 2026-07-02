@@ -5,6 +5,7 @@ const distDir = join(process.cwd(), 'dist')
 const indexFile = join(distDir, 'index.html')
 
 const appRoutes = [
+  'beta',
   'pricing',
   'nclex-rn',
   'nclex-pn',

@@ -49,6 +49,13 @@ import {
   verifyAdminPreviewPasskey,
 } from '../services/admin-analytics'
 import { trackAppEvent } from '../services/analytics-client'
+import {
+  createBetaFeedbackMailto,
+  recordBetaFeedback,
+  type BetaFeedbackReport,
+  type BetaFeedbackSentiment,
+  type BetaFeedbackSource,
+} from '../services/beta-feedback'
 
 type NavigationItem = {
   label: string
@@ -1437,6 +1444,52 @@ function BrandLockup({ compact = false }: { compact?: boolean }) {
 }
 
 function SupportSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const authUser = useStudySystemStore((state) => state.authUser)
+  const isDemoMode = useStudySystemStore((state) => state.isDemoMode)
+  const location = useLocation()
+  const feedbackSource = getFeedbackSourceFromPath(location.pathname)
+  const [feedbackType, setFeedbackType] = useState<BetaFeedbackSentiment>('confused')
+  const [confusion, setConfusion] = useState('')
+  const [expected, setExpected] = useState('')
+  const [returnTrigger, setReturnTrigger] = useState('')
+  const [lastFeedback, setLastFeedback] = useState<BetaFeedbackReport | null>(null)
+  const canSubmitFeedback = confusion.trim().length >= 6 || expected.trim().length >= 6 || returnTrigger.trim().length >= 6
+
+  const submitFeedback = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!canSubmitFeedback) return
+
+    const report = recordBetaFeedback(
+      {
+        source: feedbackSource,
+        sentiment: feedbackType,
+        confusion,
+        expected,
+        returnTrigger,
+      },
+      { userId: authUser?.id, isDemoUser: isDemoMode },
+    )
+
+    setLastFeedback(report)
+    setConfusion('')
+    setExpected('')
+    setReturnTrigger('')
+  }
+
+  useEffect(() => {
+    if (!open) return
+    void trackAppEvent(
+      'feedback_opened',
+      {
+        page_path: location.pathname,
+        feature_name: 'Help & Support',
+        is_demo_user: isDemoMode,
+        metadata: { source: feedbackSource },
+      },
+      { userId: authUser?.id, isDemoUser: isDemoMode },
+    )
+  }, [authUser?.id, feedbackSource, isDemoMode, location.pathname, open])
+
   return (
     <AnimatePresence>
       {open ? (
@@ -1454,7 +1507,7 @@ function SupportSheet({ open, onClose }: { open: boolean; onClose: () => void })
             initial={{ opacity: 0, y: 18, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.98 }}
-            className="absolute inset-x-4 top-20 mx-auto max-w-[460px] rounded-[24px] border border-sky-300/24 bg-[#071d34]/95 p-6 shadow-[0_24px_60px_rgba(0,0,0,0.34)] backdrop-blur"
+            className="absolute inset-x-4 top-10 mx-auto max-h-[calc(100vh-5rem)] max-w-[520px] overflow-y-auto rounded-[24px] border border-sky-300/24 bg-[#071d34]/95 p-6 shadow-[0_24px_60px_rgba(0,0,0,0.34)] backdrop-blur"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-4">
@@ -1506,6 +1559,86 @@ function SupportSheet({ open, onClose }: { open: boolean; onClose: () => void })
                   Privacy, terms, support
                 </NavLink>
               </div>
+              <form
+                onSubmit={submitFeedback}
+                className="rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.055] p-4"
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.14em] text-cyan-100/70">
+                      Beta feedback
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-sky-100/70">
+                      Tell us what made the page clear, confusing, or worth returning to.
+                    </p>
+                  </div>
+                  <select
+                    value={feedbackType}
+                    onChange={(event) => setFeedbackType(event.target.value as BetaFeedbackSentiment)}
+                    className="min-h-11 rounded-xl border border-cyan-200/20 bg-[#03101f]/70 px-3 text-sm font-bold text-white outline-none focus:border-cyan-100 focus:ring-2 focus:ring-cyan-300/18"
+                  >
+                    <option value="confused">Confusing</option>
+                    <option value="blocked">Blocked</option>
+                    <option value="liked">Useful</option>
+                    <option value="idea">Idea</option>
+                  </select>
+                </div>
+                <label className="mt-4 block">
+                  <span className="text-xs font-bold uppercase tracking-[0.12em] text-sky-100/58">
+                    What stood out?
+                  </span>
+                  <textarea
+                    value={confusion}
+                    onChange={(event) => setConfusion(event.target.value)}
+                    className="mt-2 min-h-20 w-full resize-y rounded-xl border border-sky-300/20 bg-[#03101f]/72 p-3 text-sm leading-6 text-white outline-none placeholder:text-sky-100/34 focus:border-cyan-100 focus:ring-2 focus:ring-cyan-300/18"
+                    placeholder="Example: I was not sure what to click next."
+                  />
+                </label>
+                <label className="mt-3 block">
+                  <span className="text-xs font-bold uppercase tracking-[0.12em] text-sky-100/58">
+                    What did you expect?
+                  </span>
+                  <textarea
+                    value={expected}
+                    onChange={(event) => setExpected(event.target.value)}
+                    className="mt-2 min-h-16 w-full resize-y rounded-xl border border-sky-300/20 bg-[#03101f]/72 p-3 text-sm leading-6 text-white outline-none placeholder:text-sky-100/34 focus:border-cyan-100 focus:ring-2 focus:ring-cyan-300/18"
+                    placeholder="Example: I expected this to start a short quiz."
+                  />
+                </label>
+                <label className="mt-3 block">
+                  <span className="text-xs font-bold uppercase tracking-[0.12em] text-sky-100/58">
+                    What would make you come back?
+                  </span>
+                  <input
+                    value={returnTrigger}
+                    onChange={(event) => setReturnTrigger(event.target.value)}
+                    className="mt-2 min-h-11 w-full rounded-xl border border-sky-300/20 bg-[#03101f]/72 px-3 text-sm text-white outline-none placeholder:text-sky-100/34 focus:border-cyan-100 focus:ring-2 focus:ring-cyan-300/18"
+                    placeholder="Example: A clear weekly plan or better notes import."
+                  />
+                </label>
+                <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <button
+                    type="submit"
+                    disabled={!canSubmitFeedback}
+                    className="inline-flex min-h-11 items-center justify-center rounded-xl border border-cyan-100/36 bg-cyan-500/80 px-4 py-2 text-sm font-black text-white transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Save beta feedback
+                  </button>
+                  {lastFeedback ? (
+                    <a
+                      href={createBetaFeedbackMailto(lastFeedback)}
+                      className="inline-flex min-h-11 items-center justify-center rounded-xl border border-emerald-300/24 bg-emerald-300/10 px-4 py-2 text-sm font-black text-emerald-100 transition hover:border-emerald-200/48"
+                    >
+                      Send details by email
+                    </a>
+                  ) : null}
+                </div>
+                {lastFeedback ? (
+                  <p role="status" className="mt-3 rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-3 py-2 text-sm font-semibold text-emerald-100">
+                    Feedback saved on this device and logged as a privacy-safe beta signal.
+                  </p>
+                ) : null}
+              </form>
               <div className="rounded-2xl border border-amber-200/24 bg-amber-300/10 px-4 py-3 text-xs font-semibold leading-5 text-amber-50/82">
                 Readiness and adaptive labels are practice evidence only. Nurse Command is study support, not clinical advice or a licensure prediction.
               </div>
@@ -1515,4 +1648,12 @@ function SupportSheet({ open, onClose }: { open: boolean; onClose: () => void })
       ) : null}
     </AnimatePresence>
   )
+}
+
+function getFeedbackSourceFromPath(pathname: string): BetaFeedbackSource {
+  if (pathname === '/dashboard' || pathname === '/') return 'dashboard'
+  if (pathname === '/my-materials' || pathname === '/flashcards' || pathname === '/notes' || pathname === '/strategy-training') return 'materials'
+  if (pathname === '/practice-questions' || pathname === '/quick-study' || pathname === '/test-mode' || pathname === '/exam-prep') return 'question-bank'
+  if (pathname === '/settings') return 'help'
+  return 'help'
 }
