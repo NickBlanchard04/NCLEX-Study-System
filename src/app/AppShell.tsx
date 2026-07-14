@@ -552,11 +552,11 @@ function NclexAppShell() {
             desktopHubCollapsed ? 'w-[80px] px-3' : 'w-[264px] px-4',
           )}
         >
-          <div className={clsx('flex gap-3', desktopHubCollapsed ? 'flex-col items-center' : 'items-start')}>
+          <div className={clsx('flex gap-2', desktopHubCollapsed ? 'flex-col items-center' : 'items-start')}>
             <button
               type="button"
               onClick={toggleDesktopHubCollapsed}
-              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-cyan-300/24 bg-white/[0.055] text-sky-100/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition hover:border-sky-200/60 hover:text-sky-100 focus:outline-none focus:ring-2 focus:ring-cyan-200/60"
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-cyan-300/24 bg-white/[0.055] text-sky-100/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition hover:border-sky-200/60 hover:text-sky-100 focus:outline-none focus:ring-2 focus:ring-cyan-200/60"
               aria-label={desktopHubCollapsed ? 'Expand command hub' : 'Collapse command hub'}
               aria-pressed={desktopHubCollapsed}
               title={desktopHubCollapsed ? 'Expand command hub' : 'Collapse command hub'}
@@ -571,7 +571,7 @@ function NclexAppShell() {
                 <img src={nursingCommandLogo} alt="" className="h-9 w-9 object-contain" />
               </div>
             ) : (
-              <BrandLockup />
+              <BrandLockup desktopRail />
             )}
           </div>
           <nav
@@ -1411,11 +1411,16 @@ function MobileTabBar({
   )
 }
 
-function BrandLockup({ compact = false }: { compact?: boolean }) {
+function BrandLockup({ compact = false, desktopRail = false }: { compact?: boolean; desktopRail?: boolean }) {
   return (
-    <div className={clsx('rounded-[18px] border border-cyan-300/22 bg-[#071d34]/75 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_24px_rgba(43,148,255,0.14)]', compact && 'p-3')}>
+    <div className={clsx('rounded-[18px] border border-cyan-300/22 bg-[#071d34]/75 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_24px_rgba(43,148,255,0.14)]', compact || desktopRail ? 'p-3' : 'p-4')}>
       <div className="flex items-start gap-3">
-        <div className="relative grid h-12 w-12 shrink-0 place-items-center rounded-[16px] border border-cyan-300/35 bg-[#092845] shadow-[0_0_26px_rgba(43,148,255,0.26)]">
+        <div
+          className={clsx(
+            'relative grid shrink-0 place-items-center border border-cyan-300/35 bg-[#092845] shadow-[0_0_26px_rgba(43,148,255,0.26)]',
+            desktopRail ? 'h-11 w-11 rounded-[14px]' : 'h-12 w-12 rounded-[16px]',
+          )}
+        >
           <img src={nursingCommandLogo} alt="Nurse Command logo" className="h-10 w-10 object-contain" />
         </div>
         <div className="min-w-0">
