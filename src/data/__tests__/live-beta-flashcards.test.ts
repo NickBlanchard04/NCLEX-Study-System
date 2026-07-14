@@ -1,18 +1,17 @@
 import { describe, expect, it } from 'vitest'
-import { flashcards } from '../content'
+import { loadLiveBetaFlashcards } from '../content'
 import { liveBetaBatchExpectedCounts, liveBetaBatchFlashcards } from '../live-beta-flashcards'
 
 describe('live beta flashcard batches', () => {
-  it('promotes manifest batches into the core flashcard inventory', () => {
+  it('loads every manifest batch into the route-scoped flashcard inventory', async () => {
+    const loadedFlashcards = await loadLiveBetaFlashcards()
     const totalExpected = Object.values(liveBetaBatchExpectedCounts).reduce((sum, count) => sum + count, 0)
-    expect(liveBetaBatchFlashcards).toHaveLength(totalExpected)
+    expect(loadedFlashcards).toHaveLength(totalExpected)
+    expect(loadedFlashcards).toBe(liveBetaBatchFlashcards)
 
     Object.entries(liveBetaBatchExpectedCounts).forEach(([batchId, expectedCount]) => {
-      const batchCards = liveBetaBatchFlashcards.filter((card) => card.sourcePackId === batchId)
+      const batchCards = loadedFlashcards.filter((card) => card.sourcePackId === batchId)
       expect(batchCards, batchId).toHaveLength(expectedCount)
-      batchCards.forEach((card) => {
-        expect(flashcards.some((inventoryCard) => inventoryCard.id === card.id), card.id).toBe(true)
-      })
     })
   })
 

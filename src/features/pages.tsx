@@ -61,6 +61,7 @@ import { clsx } from 'clsx'
 import type {
   ActiveSession,
   ExamTrackId,
+  Flashcard,
   FlashcardStatus,
   MaterialFlashcard,
   MaterialImportMode,
@@ -88,6 +89,7 @@ import {
   getExamDashboardCopy,
   getExamQuestionBank,
   getExamSystems,
+  loadLiveBetaFlashcards,
   strategyLessons,
 } from '../data/content'
 import { examTracks, getExamTrack } from '../data/exam-tracks'
@@ -3636,6 +3638,8 @@ export function FlashcardsPage() {
   const [shuffleSeed, setShuffleSeed] = useState(1)
   const [index, setIndex] = useState(0)
   const [isFlipped, setIsFlipped] = useState(false)
+  const [liveBetaFlashcards, setLiveBetaFlashcards] = useState<Flashcard[]>([])
+  const [liveBetaLoadFailed, setLiveBetaLoadFailed] = useState(false)
   const [flashcardFeedbackOpen, setFlashcardFeedbackOpen] = useState(false)
   const [flashcardFeedbackReason, setFlashcardFeedbackReason] =
     useState<ContentFeedbackReason>('source_concern')
@@ -3644,6 +3648,23 @@ export function FlashcardsPage() {
   const [reviewNowMs] = useState(() => new Date().getTime())
   const repairingMaterialIdsRef = useRef(new Set<string>())
   const touchStartXRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    void loadLiveBetaFlashcards().then(
+      (cards) => {
+        if (!cancelled) setLiveBetaFlashcards(cards)
+      },
+      () => {
+        if (!cancelled) setLiveBetaLoadFailed(true)
+      },
+    )
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
     if (preferredMaterialFlashcardsId) {
@@ -3675,7 +3696,7 @@ export function FlashcardsPage() {
   const effectiveSourceFilter = activeMaterialId ?? sourceFilter
 
   const combinedCards = useMemo(() => {
-    const coreCards = flashcards.map((card) => ({
+    const coreCards = [...flashcards, ...liveBetaFlashcards].map((card) => ({
       id: card.id,
       front: card.front,
       back: card.back,
@@ -3722,7 +3743,7 @@ export function FlashcardsPage() {
     }))
 
     return [...coreCards, ...importedCards]
-  }, [flashcardProgress, flashcardReview, materialFlashcards])
+  }, [flashcardProgress, flashcardReview, liveBetaFlashcards, materialFlashcards])
 
   const filtered = useMemo(() => {
     const byDeck = combinedCards.filter((card) => {
@@ -3859,6 +3880,11 @@ export function FlashcardsPage() {
           </button>
         }
       />
+      {liveBetaLoadFailed ? (
+        <p role="alert" className="border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          The live-beta deck could not load. Refresh the page to try again.
+        </p>
+      ) : null}
       <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
         <Surface>
           <div className="mb-5 rounded-[20px] border border-[#cfe1f7] bg-[#eef5ff] p-4">

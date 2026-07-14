@@ -12,7 +12,6 @@ import {
   getInternalDraftFixtureFlashcards,
   getInternalDraftFixtureQuestions,
 } from './internal-draft-fixtures'
-import { liveBetaBatchFlashcards } from './live-beta-flashcards'
 import { qualityQuestionPacks } from './quality-question-packs'
 
 const makeChoices = (...choices: string[]): AnswerChoice[] =>
@@ -1984,10 +1983,22 @@ const normalizedAuthoredFlashcards = [...authoredFlashcards, ...categoryMinimumF
 
 export const flashcards: Flashcard[] = [
   ...getInternalDraftFixtureFlashcards(),
-  ...liveBetaBatchFlashcards,
   ...normalizedAuthoredFlashcards,
   ...examTracks.flatMap((track) => makeTrackStarterFlashcards(track.id)),
 ]
+
+let liveBetaFlashcardsPromise: Promise<Flashcard[]> | null = null
+
+export const loadLiveBetaFlashcards = () => {
+  liveBetaFlashcardsPromise ??= import('./live-beta-flashcards')
+    .then(({ liveBetaBatchFlashcards }) => liveBetaBatchFlashcards)
+    .catch((error: unknown) => {
+      liveBetaFlashcardsPromise = null
+      throw error
+    })
+
+  return liveBetaFlashcardsPromise
+}
 
 export const strategyLessons: StrategyLesson[] = [
   {
