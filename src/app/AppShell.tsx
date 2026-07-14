@@ -552,7 +552,12 @@ function NclexAppShell() {
             desktopHubCollapsed ? 'w-[80px] px-3' : 'w-[264px] px-4',
           )}
         >
-          <div className={clsx('flex gap-2', desktopHubCollapsed ? 'flex-col items-center' : 'items-start')}>
+          <div
+            className={clsx(
+              'flex',
+              desktopHubCollapsed ? 'flex-col items-center gap-2' : 'items-start gap-3',
+            )}
+          >
             <button
               type="button"
               onClick={toggleDesktopHubCollapsed}
@@ -1419,7 +1424,7 @@ function MobileTabBar({
 function BrandLockup({ compact = false, desktopRail = false }: { compact?: boolean; desktopRail?: boolean }) {
   return (
     <div className={clsx('rounded-[18px] border border-cyan-300/22 bg-[#071d34]/75 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_24px_rgba(43,148,255,0.14)]', compact || desktopRail ? 'p-3' : 'p-4')}>
-      <div className={clsx('flex items-start', desktopRail ? 'gap-2' : 'gap-3')}>
+      <div className={clsx('flex items-start', desktopRail ? 'gap-1' : 'gap-3')}>
         <div
           className={clsx(
             'relative grid shrink-0 place-items-center border border-cyan-300/35 bg-[#092845] shadow-[0_0_26px_rgba(43,148,255,0.26)]',
