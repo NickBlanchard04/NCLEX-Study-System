@@ -8,6 +8,8 @@ import {
   ChartColumn,
   ChevronDown,
   ChevronLeft,
+  ChevronsLeft,
+  ChevronsRight,
   CircleHelp,
   ClipboardList,
   Cloud,
@@ -24,8 +26,6 @@ import {
   NotebookPen,
   RefreshCw,
   Settings,
-  SidebarClose,
-  SidebarOpen,
   Stethoscope,
   Timer,
   UsersRound,
@@ -556,12 +556,17 @@ function NclexAppShell() {
             <button
               type="button"
               onClick={toggleDesktopHubCollapsed}
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-cyan-300/24 bg-white/[0.055] text-sky-100/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition hover:border-sky-200/60 hover:text-sky-100 focus:outline-none focus:ring-2 focus:ring-cyan-200/60"
+              className="relative z-10 inline-flex h-11 w-11 shrink-0 items-center justify-center overflow-visible rounded-xl border border-cyan-300/24 bg-white/[0.055] p-0 text-sky-100/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition hover:border-sky-200/60 hover:text-sky-100 focus:outline-none focus:ring-2 focus:ring-cyan-200/60"
+              data-testid="desktop-sidebar-toggle"
               aria-label={desktopHubCollapsed ? 'Expand command hub' : 'Collapse command hub'}
               aria-pressed={desktopHubCollapsed}
               title={desktopHubCollapsed ? 'Expand command hub' : 'Collapse command hub'}
             >
-              {desktopHubCollapsed ? <SidebarOpen className="h-4 w-4" /> : <SidebarClose className="h-4 w-4" />}
+              {desktopHubCollapsed ? (
+                <ChevronsRight className="h-5 w-5 overflow-visible" />
+              ) : (
+                <ChevronsLeft className="h-5 w-5 overflow-visible" />
+              )}
             </button>
             {desktopHubCollapsed ? (
               <div
@@ -1414,7 +1419,7 @@ function MobileTabBar({
 function BrandLockup({ compact = false, desktopRail = false }: { compact?: boolean; desktopRail?: boolean }) {
   return (
     <div className={clsx('rounded-[18px] border border-cyan-300/22 bg-[#071d34]/75 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_24px_rgba(43,148,255,0.14)]', compact || desktopRail ? 'p-3' : 'p-4')}>
-      <div className="flex items-start gap-3">
+      <div className={clsx('flex items-start', desktopRail ? 'gap-2' : 'gap-3')}>
         <div
           className={clsx(
             'relative grid shrink-0 place-items-center border border-cyan-300/35 bg-[#092845] shadow-[0_0_26px_rgba(43,148,255,0.26)]',
