@@ -31,7 +31,18 @@ import {
   UsersRound,
   X,
 } from 'lucide-react'
-import { lazy, Suspense, useEffect, useMemo, useState, type ComponentType, type FormEvent, type ReactNode } from 'react'
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentType,
+  type FormEvent,
+  type ReactNode,
+  type RefObject,
+} from 'react'
 import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { clsx } from 'clsx'
 import { PublicLaunchPage } from '../features/PublicLaunchPages'
@@ -372,6 +383,10 @@ function NclexAppShell() {
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false)
   const [supportOpen, setSupportOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
+  const mobileMenuTriggerRef = useRef<HTMLButtonElement | null>(null)
+  const mobileMenuCloseRef = useRef<HTMLButtonElement | null>(null)
+  const mobileMoreTriggerRef = useRef<HTMLButtonElement | null>(null)
+  const mobileMoreCloseRef = useRef<HTMLButtonElement | null>(null)
   const [expandedNavigationGroups, setExpandedNavigationGroups] = useState<Record<string, boolean>>({})
   const [desktopHubCollapsed, setDesktopHubCollapsed] = useState(() => {
     try {
@@ -410,6 +425,34 @@ function NclexAppShell() {
     window.addEventListener('keydown', handleEscape)
     return () => window.removeEventListener('keydown', handleEscape)
   }, [])
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return
+    const trigger = mobileMenuTriggerRef.current
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const focusFrame = window.requestAnimationFrame(() => mobileMenuCloseRef.current?.focus())
+
+    return () => {
+      window.cancelAnimationFrame(focusFrame)
+      document.body.style.overflow = previousOverflow
+      trigger?.focus()
+    }
+  }, [mobileMenuOpen])
+
+  useEffect(() => {
+    if (!mobileMoreOpen) return
+    const trigger = mobileMoreTriggerRef.current
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const focusFrame = window.requestAnimationFrame(() => mobileMoreCloseRef.current?.focus())
+
+    return () => {
+      window.cancelAnimationFrame(focusFrame)
+      document.body.style.overflow = previousOverflow
+      trigger?.focus()
+    }
+  }, [mobileMoreOpen])
 
   useEffect(() => {
     const featureName = getFeatureNameFromPath(location.pathname)
@@ -547,6 +590,7 @@ function NclexAppShell() {
     <div className="nurse-command-app nclex-shell-bg min-h-screen text-[var(--nclex-text)]">
       <div className="flex min-h-screen w-full">
         <aside
+          data-testid="desktop-sidebar"
           className={clsx(
             'nclex-sidebar hidden shrink-0 py-5 text-white transition-[width,padding] duration-200 lg:flex lg:flex-col',
             desktopHubCollapsed ? 'w-[80px] px-3' : 'w-[264px] px-4',
@@ -564,7 +608,8 @@ function NclexAppShell() {
               className="relative z-10 inline-flex h-11 w-11 shrink-0 items-center justify-center overflow-visible rounded-xl border border-cyan-300/24 bg-white/[0.055] p-0 text-sky-100/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition hover:border-sky-200/60 hover:text-sky-100 focus:outline-none focus:ring-2 focus:ring-cyan-200/60"
               data-testid="desktop-sidebar-toggle"
               aria-label={desktopHubCollapsed ? 'Expand command hub' : 'Collapse command hub'}
-              aria-pressed={desktopHubCollapsed}
+              aria-expanded={!desktopHubCollapsed}
+              aria-controls="desktop-command-hub-navigation"
               title={desktopHubCollapsed ? 'Expand command hub' : 'Collapse command hub'}
             >
               {desktopHubCollapsed ? (
@@ -581,10 +626,11 @@ function NclexAppShell() {
                 <img src={nursingCommandLogo} alt="" className="h-9 w-9 object-contain" />
               </div>
             ) : (
-              <BrandLockup desktopRail />
+              <BrandLockup desktopRail testId="desktop-sidebar-brand" />
             )}
           </div>
           <nav
+            id="desktop-command-hub-navigation"
             className={clsx(
               'mt-5 flex-1 overflow-y-auto',
               desktopHubCollapsed ? 'space-y-2' : 'space-y-2.5 pr-1',
@@ -650,15 +696,16 @@ function NclexAppShell() {
                 <button
                   type="button"
                   onClick={() => navigate(-1)}
-                  className="hidden h-10 w-10 items-center justify-center rounded-xl border border-sky-300/24 bg-white/5 text-sky-100/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition hover:border-sky-200/60 hover:text-sky-200 md:inline-flex"
+                  className="hidden h-11 w-11 items-center justify-center rounded-xl border border-sky-300/24 bg-white/5 text-sky-100/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition hover:border-sky-200/60 hover:text-sky-200 md:inline-flex"
                   aria-label="Go back"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
                 <button
+                  ref={mobileMenuTriggerRef}
                   type="button"
                   onClick={() => setMobileMenuOpen(true)}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-sky-300/24 bg-white/5 text-sky-100/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] lg:hidden"
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-sky-300/24 bg-white/5 text-sky-100/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] lg:hidden"
                   aria-label="Open navigation"
                 >
                   <Menu className="h-4 w-4" />
@@ -701,8 +748,9 @@ function NclexAppShell() {
                 </button>
                 <button
                   type="button"
-                  className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-sky-300/24 bg-white/5 text-sky-100/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition hover:text-sky-200"
-                  aria-label="Notifications"
+                  onClick={() => navigate('/social')}
+                  className="relative inline-flex h-11 w-11 items-center justify-center rounded-xl border border-sky-300/24 bg-white/5 text-sky-100/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition hover:text-sky-200"
+                  aria-label="Open notifications"
                 >
                   <Bell className="h-4 w-4" />
                   <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-rose-400 ring-2 ring-[#04101f]" />
@@ -753,15 +801,29 @@ function NclexAppShell() {
                   <button
                     type="button"
                     onClick={() => void syncNow()}
+                    role="menuitem"
                     className="nclex-btn-secondary inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold"
                   >
                     <RefreshCw className="h-4 w-4" />
                     Sync now
                   </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setAccountOpen(false)
+                      navigate('/settings')
+                    }}
+                    className="nclex-btn-secondary inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold"
+                  >
+                    <Settings className="h-4 w-4" />
+                    Account settings
+                  </button>
                   {authUser ? (
                     <button
                       type="button"
                       onClick={() => void signOut()}
+                      role="menuitem"
                       className="rounded-xl border border-[#ffd1d1] bg-[var(--nclex-danger-soft)] px-3 py-2 text-sm font-semibold text-[var(--nclex-danger)]"
                     >
                       Sign out
@@ -773,7 +835,7 @@ function NclexAppShell() {
           </header>
 
           <main className="page-mobile-pad flex-1 px-4 py-5 md:px-6 lg:px-8 lg:py-8">
-            <div className="w-full max-w-none">
+            <div className="mx-auto w-full max-w-[1600px]">
               {migrationPromptVisible ? (
                 <div className="mb-5 rounded-[20px] border border-sky-300/24 bg-[#071d34]/78 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_16px_34px_rgba(0,0,0,0.18)] backdrop-blur">
                   <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -845,6 +907,7 @@ function NclexAppShell() {
         pathname={location.pathname}
         onOpenMore={() => setMobileMoreOpen(true)}
         onOpenQuickStudy={() => navigate('/quick-study')}
+        moreButtonRef={mobileMoreTriggerRef}
       />
 
       <AnimatePresence>
@@ -856,20 +919,25 @@ function NclexAppShell() {
               className="fixed inset-0 z-40 bg-slate-950/40 lg:hidden"
               role="dialog"
               aria-modal="true"
-              aria-label="Primary navigation"
+              aria-labelledby="mobile-navigation-title"
+              onClick={() => setMobileMenuOpen(false)}
             >
             <motion.div
               initial={{ x: -32, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: -32, opacity: 0 }}
-              className="nclex-sidebar safe-top flex h-full w-[84vw] max-w-[320px] flex-col px-5 py-5 text-white"
+              className="nclex-sidebar safe-top flex h-full w-[88vw] max-w-[320px] flex-col overflow-hidden px-5 py-5 text-white"
+              onClick={(event) => event.stopPropagation()}
             >
               <div className="flex items-start justify-between gap-3">
-                <BrandLockup compact />
+                <div id="mobile-navigation-title">
+                  <BrandLockup compact />
+                </div>
                 <button
+                  ref={mobileMenuCloseRef}
                   type="button"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/6 focus:outline-none focus:ring-2 focus:ring-cyan-200/60"
+                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/6 focus:outline-none focus:ring-2 focus:ring-cyan-200/60"
                   aria-label="Close navigation"
                 >
                   <X className="h-4 w-4" />
@@ -922,14 +990,14 @@ function NclexAppShell() {
             className="fixed inset-0 z-40 bg-slate-950/35 lg:hidden"
             role="dialog"
             aria-modal="true"
-            aria-label="More navigation"
+            aria-labelledby="mobile-more-title"
             onClick={() => setMobileMoreOpen(false)}
           >
             <motion.div
               initial={{ y: 24, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 24, opacity: 0 }}
-              className="safe-bottom fixed inset-x-0 bottom-0 flex max-h-[calc(100vh-1rem)] flex-col rounded-t-[28px] border border-sky-300/20 bg-[#04101f]/95 px-4 pb-6 pt-4 shadow-[0_-18px_44px_rgba(0,0,0,0.34)] backdrop-blur-xl [--safe-bottom-offset:1.5rem]"
+              className="safe-bottom fixed inset-x-0 bottom-0 flex max-h-[calc(100vh-1rem)] flex-col rounded-t-2xl border border-sky-300/20 bg-[#04101f]/98 px-4 pb-6 pt-4 shadow-[0_-12px_32px_rgba(0,0,0,0.3)] [--safe-bottom-offset:1.5rem]"
               onClick={(event) => event.stopPropagation()}
             >
               <div className="mx-auto mb-4 h-1.5 w-14 rounded-full bg-sky-300/24" />
@@ -938,12 +1006,13 @@ function NclexAppShell() {
                   <p className="nc-eyebrow text-sky-200/62">
                     More
                   </p>
-                  <h2 className="nc-section-title text-xl text-white">Command hub</h2>
+                  <h2 id="mobile-more-title" className="nc-section-title text-xl text-white">Command hub</h2>
                 </div>
                 <button
+                  ref={mobileMoreCloseRef}
                   type="button"
                   onClick={() => setMobileMoreOpen(false)}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-sky-300/24 bg-white/5 text-sky-100/72 focus:outline-none focus:ring-2 focus:ring-cyan-200/60"
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-sky-300/24 bg-white/5 text-sky-100/72 focus:outline-none focus:ring-2 focus:ring-cyan-200/60"
                   aria-label="Close more navigation"
                 >
                   <X className="h-4 w-4" />
@@ -1364,16 +1433,21 @@ function MobileTabBar({
   pathname,
   onOpenMore,
   onOpenQuickStudy,
+  moreButtonRef,
 }: {
   pathname: string
   onOpenMore: () => void
   onOpenQuickStudy: () => void
+  moreButtonRef: RefObject<HTMLButtonElement | null>
 }) {
   const navigate = useNavigate()
   const moreActive = !mobilePrimaryNavigation.some((item) => isNavigationItemActive(pathname, item))
 
   return (
-    <div className="mobile-bottom-bar safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-sky-300/20 bg-[#020812]/92 pt-2 backdrop-blur-xl lg:hidden">
+    <div
+      data-testid="mobile-tab-bar"
+      className="mobile-bottom-bar safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-sky-300/20 bg-[#020812]/96 pt-2 lg:hidden"
+    >
       <div className="mx-auto grid max-w-[520px] grid-cols-4 gap-1 px-2">
         {mobilePrimaryNavigation.map((item) => {
           const { label, icon: Icon, to, emphasis } = item
@@ -1391,7 +1465,7 @@ function MobileTabBar({
                 navigate(to)
               }}
               className={clsx(
-                'flex min-h-[58px] min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-center text-[9.5px] font-medium leading-tight transition active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-cyan-200/55',
+                'flex min-h-[58px] min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-center text-xs font-semibold leading-tight transition focus:outline-none focus:ring-2 focus:ring-cyan-200/55',
                 emphasis
                   ? 'nclex-btn-primary -mt-5 px-3 py-3 text-white'
                   : active
@@ -1405,10 +1479,11 @@ function MobileTabBar({
           )
         })}
         <button
+          ref={moreButtonRef}
           type="button"
           onClick={onOpenMore}
           className={clsx(
-            'flex min-h-[58px] min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-center text-[9.5px] font-medium leading-tight active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-cyan-200/55',
+            'flex min-h-[58px] min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-center text-xs font-semibold leading-tight focus:outline-none focus:ring-2 focus:ring-cyan-200/55',
             moreActive ? 'bg-sky-400/12 text-sky-200 shadow-[inset_0_-2px_0_#1d9bff]' : 'text-sky-100/56',
           )}
           aria-current={moreActive ? 'page' : undefined}
@@ -1421,9 +1496,20 @@ function MobileTabBar({
   )
 }
 
-function BrandLockup({ compact = false, desktopRail = false }: { compact?: boolean; desktopRail?: boolean }) {
+function BrandLockup({
+  compact = false,
+  desktopRail = false,
+  testId,
+}: {
+  compact?: boolean
+  desktopRail?: boolean
+  testId?: string
+}) {
   return (
-    <div className={clsx('rounded-[18px] border border-cyan-300/22 bg-[#071d34]/75 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_24px_rgba(43,148,255,0.14)]', compact || desktopRail ? 'p-3' : 'p-4')}>
+    <div
+      data-testid={testId}
+      className={clsx('rounded-[18px] border border-cyan-300/22 bg-[#071d34]/75 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_0_24px_rgba(43,148,255,0.14)]', compact || desktopRail ? 'p-3' : 'p-4')}
+    >
       <div className={clsx('flex items-center', desktopRail ? 'gap-1' : 'gap-3')}>
         <div
           className={clsx(
