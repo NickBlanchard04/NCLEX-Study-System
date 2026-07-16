@@ -35,6 +35,15 @@ export interface InboxItem {
   requestStatus?: string
 }
 
+export interface SocialMessage {
+  id: string
+  senderId: string
+  recipientId: string
+  body: string
+  readAt?: string
+  createdAt: string
+}
+
 type SocialPersonRow = {
   user_id: string
   display_name: string
@@ -66,6 +75,15 @@ type InboxItemRow = {
   preview: string | null
   created_at: string
   request_status: string | null
+}
+
+type SocialMessageRow = {
+  id: string
+  sender_id: string
+  recipient_id: string
+  body: string
+  read_at: string | null
+  created_at: string
 }
 
 const requireClient = () => {
@@ -129,6 +147,23 @@ const mapInboxItem = (row: InboxItemRow): InboxItem => ({
   createdAt: row.created_at,
   requestStatus: optionalText(row.request_status),
 })
+
+const mapMessage = (row: SocialMessageRow): SocialMessage => ({
+  id: row.id,
+  senderId: row.sender_id,
+  recipientId: row.recipient_id,
+  body: row.body,
+  readAt: optionalText(row.read_at),
+  createdAt: row.created_at,
+})
+
+const requireCurrentUserId = async () => {
+  const client = requireClient()
+  const { data, error } = await client.auth.getUser()
+  if (error) throw error
+  if (!data.user) throw new Error('Sign in to use social messaging.')
+  return { client, userId: data.user.id }
+}
 
 export async function searchPeople(query: string) {
   const client = requireClient()
@@ -219,4 +254,40 @@ export async function markMessagesRead(senderUserId: string) {
     sender_user_id: senderUserId,
   })
   if (error) throw error
+}
+
+export async function listConversation(peerUserId: string) {
+  const peerId = peerUserId.trim()
+  if (!peerId) throw new Error('Choose a friend to open messages.')
+  const { client, userId } = await requireCurrentUserId()
+  const participantFilter = [
+    `and(sender_id.eq.${userId},recipient_id.eq.${peerId})`,
+    `and(sender_id.eq.${peerId},recipient_id.eq.${userId})`,
+  ].join(',')
+  const { data, error } = await client
+    .from('social_messages')
+    .select('id,sender_id,recipient_id,body,read_at,created_at')
+    .or(participantFilter)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: true })
+    .limit(200)
+  if (error) throw error
+  return ((data ?? []) as SocialMessageRow[]).map(mapMessage)
+}
+
+export async function sendSocialMessage(recipientUserId: string, body: string) {
+  const recipientId = recipientUserId.trim()
+  const messageBody = body.trim()
+  if (!recipientId) throw new Error('Choose a friend before sending a message.')
+  if (!messageBody) throw new Error('Write a message before sending.')
+  if (messageBody.length > 1000) throw new Error('Messages must be 1,000 characters or fewer.')
+
+  const { client, userId } = await requireCurrentUserId()
+  const { data, error } = await client
+    .from('social_messages')
+    .insert({ sender_id: userId, recipient_id: recipientId, body: messageBody })
+    .select('id,sender_id,recipient_id,body,read_at,created_at')
+    .single()
+  if (error) throw error
+  return mapMessage(data as SocialMessageRow)
 }

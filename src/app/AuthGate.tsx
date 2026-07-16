@@ -1,6 +1,5 @@
 import { motion } from 'framer-motion'
 import {
-  Apple,
   ArrowRight,
   Eye,
   EyeOff,
@@ -10,7 +9,7 @@ import {
   ShieldCheck,
   UserPlus,
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { useStudySystemStore } from './store'
 import nursingCommandLogo from '../assets/brand/nursing-command-logo.png'
 import { createBetaTermsConsent } from './beta-terms'
@@ -47,7 +46,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   if (!authInitialized) {
     return (
       <div className="nurse-command-app flex min-h-screen items-center justify-center bg-[#04101f] p-6 text-white">
-        <div className="rounded-[24px] border border-sky-300/20 bg-[#071d34]/78 p-6 text-center shadow-[0_24px_70px_rgba(0,0,0,0.28)]">
+        <div role="status" aria-live="polite" className="rounded-[20px] border border-sky-300/20 bg-[#071d34]/78 p-6 text-center shadow-[0_18px_48px_rgba(0,0,0,0.26)]">
           <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-sky-300/20 border-t-sky-300" />
           <p className="mt-4 text-sm font-semibold text-sky-100/70">Checking account status...</p>
         </div>
@@ -310,6 +309,9 @@ function AuthLanding() {
   const [busy, setBusy] = useState(false)
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [termsCopyRequested, setTermsCopyRequested] = useState(false)
+  const feedbackId = 'auth-form-feedback'
+  const hasFeedback = Boolean(authError || message)
+  const hasAuthError = Boolean(authError)
 
   const agreementRequired = mode === 'signup'
   const canSubmit = mode !== 'welcome' && !busy && authConfigured && (!agreementRequired || termsAccepted)
@@ -447,7 +449,7 @@ function AuthLanding() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.08 }}
-          className="order-1 mx-auto w-full max-w-[430px] rounded-[32px] border border-cyan-200/20 bg-[#071d34]/88 p-6 shadow-[0_28px_80px_rgba(0,0,0,0.34),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur md:p-7 lg:order-2"
+          className="order-1 mx-auto w-full max-w-[430px] rounded-[20px] border border-cyan-200/20 bg-[#071d34]/94 p-6 shadow-[0_18px_48px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.06)] md:p-7 lg:order-2"
         >
           <div className="mb-7 flex items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
@@ -459,9 +461,6 @@ function AuthLanding() {
               <div className="min-w-0">
                 <p className="truncate text-sm font-black uppercase tracking-[0.18em] text-white">
                   Nurse Command
-                </p>
-                <p className="truncate text-[11px] font-black uppercase tracking-[0.2em] text-cyan-100/56">
-                  Study. Practice. Lead.
                 </p>
               </div>
             </div>
@@ -511,7 +510,7 @@ function AuthLanding() {
           ) : null}
 
           {mode !== 'welcome' ? (
-            <form onSubmit={submit} className="mt-6 space-y-4">
+            <form onSubmit={submit} aria-busy={busy} className="mt-6 space-y-4">
               <label className="block">
                 <span className="text-xs font-black uppercase tracking-normal text-sky-100/58">Email</span>
                 <input
@@ -520,6 +519,8 @@ function AuthLanding() {
                   autoComplete="email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
+                  aria-invalid={hasAuthError || undefined}
+                  aria-describedby={hasFeedback ? feedbackId : undefined}
                   className={inputClass}
                   placeholder="you@example.com"
                 />
@@ -550,6 +551,8 @@ function AuthLanding() {
                   placeholder="At least 6 characters"
                   autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
                   tone="dark"
+                  invalid={hasAuthError}
+                  describedBy={hasFeedback ? feedbackId : undefined}
                 />
               ) : null}
               {mode === 'signin' ? (
@@ -594,7 +597,12 @@ function AuthLanding() {
               ) : null}
 
               {authError || message ? (
-                <div role="status" className="rounded-2xl border border-cyan-200/20 bg-cyan-300/10 px-4 py-3 text-sm leading-6 text-sky-50/80">
+                <div
+                  id={feedbackId}
+                  role={authError ? 'alert' : 'status'}
+                  aria-live={authError ? 'assertive' : 'polite'}
+                  className="rounded-2xl border border-cyan-200/20 bg-cyan-300/10 px-4 py-3 text-sm leading-6 text-sky-50/80"
+                >
                   {authError ?? message}
                 </div>
               ) : null}
@@ -602,6 +610,7 @@ function AuthLanding() {
               <button
                 type="submit"
                 disabled={!canSubmit}
+                aria-busy={busy}
                 className={mode === 'signup'
                   ? 'group flex min-h-[50px] w-full items-center justify-center gap-2 rounded-2xl border border-lime-200/24 bg-[linear-gradient(135deg,#0ea5e9,#14b8a6)] px-5 py-3 text-sm font-black text-white shadow-[0_18px_42px_rgba(14,165,233,0.24)] transition hover:[transform:translateY(-2px)] hover:border-lime-200/60 hover:brightness-110 hover:shadow-[0_24px_60px_rgba(20,184,166,0.34)] focus:outline-none focus:ring-4 focus:ring-lime-200/18 disabled:cursor-not-allowed disabled:border-transparent disabled:bg-slate-500/70 disabled:opacity-45 disabled:shadow-none disabled:hover:transform-none disabled:hover:brightness-100'
                   : 'group flex min-h-[50px] w-full items-center justify-center gap-2 rounded-2xl bg-[#0e638d] px-5 py-3 text-sm font-black text-white shadow-[0_16px_34px_rgba(14,99,141,0.24)] transition hover:-translate-y-0.5 hover:bg-[#1181b8] focus:outline-none focus:ring-4 focus:ring-cyan-300/18 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0'}
@@ -610,23 +619,6 @@ function AuthLanding() {
                 {!busy ? <ArrowRight className="h-4 w-4 transition group-hover:[transform:translateX(4px)]" /> : null}
               </button>
             </form>
-          ) : null}
-
-          {mode === 'signin' ? (
-            <>
-              <div className="my-5 flex items-center gap-3 text-[11px] font-black uppercase tracking-normal text-sky-100/42">
-                <span className="h-px flex-1 bg-cyan-200/16" />
-                Social sign-in
-                <span className="h-px flex-1 bg-cyan-200/16" />
-              </div>
-              <div className="space-y-3">
-                <ProviderButton provider="Google" />
-                <ProviderButton provider="Apple" />
-              </div>
-              <p className="mt-3 text-center text-xs font-semibold leading-5 text-sky-100/50">
-                Google and Apple sign-in are coming soon. Use email and password for beta access.
-              </p>
-            </>
           ) : null}
 
           {mode !== 'welcome' ? (
@@ -684,27 +676,6 @@ function AuthLanding() {
   )
 }
 
-function ProviderButton({ provider }: { provider: 'Google' | 'Apple' }) {
-  return (
-    <button
-      type="button"
-      disabled
-      aria-label={`${provider} sign-in coming soon`}
-      className="flex min-h-11 w-full cursor-not-allowed items-center justify-center gap-3 rounded-2xl border border-sky-100/12 bg-white/80 px-4 text-sm font-bold text-slate-900 shadow-[0_12px_26px_rgba(0,0,0,0.14)]"
-    >
-      {provider === 'Google' ? (
-        <span aria-hidden="true" className="grid h-4 w-4 place-items-center text-sm font-black text-[#4285f4]">G</span>
-      ) : (
-        <Apple aria-hidden="true" className="h-4 w-4" />
-      )}
-      <span className="min-w-0 flex-1 text-left">Continue with {provider}</span>
-      <span className="rounded-full bg-slate-900/10 px-2 py-1 text-[10px] font-black uppercase tracking-normal text-slate-700">
-        Coming soon
-      </span>
-    </button>
-  )
-}
-
 function PasswordRecoveryLanding() {
   const updatePassword = useStudySystemStore((state) => state.updatePassword)
   const authError = useStudySystemStore((state) => state.authError)
@@ -713,6 +684,9 @@ function PasswordRecoveryLanding() {
   const [passwordVisible, setPasswordVisible] = useState(false)
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
+  const feedbackId = 'password-recovery-feedback'
+  const hasFeedback = Boolean(authError || message)
+  const hasAuthError = Boolean(authError)
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -752,7 +726,7 @@ function PasswordRecoveryLanding() {
             <LockKeyhole className="h-5 w-5" />
           </div>
         </div>
-        <form onSubmit={submit} className="mt-6 space-y-4">
+        <form onSubmit={submit} aria-busy={busy} className="mt-6 space-y-4">
           <PasswordField
             label="New password"
             value={password}
@@ -762,6 +736,8 @@ function PasswordRecoveryLanding() {
             placeholder="At least 6 characters"
             autoComplete="new-password"
             tone="dark"
+            invalid={hasAuthError}
+            describedBy={hasFeedback ? feedbackId : undefined}
           />
           <PasswordField
             label="Confirm password"
@@ -772,15 +748,23 @@ function PasswordRecoveryLanding() {
             placeholder="Retype password"
             autoComplete="new-password"
             tone="dark"
+            invalid={hasAuthError}
+            describedBy={hasFeedback ? feedbackId : undefined}
           />
           {authError || message ? (
-            <div role="status" className="rounded-2xl border border-cyan-200/20 bg-cyan-300/10 px-4 py-3 text-sm leading-6 text-sky-50/80">
+            <div
+              id={feedbackId}
+              role={authError ? 'alert' : 'status'}
+              aria-live={authError ? 'assertive' : 'polite'}
+              className="rounded-2xl border border-cyan-200/20 bg-cyan-300/10 px-4 py-3 text-sm leading-6 text-sky-50/80"
+            >
               {authError ?? message}
             </div>
           ) : null}
           <button
             type="submit"
             disabled={busy}
+            aria-busy={busy}
             className="flex min-h-[50px] w-full items-center justify-center gap-2 rounded-2xl bg-[#0e638d] px-5 py-3 text-sm font-black text-white shadow-[0_16px_34px_rgba(14,99,141,0.24)] transition hover:-translate-y-0.5 hover:bg-[#1181b8] focus:outline-none focus:ring-4 focus:ring-cyan-300/18 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0"
           >
             {busy ? 'Updating...' : 'Update password'}
@@ -800,6 +784,8 @@ function PasswordField({
   placeholder,
   autoComplete,
   tone = 'light',
+  invalid = false,
+  describedBy,
 }: {
   label: string
   value: string
@@ -809,20 +795,26 @@ function PasswordField({
   placeholder: string
   autoComplete: string
   tone?: 'light' | 'dark'
+  invalid?: boolean
+  describedBy?: string
 }) {
   const isDark = tone === 'dark'
+  const inputId = useId()
 
   return (
-    <label className="block">
-      <span className={isDark ? 'text-xs font-black uppercase tracking-normal text-sky-100/58' : 'text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]'}>{label}</span>
+    <div className="block">
+      <label htmlFor={inputId} className={isDark ? 'text-xs font-black uppercase tracking-normal text-sky-100/58' : 'text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]'}>{label}</label>
       <div className={isDark ? 'mt-2 flex overflow-hidden rounded-2xl border border-sky-300/20 bg-[#04101f]/82 focus-within:border-cyan-200/70 focus-within:ring-4 focus-within:ring-cyan-300/16' : 'mt-2 flex overflow-hidden rounded-2xl border border-[var(--nclex-border)] bg-white focus-within:border-[var(--nclex-blue)] focus-within:ring-4 focus-within:ring-blue-100'}>
         <input
+          id={inputId}
           type={visible ? 'text' : 'password'}
           required
           minLength={6}
           autoComplete={autoComplete}
           value={value}
           onChange={(event) => onChange(event.target.value)}
+          aria-invalid={invalid || undefined}
+          aria-describedby={describedBy}
           className={isDark ? 'min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-white outline-none placeholder:text-sky-100/34' : 'min-w-0 flex-1 bg-transparent px-4 py-3 text-sm outline-none'}
           placeholder={placeholder}
         />
@@ -835,6 +827,6 @@ function PasswordField({
           {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </button>
       </div>
-    </label>
+    </div>
   )
 }

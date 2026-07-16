@@ -6738,6 +6738,8 @@ export function SettingsPage() {
   const resetProgress = useStudySystemStore((state) => state.resetProgress)
   const profilePhotoInputRef = useRef<HTMLInputElement | null>(null)
   const [profilePhotoMessage, setProfilePhotoMessage] = useState('')
+  const [resetConfirmationOpen, setResetConfirmationOpen] = useState(false)
+  const [accountMessage, setAccountMessage] = useState('')
   const profileInitials = getProfileInitials(profile.name)
 
   const handleProfilePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -6831,7 +6833,7 @@ export function SettingsPage() {
                 </div>
               </div>
               {profilePhotoMessage ? (
-                <p className="mt-3 rounded-xl border border-cyan-200/18 bg-cyan-300/[0.06] px-3 py-2 text-sm font-semibold text-cyan-100">
+                <p role="status" aria-live="polite" className="mt-3 rounded-xl border border-cyan-200/18 bg-cyan-300/[0.06] px-3 py-2 text-sm font-semibold text-cyan-100">
                   {profilePhotoMessage}
                 </p>
               ) : null}
@@ -6873,7 +6875,7 @@ export function SettingsPage() {
             </Field>
             <ToggleRow label="Show in people search" description="Let other learners find your name card." checked={profile.directoryVisible ?? true} onChange={(value) => updateProfile({ directoryVisible: value })} />
             <ToggleRow label="Reduced motion" description="Simplify motion if you prefer a calmer UI." checked={profile.preferences.reducedMotion} onChange={(value) => updateProfile({ preferences: { ...profile.preferences, reducedMotion: value } })} />
-            <ToggleRow label="Study reminders" description="Future-ready notification preference for backend integration." checked={profile.preferences.notifications} onChange={(value) => updateProfile({ preferences: { ...profile.preferences, notifications: value } })} />
+            <ToggleRow label="Study reminders" description="Choose whether Nurse Command may send study reminders when delivery is enabled." checked={profile.preferences.notifications} onChange={(value) => updateProfile({ preferences: { ...profile.preferences, notifications: value } })} />
           </div>
         </Surface>
         <Surface className="border-violet-200/18 bg-violet-300/[0.045]">
@@ -6886,7 +6888,7 @@ export function SettingsPage() {
               <div className="rounded-2xl border border-cyan-200/18 bg-cyan-300/[0.08] p-3 text-cyan-100">
                 {isDemoMode ? <CloudOff className="h-5 w-5" /> : <Cloud className="h-5 w-5" />}
               </div>
-              <div>
+              <div aria-live="polite">
                 <p className="font-semibold text-white">
                   {authUser ? authUser.email : authConfigured ? 'Local demo mode' : 'Supabase not configured'}
                 </p>
@@ -6925,11 +6927,29 @@ export function SettingsPage() {
               ) : null}
             </div>
           </div>
-          <h3 className="mt-7 nc-section-title text-2xl text-white">Beta account status</h3>
+          <div className="mt-7 rounded-[20px] border border-violet-200/18 bg-violet-300/[0.06] p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-violet-200/72">Current access</p>
+                <h3 className="mt-2 nc-section-title text-2xl text-white">Open beta access</h3>
+                <p className="mt-2 max-w-xl text-sm leading-6 text-sky-100/64">
+                  Nurse Command is currently free during open beta. Paid plan controls are not active in this build.
+                </p>
+              </div>
+              <Link
+                to="/pricing"
+                className="nclex-btn-secondary inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold"
+              >
+                View access details
+                <ExternalLink className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+          <h3 className="mt-7 nc-section-title text-2xl text-white">Account capabilities</h3>
           <div className="mt-6 grid gap-4 md:grid-cols-2">
             <FeatureCallout title="User accounts" description="Supabase Auth now provides real account sessions and password recovery entry points." />
             <FeatureCallout title="Saved progress" description="Attempts, flashcards, notes, materials, and generated study tools can sync to Postgres." />
-            <FeatureCallout title="Beta access" description="Open beta features can be adjusted as the product stabilizes and feedback comes in." />
+            <FeatureCallout title="Beta access" description="Open beta features can change as the product stabilizes and feedback comes in." />
             <FeatureCallout title="Retention hooks" description="Quick Study, streaks, weak-area review, and notes already support daily return behavior." />
           </div>
           <h3 className="mt-7 nc-section-title text-2xl text-white">Privacy, terms & support</h3>
@@ -6938,13 +6958,62 @@ export function SettingsPage() {
             <FeatureCallout title="Terms" description="Nurse Command is practice study support only. Readiness and adaptive signals are practice evidence, not clinical advice or licensure guarantees." />
             <FeatureCallout title="Support" description="For account, email, or study-material issues, contact support@nursecommand.com." />
           </div>
-          <button
-            type="button"
-            onClick={resetProgress}
-            className="mt-6 rounded-xl border border-rose-200/25 bg-rose-300/[0.08] px-4 py-2 text-sm font-semibold text-rose-100 transition hover:bg-rose-300/14"
-          >
-            Reset local progress
-          </button>
+          <div className="mt-7 border-t border-rose-200/16 pt-6">
+            <h3 className="nc-section-title text-xl text-white">Local data controls</h3>
+            <p className="mt-2 text-sm leading-6 text-sky-100/64">
+              Resetting removes local study progress from this browser. Cloud account data is not deleted here.
+            </p>
+            {resetConfirmationOpen ? (
+              <div
+                role="alertdialog"
+                aria-labelledby="reset-progress-title"
+                aria-describedby="reset-progress-description"
+                className="mt-4 rounded-[18px] border border-rose-200/28 bg-rose-300/[0.08] p-4"
+              >
+                <h4 id="reset-progress-title" className="font-semibold text-white">Reset local study progress?</h4>
+                <p id="reset-progress-description" className="mt-2 text-sm leading-6 text-rose-100/78">
+                  This cannot be undone from this device. Your account and cloud records remain intact.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    autoFocus
+                    onClick={() => setResetConfirmationOpen(false)}
+                    className="nclex-btn-secondary min-h-11 rounded-xl px-4 py-2.5 text-sm font-semibold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetProgress()
+                      setResetConfirmationOpen(false)
+                      setAccountMessage('Local study progress reset on this device.')
+                    }}
+                    className="min-h-11 rounded-xl border border-rose-200/30 bg-rose-400/16 px-4 py-2.5 text-sm font-semibold text-rose-100 transition hover:bg-rose-400/24"
+                  >
+                    Confirm reset
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setAccountMessage('')
+                  setResetConfirmationOpen(true)
+                }}
+                className="mt-4 min-h-11 rounded-xl border border-rose-200/25 bg-rose-300/[0.08] px-4 py-2.5 text-sm font-semibold text-rose-100 transition hover:bg-rose-300/14"
+              >
+                Reset local progress
+              </button>
+            )}
+            {accountMessage ? (
+              <p role="status" aria-live="polite" className="mt-4 text-sm font-semibold text-emerald-200">
+                {accountMessage}
+              </p>
+            ) : null}
+          </div>
         </Surface>
       </div>
     </PageStack>

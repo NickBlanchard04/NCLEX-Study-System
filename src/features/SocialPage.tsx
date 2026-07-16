@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
+  ArrowLeft,
   Ban,
   BadgeCheck,
   BookOpenCheck,
@@ -8,6 +9,7 @@ import {
   Inbox,
   LoaderCircle,
   MapPin,
+  MessageCircle,
   MoreHorizontal,
   RefreshCw,
   Search,
@@ -28,20 +30,28 @@ import {
   blockUser,
   cancelFriendRequest,
   listInboxItems,
+  listConversation,
   listSocialConnections,
   markMessagesRead,
   removeFriend,
   respondFriendRequest,
   searchPeople,
   sendFriendRequest,
+  sendSocialMessage,
   suggestPeople,
   type InboxItem,
   type SocialConnection,
+  type SocialMessage,
   type SocialPerson,
 } from '../services/social-service'
 import { EmptyState, NextActionPanel, PageHeader, Surface } from './ui'
 
 type RequestTab = 'friends' | 'requests'
+
+type ConversationPeer = Pick<
+  SocialPerson,
+  'userId' | 'displayName' | 'profileImageDataUrl' | 'memberNumber' | 'college' | 'state'
+>
 
 const getInitials = (name: string) => {
   const initials = name
@@ -247,11 +257,14 @@ function MenuButton({
         onClick={() => onOpen(open ? null : id)}
         className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-sky-300/22 bg-white/[0.04] text-sky-100/72 transition hover:border-sky-200/50 hover:text-white"
         aria-label="Open person actions"
+        aria-expanded={open}
+        aria-haspopup="menu"
+        aria-controls={open ? `person-actions-${id}` : undefined}
       >
         <MoreHorizontal className="h-4 w-4" />
       </button>
       {open ? (
-        <div className="absolute right-0 top-12 z-10 grid min-w-40 gap-1 rounded-xl border border-sky-300/22 bg-[#061b31] p-1.5 shadow-[0_18px_42px_rgba(0,0,0,0.3)]">
+        <div id={`person-actions-${id}`} role="menu" className="absolute right-0 top-12 z-10 grid min-w-40 gap-1 rounded-xl border border-sky-300/22 bg-[#061b31] p-1.5 shadow-[0_18px_42px_rgba(0,0,0,0.3)]">
           {children}
         </div>
       ) : null}
@@ -273,6 +286,7 @@ function MenuAction({
   return (
     <button
       type="button"
+      role="menuitem"
       onClick={onClick}
       className={clsx(
         'inline-flex min-h-11 items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold transition',
@@ -297,6 +311,11 @@ export function SocialPage() {
   const [connections, setConnections] = useState<SocialConnection[]>([])
   const [inboxItems, setInboxItems] = useState<InboxItem[]>([])
   const [suggestions, setSuggestions] = useState<SocialPerson[]>([])
+  const [activeConversation, setActiveConversation] = useState<ConversationPeer | null>(null)
+  const [messages, setMessages] = useState<SocialMessage[]>([])
+  const [messageDraft, setMessageDraft] = useState('')
+  const [messagesLoading, setMessagesLoading] = useState(false)
+  const [messageSending, setMessageSending] = useState(false)
   const [dismissedSuggestionIds, setDismissedSuggestionIds] = useState<string[]>([])
   const [activeTab, setActiveTab] = useState<RequestTab>('friends')
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
@@ -305,6 +324,7 @@ export function SocialPage() {
   const [busyId, setBusyId] = useState<string | null>(null)
   const [error, setError] = useState('')
   const searchTimerRef = useRef<number | null>(null)
+  const messageListRef = useRef<HTMLDivElement | null>(null)
   const canUseSocial = Boolean(authConfigured && authUser && !isDemoMode)
 
   const friends = useMemo(
@@ -383,6 +403,46 @@ export function SocialPage() {
       await runSearch(query)
     }
   }, [query, refreshSocial, runSearch])
+
+  const openConversation = useCallback(async (peer: ConversationPeer) => {
+    setActiveConversation(peer)
+    setMessagesLoading(true)
+    setError('')
+    try {
+      const nextMessages = await listConversation(peer.userId)
+      setMessages(nextMessages)
+      await markMessagesRead(peer.userId)
+      setInboxItems(await listInboxItems())
+    } catch (messageError) {
+      setError(messageError instanceof Error ? messageError.message : 'Could not open this conversation.')
+    } finally {
+      setMessagesLoading(false)
+    }
+  }, [])
+
+  const submitMessage = useCallback(async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!activeConversation || !messageDraft.trim() || messageSending) return
+    setMessageSending(true)
+    setError('')
+    try {
+      const sentMessage = await sendSocialMessage(activeConversation.userId, messageDraft)
+      setMessages((current) => [...current, sentMessage])
+      setMessageDraft('')
+    } catch (messageError) {
+      setError(messageError instanceof Error ? messageError.message : 'Could not send that message.')
+    } finally {
+      setMessageSending(false)
+    }
+  }, [activeConversation, messageDraft, messageSending])
+
+  useEffect(() => {
+    if (!activeConversation) return
+    const scrollFrame = window.requestAnimationFrame(() => {
+      messageListRef.current?.scrollTo({ top: messageListRef.current.scrollHeight })
+    })
+    return () => window.cancelAnimationFrame(scrollFrame)
+  }, [activeConversation, messages])
 
   const dismissSuggestion = useCallback((userId: string) => {
     setDismissedSuggestionIds((current) => (current.includes(userId) ? current : [...current, userId]))
@@ -521,6 +581,134 @@ export function SocialPage() {
         ))}
       </div>
 
+      <Surface>
+        <SectionTitle
+          icon={<MessageCircle className="h-5 w-5" />}
+          label="Messages"
+          action={activeConversation ? (
+            <IconButton
+              icon={<ArrowLeft className="h-4 w-4" />}
+              label="Back to friends"
+              onClick={() => {
+                setActiveConversation(null)
+                setMessages([])
+                setMessageDraft('')
+              }}
+            />
+          ) : null}
+        />
+
+        {activeConversation ? (
+          <div className="mt-5 overflow-hidden rounded-[18px] border border-sky-300/18 bg-[#03101f]/60">
+            <div className="flex items-center gap-3 border-b border-sky-300/16 px-4 py-4">
+              <PersonAvatar
+                name={activeConversation.displayName}
+                imageUrl={activeConversation.profileImageDataUrl}
+                size="sm"
+                seed={activeConversation.memberNumber ?? activeConversation.userId}
+              />
+              <div className="min-w-0">
+                <h3 className="truncate text-base font-bold text-white">{activeConversation.displayName}</h3>
+                <p className="text-xs font-semibold text-sky-100/54">Direct message · Friends only</p>
+              </div>
+            </div>
+
+            <div
+              ref={messageListRef}
+              role="log"
+              aria-live="polite"
+              aria-label={`Messages with ${activeConversation.displayName}`}
+              className="flex min-h-52 max-h-96 flex-col gap-3 overflow-y-auto px-4 py-5"
+            >
+              {messagesLoading ? (
+                <LoadingPanel label="Loading messages" />
+              ) : messages.length ? (
+                messages.map((message) => {
+                  const outgoing = message.senderId === authUser?.id
+                  return (
+                    <div key={message.id} className={clsx('flex', outgoing ? 'justify-end' : 'justify-start')}>
+                      <div
+                        className={clsx(
+                          'max-w-[85%] rounded-[16px] px-4 py-3 text-sm leading-6 sm:max-w-[72%]',
+                          outgoing
+                            ? 'rounded-br-md bg-cyan-300/18 text-cyan-50'
+                            : 'rounded-bl-md border border-sky-300/16 bg-white/[0.055] text-sky-50/88',
+                        )}
+                      >
+                        <p className="whitespace-pre-wrap break-words">{message.body}</p>
+                        <time dateTime={message.createdAt} className="mt-1 block text-[11px] font-semibold text-sky-100/46">
+                          {new Date(message.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                        </time>
+                      </div>
+                    </div>
+                  )
+                })
+              ) : (
+                <IconEmpty
+                  icon={<MessageCircle className="h-5 w-5" />}
+                  title="Start the conversation"
+                  description="Messages are private between you and this friend."
+                />
+              )}
+            </div>
+
+            <form onSubmit={submitMessage} aria-busy={messageSending} className="border-t border-sky-300/16 p-4">
+              <label htmlFor="social-message-draft" className="sr-only">Message {activeConversation.displayName}</label>
+              <textarea
+                id="social-message-draft"
+                value={messageDraft}
+                onChange={(event) => setMessageDraft(event.target.value)}
+                maxLength={1000}
+                rows={3}
+                placeholder={`Message ${activeConversation.displayName}`}
+                aria-describedby="social-message-count"
+                className="min-h-24 w-full resize-y rounded-xl border border-sky-300/22 bg-[#020b16]/72 px-4 py-3 text-base text-white outline-none transition placeholder:text-sky-100/38 focus:border-cyan-200/55 focus:ring-4 focus:ring-cyan-300/12"
+              />
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <span id="social-message-count" className="text-xs font-semibold text-sky-100/46">
+                  {messageDraft.length}/1000
+                </span>
+                <button
+                  type="submit"
+                  disabled={!messageDraft.trim() || messageSending}
+                  aria-busy={messageSending}
+                  className="nclex-btn-primary inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {messageSending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  Send message
+                </button>
+              </div>
+            </form>
+          </div>
+        ) : friends.length ? (
+          <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {friends.map((friend) => (
+              <button
+                key={friend.userId}
+                type="button"
+                onClick={() => void openConversation(friend)}
+                className="flex min-h-16 items-center gap-3 rounded-2xl border border-sky-300/18 bg-white/[0.045] p-3 text-left transition hover:border-cyan-200/42 hover:bg-cyan-300/[0.08] focus:outline-none focus:ring-4 focus:ring-cyan-300/14"
+              >
+                <PersonAvatar name={friend.displayName} imageUrl={friend.profileImageDataUrl} size="sm" seed={friend.userId} />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-bold text-white">{friend.displayName}</span>
+                  <span className="mt-1 block text-xs font-semibold text-sky-100/54">Open conversation</span>
+                </span>
+                <MessageCircle className="h-4 w-4 shrink-0 text-cyan-200" />
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-5">
+            <IconEmpty
+              icon={<MessageCircle className="h-5 w-5" />}
+              title="Messages unlock with friends"
+              description="Connect with a learner first. Direct messages are limited to accepted friends, and blocking is available from each connection menu."
+            />
+          </div>
+        )}
+      </Surface>
+
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(20rem,0.85fr)]">
         <Surface>
           <SectionTitle
@@ -590,11 +778,15 @@ export function SocialPage() {
                     busy={busyId === item.itemId}
                     onAccept={() => performAction(item.itemId, () => respondFriendRequest(item.itemId, 'accepted'))}
                     onDeny={() => performAction(item.itemId, () => respondFriendRequest(item.itemId, 'declined'))}
-                    onMarkRead={() => performAction(item.itemId, () => markMessagesRead(item.userId))}
+                    onOpenMessage={() => void openConversation({
+                      userId: item.userId,
+                      displayName: item.displayName,
+                      profileImageDataUrl: item.profileImageDataUrl,
+                    })}
                   />
                 ))
               ) : (
-                <IconEmpty icon={<Inbox className="h-5 w-5" />} title="No requests waiting" description="When someone sends a request, accept or decline it here." />
+                <IconEmpty icon={<Inbox className="h-5 w-5" />} title="No new activity" description="New requests and unread messages will appear here." />
               )}
             </div>
           </Surface>
@@ -602,11 +794,15 @@ export function SocialPage() {
           <Surface>
             <SectionTitle icon={<Search className="h-5 w-5" />} label="Search" />
             <div className="relative mt-5">
+              <label htmlFor="social-people-search" className="sr-only">Search learners by name</label>
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-sky-100/44" />
               <input
+                id="social-people-search"
+                type="search"
                 value={query}
                 onChange={handleQueryChange}
                 placeholder="Name"
+                aria-busy={searchLoading}
                 data-social-search-input="true"
                 className="min-h-11 w-full rounded-xl border border-sky-300/22 bg-[#03101f]/70 py-3 pl-10 pr-4 text-base font-semibold text-white outline-none transition placeholder:text-sky-100/38 focus:border-sky-200/55"
               />
@@ -646,11 +842,13 @@ export function SocialPage() {
       <Surface>
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <SectionTitle icon={<UsersRound className="h-5 w-5" />} label="Circle" />
-          <div className="inline-grid grid-cols-2 rounded-xl border border-sky-300/22 bg-white/[0.04] p-1">
+          <div role="tablist" aria-label="Connections" className="inline-grid grid-cols-2 rounded-xl border border-sky-300/22 bg-white/[0.04] p-1">
             {(['friends', 'requests'] as const).map((tab) => (
               <button
                 key={tab}
                 type="button"
+                role="tab"
+                aria-selected={activeTab === tab}
                 onClick={() => setActiveTab(tab)}
                 className={clsx(
                   'inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-3 text-sm font-bold capitalize transition',
@@ -677,6 +875,7 @@ export function SocialPage() {
                   openMenuId={openMenuId}
                   busy={busyId === friend.userId}
                   onOpenMenu={setOpenMenuId}
+                  onMessage={() => void openConversation(friend)}
                   onRemove={() => performAction(friend.userId, () => removeFriend(friend.userId))}
                   onBlock={() => performAction(friend.userId, () => blockUser(friend.userId))}
                 />
@@ -721,7 +920,7 @@ export function SocialPage() {
 
 function LoadingPanel({ label }: { label: string }) {
   return (
-    <div className="flex min-h-20 items-center justify-center gap-2 rounded-2xl border border-sky-300/22 bg-white/[0.04] px-4 py-5 text-sm font-bold text-sky-100/72">
+    <div role="status" aria-live="polite" className="flex min-h-20 items-center justify-center gap-2 rounded-2xl border border-sky-300/22 bg-white/[0.04] px-4 py-5 text-sm font-bold text-sky-100/72">
       <LoaderCircle className="h-4 w-4 animate-spin" />
       {label}
     </div>
@@ -875,13 +1074,13 @@ function InboxRow({
   busy,
   onAccept,
   onDeny,
-  onMarkRead,
+  onOpenMessage,
 }: {
   item: InboxItem
   busy: boolean
   onAccept: () => void
   onDeny: () => void
-  onMarkRead: () => void
+  onOpenMessage: () => void
 }) {
   const isRequest = item.itemType === 'friend_request'
 
@@ -897,6 +1096,9 @@ function InboxRow({
               label={isRequest ? 'Request' : 'Message'}
               tone={isRequest ? 'lime' : 'sky'}
             />
+            {item.preview ? (
+              <p className="mt-2 line-clamp-2 text-xs leading-5 text-sky-100/56">{item.preview}</p>
+            ) : null}
           </div>
         </div>
         {isRequest ? (
@@ -905,7 +1107,7 @@ function InboxRow({
             <IconButton icon={<UserX className="h-4 w-4" />} label="Deny" onClick={onDeny} disabled={busy} tone="danger" />
           </div>
         ) : (
-          <IconButton icon={<Check className="h-4 w-4" />} label="Read" onClick={onMarkRead} disabled={busy} />
+          <IconButton icon={<MessageCircle className="h-4 w-4" />} label="Open message" onClick={onOpenMessage} disabled={busy} />
         )}
       </div>
     </div>
@@ -917,6 +1119,7 @@ function ConnectionRow({
   openMenuId,
   busy,
   onOpenMenu,
+  onMessage,
   onRemove,
   onBlock,
 }: {
@@ -924,6 +1127,7 @@ function ConnectionRow({
   openMenuId: string | null
   busy: boolean
   onOpenMenu: (id: string | null) => void
+  onMessage: () => void
   onRemove: () => void
   onBlock: () => void
 }) {
@@ -940,6 +1144,7 @@ function ConnectionRow({
       </div>
       <div className="flex shrink-0 justify-end gap-2">
         {busy ? <LoaderCircle className="h-4 w-4 animate-spin self-center text-sky-200" /> : null}
+        <IconButton icon={<MessageCircle className="h-4 w-4" />} label="Message" onClick={onMessage} disabled={busy} />
         <MenuButton id={connection.userId} openId={openMenuId} onOpen={onOpenMenu}>
           <MenuAction icon={<UserMinus className="h-4 w-4" />} label="Remove" onClick={onRemove} />
           <MenuAction tone="danger" icon={<Ban className="h-4 w-4" />} label="Block" onClick={onBlock} />
