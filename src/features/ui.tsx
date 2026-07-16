@@ -47,20 +47,23 @@ export function PageHeader({
   action?: React.ReactNode
 }) {
   return (
-    <div className="mb-7 overflow-hidden rounded-[1.35rem] border border-cyan-300/20 bg-[#061b31]/55 px-5 py-5 shadow-[0_0_48px_rgba(0,98,180,0.14)] backdrop-blur md:px-7 lg:flex lg:items-start lg:justify-between lg:gap-6">
-      <div className="max-w-3xl">
-        <p className="text-xs font-black uppercase tracking-[0.2em] text-sky-300">
+    <header
+      data-testid="page-header"
+      className="mb-6 border-b border-sky-300/18 pb-5 md:mb-7 md:pb-6 lg:flex lg:items-end lg:justify-between lg:gap-8"
+    >
+      <div className="min-w-0 max-w-4xl">
+        <p className="text-[0.7rem] font-black uppercase tracking-[0.2em] text-sky-300">
           {eyebrow}
         </p>
-        <h2 className="mt-2 text-[clamp(2.1rem,3.2vw,4.6rem)] font-black leading-[0.95] tracking-[-0.05em] text-white drop-shadow-[0_0_16px_rgba(148,207,255,0.42)]">
+        <h1 className="mt-2 text-[clamp(2rem,3vw,3.6rem)] font-black leading-[1.02] tracking-[-0.04em] text-white">
           {title}
-        </h2>
-        <p className="mt-3 max-w-3xl text-sm leading-7 text-sky-100/72 md:text-base">
+        </h1>
+        <p className="mt-3 max-w-3xl text-sm leading-6 text-sky-100/70 md:text-base md:leading-7">
           {description}
         </p>
       </div>
       {action ? <div className="mt-5 shrink-0 lg:mt-0">{action}</div> : null}
-    </div>
+    </header>
   )
 }
 
