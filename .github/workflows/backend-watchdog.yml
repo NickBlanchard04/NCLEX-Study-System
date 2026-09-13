@@ -1,0 +1,36 @@
+name: Nurse Command backend watchdog
+
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nurse-command-backend-watchdog
+  cancel-in-progress: false
+
+jobs:
+  health-and-recovery:
+    if: github.repository == 'NickBlanchard04/NCLEX-Study-System' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout trusted main
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+      - name: Verify recovery safeguards
+        run: node --test scripts/backend-watchdog.checks.mjs
+      - name: Check backend and restore only if paused
+        run: node scripts/backend-watchdog.mjs
+        env:
+          SUPABASE_MANAGEMENT_TOKEN: ${{ secrets.SUPABASE_MANAGEMENT_TOKEN }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
