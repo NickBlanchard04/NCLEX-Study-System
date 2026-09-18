@@ -20,7 +20,6 @@ import {
   BrainCircuit,
   BookOpen,
   BookOpenCheck,
-  CalendarCheck,
   CalendarClock,
   CheckCircle2,
   ChevronLeft,
@@ -130,14 +129,7 @@ import {
   SectionHeading,
   Surface,
 } from './ui'
-import {
-  CommandProgress,
-  MaterialUploadAsset,
-  NurseCommandBackdrop,
-} from './nurse-command-assets'
-import levelBadgeIcon from '../assets/progress-badges/level-shield.png'
-import masteryBadgeIcon from '../assets/progress-badges/mastery-emblem.png'
-import streakBadgeIcon from '../assets/progress-badges/streak-flame.png'
+import { MaterialUploadAsset, NurseCommandBackdrop } from './nurse-command-assets'
 
 const percentTooltip = (
   value: number | string | ReadonlyArray<number | string> | undefined,
@@ -270,7 +262,6 @@ export function StudyMenuPage() {
   const importStudyMaterial = useStudySystemStore((state) => state.importStudyMaterial)
   const importStudyMaterialFromUrl = useStudySystemStore((state) => state.importStudyMaterialFromUrl)
   const dashboard = useMemo(() => getDashboardState(profile, attempts), [attempts, profile])
-  const analytics = useMemo(() => getAnalyticsSnapshot(attempts, profile), [attempts, profile])
   const [dragActive, setDragActive] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
   const [materialUrl, setMaterialUrl] = useState('')
@@ -282,24 +273,15 @@ export function StudyMenuPage() {
     100,
     Math.round((dashboard.todayCompleted / Math.max(1, dashboard.dailyGoal)) * 100),
   )
-  const accuracyPct = Math.round(analytics.overallAccuracy * 100)
-  const answeredCount = attempts.length
-  const nurseLevel = Math.max(1, Math.floor(answeredCount / 50) + 1)
-  const levelProgress = Math.round(((answeredCount % 50) / 50) * 100)
-  const masteryPct = Math.max(1, accuracyPct)
-  const streakDays = Math.max(dashboard.streak, 0)
-  const todayPriority = dashboard.weakestCategories[0]
-    ? 'Train ' + shortCategoryLabel(weakestCategory)
-    : dashboard.recommendation.title
 
   const [activeMenuIndex, setActiveMenuIndex] = useState(0)
 
   const titleMenuItems = useMemo<Array<LaunchTool & { eyebrow: string; status: string; tone: LaunchTone }>>(
     () => [
       {
-        title: 'Start Today',
-        eyebrow: 'Start',
-        description: 'Next action',
+        title: 'Daily Lesson',
+        eyebrow: 'Learn',
+        description: 'One focused win',
         action: 'Open dashboard',
         route: '/dashboard',
         featured: true,
@@ -309,9 +291,9 @@ export function StudyMenuPage() {
         tone: 'amber',
       },
       {
-        title: 'Quick Study',
+        title: 'Practice',
         eyebrow: 'Practice',
-        description: 'Weak-spot drill',
+        description: 'Quick questions',
         action: 'Start drill',
         route: '/quick-study',
         mobilePrimary: true,
@@ -320,95 +302,19 @@ export function StudyMenuPage() {
         tone: 'rose',
       },
       {
-        title: 'Study Plan',
-        eyebrow: 'Plan',
-        description: 'Today / week / later',
-        action: 'View plan',
-        route: '/study-plan',
+        title: 'Review',
+        eyebrow: 'Review',
+        description: 'Misses and weak areas',
+        action: 'Review progress',
+        route: '/weak-areas',
         mobilePrimary: true,
-        icon: <CalendarCheck className="h-5 w-5" />,
-        status: dashboard.todayCompleted + '/' + dashboard.dailyGoal + ' done',
-        tone: 'cyan',
-      },
-      {
-        title: 'Question Bank',
-        eyebrow: 'Bank',
-        description: 'Build a set',
-        action: 'Open bank',
-        route: '/practice-questions',
-        mobilePrimary: true,
-        icon: <ClipboardList className="h-5 w-5" />,
-        status: Math.max(attempts.length, 1245).toLocaleString() + ' answered',
-        tone: 'cyan',
-      },
-      {
-        title: 'Performance',
-        eyebrow: 'Insight',
-        description: 'Signals',
-        action: 'Read signals',
-        route: '/performance-analytics',
-        icon: <BarChart3 className="h-5 w-5" />,
-        status: Math.max(1, accuracyPct) + '% accuracy',
-        tone: 'violet',
-      },
-      {
-        title: 'Nurse Lab',
-        eyebrow: 'Lab',
-        description: 'Simulation',
-        action: 'Open lab',
-        route: '/nurse-command-lab',
-        icon: <FlaskConical className="h-5 w-5" />,
-        status: '4 modules',
+        icon: <HeartPulse className="h-5 w-5" />,
+        status: shortCategoryLabel(weakestCategory),
         tone: 'violet',
       },
     ],
-    [
-      accuracyPct,
-      attempts.length,
-      dashboard.dailyGoal,
-      dashboard.todayCompleted,
-      planProgress,
-      weakestCategory,
-    ],
+    [planProgress, weakestCategory],
   )
-
-  const progressBadges: Array<{
-    label: string
-    value: string
-    iconSrc: string
-    cardClass: string
-    iconFrameClass: string
-    imageClass: string
-    labelClass: string
-  }> = [
-    {
-      label: 'Level',
-      value: 'Lv ' + nurseLevel,
-      iconSrc: levelBadgeIcon,
-      cardClass: 'border-lime-200/70 bg-[linear-gradient(135deg,rgba(163,230,53,0.34),rgba(28,55,10,0.88)_48%,rgba(5,20,14,0.94))] shadow-[inset_0_1px_0_rgba(236,252,203,0.24),0_0_24px_rgba(163,230,53,0.14)]',
-      iconFrameClass: 'border-lime-100/50 bg-lime-300/14 shadow-[0_0_18px_rgba(163,230,53,0.2)]',
-      imageClass: 'h-10 w-10 drop-shadow-[0_0_10px_rgba(190,242,100,0.52)]',
-      labelClass: 'text-lime-100/74',
-    },
-    {
-      label: 'Mastery',
-      value: masteryPct + '%',
-      iconSrc: masteryBadgeIcon,
-      cardClass: 'border-violet-200/76 bg-[linear-gradient(135deg,rgba(167,139,250,0.46),rgba(76,29,149,0.72)_46%,rgba(10,13,34,0.95))] shadow-[inset_0_1px_0_rgba(221,214,254,0.24),0_0_28px_rgba(139,92,246,0.2)]',
-      iconFrameClass: 'border-violet-100/50 bg-violet-300/14 shadow-[0_0_20px_rgba(167,139,250,0.22)]',
-      imageClass: 'h-11 w-12 max-w-none drop-shadow-[0_0_11px_rgba(167,139,250,0.58)]',
-      labelClass: 'text-violet-100/76',
-    },
-    {
-      label: 'Streak',
-      value: streakDays + 'd',
-      iconSrc: streakBadgeIcon,
-      cardClass: 'border-amber-200/72 bg-gradient-to-br from-amber-300/[0.34] via-[#3a2b0f]/88 to-[#071426]/94 shadow-[inset_0_1px_0_rgba(254,240,138,0.24),0_0_26px_rgba(251,191,36,0.17)]',
-      iconFrameClass: 'border-amber-100/56 bg-amber-300/16 shadow-[0_0_20px_rgba(251,191,36,0.24)]',
-      imageClass: 'h-10 w-10 animate-pulse drop-shadow-[0_0_12px_rgba(251,191,36,0.72)]',
-      labelClass: 'text-amber-100/78',
-    },
-  ]
 
   const secondaryGroups: Array<{ title: string; description: string; tone: LaunchTone; tools: Array<LaunchTool & { tone: LaunchTone }> }> = [
     {
@@ -594,7 +500,7 @@ export function StudyMenuPage() {
     <NurseCommandBackdrop className="min-h-screen w-full overflow-x-hidden px-4 pb-4 pt-3 md:px-7 md:pt-6">
       <div className="mx-auto flex min-h-[calc(100vh-1rem)] max-w-7xl flex-col">
         <main className="relative z-10 flex flex-1 flex-col gap-5">
-          <section className="home-title-stage relative isolate grid min-h-[calc(100svh-3rem)] overflow-hidden border-y border-cyan-300/18 py-4 sm:py-5 lg:min-h-[calc(100vh-7.25rem)] lg:grid-cols-[minmax(0,0.88fr)_minmax(20rem,0.46fr)] lg:items-center lg:gap-6 lg:py-8 xl:gap-8">
+          <section className="home-title-stage relative isolate min-h-[calc(100svh-3rem)] overflow-hidden border-y border-cyan-300/18 py-4 sm:py-5 lg:min-h-[calc(100vh-7.25rem)] lg:py-8">
             <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(56,189,248,0.08)_1px,transparent_1px),linear-gradient(180deg,rgba(56,189,248,0.06)_1px,transparent_1px)] bg-[length:88px_88px]" />
             <div className="home-motion-field pointer-events-none absolute inset-0 -z-10" aria-hidden="true" />
             <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(2,8,18,0.08),rgba(2,8,18,0.72)_75%,rgba(2,8,18,0.96))]" />
@@ -619,15 +525,10 @@ export function StudyMenuPage() {
 
             <div className="min-w-0">
               <div className="mt-2 max-w-3xl pr-14 sm:mt-0 lg:max-w-2xl">
-                <p className="nc-eyebrow text-cyan-200/72 sm:text-sm">
-                  Study. Practice. Lead.
-                </p>
-                <h1 className="nc-hero-title mt-2 text-5xl uppercase text-white drop-shadow-[0_0_26px_rgba(125,211,252,0.24)] sm:text-6xl lg:text-7xl xl:text-[4.5rem]">
-                  Nurse
-                  <span className="block text-cyan-100">Command</span>
-                </h1>
+                <p className="nc-eyebrow text-cyan-200/72 sm:text-sm">Daily Rounds</p>
+                <h1 className="nc-hero-title mt-2 text-5xl text-white drop-shadow-[0_0_26px_rgba(125,211,252,0.24)] sm:text-6xl lg:text-7xl xl:text-[4.5rem]">One focused lesson.</h1>
                 <p className="mt-4 max-w-xl text-base leading-7 text-sky-50/76">
-                  Start with one focused win.
+                  Start small. Keep going when you want.
                 </p>
               </div>
 
@@ -674,39 +575,6 @@ export function StudyMenuPage() {
               </div>
             </div>
 
-            <aside className="mt-5 min-w-0 lg:mt-0">
-              <div className="overflow-hidden rounded-xl border border-sky-200/20 bg-[linear-gradient(135deg,rgba(14,165,233,0.13),rgba(2,8,18,0.82)_42%,rgba(124,58,237,0.13))] p-4 shadow-[0_18px_38px_rgba(0,0,0,0.18)] sm:p-5">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="nc-eyebrow text-cyan-100/66">Today&apos;s Status</p>
-                    <h2 className="nc-section-title mt-1 text-xl text-white">Level, mastery, streak.</h2>
-                  </div>
-                  <span className="shrink-0 rounded-full border border-amber-200/38 bg-amber-300/14 px-3 py-1 text-xs font-bold text-amber-100">
-                    {levelProgress}% to Lv {nurseLevel + 1}
-                  </span>
-                </div>
-                <div className="mt-4 grid grid-cols-3 gap-2">
-                  {progressBadges.map((badge) => (
-                    <div key={badge.label} className={clsx('home-progress-badge-card relative min-w-0 overflow-hidden rounded-lg border px-3 py-3', badge.cardClass)}>
-                      <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/38" />
-                      <div className={clsx('flex h-11 w-11 items-center justify-center rounded-xl border', badge.iconFrameClass)}>
-                        <img src={badge.iconSrc} alt="" className={clsx('object-contain', badge.imageClass)} />
-                      </div>
-                      <p className={clsx('nc-metric-label mt-3 text-[0.7rem]', badge.labelClass)}>{badge.label}</p>
-                      <p className="nc-metric-value mt-1 truncate text-xl text-white">{badge.value}</p>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-4 rounded-lg border border-cyan-200/16 bg-[#03101f]/58 p-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="nc-metric-label text-cyan-100/68">Today&apos;s progress</span>
-                    <span className="nc-metric-value text-sm text-white">{dashboard.todayCompleted}/{dashboard.dailyGoal}</span>
-                  </div>
-                  <CommandProgress value={planProgress} tone="blue" className="mt-3" />
-                  <p className="mt-2 text-xs font-semibold leading-5 text-sky-100/56">{todayPriority}</p>
-                </div>
-              </div>
-            </aside>
           </section>
 
           <section className="grid gap-3 lg:grid-cols-3" aria-label="Secondary tools">
