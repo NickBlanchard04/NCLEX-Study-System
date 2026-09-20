@@ -57,6 +57,7 @@ import {
   Zap,
 } from 'lucide-react'
 import { clsx } from 'clsx'
+import nursingCommandLogo from '../assets/brand/nursing-command-logo.png'
 import type {
   ActiveSession,
   ExamTrackId,
@@ -257,63 +258,49 @@ export function StudyMenuPage() {
   const navigate = useNavigate()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const profile = useStudySystemStore((state) => state.profile)
-  const attempts = useStudySystemStore((state) => state.attempts)
   const materials = useStudySystemStore((state) => state.materials)
   const importStudyMaterial = useStudySystemStore((state) => state.importStudyMaterial)
   const importStudyMaterialFromUrl = useStudySystemStore((state) => state.importStudyMaterialFromUrl)
-  const dashboard = useMemo(() => getDashboardState(profile, attempts), [attempts, profile])
   const [dragActive, setDragActive] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
   const [materialUrl, setMaterialUrl] = useState('')
   const [importMessage, setImportMessage] = useState('')
 
   const extractingMaterials = materials.filter((item) => item.extractionStatus === 'extracting')
-  const weakestCategory = dashboard.weakestCategories[0]?.category ?? 'Pharmacology'
-  const planProgress = Math.min(
-    100,
-    Math.round((dashboard.todayCompleted / Math.max(1, dashboard.dailyGoal)) * 100),
-  )
-
   const [activeMenuIndex, setActiveMenuIndex] = useState(0)
 
-  const titleMenuItems = useMemo<Array<LaunchTool & { eyebrow: string; status: string; tone: LaunchTone }>>(
+  const titleMenuItems = useMemo<Array<LaunchTool & { tone: LaunchTone }>>(
     () => [
       {
         title: 'Daily Lesson',
-        eyebrow: 'Learn',
-        description: 'One focused win',
+        description: '3–5 minutes · one focused win',
         action: 'Open dashboard',
         route: '/dashboard',
         featured: true,
         mobilePrimary: true,
-        icon: <Flag className="h-5 w-5" />,
-        status: planProgress + '% today',
+        icon: <Flag className="h-7 w-7" />,
         tone: 'amber',
       },
       {
         title: 'Practice',
-        eyebrow: 'Practice',
         description: 'Quick questions',
         action: 'Start drill',
         route: '/quick-study',
         mobilePrimary: true,
-        icon: <Timer className="h-5 w-5" />,
-        status: shortCategoryLabel(weakestCategory),
+        icon: <Timer className="h-7 w-7" />,
         tone: 'rose',
       },
       {
         title: 'Review',
-        eyebrow: 'Review',
         description: 'Misses and weak areas',
         action: 'Review progress',
         route: '/weak-areas',
         mobilePrimary: true,
-        icon: <HeartPulse className="h-5 w-5" />,
-        status: shortCategoryLabel(weakestCategory),
+        icon: <HeartPulse className="h-7 w-7" />,
         tone: 'violet',
       },
     ],
-    [planProgress, weakestCategory],
+    [],
   )
 
   const secondaryGroups: Array<{ title: string; description: string; tone: LaunchTone; tools: Array<LaunchTool & { tone: LaunchTone }> }> = [
@@ -524,15 +511,16 @@ export function StudyMenuPage() {
             </button>
 
             <div className="min-w-0">
-              <div className="mt-2 max-w-3xl pr-14 sm:mt-0 lg:max-w-2xl">
-                <p className="nc-eyebrow text-cyan-200/72 sm:text-sm">Daily Rounds</p>
-                <h1 className="nc-hero-title mt-2 text-5xl text-white drop-shadow-[0_0_26px_rgba(125,211,252,0.24)] sm:text-6xl lg:text-7xl xl:text-[4.5rem]">One focused lesson.</h1>
-                <p className="mt-4 max-w-xl text-base leading-7 text-sky-50/76">
-                  Start small. Keep going when you want.
-                </p>
+              <div className="mt-2 max-w-4xl pr-14 sm:mt-0">
+                <div className="flex items-center gap-3">
+                  <img src={nursingCommandLogo} alt="" className="h-11 w-11 rounded-xl object-contain" />
+                  <p className="text-lg font-black tracking-tight text-white sm:text-xl">
+                    Nurse <span className="text-cyan-200">Command</span>
+                  </p>
+                </div>
               </div>
 
-              <div className="mt-6 grid max-w-3xl gap-2 md:gap-2.5" aria-label="Title menu">
+              <div className="mt-10 grid max-w-4xl gap-4 md:gap-5" aria-label="Title menu">
                 {titleMenuItems.map((item, index) => {
                   const isActive = index === activeMenuIndex
                   const tone = launchToneClasses[item.tone]
@@ -546,7 +534,7 @@ export function StudyMenuPage() {
                       onFocus={() => setActiveMenuIndex(index)}
                       onMouseEnter={() => setActiveMenuIndex(index)}
                       className={clsx(
-                        'group relative min-h-[3.75rem] w-full min-w-0 items-center gap-3 overflow-hidden rounded-xl border bg-gradient-to-br px-3 py-2.5 pl-4 text-left transition focus:outline-none focus:ring-4 sm:min-h-[4rem] sm:px-4 sm:pl-5',
+                        'group relative min-h-[6.25rem] w-full min-w-0 items-center gap-4 overflow-hidden rounded-2xl border bg-gradient-to-br px-5 py-4 pl-6 text-left transition focus:outline-none focus:ring-4 sm:min-h-[7.5rem] sm:gap-5 sm:px-7 sm:pl-8',
                         item.mobilePrimary ? 'flex' : 'hidden sm:flex',
                         isActive
                           ? clsx(selectedTaskClasses.border, selectedTaskClasses.surface, selectedTaskClasses.glow)
@@ -554,30 +542,32 @@ export function StudyMenuPage() {
                       )}
                     >
                       <span className={clsx('pointer-events-none absolute inset-y-2 left-0 w-1 rounded-r-full transition', isActive ? selectedTaskClasses.accent : tone.accent)} />
-                      <span className={clsx('grid h-11 w-11 shrink-0 place-items-center rounded-lg border transition', isActive ? selectedTaskClasses.icon : tone.icon)}>
+                      <span className={clsx('grid h-14 w-14 shrink-0 place-items-center rounded-full border transition sm:h-16 sm:w-16', isActive ? selectedTaskClasses.icon : tone.icon)}>
                         {item.icon}
                       </span>
-                      <span className="grid min-w-0 flex-1 gap-1 sm:grid-cols-[minmax(0,0.95fr)_minmax(0,0.75fr)] sm:items-center">
-                        <span className="flex min-w-0 items-center gap-2">
-                          <span className="nc-card-title text-base text-white sm:text-lg">{item.title}</span>
-                          <span className={clsx('nc-chip-label hidden rounded-md border px-2 py-1 sm:inline-flex', isActive ? selectedTaskClasses.meta : tone.meta)}>
-                            {item.status}
-                          </span>
-                        </span>
-                        <span className="hidden min-w-0 text-sm font-semibold text-sky-50/62 sm:block sm:text-right">
-                          {item.eyebrow} - {item.description}
-                        </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="nc-card-title block text-xl text-white sm:text-2xl">{item.title}</span>
+                        <span className="mt-1 block text-sm leading-6 text-sky-50/68 sm:text-base">{item.description}</span>
                       </span>
-                      <ArrowRight className={clsx('h-5 w-5 shrink-0 transition group-hover:translate-x-1', isActive ? selectedTaskClasses.text : tone.text)} />
+                      <span className={clsx('grid h-11 w-11 shrink-0 place-items-center rounded-full border transition group-hover:translate-x-1', isActive ? selectedTaskClasses.icon : tone.icon)}>
+                        <ArrowRight className={clsx('h-5 w-5', isActive ? selectedTaskClasses.text : tone.text)} />
+                      </span>
                     </button>
                   )
                 })}
               </div>
+              <a
+                href="#secondary-study-tools"
+                className="mt-6 inline-flex items-center gap-2 text-base font-semibold text-cyan-200 underline decoration-cyan-200/50 underline-offset-4 transition hover:text-white hover:decoration-white focus:outline-none focus:ring-4 focus:ring-cyan-300/20"
+              >
+                More study tools
+                <ArrowRight className="h-5 w-5" />
+              </a>
             </div>
 
           </section>
 
-          <section className="grid gap-3 lg:grid-cols-3" aria-label="Secondary tools">
+          <section id="secondary-study-tools" className="grid scroll-mt-6 gap-3 lg:grid-cols-3" aria-label="Secondary tools">
             {secondaryGroups.map((group) => (
               <section key={group.title} className={clsx('min-w-0 rounded-xl border p-4 shadow-[0_14px_30px_rgba(0,0,0,0.12)]', launchToneClasses[group.tone].border, launchToneClasses[group.tone].surface)}>
                 <div className="flex items-start gap-3">
