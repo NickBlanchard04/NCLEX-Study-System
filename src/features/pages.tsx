@@ -269,35 +269,41 @@ export function StudyMenuPage() {
   const extractingMaterials = materials.filter((item) => item.extractionStatus === 'extracting')
   const [activeMenuIndex, setActiveMenuIndex] = useState(0)
 
-  const titleMenuItems = useMemo<Array<LaunchTool & { tone: LaunchTone }>>(
+  const titleMenuItems = useMemo<Array<LaunchTool & { tone: LaunchTone; label: string; bannerClass: string }>>(
     () => [
       {
         title: 'Daily Lesson',
         description: '3–5 minutes · one focused win',
+        label: 'LEARN\nTODAY',
         action: 'Open dashboard',
         route: '/dashboard',
         featured: true,
         mobilePrimary: true,
         icon: <Flag className="h-7 w-7" />,
         tone: 'amber',
+        bannerClass: 'border-amber-300/80 bg-[radial-gradient(circle_at_78%_20%,rgba(251,191,36,0.46),transparent_34%),linear-gradient(145deg,rgba(66,44,17,0.98),rgba(8,18,32,0.98)_72%)] shadow-[0_0_28px_rgba(251,191,36,0.16)]',
       },
       {
         title: 'Practice',
         description: 'Quick questions',
+        label: 'PRACTICE\nBUILDS CONFIDENCE',
         action: 'Start drill',
         route: '/quick-study',
         mobilePrimary: true,
         icon: <Timer className="h-7 w-7" />,
         tone: 'rose',
+        bannerClass: 'border-cyan-300/80 bg-[radial-gradient(circle_at_78%_84%,rgba(14,165,233,0.42),transparent_38%),linear-gradient(145deg,rgba(5,40,70,0.98),rgba(5,18,35,0.98)_72%)]',
       },
       {
         title: 'Review',
         description: 'Misses and weak areas',
+        label: 'REFLECT\nIMPROVE\nMOVE FORWARD',
         action: 'Review progress',
         route: '/weak-areas',
         mobilePrimary: true,
         icon: <HeartPulse className="h-7 w-7" />,
         tone: 'violet',
+        bannerClass: 'border-emerald-300/80 bg-[radial-gradient(circle_at_76%_28%,rgba(45,212,191,0.42),transparent_34%),linear-gradient(145deg,rgba(5,54,56,0.98),rgba(5,23,37,0.98)_72%)]',
       },
     ],
     [],
@@ -520,7 +526,14 @@ export function StudyMenuPage() {
                 </div>
               </div>
 
-              <div className="mt-10 grid max-w-4xl gap-4 md:gap-5" aria-label="Title menu">
+              <div className="mt-10 max-w-5xl">
+                <h1 className="nc-hero-title text-5xl text-white drop-shadow-[0_0_26px_rgba(125,211,252,0.24)] sm:text-6xl lg:text-7xl xl:text-[4.5rem]">
+                  One focused <span className="text-cyan-200">lesson.</span>
+                </h1>
+                <p className="mt-3 text-lg leading-7 text-sky-50/76 sm:text-xl">Start small. Keep going when you want.</p>
+              </div>
+
+              <div className="mt-8 grid max-w-6xl gap-4 md:grid-cols-3 md:gap-5" aria-label="Title menu">
                 {titleMenuItems.map((item, index) => {
                   const isActive = index === activeMenuIndex
                   const tone = launchToneClasses[item.tone]
@@ -534,23 +547,23 @@ export function StudyMenuPage() {
                       onFocus={() => setActiveMenuIndex(index)}
                       onMouseEnter={() => setActiveMenuIndex(index)}
                       className={clsx(
-                        'group relative min-h-[6.25rem] w-full min-w-0 items-center gap-4 overflow-hidden rounded-2xl border bg-gradient-to-br px-5 py-4 pl-6 text-left transition focus:outline-none focus:ring-4 sm:min-h-[7.5rem] sm:gap-5 sm:px-7 sm:pl-8',
+                        'group relative min-h-[29rem] w-full min-w-0 flex-col items-stretch overflow-hidden rounded-2xl border px-6 py-7 text-left transition focus:outline-none focus:ring-4 sm:min-h-[34rem] sm:px-7 sm:py-8',
                         item.mobilePrimary ? 'flex' : 'hidden sm:flex',
-                        isActive
-                          ? clsx(selectedTaskClasses.border, selectedTaskClasses.surface, selectedTaskClasses.glow)
-                          : clsx(tone.idle, tone.hover, 'focus:ring-cyan-300/16'),
+                        item.bannerClass,
+                        isActive ? selectedTaskClasses.glow : 'hover:-translate-y-1 hover:shadow-[0_18px_45px_rgba(0,0,0,0.24)]',
                       )}
                     >
-                      <span className={clsx('pointer-events-none absolute inset-y-2 left-0 w-1 rounded-r-full transition', isActive ? selectedTaskClasses.accent : tone.accent)} />
-                      <span className={clsx('grid h-14 w-14 shrink-0 place-items-center rounded-full border transition sm:h-16 sm:w-16', isActive ? selectedTaskClasses.icon : tone.icon)}>
+                      <span className={clsx('pointer-events-none absolute inset-x-6 top-6 h-px opacity-80', isActive ? selectedTaskClasses.accent : tone.accent)} />
+                      <span className={clsx('whitespace-pre-line text-xs font-black leading-5 tracking-[0.26em]', isActive ? selectedTaskClasses.text : tone.text)}>{item.label}</span>
+                      <span className={clsx('mt-6 grid h-20 w-20 shrink-0 place-items-center rounded-full border transition', isActive ? selectedTaskClasses.icon : tone.icon)}>
                         {item.icon}
                       </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="nc-card-title block text-xl text-white sm:text-2xl">{item.title}</span>
-                        <span className="mt-1 block text-sm leading-6 text-sky-50/68 sm:text-base">{item.description}</span>
+                      <span className="mt-auto min-w-0">
+                        <span className="nc-card-title block max-w-[12rem] text-4xl leading-[0.98] text-white sm:text-5xl">{item.title}</span>
+                        <span className="mt-4 block max-w-[15rem] text-base leading-7 text-sky-50/78 sm:text-lg">{item.description}</span>
                       </span>
-                      <span className={clsx('grid h-11 w-11 shrink-0 place-items-center rounded-full border transition group-hover:translate-x-1', isActive ? selectedTaskClasses.icon : tone.icon)}>
-                        <ArrowRight className={clsx('h-5 w-5', isActive ? selectedTaskClasses.text : tone.text)} />
+                      <span className={clsx('mt-7 grid h-14 w-14 shrink-0 place-items-center self-end rounded-full border transition group-hover:translate-x-1', isActive ? selectedTaskClasses.icon : tone.icon)}>
+                        <ArrowRight className={clsx('h-6 w-6', isActive ? selectedTaskClasses.text : tone.text)} />
                       </span>
                     </button>
                   )
