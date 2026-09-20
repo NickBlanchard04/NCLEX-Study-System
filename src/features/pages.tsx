@@ -58,6 +58,9 @@ import {
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import nursingCommandLogo from '../assets/brand/nursing-command-logo.png'
+import dailyLessonPhoto from '../assets/home/daily-lesson-photo.jpg'
+import practicePhoto from '../assets/home/practice-photo.jpg'
+import reviewPhoto from '../assets/home/review-photo.jpg'
 import type {
   ActiveSession,
   ExamTrackId,
@@ -269,7 +272,7 @@ export function StudyMenuPage() {
   const extractingMaterials = materials.filter((item) => item.extractionStatus === 'extracting')
   const [activeMenuIndex, setActiveMenuIndex] = useState(0)
 
-  const titleMenuItems = useMemo<Array<LaunchTool & { tone: LaunchTone; label: string; bannerClass: string }>>(
+  const titleMenuItems = useMemo<Array<LaunchTool & { tone: LaunchTone; label: string; bannerClass: string; photo: string; photoOverlay: string }>>(
     () => [
       {
         title: 'Daily Lesson',
@@ -282,6 +285,8 @@ export function StudyMenuPage() {
         icon: <Flag className="h-7 w-7" />,
         tone: 'amber',
         bannerClass: 'border-amber-300/80 bg-[radial-gradient(circle_at_78%_20%,rgba(251,191,36,0.46),transparent_34%),linear-gradient(145deg,rgba(66,44,17,0.98),rgba(8,18,32,0.98)_72%)] shadow-[0_0_28px_rgba(251,191,36,0.16)]',
+        photo: dailyLessonPhoto,
+        photoOverlay: 'linear-gradient(180deg,rgba(8,18,32,0.12) 28%,rgba(8,18,32,0.72) 100%)',
       },
       {
         title: 'Practice',
@@ -293,6 +298,8 @@ export function StudyMenuPage() {
         icon: <Timer className="h-7 w-7" />,
         tone: 'rose',
         bannerClass: 'border-cyan-300/80 bg-[radial-gradient(circle_at_78%_84%,rgba(14,165,233,0.42),transparent_38%),linear-gradient(145deg,rgba(5,40,70,0.98),rgba(5,18,35,0.98)_72%)]',
+        photo: practicePhoto,
+        photoOverlay: 'linear-gradient(180deg,rgba(5,18,35,0.12) 28%,rgba(5,18,35,0.74) 100%)',
       },
       {
         title: 'Review',
@@ -304,6 +311,8 @@ export function StudyMenuPage() {
         icon: <HeartPulse className="h-7 w-7" />,
         tone: 'violet',
         bannerClass: 'border-emerald-300/80 bg-[radial-gradient(circle_at_76%_28%,rgba(45,212,191,0.42),transparent_34%),linear-gradient(145deg,rgba(5,54,56,0.98),rgba(5,23,37,0.98)_72%)]',
+        photo: reviewPhoto,
+        photoOverlay: 'linear-gradient(180deg,rgba(5,23,37,0.16) 28%,rgba(5,23,37,0.74) 100%)',
       },
     ],
     [],
@@ -552,6 +561,7 @@ export function StudyMenuPage() {
                         item.bannerClass,
                         isActive ? selectedTaskClasses.glow : 'hover:-translate-y-1 hover:shadow-[0_18px_45px_rgba(0,0,0,0.24)]',
                       )}
+                      style={{ backgroundImage: `${item.photoOverlay}, url(${item.photo})`, backgroundSize: '100% 100%, 100% 54%', backgroundPosition: 'center, center bottom', backgroundRepeat: 'no-repeat' }}
                     >
                       <span className={clsx('pointer-events-none absolute inset-x-6 top-6 h-px opacity-80', isActive ? selectedTaskClasses.accent : tone.accent)} />
                       <span className={clsx('whitespace-pre-line text-xs font-black leading-5 tracking-[0.26em]', isActive ? selectedTaskClasses.text : tone.text)}>{item.label}</span>
