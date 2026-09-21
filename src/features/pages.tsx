@@ -248,16 +248,6 @@ const launchToneClasses: Record<
   },
 }
 
-const selectedTaskClasses = {
-  border: 'border-amber-200/72',
-  surface: 'bg-gradient-to-br from-amber-300/[0.28] via-[#2d2612]/88 to-[#061426]/92',
-  icon: 'border-amber-100/70 bg-amber-300/26 text-amber-50 shadow-[0_0_22px_rgba(251,191,36,0.28)]',
-  meta: 'border-amber-100/52 bg-amber-300/24 text-amber-50',
-  text: 'text-amber-100',
-  glow: 'shadow-[0_0_34px_rgba(251,191,36,0.22)]',
-  accent: 'bg-amber-300 shadow-[0_0_18px_rgba(252,211,77,0.78)]',
-}
-
 export function StudyMenuPage() {
   const navigate = useNavigate()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
@@ -545,7 +535,6 @@ export function StudyMenuPage() {
 
               <div className="mt-8 grid max-w-[1260px] grid-cols-1 gap-8 lg:grid-cols-3" aria-label="Title menu">
                 {titleMenuItems.map((item, index) => {
-                  const isActive = index === activeMenuIndex
                   // Display the supplied artwork without regenerating or distorting its contents.
                   const crop = [{ x: 106, width: 402 }, { x: 542, width: 392 }, { x: 964, width: 400 }][index]
 
@@ -558,9 +547,9 @@ export function StudyMenuPage() {
                       onFocus={() => setActiveMenuIndex(index)}
                       onMouseEnter={() => setActiveMenuIndex(index)}
                       className={clsx(
-                        'relative block w-full max-w-[402px] justify-self-center overflow-hidden rounded-2xl p-0 text-left focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-cyan-200',
-                        isActive && index === 0 ? selectedTaskClasses.glow : '',
+                        'home-learning-banner relative block w-full max-w-[402px] justify-self-center overflow-hidden rounded-2xl p-0 text-left focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-cyan-200',
                       )}
+                      data-banner-tone={index === 0 ? 'gold' : index === 1 ? 'blue' : 'teal'}
                       style={{ aspectRatio: `${crop.width} / 690` }}
                     >
                       <img
