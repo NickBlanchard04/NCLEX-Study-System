@@ -58,6 +58,7 @@ import {
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import nursingCommandLogo from '../assets/brand/nursing-command-logo.png'
+import bannerReference from '../assets/home/banner-reference.png'
 import dailyLessonPhoto from '../assets/home/daily-lesson-photo.jpg'
 import practicePhoto from '../assets/home/practice-photo.jpg'
 import reviewPhoto from '../assets/home/review-photo.jpg'
@@ -542,39 +543,34 @@ export function StudyMenuPage() {
                 <p className="mt-3 text-lg leading-7 text-sky-50/76 sm:text-xl">Start small. Keep going when you want.</p>
               </div>
 
-              <div className="mt-8 grid max-w-6xl gap-4 md:grid-cols-3 md:gap-5" aria-label="Title menu">
+              <div className="mt-8 grid max-w-[1260px] grid-cols-1 gap-8 lg:grid-cols-3" aria-label="Title menu">
                 {titleMenuItems.map((item, index) => {
                   const isActive = index === activeMenuIndex
-                  const tone = launchToneClasses[item.tone]
+                  // Display the supplied artwork without regenerating or distorting its contents.
+                  const crop = [{ x: 106, width: 402 }, { x: 542, width: 392 }, { x: 964, width: 400 }][index]
 
                   return (
                     <button
                       key={item.route}
                       type="button"
-                      aria-current={isActive ? 'page' : undefined}
+                      aria-label={`${item.title}: ${index === 0 ? 'The default 3–5 minute learning session' : item.description}`}
                       onClick={() => activateTitleMenuItem(item)}
                       onFocus={() => setActiveMenuIndex(index)}
                       onMouseEnter={() => setActiveMenuIndex(index)}
                       className={clsx(
-                        'group relative min-h-[29rem] w-full min-w-0 flex-col items-stretch overflow-hidden rounded-2xl border px-6 py-7 text-left transition focus:outline-none focus:ring-4 sm:min-h-[34rem] sm:px-7 sm:py-8',
-                        item.mobilePrimary ? 'flex' : 'hidden sm:flex',
-                        item.bannerClass,
-                        isActive ? selectedTaskClasses.glow : 'hover:-translate-y-1 hover:shadow-[0_18px_45px_rgba(0,0,0,0.24)]',
+                        'relative block w-full max-w-[402px] justify-self-center overflow-hidden rounded-2xl p-0 text-left focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-cyan-200',
+                        isActive && index === 0 ? selectedTaskClasses.glow : '',
                       )}
-                      style={{ backgroundImage: `${item.photoOverlay}, url(${item.photo})`, backgroundSize: '100% 100%, 100% 54%', backgroundPosition: 'center, center bottom', backgroundRepeat: 'no-repeat' }}
+                      style={{ aspectRatio: `${crop.width} / 690` }}
                     >
-                      <span className={clsx('pointer-events-none absolute inset-x-6 top-6 h-px opacity-80', isActive ? selectedTaskClasses.accent : tone.accent)} />
-                      <span className={clsx('whitespace-pre-line text-xs font-black leading-5 tracking-[0.26em]', isActive ? selectedTaskClasses.text : tone.text)}>{item.label}</span>
-                      <span className={clsx('mt-6 grid h-20 w-20 shrink-0 place-items-center rounded-full border transition', isActive ? selectedTaskClasses.icon : tone.icon)}>
-                        {item.icon}
-                      </span>
-                      <span className="mt-auto min-w-0">
-                        <span className="nc-card-title block max-w-[12rem] text-4xl leading-[0.98] text-white sm:text-5xl">{item.title}</span>
-                        <span className="mt-4 block max-w-[15rem] text-base leading-7 text-sky-50/78 sm:text-lg">{item.description}</span>
-                      </span>
-                      <span className={clsx('mt-7 grid h-14 w-14 shrink-0 place-items-center self-end rounded-full border transition group-hover:translate-x-1', isActive ? selectedTaskClasses.icon : tone.icon)}>
-                        <ArrowRight className={clsx('h-6 w-6', isActive ? selectedTaskClasses.text : tone.text)} />
-                      </span>
+                      <img
+                        src={bannerReference}
+                        alt=""
+                        aria-hidden="true"
+                        draggable={false}
+                        className="pointer-events-none absolute max-w-none select-none"
+                        style={{ width: `${1470 / crop.width * 100}%`, left: `${-crop.x / crop.width * 100}%`, top: `${-256 / 690 * 100}%` }}
+                      />
                     </button>
                   )
                 })}
