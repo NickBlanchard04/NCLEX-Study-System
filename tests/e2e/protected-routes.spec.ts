@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 
 const protectedRoutes = [
   { path: '/dashboard', text: /Next Action|Today.s Plan|Weak Areas/i },
-  { path: '/quick-study', text: /Start 10-minute drill|Current action|10-minute rescue set|Question \d+ of/i },
+  { path: '/quick-study', text: /Start 5 questions|10-minute rescue set|Question \d+ of/i },
   { path: '/practice-questions', text: /Question Bank|Start focused set|Start adaptive set|Practice Set/i },
   { path: '/weak-areas', text: /Repair the pattern|Selected repair|No weak area signal/i },
   { path: '/test-mode', text: /Start a serious exam block|exam block/i },
@@ -118,7 +118,7 @@ async function getExamEntryState(page: Page) {
 
 async function getQuickStudyEntryState(page: Page) {
   if (await hasQuestionRunner(page)) return 'runner'
-  if (await hasVisibleButton(page, /Start 10-minute drill/i)) return 'start'
+  if (await hasVisibleButton(page, /Start 5 questions/i)) return 'start'
   return 'loading'
 }
 
@@ -243,7 +243,7 @@ test.describe('session start regression', () => {
     await page.goto('/quick-study')
     await expect.poll(() => getQuickStudyEntryState(page), { timeout: 12_000 }).not.toBe('loading')
     if ((await getQuickStudyEntryState(page)) === 'start') {
-      await clickLastVisibleButton(page, /Start 10-minute drill/i, 'Start 10-minute drill').catch(async (error) => {
+      await clickLastVisibleButton(page, /Start 5 questions/i, 'Start 5 questions').catch(async (error) => {
         if (!(await hasQuestionRunner(page))) {
           throw error
         }

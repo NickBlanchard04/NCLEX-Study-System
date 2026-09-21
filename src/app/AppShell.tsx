@@ -538,7 +538,8 @@ function NclexAppShell() {
     })
   }
 
-  if (location.pathname === '/') {
+  const isQuickStudyRoute = /^\/quick-study\/?$/.test(location.pathname)
+  if (location.pathname === '/' || isQuickStudyRoute) {
     return (
       <AuthGate>
         <div className="nurse-command-app home-route-shell text-white">
@@ -578,7 +579,7 @@ function NclexAppShell() {
             ) : null}
           </div>
 
-          <StudyMenuPage />
+          {isQuickStudyRoute ? <QuickStudyPage /> : <StudyMenuPage />}
           <SupportSheet open={supportOpen} onClose={() => setSupportOpen(false)} />
         </div>
       </AuthGate>

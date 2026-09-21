@@ -34,6 +34,7 @@ import {
   getSessionAccuracy,
   questionLookup,
 } from '../services/study-system'
+import { QuickStudyCompleteView, QuickStudyMissingView, QuickStudyQuestionView } from './quick-study-session-view'
 
 export function PageHeader({
   eyebrow,
@@ -971,10 +972,12 @@ export function QuestionSessionRunner({
   session,
   modeLabel,
   onExit,
+  compact = false,
 }: {
   session: ActiveSession
   modeLabel: string
   onExit: () => void
+  compact?: boolean
 }) {
   const submitCurrentResponse = useStudySystemStore((state) => state.submitCurrentResponse)
   const nextQuestion = useStudySystemStore((state) => state.nextQuestion)
@@ -982,6 +985,7 @@ export function QuestionSessionRunner({
   const goToSessionQuestion = useStudySystemStore((state) => state.goToSessionQuestion)
   const finishSession = useStudySystemStore((state) => state.finishSession)
   const startPracticeSession = useStudySystemStore((state) => state.startPracticeSession)
+  const startQuickStudy = useStudySystemStore((state) => state.startQuickStudy)
   const attempts = useStudySystemStore((state) => state.attempts)
   const profile = useStudySystemStore((state) => state.profile)
   const authUser = useStudySystemStore((state) => state.authUser)
@@ -1017,9 +1021,19 @@ export function QuestionSessionRunner({
 
   const score = useMemo(() => Math.round(getSessionAccuracy(session) * 100), [session])
   const breakdown = useMemo(() => {
+    if (compact) {
+      const categories = new Map<string, { correct: number; total: number }>()
+      session.responses.forEach((response) => {
+        const item = questionLookup[response.questionId]
+        if (!item) return
+        const current = categories.get(item.category) ?? { correct: 0, total: 0 }
+        categories.set(item.category, { correct: current.correct + Number(response.isCorrect), total: current.total + 1 })
+      })
+      return Array.from(categories, ([category, counts]) => ({ category, accuracy: counts.correct / counts.total, total: counts.total }))
+    }
     const sessionAttempts = attempts.filter((attempt) => session.questionIds.includes(attempt.questionId))
     return getQuestionCategoryBreakdown(session.questionIds, sessionAttempts)
-  }, [attempts, session.questionIds])
+  }, [attempts, compact, session.questionIds, session.responses])
   const getAttemptForResponse = (response: { questionId: string; submittedAt: string }) =>
     attempts.find(
       (attempt) =>
@@ -1049,6 +1063,35 @@ export function QuestionSessionRunner({
         format: 'mixed',
       })
       navigate('/practice-questions')
+    }
+
+    if (compact) {
+      return (
+        <QuickStudyCompleteView
+          session={session}
+          score={score}
+          takeaway={sessionTakeaway}
+          missed={missedQuestions.map((response) => {
+            const attempt = getAttemptForResponse(response)
+            const missedQuestion = questionLookup[response.questionId]
+            return {
+              id: response.questionId,
+              question: missedQuestion,
+              reason: missedQuestion
+                ? getMissReason(response.questionId, response.selectedAnswer)
+                : 'This saved question is no longer available. Rebuild the practice set before using this result for review.',
+              diagnosis: attempt?.engineDiagnosis
+                ? `${attempt.engineDiagnosis.likelyMisconceptionId.replaceAll('_', ' ')}.${attempt.engineDiagnosis.confidenceEscalated ? ' High confidence makes this a priority repair.' : ''}`
+                : undefined,
+              remediation: attempt?.engineRemediationEvents?.[0]?.nextActionCopy,
+            }
+          })}
+          breakdown={breakdown}
+          onRepair={topMissedQuestion ? startRepairSet : undefined}
+          onRemediation={() => navigate('/weak-areas')}
+          onExit={onExit}
+        />
+      )
     }
 
     return (
@@ -1221,6 +1264,17 @@ export function QuestionSessionRunner({
   }
 
   if (!question || !questionId) {
+    if (compact) {
+      return (
+        <QuickStudyMissingView
+          onRebuild={() => {
+            onExit()
+            startQuickStudy()
+          }}
+          onExit={onExit}
+        />
+      )
+    }
     return (
       <div className="space-y-6">
         <EmptyState
@@ -1425,6 +1479,54 @@ export function QuestionSessionRunner({
     },
   ]
   const evidenceBadges = [...tutorInsight.trustFlags, `Evidence: ${evidenceLevel}`]
+
+  if (compact) {
+    return (
+      <QuickStudyQuestionView
+        session={session}
+        question={question}
+        selectedAnswers={selectedAnswers}
+        submitted={submitted}
+        showRationale={showRationale}
+        flagged={flagged}
+        finalResponse={finalResponse}
+        resultLabel={resultLabel}
+        isCorrect={currentIsCorrect}
+        missReason={getMissReason(questionId, selectedAnswers)}
+        remediation={finalRemediation?.nextActionCopy}
+        evidenceLevel={evidenceLevel}
+        trustFlags={tutorInsight.trustFlags}
+        tutorCue={`${tutorInsight.reviewTarget}. Watch for: ${tutorInsight.trap}`}
+        remainingSeconds={remainingSeconds}
+        feedbackOpen={feedbackOpen}
+        feedbackReason={feedbackReason}
+        feedbackNote={feedbackNote}
+        feedbackSubmittedId={feedbackSubmittedId}
+        onChoice={toggleChoice}
+        onFlag={() => setFlagged((current) => !current)}
+        onSubmit={openReviewForCurrentAnswer}
+        onConfidence={handleConfidence}
+        onToggleReview={() => {
+          if (showRationale) setShowRationale(false)
+          else openReviewForCurrentAnswer()
+        }}
+        onNext={goToNextQuestion}
+        onBack={goToPreviousQuestion}
+        onGoTo={goToQuestionIndex}
+        onFinish={finishSession}
+        onSaveAndLeave={() => navigate('/')}
+        onExit={onExit}
+        onLinkedCard={() => {
+          const cardId = question.relatedFlashcardIds?.[0]
+          if (cardId) navigate(`/flashcards?cardId=${encodeURIComponent(cardId)}`)
+        }}
+        onFeedbackToggle={openContentFeedback}
+        onFeedbackReason={setFeedbackReason}
+        onFeedbackNote={setFeedbackNote}
+        onFeedbackSubmit={submitContentFeedback}
+      />
+    )
+  }
 
   return (
     <div className="space-y-6 pb-44 xl:pb-0">
