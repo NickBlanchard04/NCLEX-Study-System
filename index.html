@@ -8,6 +8,20 @@
     <meta name="theme-color" content="#003B66" />
     <meta name="description" content="A premium adaptive study system for NCLEX, FNP, and CCMA exam prep." />
     <title>Nurse Command</title>
+    <script>
+      // A cached Pages document can reference assets removed by a newer deployment.
+      // Retry the document once with a fresh URL, preserving its route and query.
+      window.addEventListener('error', function (event) {
+        var target = event.target;
+        if (!(target instanceof HTMLLinkElement) || target.rel !== 'stylesheet') return;
+        var asset = new URL(target.href, window.location.href);
+        if (asset.origin !== window.location.origin || !asset.pathname.includes('/assets/')) return;
+        var url = new URL(window.location.href);
+        if (url.searchParams.has('_asset_refresh')) return;
+        url.searchParams.set('_asset_refresh', String(Date.now()));
+        window.location.replace(url.href);
+      }, true);
+    </script>
   </head>
   <body>
     <div id="root"></div>
