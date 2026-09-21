@@ -541,10 +541,10 @@ function NclexAppShell() {
   if (location.pathname === '/') {
     return (
       <AuthGate>
-        <div className="nurse-command-app min-h-screen bg-[#04101f] text-white">
+        <div className="nurse-command-app home-route-shell text-white">
           <div className="w-full">
             {migrationPromptVisible ? (
-              <div className="mb-5 rounded-[20px] border border-[#cfe1f7] bg-[linear-gradient(135deg,#ffffff_0%,#eef5ff_100%)] p-4 shadow-sm">
+              <div className="home-migration-notice border border-[#36414e] bg-[#101923] p-4">
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-blue)]">
