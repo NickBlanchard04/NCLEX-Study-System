@@ -77,8 +77,8 @@ const eventAt = (
   taskId,
 })
 
-const cloneStarterTasks = (): TycoonTask[] =>
-  tycoonStarterTasks.map((task) => ({
+const cloneStarterTasks = (roomIds?: readonly string[]): TycoonTask[] =>
+  tycoonStarterTasks.filter((task) => !roomIds || roomIds.includes(task.room)).map((task) => ({
     ...task,
     status: 'available',
     actions: task.actions.map((action) => ({ ...action })),
@@ -89,15 +89,19 @@ const cloneStarterTasks = (): TycoonTask[] =>
 export const startTycoonShiftForUnit = (
   state: TycoonGameState,
   unitId: string,
+  options: { roomIds?: readonly string[] } = {},
 ): TycoonGameState => {
   if (!state.unlockedUnitIds.includes(unitId)) return state
+
+  const tasks = cloneStarterTasks(options.roomIds)
+  if (!tasks.length) return state
 
   const shift: TycoonShift = {
     id: makeId('tycoon-shift'),
     unitId,
     startedAt: new Date().toISOString(),
     shiftMinute: 0,
-    tasks: cloneStarterTasks(),
+    tasks,
     events: [
       {
         id: makeId('tycoon-event'),
@@ -123,18 +127,28 @@ export const startTycoonShiftForUnit = (
 export const selectTycoonTaskById = (
   state: TycoonGameState,
   taskId: string,
-): TycoonGameState => ({
-  ...state,
-  selectedTaskId: taskId,
-})
+): TycoonGameState => {
+  if (
+    state.activeShift?.status !== 'running' ||
+    !state.activeShift.tasks.some((task) => task.id === taskId) ||
+    state.selectedTaskId === taskId
+  ) return state
+
+  return { ...state, selectedTaskId: taskId }
+}
 
 export const completeTycoonTaskWithAction = (
   state: TycoonGameState,
   taskId: string,
   actionId: string,
+  expectedShiftId?: string,
 ): TycoonGameState => {
   const shift = state.activeShift
-  if (!shift || shift.status !== 'running') return state
+  if (
+    !shift ||
+    shift.status !== 'running' ||
+    (expectedShiftId !== undefined && shift.id !== expectedShiftId)
+  ) return state
 
   const task = shift.tasks.find((item) => item.id === taskId)
   if (!task || task.status === 'completed' || task.status === 'failed') return state
@@ -202,21 +216,35 @@ export const completeTycoonTaskWithAction = (
   })
 }
 
+export const reviewTycoonEquipment = (state: TycoonGameState, taskId: string, expectedShiftId: string): TycoonGameState => {
+  const shift = state.activeShift
+  if (!shift || shift.id !== expectedShiftId || shift.status !== 'running' || !shift.tasks.some((task) => task.id === taskId) || shift.equipmentReviewedTaskIds?.includes(taskId)) return state
+  return { ...state, activeShift: { ...shift, equipmentReviewedTaskIds: [...(shift.equipmentReviewedTaskIds ?? []), taskId] } }
+}
+
 export const advanceTycoonShiftTime = (
   state: TycoonGameState,
   minutes: number,
+  options: { recordEvent?: boolean } = {},
 ): TycoonGameState => {
-  if (!state.activeShift || state.activeShift.status !== 'running') return state
+  if (
+    !Number.isFinite(minutes) ||
+    minutes <= 0 ||
+    !state.activeShift ||
+    state.activeShift.status !== 'running'
+  ) return state
 
   return applyDeteriorationCheck({
     ...state,
     activeShift: {
       ...state.activeShift,
       shiftMinute: state.activeShift.shiftMinute + minutes,
-      events: [
-        eventAt(state.activeShift, 'shift', 'Time advanced', `${minutes} minutes passed on the unit.`),
-        ...state.activeShift.events,
-      ],
+      events: options.recordEvent === false
+        ? state.activeShift.events
+        : [
+            eventAt(state.activeShift, 'shift', 'Time advanced', `${minutes} minutes passed on the unit.`),
+            ...state.activeShift.events,
+          ],
     },
   })
 }
@@ -299,7 +327,7 @@ export const purchaseTycoonUpgradeById = (
 
 export const finishTycoonShiftNow = (state: TycoonGameState): TycoonGameState => {
   const shift = state.activeShift
-  if (!shift) return state
+  if (!shift || shift.status !== 'running') return state
 
   const summary = summarizeTycoonShift(shift, state)
   const finishedShift: TycoonShift = {

@@ -74,6 +74,8 @@ import {
 } from '../services/cloud-repositories'
 import { trackAppEvent } from '../services/analytics-client'
 import { createClientId } from '../services/ids'
+import { advanceTycoonCare, assessTycoonPatient } from '../services/tycoon-care'
+import type { TycoonCareStep } from './types'
 import { isSupabaseConfigured } from '../services/supabase'
 import { getSafeErrorCopy, reportSafeError } from '../services/safe-errors'
 import {
@@ -82,6 +84,7 @@ import {
   createInitialTycoonState,
   finishTycoonShiftNow,
   purchaseTycoonUpgradeById,
+  reviewTycoonEquipment,
   selectTycoonTaskById,
   startTycoonShiftForUnit,
 } from '../services/tycoon-engine'
@@ -194,10 +197,13 @@ interface StudySystemState {
   updateProfile: (updates: Partial<UserProfile>) => void
   setExamDate: (examDate: string) => void
   setStudyIntensity: (studyIntensity: StudyIntensity) => void
-  startTycoonShift: (unitId: string) => void
+  startTycoonShift: (unitId: string, options?: { roomIds?: string[] }) => void
   selectTycoonTask: (taskId: string) => void
-  completeTycoonTask: (taskId: string, actionId: string) => void
-  advanceTycoonTime: (minutes: number) => void
+  reviewTycoonEquipment: (taskId: string, expectedShiftId: string) => void
+  assessTycoonPatient: (taskId: string, actionId: string, shiftId: string) => void
+  advanceTycoonCare: (taskId: string, step: TycoonCareStep, shiftId: string) => void
+  completeTycoonTask: (taskId: string, actionId: string, expectedShiftId?: string) => void
+  advanceTycoonTime: (minutes: number, options?: { recordEvent?: boolean }) => void
   purchaseTycoonUpgrade: (upgradeId: string) => void
   finishTycoonShift: () => void
   resetTycoonProgress: () => void
@@ -2104,21 +2110,27 @@ export const useStudySystemStore = create<StudySystemState>()(
         }))
         void get().syncNow()
       },
-      startTycoonShift: (unitId) =>
+      startTycoonShift: (unitId, options) =>
         set((state) => ({
-          tycoon: startTycoonShiftForUnit(state.tycoon, unitId),
+          tycoon: startTycoonShiftForUnit(state.tycoon, unitId, options),
         })),
       selectTycoonTask: (taskId) =>
         set((state) => ({
           tycoon: selectTycoonTaskById(state.tycoon, taskId),
         })),
-      completeTycoonTask: (taskId, actionId) =>
+      reviewTycoonEquipment: (taskId, expectedShiftId) =>
+        set((state) => ({ tycoon: reviewTycoonEquipment(state.tycoon, taskId, expectedShiftId) })),
+      assessTycoonPatient: (taskId, actionId, shiftId) =>
+        set((state) => ({ tycoon: assessTycoonPatient(state.tycoon, taskId, actionId, shiftId) })),
+      advanceTycoonCare: (taskId, step, shiftId) =>
+        set((state) => ({ tycoon: advanceTycoonCare(state.tycoon, taskId, step, shiftId) })),
+      completeTycoonTask: (taskId, actionId, expectedShiftId) =>
         set((state) => ({
-          tycoon: completeTycoonTaskWithAction(state.tycoon, taskId, actionId),
+          tycoon: completeTycoonTaskWithAction(state.tycoon, taskId, actionId, expectedShiftId),
         })),
-      advanceTycoonTime: (minutes) =>
+      advanceTycoonTime: (minutes, options) =>
         set((state) => ({
-          tycoon: advanceTycoonShiftTime(state.tycoon, minutes),
+          tycoon: advanceTycoonShiftTime(state.tycoon, minutes, options),
         })),
       purchaseTycoonUpgrade: (upgradeId) =>
         set((state) => ({

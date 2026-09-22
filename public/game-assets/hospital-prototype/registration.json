@@ -1,0 +1,1144 @@
+{
+  "version": 1,
+  "baseUrl": "/game-assets/hospital-prototype/",
+  "sourceAudit": "outputs/hospital-artwork/audit-notes.md",
+  "imagePixelsModified": false,
+  "alphaThreshold": 128,
+  "environment": {
+    "floor-cream-tile": {
+      "filename": "floor-cream-tile.png",
+      "url": "/game-assets/hospital-prototype/floor-cream-tile.png",
+      "width": 1254,
+      "height": 1254,
+      "visibleBounds": {
+        "x": 47,
+        "y": 285,
+        "width": 1159,
+        "height": 716
+      },
+      "groundPoint": {
+        "x": 627,
+        "y": 637
+      },
+      "groundOrigin": {
+        "x": 0.5,
+        "y": 0.5079744816586922
+      },
+      "suggestedVisibleWidth": 320,
+      "sha256": "734b1d156c09d7a46144b26d97445d8268eabd90df005dd0a71b31a9d4efc7e5"
+    },
+    "station-rear": {
+      "filename": "station-rear.png",
+      "url": "/game-assets/hospital-prototype/station-rear.png",
+      "width": 1254,
+      "height": 1254,
+      "visibleBounds": {
+        "x": 97,
+        "y": 282,
+        "width": 1061,
+        "height": 700
+      },
+      "groundPoint": {
+        "x": 627,
+        "y": 978
+      },
+      "groundOrigin": {
+        "x": 0.5,
+        "y": 0.7799043062200957
+      },
+      "suggestedVisibleWidth": 240,
+      "sha256": "a2f428d849d2f39aecefe58aaed2468088f2bf176e3e476fdc76634441dd48ee"
+    },
+    "station-front": {
+      "filename": "station-front.png",
+      "url": "/game-assets/hospital-prototype/station-front.png",
+      "width": 1254,
+      "height": 1254,
+      "visibleBounds": {
+        "x": 44,
+        "y": 480,
+        "width": 1166,
+        "height": 554
+      },
+      "groundPoint": {
+        "x": 627,
+        "y": 1036
+      },
+      "groundOrigin": {
+        "x": 0.5,
+        "y": 0.8261562998405104
+      },
+      "suggestedVisibleWidth": 250,
+      "sha256": "545897c83a21f0d7e3f1dac6f6fcc68c94ef319e757dd24b95f139f8a7091887"
+    },
+    "wall-northwest": {
+      "filename": "wall-northwest.png",
+      "url": "/game-assets/hospital-prototype/wall-northwest.png",
+      "width": 1254,
+      "height": 1254,
+      "visibleBounds": {
+        "x": 87,
+        "y": 150,
+        "width": 1089,
+        "height": 961
+      },
+      "groundPoint": {
+        "x": 646,
+        "y": 867
+      },
+      "groundOrigin": {
+        "x": 0.5151515151515151,
+        "y": 0.6913875598086124
+      },
+      "suggestedVisibleWidth": 260,
+      "sha256": "8401ee1a2a25d39fb826a320ec218cb0131c9af2ccbbf939637ba97e5e6603a8",
+      "footprint": {
+        "baseLine": [
+          [
+            158,
+            1107
+          ],
+          [
+            1133,
+            627
+          ]
+        ],
+        "estimatedFromVisualInspection": true
+      }
+    },
+    "wall-northeast": {
+      "filename": "wall-northeast.png",
+      "url": "/game-assets/hospital-prototype/wall-northeast.png",
+      "width": 1254,
+      "height": 1254,
+      "visibleBounds": {
+        "x": 111,
+        "y": 170,
+        "width": 1034,
+        "height": 999
+      },
+      "groundPoint": {
+        "x": 630,
+        "y": 905
+      },
+      "groundOrigin": {
+        "x": 0.5023923444976076,
+        "y": 0.7216905901116427
+      },
+      "suggestedVisibleWidth": 260,
+      "sha256": "74273c54f2681599ce08a9859f802da6bb9f60fd35c393c04e1fabde87ec9c0f",
+      "footprint": {
+        "baseLine": [
+          [
+            130,
+            650
+          ],
+          [
+            1130,
+            1160
+          ]
+        ],
+        "estimatedFromVisualInspection": true
+      }
+    },
+    "door-northwest": {
+      "filename": "door-northwest.png",
+      "url": "/game-assets/hospital-prototype/door-northwest.png",
+      "width": 1254,
+      "height": 1254,
+      "visibleBounds": {
+        "x": 233,
+        "y": 215,
+        "width": 790,
+        "height": 959
+      },
+      "groundPoint": {
+        "x": 631,
+        "y": 1011
+      },
+      "groundOrigin": {
+        "x": 0.5031897926634769,
+        "y": 0.80622009569378
+      },
+      "suggestedVisibleWidth": 140,
+      "sha256": "78e034c6c2a155c3895fc200441e40042369f7d4a3a38ff7cd82132157633c0b",
+      "footprint": {
+        "baseLine": [
+          [
+            347,
+            1169
+          ],
+          [
+            915,
+            853
+          ]
+        ],
+        "estimatedFromVisualInspection": true
+      }
+    },
+    "door-northeast": {
+      "filename": "door-northeast.png",
+      "url": "/game-assets/hospital-prototype/door-northeast.png",
+      "width": 1254,
+      "height": 1254,
+      "visibleBounds": {
+        "x": 228,
+        "y": 217,
+        "width": 796,
+        "height": 969
+      },
+      "groundPoint": {
+        "x": 630,
+        "y": 1014
+      },
+      "groundOrigin": {
+        "x": 0.5023923444976076,
+        "y": 0.8086124401913876
+      },
+      "suggestedVisibleWidth": 140,
+      "sha256": "d450f0b60782c805d24e7724a2dd7b0730f54baff5ea26b4eefdab67f180dac7",
+      "footprint": {
+        "baseLine": [
+          [
+            322,
+            858
+          ],
+          [
+            938,
+            1170
+          ]
+        ],
+        "estimatedFromVisualInspection": true
+      }
+    },
+    "bed-empty": {
+      "filename": "bed-empty.png",
+      "url": "/game-assets/hospital-prototype/bed-empty.png",
+      "width": 1254,
+      "height": 1254,
+      "visibleBounds": {
+        "x": 142,
+        "y": 203,
+        "width": 987,
+        "height": 892
+      },
+      "groundPoint": {
+        "x": 650,
+        "y": 1043
+      },
+      "groundOrigin": {
+        "x": 0.518341307814992,
+        "y": 0.8317384370015949
+      },
+      "suggestedVisibleWidth": 220,
+      "sha256": "f93a2e7a5c6694f3c867d017df2d590786bfb5d10c3bd4727cf2528fb9a6efff"
+    },
+    "patient-bed-overlay": {
+      "filename": "patient-bed-overlay.png",
+      "url": "/game-assets/hospital-prototype/patient-bed-overlay.png",
+      "width": 1254,
+      "height": 1254,
+      "visibleBounds": {
+        "x": 189,
+        "y": 252,
+        "width": 939,
+        "height": 755
+      },
+      "groundPoint": {
+        "x": 650,
+        "y": 1004
+      },
+      "groundOrigin": {
+        "x": 0.518341307814992,
+        "y": 0.8006379585326954
+      },
+      "suggestedVisibleWidth": 205,
+      "sha256": "df949a588f03995adc42cd581caac38e612df3515e1a1f78f8372b971c14daa7"
+    },
+    "equipment-monitor": {
+      "filename": "equipment-monitor.png",
+      "url": "/game-assets/hospital-prototype/equipment-monitor.png",
+      "width": 1254,
+      "height": 1254,
+      "visibleBounds": {
+        "x": 451,
+        "y": 186,
+        "width": 375,
+        "height": 916
+      },
+      "groundPoint": {
+        "x": 632,
+        "y": 1060
+      },
+      "groundOrigin": {
+        "x": 0.5039872408293461,
+        "y": 0.8452950558213717
+      },
+      "suggestedVisibleWidth": 47,
+      "sha256": "86df466a317d4c90c7b5ccb8c8496cd5922bbe20dadcace2ab31763594199d78"
+    },
+    "equipment-iv-pole": {
+      "filename": "equipment-iv-pole.png",
+      "url": "/game-assets/hospital-prototype/equipment-iv-pole.png",
+      "width": 1254,
+      "height": 1254,
+      "visibleBounds": {
+        "x": 438,
+        "y": 116,
+        "width": 387,
+        "height": 1032
+      },
+      "groundPoint": {
+        "x": 627,
+        "y": 1115
+      },
+      "groundOrigin": {
+        "x": 0.5,
+        "y": 0.8891547049441786
+      },
+      "suggestedVisibleWidth": 43,
+      "sha256": "7587927dd5b05aefde7210ca8d3d2a6c5233fadbd28f3c96f6d17ce036353db2"
+    },
+    "furniture-bedside-cabinet": {
+      "filename": "furniture-bedside-cabinet.png",
+      "url": "/game-assets/hospital-prototype/furniture-bedside-cabinet.png",
+      "width": 1254,
+      "height": 1254,
+      "visibleBounds": {
+        "x": 297,
+        "y": 225,
+        "width": 686,
+        "height": 864
+      },
+      "groundPoint": {
+        "x": 638,
+        "y": 1045
+      },
+      "groundOrigin": {
+        "x": 0.5087719298245614,
+        "y": 0.8333333333333334
+      },
+      "suggestedVisibleWidth": 65,
+      "sha256": "9fa6fb9dcbb05fa5a7a8c6cfb694a793a9c5e2e86d608c57a71cc55b0f0b4249"
+    },
+    "decor-potted-plant": {
+      "filename": "decor-potted-plant.png",
+      "url": "/game-assets/hospital-prototype/decor-potted-plant.png",
+      "width": 1254,
+      "height": 1254,
+      "visibleBounds": {
+        "x": 267,
+        "y": 97,
+        "width": 723,
+        "height": 1023
+      },
+      "groundPoint": {
+        "x": 631,
+        "y": 1120
+      },
+      "groundOrigin": {
+        "x": 0.5031897926634769,
+        "y": 0.8931419457735247
+      },
+      "suggestedVisibleWidth": 61,
+      "sha256": "6255eb70d77ac3ae3d31194ac308f6626467a897f86f7252132ded07219d8775"
+    }
+  },
+  "nurse": {
+    "sheetUrl": "/game-assets/hospital-prototype/nurse-03-animation-sheet.png",
+    "atlasUrl": "/game-assets/hospital-prototype/nurse-03-atlas.json",
+    "width": 1774,
+    "height": 887,
+    "rows": [
+      "se",
+      "sw",
+      "nw",
+      "ne"
+    ],
+    "columnRoles": [
+      "idle",
+      "idle",
+      "walk",
+      "walk",
+      "walk",
+      "walk",
+      "care",
+      "care"
+    ],
+    "sha256": "5d5d7180a1567c6e84184e76a5d944c4ff4cee32cf787fa8d1992b17c4363808",
+    "suggestedScale": 0.4,
+    "animations": {
+      "se-idle": [
+        "se-idle-0",
+        "se-idle-1"
+      ],
+      "se-walk": [
+        "se-walk-0",
+        "se-walk-1",
+        "se-walk-2",
+        "se-walk-3"
+      ],
+      "se-care": [
+        "se-care-0",
+        "se-care-1"
+      ],
+      "sw-idle": [
+        "sw-idle-0",
+        "sw-idle-1"
+      ],
+      "sw-walk": [
+        "sw-walk-0",
+        "sw-walk-1",
+        "sw-walk-2",
+        "sw-walk-3"
+      ],
+      "sw-care": [
+        "sw-care-0",
+        "sw-care-1"
+      ],
+      "nw-idle": [
+        "nw-idle-0",
+        "nw-idle-1"
+      ],
+      "nw-walk": [
+        "nw-walk-0",
+        "nw-walk-1",
+        "nw-walk-2",
+        "nw-walk-3"
+      ],
+      "nw-care": [
+        "nw-care-0",
+        "nw-care-1"
+      ],
+      "ne-idle": [
+        "ne-idle-0",
+        "ne-idle-1"
+      ],
+      "ne-walk": [
+        "ne-walk-0",
+        "ne-walk-1",
+        "ne-walk-2",
+        "ne-walk-3"
+      ],
+      "ne-care": [
+        "ne-care-0",
+        "ne-care-1"
+      ]
+    },
+    "frames": {
+      "se-idle-0": {
+        "frame": {
+          "x": 0,
+          "y": 0,
+          "w": 222,
+          "h": 222
+        },
+        "pivotX": 0.6148648648648649,
+        "pivotY": 0.9864864864864865,
+        "footPoint": {
+          "x": 136.5,
+          "y": 219
+        },
+        "visibleBounds": {
+          "x": 91,
+          "y": 12,
+          "width": 89,
+          "height": 207
+        },
+        "row": 0,
+        "column": 0
+      },
+      "se-idle-1": {
+        "frame": {
+          "x": 222,
+          "y": 0,
+          "w": 222,
+          "h": 222
+        },
+        "pivotX": 0.6081081081081081,
+        "pivotY": 0.9864864864864865,
+        "footPoint": {
+          "x": 135.0,
+          "y": 219
+        },
+        "visibleBounds": {
+          "x": 91,
+          "y": 12,
+          "width": 89,
+          "height": 207
+        },
+        "row": 0,
+        "column": 1
+      },
+      "se-walk-0": {
+        "frame": {
+          "x": 444,
+          "y": 0,
+          "w": 221,
+          "h": 222
+        },
+        "pivotX": 0.6357466063348416,
+        "pivotY": 0.9864864864864865,
+        "footPoint": {
+          "x": 140.5,
+          "y": 219
+        },
+        "visibleBounds": {
+          "x": 85,
+          "y": 12,
+          "width": 99,
+          "height": 207
+        },
+        "row": 0,
+        "column": 2
+      },
+      "se-walk-1": {
+        "frame": {
+          "x": 665,
+          "y": 0,
+          "w": 222,
+          "h": 222
+        },
+        "pivotX": 0.6373873873873874,
+        "pivotY": 0.9864864864864865,
+        "footPoint": {
+          "x": 141.5,
+          "y": 219
+        },
+        "visibleBounds": {
+          "x": 85,
+          "y": 12,
+          "width": 99,
+          "height": 207
+        },
+        "row": 0,
+        "column": 3
+      },
+      "se-walk-2": {
+        "frame": {
+          "x": 887,
+          "y": 0,
+          "w": 222,
+          "h": 222
+        },
+        "pivotX": 0.5878378378378378,
+        "pivotY": 0.9864864864864865,
+        "footPoint": {
+          "x": 130.5,
+          "y": 219
+        },
+        "visibleBounds": {
+          "x": 83,
+          "y": 12,
+          "width": 94,
+          "height": 207
+        },
+        "row": 0,
+        "column": 4
+      },
+      "se-walk-3": {
+        "frame": {
+          "x": 1109,
+          "y": 0,
+          "w": 221,
+          "h": 222
+        },
+        "pivotX": 0.5407239819004525,
+        "pivotY": 0.9864864864864865,
+        "footPoint": {
+          "x": 119.5,
+          "y": 219
+        },
+        "visibleBounds": {
+          "x": 76,
+          "y": 12,
+          "width": 83,
+          "height": 207
+        },
+        "row": 0,
+        "column": 5
+      },
+      "se-care-0": {
+        "frame": {
+          "x": 1330,
+          "y": 0,
+          "w": 222,
+          "h": 222
+        },
+        "pivotX": 0.46621621621621623,
+        "pivotY": 0.9864864864864865,
+        "footPoint": {
+          "x": 103.5,
+          "y": 219
+        },
+        "visibleBounds": {
+          "x": 68,
+          "y": 15,
+          "width": 117,
+          "height": 204
+        },
+        "row": 0,
+        "column": 6
+      },
+      "se-care-1": {
+        "frame": {
+          "x": 1552,
+          "y": 0,
+          "w": 222,
+          "h": 222
+        },
+        "pivotX": 0.46621621621621623,
+        "pivotY": 0.9864864864864865,
+        "footPoint": {
+          "x": 103.5,
+          "y": 219
+        },
+        "visibleBounds": {
+          "x": 68,
+          "y": 15,
+          "width": 84,
+          "height": 204
+        },
+        "row": 0,
+        "column": 7
+      },
+      "sw-idle-0": {
+        "frame": {
+          "x": 0,
+          "y": 222,
+          "w": 222,
+          "h": 222
+        },
+        "pivotX": 0.5698198198198198,
+        "pivotY": 0.9819819819819819,
+        "footPoint": {
+          "x": 126.5,
+          "y": 218
+        },
+        "visibleBounds": {
+          "x": 87,
+          "y": 9,
+          "width": 85,
+          "height": 209
+        },
+        "row": 1,
+        "column": 0
+      },
+      "sw-idle-1": {
+        "frame": {
+          "x": 222,
+          "y": 222,
+          "w": 222,
+          "h": 222
+        },
+        "pivotX": 0.5720720720720721,
+        "pivotY": 0.9819819819819819,
+        "footPoint": {
+          "x": 127.0,
+          "y": 218
+        },
+        "visibleBounds": {
+          "x": 87,
+          "y": 9,
+          "width": 85,
+          "height": 209
+        },
+        "row": 1,
+        "column": 1
+      },
+      "sw-walk-0": {
+        "frame": {
+          "x": 444,
+          "y": 222,
+          "w": 221,
+          "h": 222
+        },
+        "pivotX": 0.5565610859728507,
+        "pivotY": 0.9774774774774775,
+        "footPoint": {
+          "x": 123.0,
+          "y": 217
+        },
+        "visibleBounds": {
+          "x": 85,
+          "y": 11,
+          "width": 87,
+          "height": 206
+        },
+        "row": 1,
+        "column": 2
+      },
+      "sw-walk-1": {
+        "frame": {
+          "x": 665,
+          "y": 222,
+          "w": 222,
+          "h": 222
+        },
+        "pivotX": 0.5405405405405406,
+        "pivotY": 0.9819819819819819,
+        "footPoint": {
+          "x": 120.0,
+          "y": 218
+        },
+        "visibleBounds": {
+          "x": 84,
+          "y": 10,
+          "width": 100,
+          "height": 208
+        },
+        "row": 1,
+        "column": 3
+      },
+      "sw-walk-2": {
+        "frame": {
+          "x": 887,
+          "y": 222,
+          "w": 222,
+          "h": 222
+        },
+        "pivotX": 0.5630630630630631,
+        "pivotY": 0.9864864864864865,
+        "footPoint": {
+          "x": 125.0,
+          "y": 219
+        },
+        "visibleBounds": {
+          "x": 85,
+          "y": 10,
+          "width": 90,
+          "height": 209
+        },
+        "row": 1,
+        "column": 4
+      },
+      "sw-walk-3": {
+        "frame": {
+          "x": 1109,
+          "y": 222,
+          "w": 221,
+          "h": 222
+        },
+        "pivotX": 0.5361990950226244,
+        "pivotY": 0.9864864864864865,
+        "footPoint": {
+          "x": 118.5,
+          "y": 219
+        },
+        "visibleBounds": {
+          "x": 81,
+          "y": 10,
+          "width": 83,
+          "height": 209
+        },
+        "row": 1,
+        "column": 5
+      },
+      "sw-care-0": {
+        "frame": {
+          "x": 1330,
+          "y": 222,
+          "w": 222,
+          "h": 222
+        },
+        "pivotX": 0.6171171171171171,
+        "pivotY": 0.9819819819819819,
+        "footPoint": {
+          "x": 137.0,
+          "y": 218
+        },
+        "visibleBounds": {
+          "x": 53,
+          "y": 15,
+          "width": 120,
+          "height": 203
+        },
+        "row": 1,
+        "column": 6
+      },
+      "sw-care-1": {
+        "frame": {
+          "x": 1552,
+          "y": 222,
+          "w": 222,
+          "h": 222
+        },
+        "pivotX": 0.5833333333333334,
+        "pivotY": 0.9819819819819819,
+        "footPoint": {
+          "x": 129.5,
+          "y": 218
+        },
+        "visibleBounds": {
+          "x": 78,
+          "y": 15,
+          "width": 88,
+          "height": 203
+        },
+        "row": 1,
+        "column": 7
+      },
+      "nw-idle-0": {
+        "frame": {
+          "x": 0,
+          "y": 444,
+          "w": 222,
+          "h": 221
+        },
+        "pivotX": 0.545045045045045,
+        "pivotY": 0.9638009049773756,
+        "footPoint": {
+          "x": 121.0,
+          "y": 213
+        },
+        "visibleBounds": {
+          "x": 78,
+          "y": 8,
+          "width": 83,
+          "height": 205
+        },
+        "row": 2,
+        "column": 0
+      },
+      "nw-idle-1": {
+        "frame": {
+          "x": 222,
+          "y": 444,
+          "w": 222,
+          "h": 221
+        },
+        "pivotX": 0.5472972972972973,
+        "pivotY": 0.9638009049773756,
+        "footPoint": {
+          "x": 121.5,
+          "y": 213
+        },
+        "visibleBounds": {
+          "x": 78,
+          "y": 8,
+          "width": 84,
+          "height": 205
+        },
+        "row": 2,
+        "column": 1
+      },
+      "nw-walk-0": {
+        "frame": {
+          "x": 444,
+          "y": 444,
+          "w": 221,
+          "h": 221
+        },
+        "pivotX": 0.6131221719457014,
+        "pivotY": 0.9683257918552036,
+        "footPoint": {
+          "x": 135.5,
+          "y": 214
+        },
+        "visibleBounds": {
+          "x": 78,
+          "y": 9,
+          "width": 96,
+          "height": 205
+        },
+        "row": 2,
+        "column": 2
+      },
+      "nw-walk-1": {
+        "frame": {
+          "x": 665,
+          "y": 444,
+          "w": 222,
+          "h": 221
+        },
+        "pivotX": 0.6171171171171171,
+        "pivotY": 0.9683257918552036,
+        "footPoint": {
+          "x": 137.0,
+          "y": 214
+        },
+        "visibleBounds": {
+          "x": 79,
+          "y": 8,
+          "width": 98,
+          "height": 206
+        },
+        "row": 2,
+        "column": 3
+      },
+      "nw-walk-2": {
+        "frame": {
+          "x": 887,
+          "y": 444,
+          "w": 222,
+          "h": 221
+        },
+        "pivotX": 0.5675675675675675,
+        "pivotY": 0.9638009049773756,
+        "footPoint": {
+          "x": 126.0,
+          "y": 213
+        },
+        "visibleBounds": {
+          "x": 77,
+          "y": 8,
+          "width": 83,
+          "height": 205
+        },
+        "row": 2,
+        "column": 4
+      },
+      "nw-walk-3": {
+        "frame": {
+          "x": 1109,
+          "y": 444,
+          "w": 221,
+          "h": 221
+        },
+        "pivotX": 0.5429864253393665,
+        "pivotY": 0.9773755656108597,
+        "footPoint": {
+          "x": 120.0,
+          "y": 216
+        },
+        "visibleBounds": {
+          "x": 71,
+          "y": 9,
+          "width": 87,
+          "height": 207
+        },
+        "row": 2,
+        "column": 5
+      },
+      "nw-care-0": {
+        "frame": {
+          "x": 1330,
+          "y": 444,
+          "w": 222,
+          "h": 221
+        },
+        "pivotX": 0.5720720720720721,
+        "pivotY": 0.9773755656108597,
+        "footPoint": {
+          "x": 127.0,
+          "y": 216
+        },
+        "visibleBounds": {
+          "x": 49,
+          "y": 11,
+          "width": 113,
+          "height": 205
+        },
+        "row": 2,
+        "column": 6
+      },
+      "nw-care-1": {
+        "frame": {
+          "x": 1552,
+          "y": 444,
+          "w": 222,
+          "h": 221
+        },
+        "pivotX": 0.5382882882882883,
+        "pivotY": 0.9773755656108597,
+        "footPoint": {
+          "x": 119.5,
+          "y": 216
+        },
+        "visibleBounds": {
+          "x": 75,
+          "y": 9,
+          "width": 79,
+          "height": 207
+        },
+        "row": 2,
+        "column": 7
+      },
+      "ne-idle-0": {
+        "frame": {
+          "x": 0,
+          "y": 665,
+          "w": 222,
+          "h": 222
+        },
+        "pivotX": 0.5878378378378378,
+        "pivotY": 0.954954954954955,
+        "footPoint": {
+          "x": 130.5,
+          "y": 212
+        },
+        "visibleBounds": {
+          "x": 91,
+          "y": 10,
+          "width": 84,
+          "height": 202
+        },
+        "row": 3,
+        "column": 0
+      },
+      "ne-idle-1": {
+        "frame": {
+          "x": 222,
+          "y": 665,
+          "w": 222,
+          "h": 222
+        },
+        "pivotX": 0.6103603603603603,
+        "pivotY": 0.954954954954955,
+        "footPoint": {
+          "x": 135.5,
+          "y": 212
+        },
+        "visibleBounds": {
+          "x": 97,
+          "y": 10,
+          "width": 82,
+          "height": 202
+        },
+        "row": 3,
+        "column": 1
+      },
+      "ne-walk-0": {
+        "frame": {
+          "x": 444,
+          "y": 665,
+          "w": 221,
+          "h": 222
+        },
+        "pivotX": 0.5565610859728507,
+        "pivotY": 0.9594594594594594,
+        "footPoint": {
+          "x": 123.0,
+          "y": 213
+        },
+        "visibleBounds": {
+          "x": 89,
+          "y": 11,
+          "width": 92,
+          "height": 202
+        },
+        "row": 3,
+        "column": 2
+      },
+      "ne-walk-1": {
+        "frame": {
+          "x": 665,
+          "y": 665,
+          "w": 222,
+          "h": 222
+        },
+        "pivotX": 0.5653153153153153,
+        "pivotY": 0.9594594594594594,
+        "footPoint": {
+          "x": 125.5,
+          "y": 213
+        },
+        "visibleBounds": {
+          "x": 85,
+          "y": 10,
+          "width": 98,
+          "height": 203
+        },
+        "row": 3,
+        "column": 3
+      },
+      "ne-walk-2": {
+        "frame": {
+          "x": 887,
+          "y": 665,
+          "w": 222,
+          "h": 222
+        },
+        "pivotX": 0.5698198198198198,
+        "pivotY": 0.9504504504504504,
+        "footPoint": {
+          "x": 126.5,
+          "y": 211
+        },
+        "visibleBounds": {
+          "x": 91,
+          "y": 9,
+          "width": 89,
+          "height": 202
+        },
+        "row": 3,
+        "column": 4
+      },
+      "ne-walk-3": {
+        "frame": {
+          "x": 1109,
+          "y": 665,
+          "w": 221,
+          "h": 222
+        },
+        "pivotX": 0.5610859728506787,
+        "pivotY": 0.9594594594594594,
+        "footPoint": {
+          "x": 124.0,
+          "y": 213
+        },
+        "visibleBounds": {
+          "x": 84,
+          "y": 10,
+          "width": 95,
+          "height": 203
+        },
+        "row": 3,
+        "column": 5
+      },
+      "ne-care-0": {
+        "frame": {
+          "x": 1330,
+          "y": 665,
+          "w": 222,
+          "h": 222
+        },
+        "pivotX": 0.5472972972972973,
+        "pivotY": 0.954954954954955,
+        "footPoint": {
+          "x": 121.5,
+          "y": 212
+        },
+        "visibleBounds": {
+          "x": 86,
+          "y": 10,
+          "width": 114,
+          "height": 202
+        },
+        "row": 3,
+        "column": 6
+      },
+      "ne-care-1": {
+        "frame": {
+          "x": 1552,
+          "y": 665,
+          "w": 222,
+          "h": 222
+        },
+        "pivotX": 0.527027027027027,
+        "pivotY": 0.9594594594594594,
+        "footPoint": {
+          "x": 117.0,
+          "y": 213
+        },
+        "visibleBounds": {
+          "x": 82,
+          "y": 10,
+          "width": 77,
+          "height": 203
+        },
+        "row": 3,
+        "column": 7
+      }
+    },
+    "registration": "Each frame has an integer atlas rectangle. The origin is the midpoint of the shoe silhouette in the bottom 24 solid-pixel rows, placed on a common ground baseline. Use pivotX/pivotY on every frame change; do not override all frames with one centered origin."
+  },
+  "visualNotes": [
+    "Nurse03 visually provides SE, SW, NW, NE rows, two idle poses, four walking poses, and two care poses per row. The four walk cells contain two pairs of closely related stances; play at about 7-8 fps.",
+    "Use station-rear as a complete standalone station. The front/rear station illustrations are not registered layers and must not be directly stacked.",
+    "patient-bed-overlay includes the entire mattress and bedding. For this prototype display it as the occupied-bed illustration above a simple bed base; it is not a person-only overlay registered to bed-empty.",
+    "The floor diamond has a natural 1.62:1 footprint. Match scene projection or use a procedural floor rather than assuming seamless 2:1 tiling.",
+    "Wall/door baseline endpoints are visually inspected estimates, not collision shapes. Wall cap and rail dimensions differ; keep doorway clear and visually check seams.",
+    "All source PNGs are copied byte-for-byte. The runtime atlas defines rectangles and pivots without changing any image pixels."
+  ]
+}

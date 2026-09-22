@@ -1,0 +1,794 @@
+/* Full-viewport playfield with lightly tinted, compact controls. */
+.tycoon-prototype.tycoon-game {
+  --u: 1px;
+  --glass: rgb(9 30 48 / 30%);
+  --glass-border: rgb(226 246 255 / 38%);
+  --overlay-gap: 16px;
+  position: fixed;
+  inset: 0;
+  display: block;
+  height: 100dvh;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  isolation: isolate;
+  background: #e9e4d9;
+  color: #fff;
+}
+.tycoon-prototype .tycoon-workspace {
+  display: contents;
+}
+.tycoon-prototype .tycoon-map {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: hidden;
+}
+.tycoon-prototype .tycoon-map > h2 {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.tycoon-hospital, .tycoon-hospital-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.tycoon-hospital-canvas canvas {
+  display: block;
+}
+.tycoon-prototype .tycoon-hud, .tycoon-prototype .tycoon-priority, .tycoon-prototype .tycoon-command, .tycoon-prototype .tycoon-finish, .tycoon-hospital-room, .tycoon-hospital-controls p, .tycoon-saved-rooms {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 10px rgb(13 32 45 / 8%);
+  text-shadow: 0 1px 2px rgb(6 23 39 / 95%);
+}
+.tycoon-prototype .tycoon-hud {
+  position: absolute;
+  z-index: 3;
+  top: max(var(--overlay-gap), env(safe-area-inset-top));
+  left: var(--overlay-gap);
+  right: var(--overlay-gap);
+  width: auto;
+  height: 64px;
+  min-height: 0;
+  margin: 0;
+  padding: 9px 18px;
+  justify-content: flex-end;
+  gap: 20px;
+}
+.tycoon-prototype .tycoon-hud > div {
+  padding: 0 24px 0 0;
+  gap: 10px;
+  border-right: 1px solid rgb(255 255 255 / 24%);
+  height: 100%;
+}
+.tycoon-prototype .tycoon-hud > div:first-child {
+  margin-right: auto;
+  padding-left: 0;
+}
+.tycoon-prototype .tycoon-hud > div:last-child {
+  border: 0;
+  padding: 0;
+}
+.tycoon-prototype .tycoon-hud-icon {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  color: #a9f1fc;
+}
+.tycoon-prototype .tycoon-hud-icon svg {
+  width: 25px;
+  height: 25px;
+}
+.tycoon-prototype .tycoon-hud strong {
+  font-size: 20px;
+  line-height: 1.2;
+}
+.tycoon-prototype .tycoon-hud-level strong {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+.tycoon-prototype .tycoon-hud-level > div {
+  width: 100px;
+}
+.tycoon-prototype .tycoon-xp-remaining {
+  font-size: 11px;
+  color: #e4f5ff;
+}
+.tycoon-prototype .tycoon-hud-safety > div {
+  width: 62px;
+}
+.tycoon-prototype progress {
+  height: 3px;
+  margin-top: 4px;
+  background: rgb(12 38 58 / 30%);
+}
+.tycoon-prototype progress::-webkit-progress-bar {
+  background: rgb(12 38 58 / 30%);
+}
+.tycoon-prototype progress::-webkit-progress-value {
+  background: #a1e8ed;
+}
+.tycoon-prototype progress::-moz-progress-bar {
+  background: #a1e8ed;
+}
+.tycoon-prototype .tycoon-analog-clock {
+  width: 44px;
+  height: 44px;
+  color: #b8f2fc;
+}
+.tycoon-prototype .tycoon-clock-face > circle:first-child {
+  fill: rgb(3 28 47 / 30%);
+}
+.tycoon-prototype .tycoon-hud-time .tycoon-clock-digital {
+  font-size: 18px;
+}
+.tycoon-prototype .tycoon-hud-time .tycoon-clock-meridiem {
+  font-size: 10px;
+  color: #fff;
+}
+.tycoon-prototype .tycoon-hud-time .tycoon-clock-caption {
+  font-size: 10px;
+  color: #c8f6ff;
+}
+.tycoon-prototype .tycoon-priority {
+  position: absolute;
+  z-index: 2;
+  top: 96px;
+  left: var(--overlay-gap);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 260px;
+  min-height: 0;
+  gap: 10px;
+  padding: 14px;
+}
+.tycoon-prototype .tycoon-section-label {
+  font-size: 12px;
+  line-height: 1.3;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: #d7f9ff;
+}
+.tycoon-prototype .tycoon-priority h3 {
+  margin-top: 7px;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0;
+  white-space: normal;
+}
+.tycoon-prototype .tycoon-priority p {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #fff;
+  white-space: normal;
+}
+.tycoon-prototype .tycoon-priority-status {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  align-self: stretch;
+  gap: 8px;
+  padding: 0;
+}
+.tycoon-prototype .tycoon-badge {
+  background: transparent;
+  padding: 3px 0;
+  border: 0;
+  border-radius: 0;
+  gap: 5px;
+  font-size: 11px;
+  text-transform: none;
+}
+.tycoon-prototype .tycoon-badge > span {
+  width: 5px;
+  height: 5px;
+}
+.tycoon-prototype .tycoon-badge svg {
+  width: 14px;
+  height: 14px;
+}
+.tycoon-prototype .tycoon-badge.critical {
+  color: #ffe0d9;
+}
+.tycoon-prototype .tycoon-badge.complete {
+  color: #c4ffed;
+}
+.tycoon-prototype .tycoon-priority-room {
+  width: auto;
+  min-height: 44px;
+  padding: 0 10px;
+  background: rgb(4 31 52 / 16%);
+  border: 1px solid rgb(169 241 252 / 55%);
+  border-radius: 5px;
+  color: #d5faff;
+  font-size: 12px !important;
+  text-shadow: inherit;
+}
+.tycoon-prototype .tycoon-all-done {
+  width: 22px;
+  height: 22px;
+}
+.tycoon-prototype .tycoon-command {
+  position: absolute;
+  z-index: 3;
+  top: 96px;
+  right: var(--overlay-gap);
+  width: 288px;
+  max-height: calc(100dvh - 176px);
+  padding: 16px;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+.tycoon-prototype .tycoon-command-header {
+  flex-wrap: nowrap;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-color: rgb(255 255 255 / 25%);
+}
+.tycoon-prototype .tycoon-command-header > span {
+  font-size: 11px;
+  color: #d6faff;
+  white-space: nowrap;
+}
+.tycoon-prototype .tycoon-command-close {
+  display: none;
+}
+.tycoon-prototype .tycoon-patient {
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  padding: 14px 0;
+  column-gap: 9px;
+  border-color: rgb(255 255 255 / 25%);
+}
+.tycoon-prototype .tycoon-patient-portrait {
+  width: 42px;
+  height: 42px;
+  grid-row: 1 / 3;
+}
+.tycoon-prototype .tycoon-patient h3 {
+  font-size: 19px;
+}
+.tycoon-prototype .tycoon-patient-room {
+  font-size: 12px;
+  color: #e6faff;
+}
+.tycoon-prototype .tycoon-patient > .tycoon-badge {
+  grid-row: 1 / 3;
+  grid-column: 3;
+  padding: 0;
+  font-size: 10px;
+  gap: 4px;
+}
+.tycoon-prototype .tycoon-command-details {
+  flex: none;
+  padding-top: 14px;
+}
+.tycoon-prototype .tycoon-patient-tasks h3 {
+  margin-top: 6px;
+  font-size: 17px;
+  line-height: 1.4;
+}
+.tycoon-prototype .tycoon-task-meta {
+  margin-top: 10px;
+  font-size: 12px;
+  gap: 8px 22px;
+}
+.tycoon-prototype .tycoon-task-meta dt {
+  color: #e3f3fb;
+}
+.tycoon-prototype .tycoon-task-meta dd {
+  margin-top: 2px;
+}
+.tycoon-prototype .tycoon-command-actions {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 7px;
+  margin-top: 18px;
+}
+.tycoon-prototype .tycoon-command-actions button {
+  min-height: 44px;
+  height: 44px;
+  grid-template-columns: 18px minmax(0, 1fr) 16px;
+  padding: 0 11px;
+  gap: 9px;
+  font-size: 13px !important;
+  font-weight: 500;
+  color: #fff;
+  border: 1px solid rgb(225 248 255 / 38%);
+  border-radius: 5px;
+  background: rgb(5 29 48 / 18%);
+  text-shadow: inherit;
+}
+.tycoon-prototype .tycoon-command-actions button > svg, .tycoon-prototype .tycoon-command-actions button > svg:last-child {
+  width: 18px;
+  height: 18px;
+  color: #d1faff;
+  stroke-width: 1.8;
+}
+.tycoon-prototype .tycoon-command-actions button.is-primary {
+  border-color: #b3f4fc;
+  background: rgb(18 116 143 / 28%);
+  font-weight: 600 !important;
+}
+.tycoon-prototype .tycoon-command-actions button:disabled {
+  opacity: .65;
+}
+.tycoon-prototype .tycoon-game-footer {
+  position: absolute;
+  z-index: 2;
+  bottom: max(var(--overlay-gap), env(safe-area-inset-bottom));
+  right: var(--overlay-gap);
+  margin: 0;
+}
+.tycoon-prototype .tycoon-finish {
+  width: auto;
+  min-height: 44px;
+  height: 44px;
+  padding: 0 16px;
+  gap: 9px;
+  color: #fff;
+  font-size: 13px !important;
+}
+.tycoon-prototype .tycoon-finish svg {
+  width: 17px;
+  height: 17px;
+}
+.tycoon-hospital-controls {
+  position: absolute;
+  z-index: 1;
+  bottom: max(var(--overlay-gap), env(safe-area-inset-bottom));
+  left: var(--overlay-gap);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  pointer-events: none;
+}
+.tycoon-hospital-room {
+  pointer-events: auto;
+  min-height: 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 12px;
+  color: #fff;
+  font-size: 12px !important;
+  text-align: left;
+}
+.tycoon-hospital-room[aria-pressed='true'] {
+  border-color: #b3f4fc;
+}
+.tycoon-hospital-room strong {
+  font-weight: 600;
+}
+.tycoon-hospital-room span {
+  font-size: 11px;
+  color: #e4f8ff;
+}
+.tycoon-hospital-controls p {
+  padding: 9px 12px;
+  color: #fff;
+  font-size: 12px;
+  max-width: 280px;
+}
+.tycoon-saved-rooms {
+  position: absolute;
+  z-index: 2;
+  left: var(--overlay-gap);
+  top: 292px;
+  max-width: 260px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px;
+}
+.tycoon-saved-rooms button {
+  min-height: 44px;
+  padding: 5px 8px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: #fff;
+  background: transparent;
+  font-size: 12px;
+  text-shadow: inherit;
+}
+.tycoon-saved-rooms button[aria-pressed='true'] {
+  border-color: #b3f4fc;
+}
+.tycoon-hospital-error {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 4;
+  width: min(90%, 360px);
+  padding: 16px;
+  color: #fff;
+  background: #173b52;
+  border-radius: 8px;
+  font-size: 14px;
+}
+.tycoon-hospital-error button {
+  min-height: 44px;
+  padding: 8px 12px;
+  margin-top: 12px;
+  border: 1px solid #b3f4fc;
+  border-radius: 4px;
+}
+.tycoon-map-unavailable {
+  margin: 40dvh auto !important;
+  width: min(80%, 400px);
+  padding: 20px;
+  color: #183747;
+  background: #f4f1e8;
+}
+.tycoon-prototype :is(.tycoon-command, .tycoon-map):focus-visible {
+  outline: 2px solid #b3f4fc;
+  outline-offset: -3px;
+}
+@media (max-width: 899px) {
+  .tycoon-prototype.tycoon-game {
+    --overlay-gap: 12px;
+  }
+  .tycoon-prototype .tycoon-hud {
+    height: 64px;
+    padding: 8px 12px;
+    gap: 12px;
+  }
+  .tycoon-prototype .tycoon-hud > div {
+    padding-right: 12px;
+    gap: 7px;
+  }
+  .tycoon-prototype .tycoon-priority {
+    top: 88px;
+    width: 238px;
+    padding: 12px;
+    gap: 4px;
+  }
+  .tycoon-prototype .tycoon-priority h3 {
+    font-size: 14px;
+    margin-top: 5px;
+  }
+  .tycoon-prototype .tycoon-priority p {
+    font-size: 11px;
+    margin-top: 4px;
+  }
+  .tycoon-prototype .tycoon-command {
+    top: auto;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-width: 430px;
+    max-height: calc(100dvh - 100px);
+    margin: 0 auto;
+    padding: 14px;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(calc(100% + 24px));
+  }
+  .tycoon-prototype.is-command-open .tycoon-command {
+    visibility: visible;
+    pointer-events: auto;
+    transform: none;
+  }
+  .tycoon-prototype .tycoon-command-header {
+    padding-bottom: 7px;
+  }
+  .tycoon-prototype .tycoon-command-close {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    margin: -7px -7px -7px 0;
+    border: 0;
+    background: transparent;
+    color: #fff;
+  }
+  .tycoon-command-close svg {
+    width: 20px;
+    height: 20px;
+  }
+  .tycoon-prototype .tycoon-command-header > span {
+    margin-left: auto;
+  }
+  .tycoon-prototype .tycoon-patient {
+    padding: 10px 0;
+  }
+  .tycoon-prototype .tycoon-command-details {
+    padding-top: 10px;
+  }
+  .tycoon-prototype .tycoon-command-actions {
+    margin-top: 12px;
+  }
+  .tycoon-hospital-controls {
+    align-items: flex-start;
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+  .tycoon-hospital-controls p {
+    max-width: 240px;
+    padding: 6px 9px;
+    font-size: 11px;
+  }
+  .tycoon-prototype.is-command-open .tycoon-game-footer, .tycoon-prototype.is-command-open .tycoon-hospital-controls {
+    visibility: hidden;
+  }
+  .tycoon-saved-rooms {
+    top: 260px;
+    max-width: 238px;
+  }
+}
+@media (max-width: 520px) {
+  .tycoon-prototype.tycoon-game {
+    --overlay-gap: 10px;
+  }
+  .tycoon-prototype .tycoon-hud {
+    height: 66px;
+    padding: 8px 10px;
+    gap: 10px;
+  }
+  .tycoon-prototype .tycoon-hud > div {
+    gap: 4px;
+    padding-right: 10px;
+    border-right-color: rgb(255 255 255 / 18%);
+  }
+  .tycoon-prototype .tycoon-hud-icon {
+    display: none;
+  }
+  .tycoon-prototype .tycoon-hud strong {
+    font-size: 16px;
+  }
+  .tycoon-prototype .tycoon-hud-level strong {
+    font-size: 12px;
+  }
+  .tycoon-prototype .tycoon-hud-level > div {
+    width: 51px;
+  }
+  .tycoon-prototype .tycoon-xp-remaining {
+    font-size: 10px;
+  }
+  .tycoon-prototype .tycoon-hud-safety > div {
+    width: 34px;
+  }
+  .tycoon-prototype .tycoon-hud-time {
+    gap: 5px;
+  }
+  .tycoon-prototype .tycoon-analog-clock {
+    width: 34px;
+    height: 34px;
+  }
+  .tycoon-prototype .tycoon-hud-time .tycoon-clock-digital {
+    font-size: 12px;
+    min-width: 8ch;
+  }
+  .tycoon-prototype .tycoon-hud-time .tycoon-clock-meridiem {
+    font-size: 9px;
+  }
+  .tycoon-prototype .tycoon-priority {
+    width: 222px;
+    padding: 10px 12px;
+  }
+  .tycoon-prototype .tycoon-priority-status {
+    margin-top: 0;
+  }
+  .tycoon-prototype .tycoon-finish {
+    padding: 0 11px;
+    font-size: 12px !important;
+  }
+  .tycoon-hospital-room {
+    padding: 7px 9px;
+    font-size: 11px !important;
+  }
+  .tycoon-hospital-room span {
+    font-size: 10px;
+  }
+  .tycoon-saved-rooms {
+    max-width: calc(100% - 20px);
+    top: 252px;
+  }
+}
+@media (max-width: 350px) {
+  .tycoon-prototype .tycoon-hud {
+    padding: 7px;
+    gap: 7px;
+  }
+  .tycoon-prototype .tycoon-hud > div {
+    padding-right: 7px;
+  }
+  .tycoon-prototype .tycoon-analog-clock {
+    width: 30px;
+    height: 30px;
+  }
+  .tycoon-prototype .tycoon-hud-time {
+    gap: 3px;
+  }
+  .tycoon-hospital-room {
+    max-width: 166px;
+  }
+  .tycoon-prototype .tycoon-finish {
+    gap: 6px;
+  }
+}
+@media (max-height: 540px) and (min-width: 600px) {
+  .tycoon-prototype .tycoon-priority {
+    width: 225px;
+  }
+  .tycoon-prototype .tycoon-command {
+    max-height: calc(100dvh - 90px);
+  }
+  .tycoon-hospital-controls p {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tycoon-prototype *, .tycoon-dialog * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+/* The priority itself is the room shortcut, keeping this overlay small. */
+.tycoon-prototype .tycoon-priority-status {
+  position: absolute;
+  top: 11px;
+  right: 14px;
+}
+.tycoon-prototype .tycoon-priority-select {
+  display: block;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  line-height: inherit;
+  font-weight: inherit;
+  text-shadow: inherit;
+}
+.tycoon-prototype .tycoon-priority-select:hover {
+  color: #d5faff;
+}
+.tycoon-prototype .tycoon-hud, .tycoon-prototype .tycoon-priority, .tycoon-prototype .tycoon-command, .tycoon-prototype .tycoon-finish, .tycoon-hospital-room, .tycoon-hospital-controls p, .tycoon-saved-rooms {
+  text-shadow: 0 1px 2px rgb(6 23 39 / 95%);
+}
+/* Dialogs pause care, while leaving the hospital visible around the decision. */
+.tycoon-prototype .tycoon-dialog {
+  width: min(660px, calc(100vw - 24px));
+  height: fit-content;
+  max-height: calc(100dvh - 32px);
+  padding: 22px;
+  border: 1px solid rgb(216 247 255 / 50%);
+  border-radius: 10px;
+  background: rgb(9 30 48 / 72%);
+  backdrop-filter: blur(10px);
+  color: #fff;
+  box-shadow: 0 12px 44px rgb(9 30 48 / 20%);
+}
+.tycoon-prototype .tycoon-dialog::backdrop {
+  background: rgb(9 30 48 / 16%);
+  backdrop-filter: blur(1px);
+}
+.tycoon-prototype .tycoon-dialog > header {
+  gap: 12px;
+  padding-bottom: 10px;
+  margin-bottom: 16px;
+  border-color: rgb(222 245 255 / 25%);
+}
+.tycoon-prototype .tycoon-dialog > header h2 {
+  font-size: 20px;
+  color: #e4fcff;
+}
+.tycoon-prototype .tycoon-dialog > header button {
+  width: 44px;
+  height: 44px;
+  border-radius: 5px;
+  border-color: rgb(222 245 255 / 40%);
+}
+.tycoon-prototype .tycoon-dialog-patient {
+  gap: 12px;
+}
+.tycoon-prototype .tycoon-dialog-patient > span:first-child {
+  width: 52px;
+  height: 52px;
+}
+.tycoon-prototype .tycoon-dialog-patient h3 {
+  font-size: 21px;
+}
+.tycoon-prototype .tycoon-dialog-patient p {
+  font-size: 13px;
+  color: #e2f1f9;
+  line-height: 1.5;
+}
+.tycoon-prototype .tycoon-dialog-patient > .tycoon-badge {
+  font-size: 11px;
+  padding: 0;
+}
+.tycoon-prototype .tycoon-dialog-intro {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #e2f1f9;
+  margin-block: 16px !important;
+}
+.tycoon-prototype .tycoon-assessment-choices {
+  flex: none;
+  grid-template-columns: 1fr;
+  grid-auto-rows: auto;
+  gap: 8px;
+}
+.tycoon-prototype .tycoon-assessment-choices button {
+  min-height: 90px;
+  padding: 12px 16px;
+  gap: 4px;
+  border: 1px solid rgb(216 247 255 / 36%);
+  border-radius: 5px;
+  background: rgb(9 30 48 / 22%);
+}
+.tycoon-prototype .tycoon-assessment-choices button:hover {
+  border-color: #b3f4fc;
+  background: rgb(18 116 143 / 28%);
+}
+.tycoon-prototype .tycoon-assessment-choices strong {
+  font-size: 16px;
+}
+.tycoon-prototype .tycoon-assessment-choices span {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #e2f1f9;
+}
+.tycoon-prototype .tycoon-assessment-choices small {
+  font-size: 11px;
+  line-height: 1.4;
+  margin-top: 0;
+  color: #bdf5fc;
+}
+.tycoon-prototype .tycoon-modal-primary {
+  min-height: 44px;
+  border-radius: 5px;
+  background: #b4edf2;
+  box-shadow: none;
+  font-size: 14px;
+}
+@media (max-width: 520px) {
+  .tycoon-prototype .tycoon-dialog {
+    padding: 16px;
+  }
+  .tycoon-prototype .tycoon-dialog-patient {
+    display: grid;
+    grid-template-columns: 52px minmax(0, 1fr);
+    gap: 8px 12px;
+  }
+  .tycoon-prototype .tycoon-dialog-patient > .tycoon-badge {
+    grid-column: 2;
+    justify-self: start;
+    margin: 0;
+  }
+}
+
+.tycoon-prototype .tycoon-safety-label {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  line-height: 1.2;
+  color: #e4f5ff;
+}

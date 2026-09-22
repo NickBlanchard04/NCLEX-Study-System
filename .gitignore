@@ -19,6 +19,9 @@ playwright/.auth/
 playwright-report/
 test-results/
 *.png
+!/public/assets/tycoon/*.png
+!/public/game-assets/hospital-prototype/*.png
+!/public/game-assets/tycoon-shop/*.png
 *.local
 .env
 .env.*
