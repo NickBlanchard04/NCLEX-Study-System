@@ -173,7 +173,7 @@ const getConfidenceSignal = (
   performanceBand: PerformanceBand,
   confidence: AttemptForDiagnosis['confidence'],
 ): ConfidenceSignal => {
-  if (performanceBand === 'unscored') return 'unscored'
+  if (performanceBand === 'unscored' || confidence === 'unreported') return 'unscored'
   if (performanceBand === 'full') {
     return confidence === 'low' ? 'fragile_correct' : 'calibrated'
   }

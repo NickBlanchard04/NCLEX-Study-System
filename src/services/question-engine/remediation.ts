@@ -102,7 +102,7 @@ const getInitialBlockedReasons = (diagnosis: AttemptDiagnosis, route: RouteDefin
 }
 
 export function routeRemediation(diagnosis: AttemptDiagnosis): RemediationEvent[] {
-  if (diagnosis.scoreResult.isCorrect && diagnosis.calibrationScore >= 0.4) return []
+  if (diagnosis.scoreResult.isCorrect && (diagnosis.confidence === 'unreported' || diagnosis.calibrationScore >= 0.4)) return []
 
   const route = routeForDiagnosis(diagnosis)
   const actionType = diagnosis.scoreResult.isCorrect
@@ -328,6 +328,7 @@ export function evaluateRemediationTransfer(
     repairDiagnosis.scoreResult.partialCreditScore > triggerDiagnosis.scoreResult.partialCreditScore
   const calibrationImproved = repairDiagnosis.calibrationScore > triggerDiagnosis.calibrationScore
   const confidenceGatePassed =
+    triggerDiagnosis.confidence !== 'unreported' && repairDiagnosis.confidence !== 'unreported' &&
     calibrationImproved &&
     (triggerDiagnosis.confidence !== 'high' || repairDiagnosis.confidence !== 'low')
   const readinessRepairEligible =

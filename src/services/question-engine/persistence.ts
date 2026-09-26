@@ -580,6 +580,7 @@ export const buildItemStatsPersistenceRows = (
         distractorDistribution[distractorId] = (distractorDistribution[distractorId] ?? 0) + 1
       }
     }
+    const reportedDiagnoses = itemDiagnoses.filter((diagnosis) => diagnosis.confidence !== 'unreported')
     const mostSelectedDistractorId =
       Object.entries(distractorDistribution).toSorted((left, right) => right[1] - left[1])[0]?.[0] ?? null
     const highConfidenceMissCount = itemDiagnoses.filter(
@@ -597,11 +598,11 @@ export const buildItemStatsPersistenceRows = (
       avg_time_seconds: 0,
       most_selected_distractor_id: mostSelectedDistractorId,
       distractor_distribution: distractorDistribution,
-      high_confidence_miss_rate: roundMetric(highConfidenceMissCount / Math.max(itemDiagnoses.length, 1)),
-      low_confidence_correct_rate: roundMetric(lowConfidenceCorrectCount / Math.max(itemDiagnoses.length, 1)),
+      high_confidence_miss_rate: roundMetric(highConfidenceMissCount / Math.max(reportedDiagnoses.length, 1)),
+      low_confidence_correct_rate: roundMetric(lowConfidenceCorrectCount / Math.max(reportedDiagnoses.length, 1)),
       avg_calibration_score: roundMetric(
-        itemDiagnoses.reduce((sum, diagnosis) => sum + diagnosis.calibrationScore, 0) /
-          Math.max(itemDiagnoses.length, 1),
+        reportedDiagnoses.reduce((sum, diagnosis) => sum + diagnosis.calibrationScore, 0) /
+          Math.max(reportedDiagnoses.length, 1),
       ),
       calibration_state: itemDiagnoses.some((diagnosis) => diagnosis.countsTowardReadiness)
         ? 'trusted_observed'

@@ -83,8 +83,9 @@ export function scoreAttempt(
 
 export function calculateCalibrationScore(
   scoreResult: ScoreResult,
-  confidence: 'low' | 'medium' | 'high',
+  confidence: 'low' | 'medium' | 'high' | 'unreported',
 ) {
+  if (confidence === 'unreported') return 0
   if (scoreResult.maxScore <= 1) {
     if (scoreResult.isCorrect && confidence === 'high') return 1
     if (scoreResult.isCorrect && confidence === 'medium') return 0.6
@@ -113,7 +114,7 @@ export function calculateCalibrationScore(
 
 export function withConfidenceEscalation(
   scoreResult: ScoreResult,
-  confidence: 'low' | 'medium' | 'high',
+  confidence: 'low' | 'medium' | 'high' | 'unreported',
 ): ScoreResult {
   const isBinaryOrAllOrNothing = scoreResult.maxScore <= 1
   const isWeakPartial = scoreResult.maxScore > 1 && scoreResult.partialCreditScore < 0.5

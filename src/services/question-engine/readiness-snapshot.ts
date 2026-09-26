@@ -423,9 +423,10 @@ const buildConfidenceSummary = (
   trustedDiagnoses: AttemptDiagnosis[],
   remediationEvents: RemediationEvent[],
 ): ReadinessConfidenceCalibrationSummary => {
-  const avgTrustedCalibrationScore = trustedDiagnoses.length
-    ? trustedDiagnoses.reduce((sum, diagnosis) => sum + diagnosis.calibrationScore, 0) /
-      trustedDiagnoses.length
+  const reportedDiagnoses = trustedDiagnoses.filter((diagnosis) => diagnosis.confidence !== 'unreported')
+  const avgTrustedCalibrationScore = reportedDiagnoses.length
+    ? reportedDiagnoses.reduce((sum, diagnosis) => sum + diagnosis.calibrationScore, 0) /
+      reportedDiagnoses.length
     : 0
   const repairedDiagnosisIds = new Set(
     remediationEvents
@@ -435,7 +436,7 @@ const buildConfidenceSummary = (
   const trustedAttemptCountsByDimension = new Map<string, number>()
   const mismatchWeightByDimension = new Map<string, number>()
 
-  for (const diagnosis of trustedDiagnoses) {
+  for (const diagnosis of reportedDiagnoses) {
     const uniqueDimensionKeys = unique(
       diagnosis.weakAreaDimensions.map((dimension) =>
         dimensionKey(dimension.dimensionType, dimension.dimensionId),

@@ -97,6 +97,36 @@ const lowConfidenceCorrectAttempt = {
   confidence: 'low' as const,
 }
 
+describe('Quick Study without self-reported confidence', () => {
+  it('scores answers without inventing a confidence signal or escalation', () => {
+    const evidence = createAttemptEngineEvidence(priorityQuestion, { ...attempt, confidence: 'unreported' })
+    expect(evidence.diagnosis.scoreResult.isCorrect).toBe(false)
+    expect(evidence.diagnosis.confidence).toBe('unreported')
+    expect(evidence.diagnosis.confidenceSignal).toBe('unscored')
+    expect(evidence.diagnosis.calibrationScore).toBe(0)
+    expect(evidence.diagnosis.confidenceEscalated).toBe(false)
+    expect(evidence.diagnosis.confidenceMismatch).toBe(false)
+  })
+
+  it('does not assign confidence remediation to an unreported correct answer', () => {
+    const evidence = createAttemptEngineEvidence(priorityQuestion, { ...lowConfidenceCorrectAttempt, confidence: 'unreported' })
+    expect(evidence.diagnosis.scoreResult.isCorrect).toBe(true)
+    expect(evidence.remediationEvents).toHaveLength(0)
+  })
+
+  it('does not dilute reported calibration with unreported answers', () => {
+    const reported = createAttemptEngineEvidence(priorityQuestion, attempt).diagnosis
+    const unreported = createAttemptEngineEvidence(priorityQuestion, { ...lowConfidenceCorrectAttempt, confidence: 'unreported' }).diagnosis
+    const before = buildLearnerMasteryVector([reported])
+    const after = buildLearnerMasteryVector([reported, unreported])
+    for (const [key, dimension] of Object.entries(before.dimensions)) {
+      const next = after.dimensions[key]
+      expect(next?.avgCalibrationScore).toBe(dimension.avgCalibrationScore)
+      expect(next?.confidenceMismatchScore).toBe(dimension.confidenceMismatchScore)
+    }
+  })
+})
+
 const trustedPriorityOverrides = {
   sourceStatus: 'source_checked',
   reviewStatus: 'item_reviewed',

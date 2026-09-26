@@ -37,6 +37,7 @@ import {
 import { createClientId } from './ids'
 
 const confidenceScore: Record<ConfidenceLevel, number> = {
+  unreported: 0,
   low: 0.35,
   medium: 0.65,
   high: 1,
@@ -177,8 +178,9 @@ export const getCategoryStats = (
     const attemptCount = categoryAttempts.length
     const correctCount = categoryAttempts.filter((attempt) => attempt.isCorrect).length
     const accuracy = attemptCount ? correctCount / attemptCount : 0
-    const avgConfidence = attemptCount
-      ? categoryAttempts.reduce((sum, attempt) => sum + confidenceScore[attempt.confidence], 0) / attemptCount
+    const reportedAttempts = categoryAttempts.filter((attempt) => attempt.confidence !== 'unreported')
+    const avgConfidence = reportedAttempts.length
+      ? reportedAttempts.reduce((sum, attempt) => sum + confidenceScore[attempt.confidence], 0) / reportedAttempts.length
       : 0
     const highConfidenceMisses = categoryAttempts.filter(
       (attempt) => !attempt.isCorrect && attempt.confidence === 'high',
@@ -186,8 +188,8 @@ export const getCategoryStats = (
     const lowConfidenceCorrects = categoryAttempts.filter(
       (attempt) => attempt.isCorrect && attempt.confidence === 'low',
     ).length
-    const confidenceMismatchScore = attemptCount
-      ? (highConfidenceMisses * 1.25 + lowConfidenceCorrects * 0.85) / attemptCount
+    const confidenceMismatchScore = reportedAttempts.length
+      ? (highConfidenceMisses * 1.25 + lowConfidenceCorrects * 0.85) / reportedAttempts.length
       : 0.5
     const recentTrend = getRecentTrend(categoryAttempts)
     const flaggedCount = categoryAttempts.filter((attempt) => attempt.flagged).length
@@ -481,7 +483,7 @@ const getAdaptiveDifficulty = (attempts: QuestionAttempt[], category?: QuestionC
   const latest = relevant.slice(-2)
   if (
     latest.length === 2 &&
-    latest.every((attempt) => attempt.isCorrect && attempt.confidence !== 'low')
+    latest.every((attempt) => attempt.isCorrect && attempt.confidence !== 'low' && attempt.confidence !== 'unreported')
   ) {
     return 'advanced'
   }
@@ -852,22 +854,23 @@ export const getAnalyticsSnapshot = (
       (attempt) =>
         startOfDay(new Date(attempt.completedAt)).toISOString() === startOfDay(date).toISOString(),
     )
+    const reportedAttempts = dayAttempts.filter((attempt) => attempt.confidence !== 'unreported')
     return {
       day: label,
       accuracy: dayAttempts.length
         ? dayAttempts.filter((attempt) => attempt.isCorrect).length / dayAttempts.length
         : 0,
       completed: dayAttempts.length,
-      confidence: dayAttempts.length
-        ? dayAttempts.reduce((sum, attempt) => sum + confidenceScore[attempt.confidence], 0) /
-          dayAttempts.length
+      confidence: reportedAttempts.length
+        ? reportedAttempts.reduce((sum, attempt) => sum + confidenceScore[attempt.confidence], 0) /
+          reportedAttempts.length
         : 0,
-      mismatch: dayAttempts.length
-        ? dayAttempts.filter(
+      mismatch: reportedAttempts.length
+        ? reportedAttempts.filter(
             (attempt) =>
               (!attempt.isCorrect && attempt.confidence === 'high') ||
               (attempt.isCorrect && attempt.confidence === 'low'),
-          ).length / dayAttempts.length
+          ).length / reportedAttempts.length
         : 0,
     }
   })

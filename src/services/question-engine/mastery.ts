@@ -169,13 +169,13 @@ const finalizeDimension = (dimension: MutableDimension): MasteryDimensionStats =
     ? dimension.readinessCorrectCount / dimension.readinessAttemptCount
     : 0
   const avgCalibrationScore = dimension.attemptCount
-    ? dimension.calibrationTotal / dimension.attemptCount
+    ? dimension.calibrationTotal / Math.max(dimension.calibrationScores.length, 1)
     : 0
-  const confidenceMismatchScore = dimension.attemptCount
+  const confidenceMismatchScore = dimension.calibrationScores.length
     ? (dimension.highConfidenceMissCount * 1.25 +
       dimension.lowConfidenceCorrectCount * 0.85 +
       Math.max(0, dimension.confidenceMismatchCount - dimension.highConfidenceMissCount - dimension.lowConfidenceCorrectCount) * 0.65) /
-      dimension.attemptCount
+      dimension.calibrationScores.length
     : 0.5
   const performanceComponent = avgScore || accuracy
   const calibrationComponent = clamp01((avgCalibrationScore + 1) / 2)
@@ -277,8 +277,10 @@ export function buildLearnerMasteryVector(
       dimension.readinessCorrectCount += diagnosis.countsTowardReadiness && diagnosis.scoreResult.isCorrect ? 1 : 0
       dimension.scoreTotal += diagnosis.scoreResult.rawScore
       dimension.maxScoreTotal += diagnosis.scoreResult.maxScore
-      dimension.calibrationTotal += diagnosis.calibrationScore
-      dimension.calibrationScores.push(diagnosis.calibrationScore)
+      if (diagnosis.confidence !== 'unreported') {
+        dimension.calibrationTotal += diagnosis.calibrationScore
+        dimension.calibrationScores.push(diagnosis.calibrationScore)
+      }
       dimension.highConfidenceMissCount += diagnosis.confidenceEscalated && !diagnosis.scoreResult.isCorrect ? 1 : 0
       dimension.lowConfidenceCorrectCount += diagnosis.confidenceSignal === 'fragile_correct' ? 1 : 0
       dimension.confidenceMismatchCount += diagnosis.confidenceMismatch ? 1 : 0

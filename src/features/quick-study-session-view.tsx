@@ -46,21 +46,18 @@ interface QuestionViewProps {
 }
 
 export function QuickStudyQuestionView(props: QuestionViewProps) {
-  const { session, question, selectedAnswers, submitted, showRationale, finalResponse } = props
+  const { session, question, selectedAnswers, submitted, finalResponse } = props
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [discardRequested, setDiscardRequested] = useState(false)
   const dialogRef = useRef<HTMLDialogElement>(null)
   const bodyRef = useRef<HTMLDivElement>(null)
   const isLast = session.currentIndex === session.questionIds.length - 1
-  const reviewing = submitted && showRationale
+  const reviewing = submitted
   const result = props.isCorrect ? 'correct' : props.resultLabel === 'Partial' ? 'partial' : 'incorrect'
   const clinicalReviewed = question.clinicalReviewStatus === 'sme_reviewed'
   const sourcesNeeded = question.sourceStatus === 'source_needed' || !question.sourceBacked
-  const contentStatus = clinicalReviewed
-    ? 'Practice only · SME reviewed'
-    : question.contentQuality?.includes('draft') || question.contentQuality === 'generated-starter' || question.contentStage === 'beta_draft'
-      ? 'Practice only · Draft, not SME reviewed'
-      : 'Practice only · Not marked as SME reviewed'
+  // Keep the original clinical wording; longer rationales remain in the Why dialog.
+  const takeaway = question.rationale.whyCorrect.length <= 240 ? question.rationale.whyCorrect : null
 
   useEffect(() => {
     const dialog = dialogRef.current
@@ -69,7 +66,13 @@ export function QuickStudyQuestionView(props: QuestionViewProps) {
   }, [detailsOpen])
 
   useEffect(() => {
-    bodyRef.current?.scrollTo({ top: 0 })
+    const body = bodyRef.current
+    if (!body) return
+    const selected = body.querySelector('[data-selected="true"]')
+    const top = reviewing && selected && window.innerWidth < 640
+      ? selected.getBoundingClientRect().top - body.getBoundingClientRect().top + body.scrollTop - 12
+      : 0
+    body.scrollTo({ top })
   }, [reviewing, session.currentIndex])
 
   return (
@@ -91,30 +94,6 @@ export function QuickStudyQuestionView(props: QuestionViewProps) {
       </header>
 
       <div className="quick-session-body" ref={bodyRef} tabIndex={0} aria-label={reviewing ? 'Answer review' : 'Question and answer choices'}>
-        {reviewing ? (
-          <div className="quick-session-review">
-            <p className="quick-session-result" data-result={result} role="status">
-              {props.isCorrect ? <Check size={20} aria-hidden="true" /> : null}
-              {props.resultLabel}
-            </p>
-            <h2>{question.prompt}</h2>
-            <p className="quick-session-correct-answer">
-              <strong>Correct answer: </strong>
-              {question.choices.filter((choice) => question.correctAnswer.includes(choice.id)).map((choice) => `${choice.id}. ${choice.text}`).join(' · ')}
-            </p>
-            <p>{question.rationale.whyCorrect}</p>
-            {!props.isCorrect ? <p className="quick-session-miss-reason">{props.missReason}</p> : null}
-            {props.remediation ? <p className="quick-session-repair"><strong>Next repair: </strong>{props.remediation}</p> : null}
-            <p className="quick-session-evidence">{contentStatus}</p>
-            <div className="quick-session-review-actions">
-              <button type="button" className="quick-session-secondary" onClick={props.onToggleReview}>View your answer</button>
-              <button type="button" className="quick-session-secondary" onClick={() => setDetailsOpen(true)}>Full explanation &amp; sources</button>
-              {question.relatedFlashcardIds?.length ? (
-                <button type="button" className="quick-session-text-button" onClick={props.onLinkedCard}>Open linked flashcard</button>
-              ) : null}
-            </div>
-          </div>
-        ) : (
           <>
             <div className="quick-session-question-meta">
               <span>{question.format === 'select-all-that-apply' ? 'Select all that apply' : 'Choose one answer'}</span>
@@ -128,7 +107,12 @@ export function QuickStudyQuestionView(props: QuestionViewProps) {
               {question.choices.map((choice) => {
                 const selected = selectedAnswers.includes(choice.id)
                 const correct = question.correctAnswer.includes(choice.id)
-                const choiceResult = submitted ? correct ? 'correct' : selected ? 'incorrect' : undefined : undefined
+                const choiceResult = submitted ? correct ? selected ? 'correct' : 'missed' : selected ? 'incorrect' : undefined : undefined
+                const multiple = question.format === 'select-all-that-apply'
+                const label = !submitted ? selected ? 'Selected' : ''
+                  : correct ? selected ? multiple ? 'Correct selection' : 'Correct answer · Your answer'
+                    : multiple ? 'Missed correct answer' : 'Correct answer'
+                    : selected ? multiple ? 'Incorrect selection' : 'Your answer · Incorrect' : ''
                 return (
                   <button
                     key={choice.id}
@@ -141,40 +125,37 @@ export function QuickStudyQuestionView(props: QuestionViewProps) {
                     onClick={() => props.onChoice(choice.id)}
                   >
                     <span className="quick-session-choice-key">{choice.id}</span>
-                    <span>{choice.text}</span>
-                    {submitted && correct ? <Check size={18} aria-label="Correct answer" /> : null}
-                    {submitted && selected && !correct ? <X size={18} aria-label="Your incorrect selection" /> : null}
+                    <span className="quick-session-choice-content"><span>{choice.text}</span>
+                      {label ? <span className="quick-session-choice-label">{submitted ? correct ? <Check size={16} aria-hidden="true" /> : <X size={16} aria-hidden="true" /> : <Check size={16} aria-hidden="true" />}{label}</span> : null}
+                    </span>
                   </button>
                 )
               })}
             </div>
-            <div className="quick-session-evidence">
-              <span>{contentStatus}</span>
-              <button type="button" className="quick-session-text-button" onClick={() => setDetailsOpen(true)}>Item details</button>
-              {submitted ? <button type="button" className="quick-session-text-button" onClick={props.onToggleReview}>Review rationale</button> : null}
-            </div>
           </>
-        )}
       </div>
 
       <footer className="quick-session-footer">
-        {submitted && !finalResponse ? (
-          <div className="quick-session-confidence" role="group" aria-label="Choose confidence to save your answer">
-            <span>Choose confidence to continue</span>
-            <div>{(['low', 'medium', 'high'] as const).map((level) => (
-              <button key={level} type="button" className="quick-session-secondary" onClick={() => props.onConfidence(level)}>{level[0].toUpperCase() + level.slice(1)}</button>
-            ))}</div>
+        {submitted ? (
+          <div className="quick-session-feedback" data-result={result}>
+            <p className="quick-session-result" data-result={result} role="status">
+              {props.isCorrect ? <Check size={20} aria-hidden="true" /> : <X size={20} aria-hidden="true" />}
+              {props.isCorrect ? 'Correct!' : result === 'partial' ? 'Almost — check the highlighted choices.' : 'Not quite'}
+            </p>
+            {takeaway ? <p className="quick-session-takeaway">{takeaway}</p> : null}
+            <button type="button" className="quick-session-text-button" onClick={() => setDetailsOpen(true)}>Why? <span className="sr-only">Explanation and sources</span></button>
           </div>
         ) : null}
         <div className="quick-session-navigation">
           <div className="quick-session-navigation-secondary">
             <button type="button" className="quick-session-text-button" onClick={props.onBack} disabled={session.currentIndex === 0 || Boolean(session.config.noBacktracking)} aria-label="Previous question"><ArrowLeft size={18} aria-hidden="true" /><span>Back</span></button>
-            <button type="button" className="quick-session-text-button" onClick={props.onSaveAndLeave} disabled={submitted && !finalResponse}>Save &amp; leave</button>
+            <button type="button" className="quick-session-text-button" onClick={props.onSaveAndLeave}>Save &amp; leave</button>
+            {!submitted ? <button type="button" className="quick-session-text-button" onClick={() => setDetailsOpen(true)}>Sources &amp; options</button> : null}
           </div>
           {!submitted ? (
-            <button type="button" className="quick-session-primary" onClick={props.onSubmit} disabled={!selectedAnswers.length}>Submit answer<ArrowRight size={18} aria-hidden="true" /></button>
+            <button type="button" className="quick-session-primary" onClick={props.onSubmit} disabled={!selectedAnswers.length}>Check answer<ArrowRight size={18} aria-hidden="true" /></button>
           ) : finalResponse ? (
-            <button type="button" className="quick-session-primary" onClick={isLast ? props.onFinish : props.onNext}>{isLast ? 'Finish session' : 'Next question'}<ArrowRight size={18} aria-hidden="true" /></button>
+            <button type="button" className="quick-session-primary" onClick={isLast ? props.onFinish : props.onNext}>{isLast ? 'Finish session' : 'Continue'}<ArrowRight size={18} aria-hidden="true" /></button>
           ) : null}
         </div>
       </footer>

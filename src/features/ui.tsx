@@ -952,6 +952,7 @@ export function EmptyState({
 }
 
 const confidenceTone: Record<ConfidenceLevel, string> = {
+  unreported: '',
   low: 'border-amber-300/34 bg-amber-300/[0.08] text-amber-100 hover:bg-amber-300/14',
   medium: 'border-cyan-300/34 bg-cyan-300/[0.08] text-cyan-100 hover:bg-cyan-300/14',
   high: 'border-emerald-300/34 bg-emerald-300/[0.08] text-emerald-100 hover:bg-emerald-300/14',
@@ -1504,7 +1505,16 @@ export function QuestionSessionRunner({
         feedbackSubmittedId={feedbackSubmittedId}
         onChoice={toggleChoice}
         onFlag={() => setFlagged((current) => !current)}
-        onSubmit={openReviewForCurrentAnswer}
+        onSubmit={() => {
+          if (submitted || existingResponse || !selectedAnswers.length) return
+          submitCurrentResponse({
+            selectedAnswer: selectedAnswers,
+            confidence: 'unreported',
+            flagged,
+            timeSpentSec: question.format === 'select-all-that-apply' ? 70 : question.scenario ? 60 : 45,
+          })
+          openReviewForCurrentAnswer()
+        }}
         onConfidence={handleConfidence}
         onToggleReview={() => {
           if (showRationale) setShowRationale(false)
@@ -1724,7 +1734,7 @@ export function QuestionSessionRunner({
                           exam_track: profile.examTrack ?? 'nclex-rn',
                           question_category: question.category,
                           question_result: currentIsCorrect ? 'correct' : 'incorrect',
-                          confidence_level: finalResponse?.confidence,
+                          confidence_level: finalResponse?.confidence === 'unreported' ? undefined : finalResponse?.confidence,
                           is_demo_user: isDemoMode,
                           metadata: {
                             question_id: questionId,

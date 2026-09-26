@@ -443,7 +443,7 @@ export interface AttemptForDiagnosis {
   questionId: string
   selectedAnswer: string[]
   isCorrect: boolean
-  confidence: 'low' | 'medium' | 'high'
+  confidence: 'low' | 'medium' | 'high' | 'unreported'
   timeSpentSec: number
   flagged: boolean
   completedAt: string
@@ -466,7 +466,7 @@ export interface AttemptDiagnosis {
   attemptId: string
   itemId: string
   selectedAnswer: string[]
-  confidence: 'low' | 'medium' | 'high'
+  confidence: 'low' | 'medium' | 'high' | 'unreported'
   rawBinaryCorrect: boolean
   scoreResult: ScoreResult
   performanceBand: PerformanceBand
@@ -533,9 +533,9 @@ export interface RemediationEvent {
   repairMisconceptionId: MisconceptionId | null
   repairMisconceptionFamily: MisconceptionFamily | null
   repairScore: number | null
-  repairConfidence: 'low' | 'medium' | 'high' | null
+  repairConfidence: 'low' | 'medium' | 'high' | 'unreported' | null
   repairCalibrationScore: number | null
-  triggerConfidence: 'low' | 'medium' | 'high'
+  triggerConfidence: 'low' | 'medium' | 'high' | 'unreported'
   triggerCalibrationScore: number
   triggerSafetySeverity: SafetySeverity
   nextActionCopy: string
@@ -552,7 +552,7 @@ export interface RemediationTransferEvidence {
   triggerMisconceptionId: MisconceptionId
   triggerMisconceptionFamily: MisconceptionFamily
   triggerSafetySeverity: SafetySeverity
-  triggerConfidence: 'low' | 'medium' | 'high'
+  triggerConfidence: 'low' | 'medium' | 'high' | 'unreported'
   triggerCalibrationScore: number
   assignedRoute: string
   assignedAssetIds: string[]
@@ -563,7 +563,7 @@ export interface RemediationTransferEvidence {
   repairMisconceptionId: MisconceptionId | null
   repairMisconceptionFamily: MisconceptionFamily | null
   repairScore: number | null
-  repairConfidence: 'low' | 'medium' | 'high' | null
+  repairConfidence: 'low' | 'medium' | 'high' | 'unreported' | null
   repairCalibrationScore: number | null
   transferDistance: RemediationTransferDistance | null
   readinessRepairEligible: boolean

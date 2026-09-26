@@ -1193,7 +1193,7 @@ export const useStudySystemStore = create<StudySystemState>()(
             exam_track: state.profile.examTrack ?? 'nclex-rn',
             question_category: analyticsQuestion?.category,
             question_result: analyticsIsCorrect ? 'correct' : 'incorrect',
-            confidence_level: confidence,
+            confidence_level: confidence === 'unreported' ? undefined : confidence,
             time_spent_seconds: timeSpentSec,
             is_demo_user: state.isDemoMode,
             metadata: {
@@ -1202,7 +1202,7 @@ export const useStudySystemStore = create<StudySystemState>()(
           },
           { userId: state.authUser?.id, isDemoUser: state.isDemoMode },
         )
-        void trackAppEvent(
+        if (confidence !== 'unreported') void trackAppEvent(
           'confidence_selected',
           {
             page_path: state.activeSession?.mode === 'quick-study' ? '/quick-study' : '/practice-questions',
