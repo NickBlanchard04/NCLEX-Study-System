@@ -331,6 +331,7 @@ export interface TycoonActionChoice {
 }
 
 export interface TycoonTask {
+  careProgress?: { steps: TycoonCareStep[]; assessmentActionId: string }
   id: string
   patientId: string
   patientName: string
@@ -365,6 +366,8 @@ export interface TycoonTask {
     y: number
   }
 }
+
+export type TycoonCareStep = 'assessment' | 'monitor' | 'safety' | 'care' | 'reassessment' | 'documentation'
 
 export interface TycoonUpgrade {
   id: string
@@ -412,6 +415,7 @@ export interface TycoonShift {
   endedAt?: string
   shiftMinute: number
   tasks: TycoonTask[]
+  equipmentReviewedTaskIds?: string[]
   events: TycoonShiftEvent[]
   status: TycoonShiftStatus
   payoutSummary?: TycoonPayoutSummary

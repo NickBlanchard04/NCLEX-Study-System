@@ -1,0 +1,155 @@
+.tycoon-map-nurses {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* The full-floor wrappers keep percentage routes aligned with the map at every size. */
+.tycoon-map-nurse-route {
+  position: absolute;
+  inset: 0;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-delay: 320ms;
+  animation-fill-mode: both;
+}
+
+.tycoon-map-nurse-position {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: clamp(16px, calc(28.8 * var(--u)), 25.6px);
+  height: clamp(20px, calc(36 * var(--u)), 32px);
+  transform: translate(-50%, -50%);
+}
+
+.tycoon-map-nurse-pop {
+  animation: tycoon-nurse-arrive 320ms ease-out both;
+  transform-origin: center bottom;
+}
+
+.tycoon-map-nurse-stride {
+  animation: tycoon-nurse-stride 600ms ease-in-out infinite;
+}
+
+.tycoon-map-nurse-figure {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.tycoon-map-nurse-limb {
+  transform-box: view-box;
+  animation: tycoon-nurse-step 600ms ease-in-out infinite alternate;
+}
+
+.tycoon-map-nurse-leg-left { transform-origin: 12px 25px; }
+.tycoon-map-nurse-leg-right { transform-origin: 20px 25px; animation-direction: alternate-reverse; }
+.tycoon-map-nurse-arm-left { transform-origin: 10px 16px; animation-direction: alternate-reverse; }
+.tycoon-map-nurse-arm-right { transform-origin: 22px 16px; }
+
+.tycoon-map-nurse-route-1 { animation-name: tycoon-nurse-patrol-1; animation-duration: 24s; }
+.tycoon-map-nurse-route-2 { animation-name: tycoon-nurse-patrol-2; animation-duration: 22s; }
+.tycoon-map-nurse-route-3 { animation-name: tycoon-nurse-patrol-3; animation-duration: 26s; }
+.tycoon-map-nurse-route-4 { animation-name: tycoon-nurse-patrol-4; animation-duration: 25s; }
+.tycoon-map-nurse-route-5 { animation-name: tycoon-nurse-patrol-5; animation-duration: 23s; }
+.tycoon-map-nurse-route-6 { animation-name: tycoon-nurse-patrol-6; animation-duration: 27s; }
+
+.tycoon-map-nurses[data-paused='true'] .tycoon-map-nurse-route,
+.tycoon-map-nurses[data-paused='true'] .tycoon-map-nurse-pop,
+.tycoon-map-nurses[data-paused='true'] .tycoon-map-nurse-stride,
+.tycoon-map-nurses[data-paused='true'] .tycoon-map-nurse-limb {
+  animation-play-state: paused;
+}
+
+@keyframes tycoon-nurse-arrive {
+  from { opacity: 0; transform: scale(.45); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes tycoon-nurse-stride {
+  0%, 50%, 100% { transform: translateY(0); }
+  25%, 75% { transform: translateY(-1px); }
+}
+
+@keyframes tycoon-nurse-step {
+  from { transform: rotate(-9deg); }
+  to { transform: rotate(9deg); }
+}
+
+/* Every turn is an explicit hallway corner, so no path cuts across a room or the station. */
+@keyframes tycoon-nurse-patrol-1 {
+  0%, 100% { transform: translate(33%, 45%); }
+  5% { transform: translate(33%, 37%); }
+  16%, 22% { transform: translate(16%, 37%); }
+  33% { transform: translate(33%, 37%); }
+  55% { transform: translate(67%, 37%); }
+  71% { transform: translate(67%, 63%); }
+  92% { transform: translate(33%, 63%); }
+}
+
+@keyframes tycoon-nurse-patrol-2 {
+  0%, 100% { transform: translate(46%, 37%); }
+  3%, 9% { transform: translate(50%, 37%); }
+  22% { transform: translate(67%, 37%); }
+  42% { transform: translate(67%, 63%); }
+  67% { transform: translate(33%, 63%); }
+  87% { transform: translate(33%, 37%); }
+}
+
+@keyframes tycoon-nurse-patrol-3 {
+  0%, 100% { transform: translate(67%, 45%); }
+  5% { transform: translate(67%, 37%); }
+  16%, 22% { transform: translate(84%, 37%); }
+  33% { transform: translate(67%, 37%); }
+  55% { transform: translate(33%, 37%); }
+  71% { transform: translate(33%, 63%); }
+  92% { transform: translate(67%, 63%); }
+}
+
+@keyframes tycoon-nurse-patrol-4 {
+  0%, 100% { transform: translate(33%, 55%); }
+  5% { transform: translate(33%, 63%); }
+  16%, 22% { transform: translate(16%, 63%); }
+  33% { transform: translate(33%, 63%); }
+  55% { transform: translate(67%, 63%); }
+  71% { transform: translate(67%, 37%); }
+  92% { transform: translate(33%, 37%); }
+}
+
+@keyframes tycoon-nurse-patrol-5 {
+  0%, 100% { transform: translate(54%, 63%); }
+  3%, 9% { transform: translate(50%, 63%); }
+  22% { transform: translate(33%, 63%); }
+  42% { transform: translate(33%, 37%); }
+  67% { transform: translate(67%, 37%); }
+  87% { transform: translate(67%, 63%); }
+}
+
+@keyframes tycoon-nurse-patrol-6 {
+  0%, 100% { transform: translate(67%, 55%); }
+  5% { transform: translate(67%, 63%); }
+  16%, 22% { transform: translate(84%, 63%); }
+  33% { transform: translate(67%, 63%); }
+  55% { transform: translate(33%, 63%); }
+  71% { transform: translate(33%, 37%); }
+  92% { transform: translate(67%, 37%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tycoon-map-nurse-route,
+  .tycoon-map-nurse-pop,
+  .tycoon-map-nurse-stride,
+  .tycoon-map-nurse-limb {
+    animation: none;
+  }
+
+  .tycoon-map-nurse-route-1 { transform: translate(16%, 37%); }
+  .tycoon-map-nurse-route-2 { transform: translate(50%, 37%); }
+  .tycoon-map-nurse-route-3 { transform: translate(84%, 37%); }
+  .tycoon-map-nurse-route-4 { transform: translate(16%, 63%); }
+  .tycoon-map-nurse-route-5 { transform: translate(50%, 63%); }
+  .tycoon-map-nurse-route-6 { transform: translate(84%, 63%); }
+}

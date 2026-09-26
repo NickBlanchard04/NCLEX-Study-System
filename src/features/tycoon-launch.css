@@ -1,0 +1,563 @@
+/* The launch screen fits the viewport; the simulation keeps its own layout. */
+.tycoon-launch {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 1rem;
+  min-height: 100dvh;
+  padding: max(0.875rem, env(safe-area-inset-top))
+    max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom))
+    max(1rem, env(safe-area-inset-left));
+  background: #031627 url('/assets/tycoon/command-hero.png') 65% center / cover
+    no-repeat;
+  isolation: isolate;
+}
+
+.tycoon-launch::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: #00142680;
+}
+
+.tycoon-launch-content {
+  width: 100%;
+  max-width: 42rem;
+  min-width: 0;
+  align-self: center;
+  justify-self: center;
+  padding-block: 1rem;
+}
+
+.tycoon-launch .tycoon-brand {
+  display: flex;
+  align-items: center;
+  gap: clamp(0.75rem, 3vw, 1.5rem);
+}
+
+.tycoon-launch .tycoon-brand-logo {
+  width: clamp(3.5rem, 15vw, 6rem);
+  aspect-ratio: 144 / 139;
+  flex: none;
+}
+
+.tycoon-launch .tycoon-brand > div:last-child {
+  min-width: 0;
+}
+
+.tycoon-launch .tycoon-brand h1 {
+  font-family: 'Google Sans', 'Segoe UI', sans-serif;
+  font-size: clamp(1.15rem, 5.1vw, 2.75rem);
+  font-weight: 800;
+  line-height: 1.06;
+  letter-spacing: 0.01em;
+}
+
+.tycoon-launch .tycoon-brand h1 span {
+  display: block;
+  color: #198dff;
+}
+
+.tycoon-launch .tycoon-brand p {
+  margin-top: 0.625rem;
+  font-size: clamp(0.6rem, 2vw, 0.9rem);
+  line-height: 1.4;
+  letter-spacing: 0.22em;
+  color: #99c7ec;
+}
+
+.tycoon-launch .tycoon-clinic {
+  display: grid;
+  grid-template-columns: clamp(4.25rem, 20vw, 9rem) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(0.75rem, 3vw, 1.5rem);
+  width: 100%;
+  margin-top: clamp(1.25rem, 4dvh, 2.5rem);
+  padding: clamp(0.875rem, 3vw, 1.5rem);
+  color: inherit;
+  text-align: left;
+  border: 1px solid #006592;
+  border-radius: 1rem;
+  background: rgba(0, 19, 34, 0.94);
+}
+
+.tycoon-launch .tycoon-clinic:hover {
+  border-color: #39b8ff;
+  background: rgba(0, 27, 49, 0.98);
+}
+
+.tycoon-launch .tycoon-clinic-image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 235 / 175;
+  border-radius: 0.625rem;
+  overflow: hidden;
+}
+
+.tycoon-launch .tycoon-clinic-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tycoon-launch .tycoon-play-label {
+  margin-bottom: 0.25rem;
+  color: #329fee;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+}
+
+.tycoon-launch .tycoon-clinic-copy strong {
+  font-family: 'Google Sans', sans-serif;
+  font-size: clamp(1.125rem, 4.5vw, 1.75rem);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+}
+
+.tycoon-launch .tycoon-clinic-meta {
+  margin-top: 0.4rem;
+  color: #a0c7e7;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.tycoon-launch .tycoon-clinic-description {
+  margin-top: 0.625rem;
+  color: #a1c9e9;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.tycoon-launch .tycoon-clinic-arrow,
+.tycoon-launch .tycoon-desktop-break {
+  display: none;
+}
+
+.tycoon-launch .tycoon-start {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.875rem;
+  width: 100%;
+  min-height: 3.5rem;
+  margin: 1.25rem auto 0;
+  padding: 0.875rem 1rem;
+  border: 1px solid #34b6ff;
+  border-radius: 0.875rem;
+  background: linear-gradient(#138dff, #0978ed);
+  box-shadow: 0 10px 32px #006bba30;
+  color: #fff;
+  font-size: 1.375rem;
+  font-weight: 700;
+  letter-spacing: 0.015em;
+}
+
+.tycoon-launch .tycoon-start svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: none;
+}
+
+.tycoon-launch .tycoon-start:hover {
+  filter: brightness(1.1);
+}
+
+/* Equal columns keep the status bar inside small phones, including 393px. */
+.tycoon-launch .tycoon-hud {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  width: 100%;
+  max-width: 42rem;
+  min-height: 4.5rem;
+  justify-self: end;
+  padding: 0.75rem 0.5rem;
+  margin: 0;
+  border-radius: 0.875rem;
+}
+
+.tycoon-launch .tycoon-hud > div {
+  min-width: 0;
+  padding-inline: 0.5rem;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.tycoon-launch .tycoon-hud-icon {
+  display: none;
+}
+
+.tycoon-launch .tycoon-hud strong {
+  font-size: 0.875rem;
+  line-height: 1.3;
+}
+
+.tycoon-launch .tycoon-hud-level > div {
+  width: 100%;
+  max-width: 6rem;
+}
+
+.tycoon-launch .tycoon-hud small {
+  margin-top: 0.25rem;
+  font-size: 0.6875rem;
+  line-height: 1.3;
+}
+
+.tycoon-launch .tycoon-hud-time > div > span {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
+
+.tycoon-launch .tycoon-hud-time {
+  flex-direction: row;
+  gap: 4px;
+}
+
+.tycoon-launch .tycoon-clock-meta {
+  text-align: left;
+}
+
+.tycoon-launch .tycoon-hud-time .tycoon-clock-meridiem {
+  margin-top: 0;
+  color: #d9edff;
+  font-weight: 600;
+}
+
+@media (max-width: 639px) {
+  .tycoon-launch .tycoon-hud > div {
+    padding-inline: 4px;
+  }
+  .tycoon-launch .tycoon-analog-clock {
+    width: 40px;
+    height: 40px;
+  }
+  .tycoon-launch .tycoon-hud-time .tycoon-clock-digital {
+    font-size: 12px;
+  }
+}
+
+.tycoon-launch progress {
+  height: 0.3125rem;
+  margin-top: 0.25rem;
+}
+
+@media (min-width: 640px) {
+  .tycoon-launch .tycoon-hud-time {
+    flex-direction: row;
+  }
+
+  .tycoon-launch .tycoon-clock-meta {
+    text-align: left;
+  }
+  .tycoon-launch {
+    padding: 1.5rem;
+  }
+
+  .tycoon-launch .tycoon-hud-icon {
+    display: grid;
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .tycoon-launch .tycoon-hud-icon svg {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  .tycoon-launch .tycoon-clinic {
+    grid-template-columns: 9rem minmax(0, 1fr) 1.5rem;
+  }
+
+  .tycoon-launch .tycoon-clinic-arrow {
+    display: block;
+    width: 1.5rem;
+    height: 2rem;
+    color: #98bddf;
+  }
+
+  .tycoon-launch .tycoon-clinic-meta,
+  .tycoon-launch .tycoon-clinic-description {
+    font-size: 1rem;
+  }
+}
+
+/* In landscape, keep the clinic beside the title and button so both stay in view. */
+@media (min-width: 480px) and (max-width: 1100px) and (max-height: 520px) {
+  .tycoon-launch {
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+
+  .tycoon-launch .tycoon-hud {
+    min-height: 3.5rem;
+    padding-block: 0.5rem;
+  }
+
+  .tycoon-launch .tycoon-hud-icon {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+
+  .tycoon-launch .tycoon-hud-icon svg {
+    width: 1.125rem;
+    height: 1.125rem;
+  }
+
+  .tycoon-launch-content {
+    display: grid;
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+    align-items: center;
+    gap: 0.875rem;
+    max-width: 52rem;
+    padding-block: 0;
+  }
+
+  .tycoon-launch .tycoon-brand {
+    grid-column: 1;
+    grid-row: 1;
+    gap: 0.625rem;
+  }
+
+  .tycoon-launch .tycoon-brand-logo {
+    width: 3.5rem;
+  }
+
+  .tycoon-launch .tycoon-brand h1 {
+    font-size: clamp(1.125rem, 2.8vw, 1.75rem);
+  }
+
+  .tycoon-launch .tycoon-brand p {
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+  }
+
+  .tycoon-launch .tycoon-clinic {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    grid-template-columns: 4.25rem minmax(0, 1fr);
+    gap: 0.75rem;
+    padding: 0.875rem;
+    margin: 0;
+  }
+
+  .tycoon-launch .tycoon-clinic-copy strong {
+    font-size: 1.125rem;
+  }
+
+  .tycoon-launch .tycoon-clinic-meta,
+  .tycoon-launch .tycoon-clinic-description {
+    font-size: 0.875rem;
+  }
+
+  .tycoon-launch .tycoon-clinic-arrow {
+    display: none;
+  }
+
+  .tycoon-launch .tycoon-start {
+    grid-column: 1;
+    grid-row: 2;
+    min-height: 3rem;
+    margin: 0;
+    padding: 0.625rem;
+    font-size: 1.125rem;
+  }
+}
+
+/* Scale the reference to BOTH viewport axes instead of growing with width alone. */
+@media (min-width: 1101px) {
+  .tycoon-launch {
+    --launch-unit: min(calc(100vw / 1536), calc(100dvh / 900));
+    --launch-art-height: 100dvh;
+    display: block;
+    min-height: var(--launch-art-height);
+    padding: 0;
+    background-position: center;
+    background-size: cover;
+  }
+
+  .tycoon-launch::before {
+    display: block;
+    background: url('/assets/tycoon/command-hero.png') right center / auto 100%
+      no-repeat;
+    mask-image: linear-gradient(
+      to left,
+      #000 calc(var(--launch-art-height) * 1.2),
+      transparent calc(var(--launch-art-height) * 1.5)
+    );
+  }
+
+  /* Keep the original nurse artwork aligned with the full-height backdrop. */
+  .tycoon-launch::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: url('/assets/tycoon/launch-reference.png') right center / auto
+      100% no-repeat;
+    clip-path: inset(11.5% 0 0 calc(100% - var(--launch-art-height) * 0.672));
+  }
+
+  .tycoon-launch-content {
+    position: relative;
+    z-index: 1;
+    width: calc(766 * var(--launch-unit));
+    max-width: none;
+    justify-self: start;
+    align-self: auto;
+    margin-left: clamp(2rem, 5.2083vw, 9rem);
+    padding-top: calc(186 * var(--launch-unit));
+    padding-bottom: 2rem;
+  }
+
+  .tycoon-launch .tycoon-brand {
+    align-items: flex-start;
+    gap: calc(35 * var(--launch-unit));
+  }
+
+  .tycoon-launch .tycoon-brand-logo {
+    width: calc(143 * var(--launch-unit));
+  }
+
+  .tycoon-launch .tycoon-brand h1 {
+    font-size: calc(60.7 * var(--launch-unit));
+    line-height: 1.015;
+    letter-spacing: 0.025em;
+    white-space: nowrap;
+  }
+
+  .tycoon-launch .tycoon-brand p {
+    margin-top: calc(11 * var(--launch-unit));
+    font-size: calc(20.1 * var(--launch-unit));
+    letter-spacing: 0.365em;
+    white-space: nowrap;
+  }
+
+  .tycoon-launch .tycoon-clinic {
+    grid-template-columns: calc(235 * var(--launch-unit)) minmax(0, 1fr) calc(
+        29 * var(--launch-unit)
+      );
+    gap: calc(30 * var(--launch-unit));
+    min-height: calc(232 * var(--launch-unit));
+    margin-top: calc(43 * var(--launch-unit));
+    padding: calc(28 * var(--launch-unit));
+    border-radius: calc(21 * var(--launch-unit));
+  }
+
+  .tycoon-launch .tycoon-clinic-image {
+    border-radius: calc(15 * var(--launch-unit));
+  }
+
+  .tycoon-launch .tycoon-play-label {
+    margin-bottom: calc(4.6 * var(--launch-unit));
+    font-size: calc(18 * var(--launch-unit));
+  }
+
+  .tycoon-launch .tycoon-clinic-copy strong {
+    font-size: calc(33.5 * var(--launch-unit));
+    line-height: 1.25;
+    white-space: nowrap;
+  }
+
+  .tycoon-launch .tycoon-clinic-meta {
+    margin-top: calc(3 * var(--launch-unit));
+    font-size: calc(21.8 * var(--launch-unit));
+  }
+
+  .tycoon-launch .tycoon-clinic-description {
+    margin-top: calc(11 * var(--launch-unit));
+    font-size: calc(20 * var(--launch-unit));
+    line-height: 1.4;
+  }
+
+  .tycoon-launch .tycoon-clinic-arrow {
+    width: calc(29 * var(--launch-unit));
+    height: calc(38 * var(--launch-unit));
+  }
+
+  .tycoon-launch .tycoon-desktop-break {
+    display: block;
+  }
+
+  .tycoon-launch .tycoon-start {
+    width: calc(482 * var(--launch-unit));
+    min-height: calc(90 * var(--launch-unit));
+    margin-top: calc(27 * var(--launch-unit));
+    padding: calc(12 * var(--launch-unit));
+    border-radius: calc(21 * var(--launch-unit));
+    gap: calc(18 * var(--launch-unit));
+    font-size: calc(31.6 * var(--launch-unit));
+  }
+
+  .tycoon-launch .tycoon-start svg {
+    width: calc(33 * var(--launch-unit));
+    height: calc(33 * var(--launch-unit));
+  }
+
+  .tycoon-launch .tycoon-hud {
+    position: absolute;
+    display: flex;
+    top: calc(25 * var(--launch-unit));
+    right: calc(24 * var(--launch-unit));
+    width: calc(720 * var(--launch-unit));
+    max-width: none;
+    height: calc(84 * var(--launch-unit));
+    min-height: 0;
+    padding: calc(16 * var(--launch-unit)) calc(18 * var(--launch-unit));
+    border-radius: calc(20 * var(--launch-unit));
+  }
+
+  .tycoon-launch .tycoon-hud > div {
+    gap: calc(11 * var(--launch-unit));
+    padding-inline: calc(18 * var(--launch-unit));
+  }
+
+  .tycoon-launch .tycoon-hud > div:first-child {
+    padding-left: 0;
+  }
+
+  .tycoon-launch .tycoon-hud > div:last-child {
+    padding-right: 0;
+  }
+
+  .tycoon-launch .tycoon-hud-icon {
+    width: calc(49 * var(--launch-unit));
+    height: calc(49 * var(--launch-unit));
+    border-radius: 50%;
+  }
+
+  .tycoon-launch .tycoon-hud-icon svg {
+    width: calc(31 * var(--launch-unit));
+    height: calc(31 * var(--launch-unit));
+  }
+
+  .tycoon-launch .tycoon-hud strong {
+    font-size: calc(18.4 * var(--launch-unit));
+  }
+
+  .tycoon-launch .tycoon-hud-level > div {
+    width: calc(96 * var(--launch-unit));
+    max-width: none;
+  }
+
+  .tycoon-launch .tycoon-hud small {
+    margin-top: calc(2 * var(--launch-unit));
+    font-size: calc(12.3 * var(--launch-unit));
+  }
+
+  .tycoon-launch .tycoon-hud-time > div > span {
+    margin-top: calc(2 * var(--launch-unit));
+    font-size: calc(15 * var(--launch-unit));
+  }
+
+  .tycoon-launch .tycoon-analog-clock {
+    width: clamp(40px, calc(62 * var(--launch-unit)), 76px);
+    height: clamp(40px, calc(62 * var(--launch-unit)), 76px);
+  }
+}

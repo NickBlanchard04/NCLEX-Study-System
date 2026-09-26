@@ -1,0 +1,33 @@
+.tycoon-tooltip {
+  position: fixed;
+  z-index: 10000;
+  left: 0;
+  top: 0;
+  visibility: hidden;
+  width: max-content;
+  max-width: min(320px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid #306580;
+  border-radius: 8px;
+  background: #03233b;
+  color: #e6f5ff;
+  font:
+    400 14px / 1.5 'Google Sans Text',
+    sans-serif;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: normal;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  box-shadow: 0 2px 8px #0005;
+  pointer-events: auto;
+}
+
+@media (max-width: 760px), (hover: none), (pointer: coarse) {
+  .tycoon-tooltip {
+    display: none;
+  }
+}

@@ -1,0 +1,77 @@
+.tycoon-hospital { background: url('/game-assets/hospital-prototype/campus-courtyard.png') center / cover no-repeat; }
+.tycoon-prototype .tycoon-hud { right: auto; width: auto; height: 50px; padding: 6px 12px; gap: 16px; background: rgb(20 45 67 / 78%); backdrop-filter: none; }
+.tycoon-prototype .tycoon-hud > div { padding-right: 15px; gap: 8px; }
+.tycoon-prototype .tycoon-hud strong { font-size: 16px; }
+.tycoon-prototype .tycoon-hud-icon { width: 20px; height: 20px; }
+.tycoon-prototype .tycoon-hud-icon svg { width: 20px; height: 20px; }
+.tycoon-prototype .tycoon-analog-clock { width: 32px; height: 32px; }
+.tycoon-prototype .tycoon-hud-time .tycoon-clock-digital { font-size: 15px; }
+.tycoon-prototype .tycoon-hud-level > div { width: 72px; }
+.tycoon-prototype .tycoon-priority { top: 78px; width: 245px; padding: 9px 12px; gap: 0; background: rgb(20 45 67 / 78%); border: 0; }
+.tycoon-prototype .tycoon-priority .tycoon-section-label, .tycoon-prototype .tycoon-priority-status { display: none; }
+.tycoon-prototype .tycoon-priority h3 { font-size: 13px; line-height: 1.4; margin: 0; }
+.tycoon-prototype .tycoon-priority p { font-size: 11px; margin-top: 3px; }
+.tycoon-prototype .tycoon-saved-rooms { top: 164px; max-width: 285px; padding: 3px; gap: 0; background: rgb(20 45 67 / 70%); }
+.tycoon-prototype .tycoon-saved-rooms button { min-height: 36px; padding: 5px 10px; font-size: 11px; }
+.tycoon-prototype .tycoon-command { visibility: hidden; pointer-events: none; width: 264px; max-height: calc(100dvh - 190px); top: 78px; padding: 12px; background: rgb(20 45 67 / 94%); }
+.tycoon-prototype.is-command-open .tycoon-command { visibility: visible; pointer-events: auto; }
+.tycoon-prototype .tycoon-command-close { display: grid; place-items: center; width: 30px; height: 30px; padding: 3px; border: 0; background: none; color: #fff; }
+.tycoon-prototype .tycoon-command-close svg { width: 18px; height: 18px; }
+.tycoon-prototype .tycoon-command-header { gap: 6px; padding-bottom: 8px; }
+.tycoon-prototype .tycoon-command-header > span { margin-left: auto; font-size: 10px; }
+.tycoon-prototype .tycoon-command-header .tycoon-section-label { font-size: 11px; }
+.tycoon-prototype .tycoon-patient { grid-template-columns: 34px minmax(0, 1fr) auto; padding: 10px 0; }
+.tycoon-prototype .tycoon-patient-portrait { width: 34px; height: 34px; }
+.tycoon-prototype .tycoon-patient h3 { font-size: 16px; }
+.tycoon-prototype .tycoon-command-details { padding-top: 8px; }
+.tycoon-prototype .tycoon-patient-tasks h3 { font-size: 13px; margin-top: 4px; }
+.tycoon-prototype .tycoon-task-meta { display: none; }
+.tycoon-prototype .tycoon-command-actions { margin-top: 10px; gap: 5px; }
+.tycoon-prototype .tycoon-command-actions button { height: auto; min-height: 38px; font-size: 12px !important; }
+.tycoon-care-steps { display: grid; grid-template-columns: 1fr 1fr; list-style: none; gap: 7px 10px; margin: 14px 0; padding: 0; }
+.tycoon-care-steps li { display: flex; align-items: center; gap: 6px; font-size: 12px; line-height: 1.4; color: #adbfca; }
+.tycoon-care-steps li > span { flex: 0 0 18px; text-align: center; font-size: 11px; }
+.tycoon-care-steps .is-current { color: #fff; font-weight: 700; }
+.tycoon-care-steps .is-current > span { border-bottom: 2px solid #c2e1ce; }
+.tycoon-care-steps .is-done { color: #a8d8bd; }
+.tycoon-command .tycoon-care-steps { margin: 2px 0 7px; gap: 5px 8px; }
+.tycoon-command .tycoon-care-steps li { font-size: 10px; }
+.tycoon-care-check p, .tycoon-bedside-action p { font-size: 14px; margin: 12px 0; line-height: 1.5; }
+.tycoon-care-check fieldset { border: 0; padding: 0; margin: 16px 0; }
+.tycoon-care-check legend { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.tycoon-care-check label { display: flex; align-items: center; gap: 12px; min-height: 44px; font-size: 14px; }
+.tycoon-care-check input { flex: 0 0 18px; width: 18px; height: 18px; margin: 0; accent-color: #8dc4aa; }
+.tycoon-monitor-preview { padding: 10px 14px; background: #112c30; border: 1px solid #477879; border-radius: 4px; }
+.tycoon-monitor-preview svg { display: block; width: 100%; height: 66px; }
+.tycoon-monitor-preview path { stroke: #9dd4b6; stroke-width: 2; fill: none; stroke-dasharray: 620; animation: tycoon-monitor-trace 3s linear infinite; }
+.tycoon-monitor-preview span { color: #a8c5bc; font-size: 11px; }
+@keyframes tycoon-monitor-trace { from { stroke-dashoffset: 620; } to { stroke-dashoffset: 0; } }
+.tycoon-bedside-action progress { width: 100%; height: 8px; margin-top: 15px; }
+.tycoon-care-toast { position: absolute; z-index: 4; left: 50%; top: 20px; transform: translateX(-50%); max-width: min(520px, calc(100% - 32px)); padding: 10px 14px; background: #214b48; color: #fff; border-radius: 4px; font-size: 13px; text-align: center; pointer-events: none; }
+.tycoon-shop-balance { font-size: 13px; margin: 14px 0; }
+.tycoon-launch-shop { position: absolute; right: 24px; bottom: 24px; display: flex; gap: 10px; align-items: center; color: #fff; background: #173b52; padding: 10px 16px; border: 1px solid #739aa3; border-radius: 4px; }
+.tycoon-upgrades { display: flex; flex-direction: column; gap: 0; }
+.tycoon-upgrades > button { padding: 14px 4px; border: 0; border-bottom: 1px solid #476173; border-radius: 0; background: transparent; text-align: left; display: grid; gap: 5px; }
+.tycoon-upgrades > button strong { display: flex; justify-content: space-between; gap: 15px; font-size: 15px; }
+.tycoon-upgrades > button > span { font-size: 12px; line-height: 1.5; }
+.tycoon-upgrades > button small { font-size: 11px; color: #b9d7cb; }
+.tycoon-upgrades > button:hover:not(:disabled) { background: rgb(160 208 191 / 10%); }
+.tycoon-upgrades > button:disabled { opacity: .5; }
+@media (max-width: 899px) {
+  .tycoon-hospital { background-position: 28% center; }
+  .tycoon-prototype .tycoon-hud { height: 48px; left: 10px; right: 10px; gap: 10px; padding: 6px 10px; }
+  .tycoon-prototype .tycoon-hud > div { padding-right: 10px; }
+  .tycoon-prototype .tycoon-priority { top: 70px; width: 230px; }
+  .tycoon-prototype .tycoon-saved-rooms { top: 148px; max-width: calc(100% - 24px); }
+  .tycoon-prototype .tycoon-command { top: auto; bottom: 12px; left: 12px; right: 12px; width: auto; max-height: calc(100dvh - 92px); }
+  .tycoon-care-toast { top: 208px; font-size: 12px; width: max-content; }
+}
+@media (pointer: coarse), (max-width: 599px) {
+  .tycoon-movement-row { display: grid; grid-template-columns: 140px minmax(0, 1fr) 40px; gap: 6px 14px; align-items: center; }
+  .tycoon-dpad { grid-column: 1; grid-row: 1 / 3; }
+  .tycoon-movement .tycoon-interact { grid-column: 2 / 4; grid-row: 1; justify-content: center; }
+  .tycoon-movement .tycoon-shop-key { grid-column: 2; grid-row: 2; }
+  .tycoon-movement .tycoon-pause { grid-column: 3; grid-row: 2; }
+  .tycoon-shop-key kbd { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .tycoon-monitor-preview path { animation: none; } }

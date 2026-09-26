@@ -197,7 +197,7 @@ export const tycoonUpgrades: TycoonUpgrade[] = [
   {
     id: 'extra-bed',
     name: 'Extra Bed',
-    description: 'Add capacity for future higher-volume units.',
+    description: 'Install an extra room now; admit one more patient next shift (up to six).',
     cost: 300,
     effectType: 'bed-capacity',
     effectValue: 1,
@@ -206,7 +206,7 @@ export const tycoonUpgrades: TycoonUpgrade[] = [
   {
     id: 'vitals-monitor',
     name: 'Vitals Monitor',
-    description: 'Early warnings reduce deterioration penalties.',
+    description: 'Install a second bedside display. Each level reduces deterioration penalties by 3.',
     cost: 225,
     effectType: 'monitoring',
     effectValue: 3,
@@ -215,7 +215,7 @@ export const tycoonUpgrades: TycoonUpgrade[] = [
   {
     id: 'med-safety-scanner',
     name: 'Med Safety Scanner',
-    description: 'Boost medication-check rewards and prevent costly misses.',
+    description: 'Install bedside scanning equipment. Each level adds $35 to medication-check rewards.',
     cost: 260,
     effectType: 'med-safety',
     effectValue: 35,
@@ -224,7 +224,7 @@ export const tycoonUpgrades: TycoonUpgrade[] = [
   {
     id: 'lab-runner',
     name: 'Lab Runner',
-    description: 'Faster lab movement saves shift time.',
+    description: 'Add a lab runner to the ward. Each level saves 4 minutes on vitals tasks.',
     cost: 180,
     effectType: 'lab-speed',
     effectValue: 4,
@@ -232,8 +232,8 @@ export const tycoonUpgrades: TycoonUpgrade[] = [
   },
   {
     id: 'staff-training',
-    name: 'Staff Training',
-    description: 'Delegation costs less staff energy.',
+    name: 'Support Nurse',
+    description: 'Add a support nurse to the ward. Each level improves the staff energy buffer by 8.',
     cost: 240,
     effectType: 'staff-energy',
     effectValue: 8,
@@ -242,7 +242,7 @@ export const tycoonUpgrades: TycoonUpgrade[] = [
   {
     id: 'ehr-station',
     name: 'EHR Station',
-    description: 'Documentation tasks take less time.',
+    description: 'Install a charting terminal. Each level saves 4 minutes on documentation tasks.',
     cost: 190,
     effectType: 'ehr-speed',
     effectValue: 4,
@@ -251,7 +251,7 @@ export const tycoonUpgrades: TycoonUpgrade[] = [
   {
     id: 'simulation-room',
     name: 'Simulation Room',
-    description: 'Practice culture increases XP rewards.',
+    description: 'Build a practice bay beside the station. Each level adds 4 XP to completed care.',
     cost: 325,
     effectType: 'simulation-bonus',
     effectValue: 4,
