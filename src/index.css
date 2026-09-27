@@ -421,6 +421,12 @@ textarea {
 }
 .quick-study-page :is(button, a, input, select, textarea):focus-visible { outline: 2px solid #9be9f5; outline-offset: 3px; }
 .quick-study-main { display: flex; justify-content: center; align-items: center; min-height: 0; padding-top: 1rem; }
+.quick-bank-header-actions { display: flex; align-items: center; gap: .5rem; }
+.quick-bank-selector { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; max-width: 100%; color: #b3c9db; font-size: .875rem; }
+.quick-bank-selector select { min-width: 0; max-width: 100%; min-height: 2.75rem; border: 1px solid #416074; border-radius: .5rem; padding: .4rem .6rem; color: #e5edf5; background: #101f2d; font: inherit; }
+.quick-bank-muted { color: #a9bdcd; font-size: .875rem; }
+.quick-bank-result-row { display: flex; align-items: center; gap: 1rem; }
+.quick-bank-result-row .quick-session-text-button { flex-shrink: 0; }
 .quick-study-intro { position: relative; isolation: isolate; width: min(100%, 68rem); max-height: 100%; min-height: 0; overflow: auto; border: 1px solid #15576e; border-radius: 1rem; background: #071a2a; }
 .quick-study-art { position: absolute; right: 0; bottom: 0; z-index: -1; width: 100%; height: 100%; object-fit: cover; opacity: .16; pointer-events: none; mask-image: linear-gradient(90deg, transparent, #000 45%, #000 78%, transparent); }
 .quick-study-intro-content { position: relative; padding: clamp(1.5rem, 5vw, 4.5rem); }

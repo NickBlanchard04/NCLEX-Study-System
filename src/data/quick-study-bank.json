@@ -1,0 +1,1208 @@
+{
+  "title": "Nurse Command — 50-question Quick Study demo",
+  "version": 1,
+  "created": "2026-09-26",
+  "notice": "Original educational draft questions, not copied Quizlet cards, not affiliated with Quizlet or NCSBN, and not expert-reviewed. Not clinical guidance or an NCLEX readiness measure.",
+  "sources": {
+    "delegation": [
+      "NCSBN — Delegation",
+      "https://www.ncsbn.org/nursing-regulation/practice/delegation.page"
+    ],
+    "rights": [
+      "NCSBN — National Guidelines for Nursing Delegation",
+      "https://www.ncsbn.org/public-files/NCSBN_Delegation_Guidelines.pdf"
+    ],
+    "standard": [
+      "CDC — Standard Precautions",
+      "https://www.cdc.gov/infection-control/hcp/basics/standard-precautions.html"
+    ],
+    "hands": [
+      "CDC — Clinical Hand Hygiene",
+      "https://www.cdc.gov/clean-hands/hcp/clinical-safety/"
+    ],
+    "injection": [
+      "CDC — Preventing Unsafe Injection Practices",
+      "https://www.cdc.gov/injection-safety/hcp/clinical-safety/index.html"
+    ],
+    "maternal": [
+      "CDC — Urgent Maternal Warning Signs",
+      "https://www.cdc.gov/hearher/maternal-warning-signs/index.html"
+    ],
+    "sleep": [
+      "NICHD — Safe Infant Sleep",
+      "https://safetosleep.nichd.nih.gov/safe-sleep"
+    ],
+    "panic": [
+      "NIMH — Panic Disorder",
+      "https://www.nimh.nih.gov/health/publications/panic-disorder-when-fear-overwhelms"
+    ],
+    "meds": [
+      "NIMH — Mental Health Medications",
+      "https://www.nimh.nih.gov/health/topics/mental-health-medications"
+    ],
+    "low": [
+      "NIDDK — Low Blood Glucose",
+      "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/low-blood-glucose-hypoglycemia"
+    ],
+    "feet": [
+      "NIDDK — Diabetes and Foot Problems",
+      "https://www.niddk.nih.gov/health-information/diabetes/overview/preventing-problems/foot-problems"
+    ],
+    "asthma": [
+      "NHLBI — Asthma Attacks",
+      "https://www.nhlbi.nih.gov/health/asthma/attacks"
+    ],
+    "plan": [
+      "NHLBI — Asthma Treatment and Action Plan",
+      "https://www.nhlbi.nih.gov/health/asthma/treatment-action-plan"
+    ],
+    "hf": [
+      "NHLBI — Living With Heart Failure",
+      "https://www.nhlbi.nih.gov/health/heart-failure/living-with"
+    ],
+    "stroke": [
+      "CDC — Stroke Signs and Symptoms",
+      "https://www.cdc.gov/stroke/signs-symptoms/index.html"
+    ],
+    "recovery": [
+      "NHLBI — Stroke Recovery",
+      "https://www.nhlbi.nih.gov/health/stroke/recovery"
+    ],
+    "falls": [
+      "NIA — Falls and Fractures",
+      "https://www.nia.nih.gov/health/falls-and-falls-prevention/falls-and-fractures-older-adults-causes-and-prevention"
+    ],
+    "clots": [
+      "CDC — Venous Thromboembolism",
+      "https://www.cdc.gov/blood-clots/about/"
+    ],
+    "math": [
+      "Original arithmetic exercise — fictional orders; not dosing guidance",
+      null
+    ]
+  },
+  "sessions": [
+    {
+      "id": 1,
+      "title": "Delegation",
+      "inspiration": "https://quizlet.com/content/nclex-delegation-and-supervision"
+    },
+    {
+      "id": 2,
+      "title": "Infection prevention",
+      "inspiration": "https://quizlet.com/content/nclex-standard-precautions"
+    },
+    {
+      "id": 3,
+      "title": "Maternal and newborn safety",
+      "inspiration": "https://quizlet.com/content/nclex-maternal-and-newborn-care"
+    },
+    {
+      "id": 4,
+      "title": "Anxiety and treatment",
+      "inspiration": "https://quizlet.com/content/nclex-anxiety"
+    },
+    {
+      "id": 5,
+      "title": "Diabetes essentials",
+      "inspiration": "https://quizlet.com/content/nclex-diabetes"
+    },
+    {
+      "id": 6,
+      "title": "Asthma essentials",
+      "inspiration": "https://quizlet.com/content/nclex-asthma"
+    },
+    {
+      "id": 7,
+      "title": "Heart failure self-care",
+      "inspiration": "https://quizlet.com/content/nclex-congestive-heart-failure"
+    },
+    {
+      "id": 8,
+      "title": "Stroke recognition",
+      "inspiration": "https://quizlet.com/content/nclex-stroke"
+    },
+    {
+      "id": 9,
+      "title": "Medication calculations",
+      "inspiration": "https://quizlet.com/content/nclex-medication-calculations-and-safe-dosage"
+    },
+    {
+      "id": 10,
+      "title": "Falls and blood clots",
+      "inspiration": "https://quizlet.com/content/nclex-fall-prevention-and-thromboembolism-risk-management"
+    }
+  ],
+  "questions": [
+    {
+      "id": "NCDEMO-001",
+      "session": 1,
+      "topic": "Delegation",
+      "type": "single",
+      "prompt": "An RN is assigning care on a rehabilitation unit. Which task is appropriate for a trained UAP when facility policy allows it?",
+      "choices": [
+        "Assess a new swallowing problem.",
+        "Help a stable client with a previously assessed walking routine.",
+        "Teach a client how to manage a new insulin prescription.",
+        "Decide whether pain medicine worked."
+      ],
+      "correct": [
+        1
+      ],
+      "rationale": "Delegate routine, predictable tasks—not assessment, initial teaching, or clinical evaluation.",
+      "sources": [
+        "delegation",
+        "rights"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-002",
+      "session": 1,
+      "topic": "Delegation",
+      "type": "single",
+      "prompt": "A UAP reports new breathlessness while helping a client dress. What should the RN do next?",
+      "choices": [
+        "Wait for the next scheduled observations.",
+        "Ask the UAP to decide whether oxygen is needed.",
+        "Promptly assess the client and respond to the change.",
+        "Ask the UAP to finish dressing first."
+      ],
+      "correct": [
+        2
+      ],
+      "rationale": "A change in condition needs RN assessment; the original delegation does not replace reassessment.",
+      "sources": [
+        "rights"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-003",
+      "session": 1,
+      "topic": "Delegation",
+      "type": "single",
+      "prompt": "Before delegating a dressing-related task, the RN learns the UAP has not been trained for it. What is the safest response?",
+      "choices": [
+        "Arrange for a qualified team member to perform it.",
+        "Proceed because the RN is nearby.",
+        "Give written instructions and leave.",
+        "Ask the client to supervise."
+      ],
+      "correct": [
+        0
+      ],
+      "rationale": "Verify competence before delegation. Availability of supervision does not create competence.",
+      "sources": [
+        "rights"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-004",
+      "session": 1,
+      "topic": "Delegation",
+      "type": "single",
+      "prompt": "A float LPN says a proposed task is outside their authorized scope. What should the RN do?",
+      "choices": [
+        "Use the usual practice from a different state.",
+        "Proceed if the client agrees.",
+        "Delegate because staffing is short.",
+        "Check applicable scope rules and policy before assigning it."
+      ],
+      "correct": [
+        3
+      ],
+      "rationale": "Delegation depends on jurisdiction, policy, competence, and client needs—not job title alone.",
+      "sources": [
+        "delegation"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-005",
+      "session": 1,
+      "topic": "Delegation",
+      "type": "multiple",
+      "prompt": "The RN delegates routine vital signs for a stable client. Which actions support safe delegation? Select all that apply.",
+      "choices": [
+        "Specify when to obtain and report the readings.",
+        "Ask the UAP to interpret unexpected changes independently.",
+        "Explain which findings require immediate notification.",
+        "Follow up on the results."
+      ],
+      "correct": [
+        0,
+        2,
+        3
+      ],
+      "rationale": "Give clear directions and reporting limits, then supervise and evaluate the outcome.",
+      "sources": [
+        "rights"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-006",
+      "session": 2,
+      "topic": "Infection prevention",
+      "type": "single",
+      "prompt": "A client has no known infection. Which approach should the nurse use during routine care?",
+      "choices": [
+        "No precautions until cultures are positive.",
+        "Standard Precautions only for blood exposure.",
+        "Standard Precautions for all clients.",
+        "Gloves instead of hand hygiene."
+      ],
+      "correct": [
+        2
+      ],
+      "rationale": "Standard Precautions apply to every client; PPE depends on anticipated exposure.",
+      "sources": [
+        "standard"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-007",
+      "session": 2,
+      "topic": "Infection prevention",
+      "type": "single",
+      "prompt": "After care, the nurse notices visible soil on their hands. What is appropriate?",
+      "choices": [
+        "Wash with soap and water.",
+        "Apply hand lotion.",
+        "Put on clean gloves without cleaning hands.",
+        "Use a dry towel only."
+      ],
+      "correct": [
+        0
+      ],
+      "rationale": "Visible soil requires soap and water; gloves do not replace hand hygiene.",
+      "sources": [
+        "hands"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-008",
+      "session": 2,
+      "topic": "Infection prevention",
+      "type": "single",
+      "prompt": "A nurse removes gloves after emptying a urine container. What should happen next?",
+      "choices": [
+        "Document before cleaning hands.",
+        "Wear the same gloves to adjust bedding.",
+        "Clean hands only if the gloves tore.",
+        "Perform hand hygiene."
+      ],
+      "correct": [
+        3
+      ],
+      "rationale": "Clean hands after removing gloves, even when no tear is visible.",
+      "sources": [
+        "hands"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-009",
+      "session": 2,
+      "topic": "Infection prevention",
+      "type": "single",
+      "prompt": "A colleague plans to use one syringe for two clients, changing only the needle. What should the nurse do?",
+      "choices": [
+        "Allow it if neither client has an infection.",
+        "Stop the practice and use a new sterile syringe and needle for each client.",
+        "Allow it for saline only.",
+        "Rinse the syringe between clients."
+      ],
+      "correct": [
+        1
+      ],
+      "rationale": "Changing the needle does not make a used syringe safe for another client.",
+      "sources": [
+        "injection"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-010",
+      "session": 2,
+      "topic": "Infection prevention",
+      "type": "multiple",
+      "prompt": "Which practices are appropriate? Select all that apply.",
+      "choices": [
+        "Choose PPE for the expected exposure.",
+        "Save an opened single-dose vial for a different client.",
+        "Clean shared equipment between clients as required.",
+        "Perform hand hygiene after glove removal."
+      ],
+      "correct": [
+        0,
+        2,
+        3
+      ],
+      "rationale": "Use exposure-based protection, appropriate equipment cleaning, and hand hygiene; do not share single-dose vials.",
+      "sources": [
+        "standard",
+        "injection"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-011",
+      "session": 3,
+      "topic": "Maternal and newborn safety",
+      "type": "single",
+      "prompt": "A client at 32 weeks of pregnancy reports a severe persistent headache and blurred vision. Which response is best?",
+      "choices": [
+        "Wait until the next routine appointment.",
+        "Recommend a nap as the only action.",
+        "Arrange immediate medical evaluation.",
+        "Reassure them that all headaches are expected."
+      ],
+      "correct": [
+        2
+      ],
+      "rationale": "Severe headache with vision changes is an urgent maternal warning sign.",
+      "sources": [
+        "maternal"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-012",
+      "session": 3,
+      "topic": "Maternal and newborn safety",
+      "type": "single",
+      "prompt": "One week after birth, a client calls about bleeding that soaks a pad in an hour. What is the priority advice?",
+      "choices": [
+        "Wait to see whether it continues tomorrow.",
+        "Seek immediate medical care.",
+        "Record it for the six-week visit.",
+        "Reduce activity and skip further assessment."
+      ],
+      "correct": [
+        1
+      ],
+      "rationale": "Heavy postpartum bleeding needs immediate assessment, not routine follow-up.",
+      "sources": [
+        "maternal"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-013",
+      "session": 3,
+      "topic": "Maternal and newborn safety",
+      "type": "single",
+      "prompt": "Which sleep arrangement should the nurse recommend for a healthy newborn?",
+      "choices": [
+        "Side-lying with a positioning pillow.",
+        "Prone on an adult mattress.",
+        "Supine on a sofa beside a parent.",
+        "Supine on a firm, flat infant sleep surface without loose bedding."
+      ],
+      "correct": [
+        3
+      ],
+      "rationale": "Place infants on their backs on a firm, flat sleep surface without soft objects.",
+      "sources": [
+        "sleep"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-014",
+      "session": 3,
+      "topic": "Maternal and newborn safety",
+      "type": "single",
+      "prompt": "A pregnant client says their baby's usual movement has noticeably decreased today. What should the nurse recommend?",
+      "choices": [
+        "Contact the maternity care team immediately.",
+        "Wait until next week's visit.",
+        "Assume the baby needs more sleep.",
+        "Ignore the change if there is no pain."
+      ],
+      "correct": [
+        0
+      ],
+      "rationale": "A decrease from the baby's usual movement pattern requires prompt evaluation.",
+      "sources": [
+        "maternal"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-015",
+      "session": 3,
+      "topic": "Maternal and newborn safety",
+      "type": "multiple",
+      "prompt": "Which postpartum reports require immediate medical evaluation? Select all that apply.",
+      "choices": [
+        "New trouble breathing.",
+        "Thoughts of harming oneself or the baby.",
+        "A request for routine feeding education.",
+        "New chest pain."
+      ],
+      "correct": [
+        0,
+        1,
+        3
+      ],
+      "rationale": "Breathing difficulty, chest pain, and thoughts of harm are urgent warning signs after pregnancy.",
+      "sources": [
+        "maternal"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-016",
+      "session": 4,
+      "topic": "Anxiety and treatment",
+      "type": "single",
+      "prompt": "A client with a history of panic attacks develops new chest pain. Which response avoids an unsafe assumption?",
+      "choices": [
+        "Label it another panic attack immediately.",
+        "Assess promptly for a medical cause.",
+        "Wait for anxiety medicine to work before assessing.",
+        "Ask the client to ignore it."
+      ],
+      "correct": [
+        1
+      ],
+      "rationale": "A panic history does not rule out a medical problem; assess new symptoms.",
+      "sources": [
+        "panic"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-017",
+      "session": 4,
+      "topic": "Anxiety and treatment",
+      "type": "single",
+      "prompt": "A client started an SSRI for panic disorder two days ago and reports no improvement. Which teaching is appropriate?",
+      "choices": [
+        "The medicine has already failed.",
+        "Double the dose independently.",
+        "Stop it until the next panic attack.",
+        "Benefit may take several weeks; follow the prescribed plan."
+      ],
+      "correct": [
+        3
+      ],
+      "rationale": "SSRIs are not instant-relief medicines; response often develops over weeks.",
+      "sources": [
+        "panic"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-018",
+      "session": 4,
+      "topic": "Anxiety and treatment",
+      "type": "single",
+      "prompt": "A client taking a prescribed benzodiazepine regularly wants to stop abruptly. What should the nurse recommend?",
+      "choices": [
+        "Discuss a supervised taper with the prescriber.",
+        "Stop immediately without consultation.",
+        "Use alcohol during withdrawal.",
+        "Take extra doses first."
+      ],
+      "correct": [
+        0
+      ],
+      "rationale": "Regular benzodiazepine use can cause dependence; stopping may require a supervised taper.",
+      "sources": [
+        "meds"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-019",
+      "session": 4,
+      "topic": "Anxiety and treatment",
+      "type": "single",
+      "prompt": "A client asks what cognitive behavioral therapy for panic disorder involves. Which explanation is accurate?",
+      "choices": [
+        "It requires avoiding every anxiety trigger forever.",
+        "It replaces all physical health assessment.",
+        "It helps change responses to thoughts, sensations, and situations linked to panic.",
+        "It guarantees relief after one session."
+      ],
+      "correct": [
+        2
+      ],
+      "rationale": "CBT builds different ways of thinking and responding to panic-related experiences.",
+      "sources": [
+        "panic"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-020",
+      "session": 4,
+      "topic": "Anxiety and treatment",
+      "type": "multiple",
+      "prompt": "Which statements show understanding of prescribed buspirone? Select all that apply.",
+      "choices": [
+        "I will take it regularly as prescribed.",
+        "It should stop a panic attack within minutes.",
+        "Its full effect may take several weeks.",
+        "I will discuss problems with my prescriber before changing the dose."
+      ],
+      "correct": [
+        0,
+        2,
+        3
+      ],
+      "rationale": "Buspirone is used regularly, not as an immediate rescue medicine.",
+      "sources": [
+        "meds"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-021",
+      "session": 5,
+      "topic": "Diabetes essentials",
+      "type": "single",
+      "prompt": "An alert adult with diabetes can swallow safely and has a glucose of 62 mg/dL. Their plan uses the 15-minute recheck approach. What comes first?",
+      "choices": [
+        "Give a high-fat meal only.",
+        "Wait one hour.",
+        "Give 15–20 g of fast-acting carbohydrate.",
+        "Give extra insulin."
+      ],
+      "correct": [
+        2
+      ],
+      "rationale": "Treat a low glucose promptly with fast-acting carbohydrate when swallowing is safe.",
+      "sources": [
+        "low"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-022",
+      "session": 5,
+      "topic": "Diabetes essentials",
+      "type": "single",
+      "prompt": "Fifteen minutes after treating a low glucose, an alert adult's glucose is still 64 mg/dL. What follows the usual treatment approach?",
+      "choices": [
+        "Repeat fast-acting carbohydrate and recheck in 15 minutes.",
+        "Stop because symptoms improved.",
+        "Exercise to stabilize the result.",
+        "Wait until the next meal."
+      ],
+      "correct": [
+        0
+      ],
+      "rationale": "Recheck and repeat treatment if glucose remains below target.",
+      "sources": [
+        "low"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-023",
+      "session": 5,
+      "topic": "Diabetes essentials",
+      "type": "single",
+      "prompt": "A client with diabetes has reduced foot sensation. Which daily action is most useful?",
+      "choices": [
+        "Walk barefoot to toughen the skin.",
+        "Use a heating pad on the feet.",
+        "Check only when pain occurs.",
+        "Inspect both feet, including the soles and between toes."
+      ],
+      "correct": [
+        3
+      ],
+      "rationale": "Loss of sensation can hide injuries; daily inspection helps find them.",
+      "sources": [
+        "feet"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-024",
+      "session": 5,
+      "topic": "Diabetes essentials",
+      "type": "single",
+      "prompt": "A client cannot bend enough to see the bottoms of their feet. Which suggestion helps?",
+      "choices": [
+        "Skip checking the soles.",
+        "Use a mirror or ask someone to help inspect them.",
+        "Inspect only the toenails.",
+        "Soak feet in very hot water."
+      ],
+      "correct": [
+        1
+      ],
+      "rationale": "A mirror or another person's help can make daily inspection possible.",
+      "sources": [
+        "feet"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-025",
+      "session": 5,
+      "topic": "Diabetes essentials",
+      "type": "multiple",
+      "prompt": "Which foot-care statements are appropriate? Select all that apply.",
+      "choices": [
+        "I will wear protective shoes and socks.",
+        "I will test water temperature before washing.",
+        "I will use a heating pad if my feet feel cold.",
+        "I will look for blisters or cuts every day."
+      ],
+      "correct": [
+        0,
+        1,
+        3
+      ],
+      "rationale": "Protect feet from injury and heat, and check them daily.",
+      "sources": [
+        "feet"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-026",
+      "session": 6,
+      "topic": "Asthma essentials",
+      "type": "single",
+      "prompt": "A client has severe breathlessness despite following their prescribed reliever instructions. What is the priority?",
+      "choices": [
+        "Wait until tomorrow.",
+        "Seek emergency care now.",
+        "Take a sleeping pill.",
+        "Use only relaxation techniques."
+      ],
+      "correct": [
+        1
+      ],
+      "rationale": "Severe symptoms that persist after reliever treatment need emergency care.",
+      "sources": [
+        "asthma"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-027",
+      "session": 6,
+      "topic": "Asthma essentials",
+      "type": "single",
+      "prompt": "A client prescribed a daily inhaled corticosteroid feels well and plans to stop it. Which response is best?",
+      "choices": [
+        "Stop it whenever symptoms disappear.",
+        "Use someone else's reliever instead.",
+        "Take twice the dose next month.",
+        "Continue the prescribed plan and discuss changes with the clinician."
+      ],
+      "correct": [
+        3
+      ],
+      "rationale": "Controller treatment reduces airway inflammation; feeling well is not a reason to change it independently.",
+      "sources": [
+        "plan"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-028",
+      "session": 6,
+      "topic": "Asthma essentials",
+      "type": "single",
+      "prompt": "A child with an asthma flare becomes drowsy and develops blue lips. What should the nurse prioritize?",
+      "choices": [
+        "Activate emergency help and support breathing per protocol.",
+        "Schedule a routine follow-up.",
+        "Offer an oral snack first.",
+        "Wait for the child to sleep."
+      ],
+      "correct": [
+        0
+      ],
+      "rationale": "Drowsiness and blue lips during an asthma attack are emergency signs.",
+      "sources": [
+        "asthma"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-029",
+      "session": 6,
+      "topic": "Asthma essentials",
+      "type": "single",
+      "prompt": "A client is unsure which inhaler to use when symptoms worsen. What is the best teaching aid?",
+      "choices": [
+        "Another client's medication schedule.",
+        "The color of the inhaler alone.",
+        "Their individualized written asthma action plan.",
+        "A rule that every inhaler works the same way."
+      ],
+      "correct": [
+        2
+      ],
+      "rationale": "The action plan identifies medicines and steps for worsening symptoms.",
+      "sources": [
+        "plan"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-030",
+      "session": 6,
+      "topic": "Asthma essentials",
+      "type": "multiple",
+      "prompt": "Which items belong in an asthma action plan? Select all that apply.",
+      "choices": [
+        "Usual treatment instructions.",
+        "Steps for worsening symptoms.",
+        "When to obtain emergency help.",
+        "Permission to use any family member's inhaler."
+      ],
+      "correct": [
+        0,
+        1,
+        2
+      ],
+      "rationale": "An individualized plan covers routine care, worsening symptoms, and emergency action.",
+      "sources": [
+        "plan"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-031",
+      "session": 7,
+      "topic": "Heart failure self-care",
+      "type": "single",
+      "prompt": "A client with heart failure has new ankle swelling and increasing breathlessness. What should the nurse suspect?",
+      "choices": [
+        "Improved fluid balance.",
+        "Expected aging only.",
+        "Possible worsening fluid buildup requiring assessment.",
+        "A reason to stop all medicines."
+      ],
+      "correct": [
+        2
+      ],
+      "rationale": "New swelling and breathlessness can signal worsening heart failure.",
+      "sources": [
+        "hf"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-032",
+      "session": 7,
+      "topic": "Heart failure self-care",
+      "type": "single",
+      "prompt": "A heart failure discharge plan asks for daily weights. Which approach makes the trend most useful?",
+      "choices": [
+        "Follow the team's weighing routine and report changes at the specified threshold.",
+        "Weigh only after symptoms become severe.",
+        "Use weight to change prescriptions independently.",
+        "Ignore weight changes if shoes still fit."
+      ],
+      "correct": [
+        0
+      ],
+      "rationale": "Use the individualized monitoring and reporting plan; weight trends can flag fluid buildup.",
+      "sources": [
+        "hf"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-033",
+      "session": 7,
+      "topic": "Heart failure self-care",
+      "type": "single",
+      "prompt": "A client with heart failure wants an over-the-counter medicine. Which advice is safest?",
+      "choices": [
+        "All nonprescription medicines are safe.",
+        "Stop prescribed medicines to avoid interactions.",
+        "Use double the package dose.",
+        "Check with the clinician or pharmacist before starting it."
+      ],
+      "correct": [
+        3
+      ],
+      "rationale": "Some medicines worsen heart failure or interact with treatment.",
+      "sources": [
+        "hf"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-034",
+      "session": 7,
+      "topic": "Heart failure self-care",
+      "type": "single",
+      "prompt": "A client reports troublesome effects from a heart failure medicine. What should the nurse recommend?",
+      "choices": [
+        "Permanently stop all treatment.",
+        "Contact the prescriber to review the effects and treatment.",
+        "Share another client's medicine.",
+        "Skip follow-up if swelling improves."
+      ],
+      "correct": [
+        1
+      ],
+      "rationale": "Report side effects so the treatment can be reviewed safely.",
+      "sources": [
+        "hf"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-035",
+      "session": 7,
+      "topic": "Heart failure self-care",
+      "type": "multiple",
+      "prompt": "Which statements support a heart failure self-care plan? Select all that apply.",
+      "choices": [
+        "I will follow my prescribed medicines.",
+        "I will report worsening symptoms.",
+        "I will follow my own fluid and sodium instructions.",
+        "Every client should use the same fluid limit."
+      ],
+      "correct": [
+        0,
+        1,
+        2
+      ],
+      "rationale": "Self-care and any fluid or sodium limits should follow the individual's care plan.",
+      "sources": [
+        "hf"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-036",
+      "session": 8,
+      "topic": "Stroke recognition",
+      "type": "single",
+      "prompt": "During a community visit, a client suddenly develops one-sided arm weakness and slurred speech. What is the priority?",
+      "choices": [
+        "Call emergency services immediately.",
+        "Drive to a routine appointment tomorrow.",
+        "Wait to see whether sleep helps.",
+        "Give food before seeking help."
+      ],
+      "correct": [
+        0
+      ],
+      "rationale": "Sudden focal neurological symptoms require emergency evaluation.",
+      "sources": [
+        "stroke"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-037",
+      "session": 8,
+      "topic": "Stroke recognition",
+      "type": "single",
+      "prompt": "A client's sudden speech difficulty resolves after several minutes. What should the nurse recommend?",
+      "choices": [
+        "Ignore it because it resolved.",
+        "Bring it up at the annual visit.",
+        "Seek urgent emergency evaluation despite improvement.",
+        "Resume driving immediately."
+      ],
+      "correct": [
+        2
+      ],
+      "rationale": "Brief symptoms can be a TIA; resolution does not remove the need for urgent care.",
+      "sources": [
+        "stroke"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-038",
+      "session": 8,
+      "topic": "Stroke recognition",
+      "type": "single",
+      "prompt": "While emergency help is being activated for suspected stroke, which history is especially important?",
+      "choices": [
+        "The client's favorite meal.",
+        "When the client was last known to be without these symptoms.",
+        "Their shoe size.",
+        "The date of the last haircut."
+      ],
+      "correct": [
+        1
+      ],
+      "rationale": "Timing helps the stroke team assess treatment options.",
+      "sources": [
+        "stroke"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-039",
+      "session": 8,
+      "topic": "Stroke recognition",
+      "type": "single",
+      "prompt": "A recovering stroke client coughs during meals. Which response is appropriate?",
+      "choices": [
+        "Encourage faster eating.",
+        "Give larger mouthfuls.",
+        "Assume coughing is unrelated.",
+        "Report the swallowing concern and obtain assessment before continuing unsafe intake."
+      ],
+      "correct": [
+        3
+      ],
+      "rationale": "Stroke can impair swallowing; coughing with meals needs assessment and a safe feeding plan.",
+      "sources": [
+        "recovery"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-040",
+      "session": 8,
+      "topic": "Stroke recognition",
+      "type": "multiple",
+      "prompt": "Which new symptoms can indicate stroke? Select all that apply.",
+      "choices": [
+        "Sudden difficulty speaking.",
+        "Sudden loss of balance.",
+        "Sudden weakness on one side.",
+        "A long-standing unchanged dry skin patch."
+      ],
+      "correct": [
+        0,
+        1,
+        2
+      ],
+      "rationale": "Sudden speech, balance, or unilateral strength changes warrant urgent evaluation.",
+      "sources": [
+        "stroke"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-041",
+      "session": 9,
+      "topic": "Medication calculations",
+      "type": "single",
+      "prompt": "Math practice only: an order is for 375 mg. The available tablets contain 125 mg each. How many tablets equal the order?",
+      "choices": [
+        "2 tablets.",
+        "3 tablets.",
+        "4 tablets.",
+        "5 tablets."
+      ],
+      "correct": [
+        1
+      ],
+      "rationale": "375 mg ÷ 125 mg per tablet = 3 tablets. A correct calculation does not verify clinical appropriateness.",
+      "sources": [
+        "math"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-042",
+      "session": 9,
+      "topic": "Medication calculations",
+      "type": "single",
+      "prompt": "Math practice only: an ordered liquid dose is 180 mg. The label reads 120 mg per 5 mL. What volume equals the order?",
+      "choices": [
+        "1.5 mL.",
+        "5 mL.",
+        "15 mL.",
+        "7.5 mL."
+      ],
+      "correct": [
+        3
+      ],
+      "rationale": "180 ÷ 120 × 5 = 7.5 mL. Verify the order and product before any real administration.",
+      "sources": [
+        "math"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-043",
+      "session": 9,
+      "topic": "Medication calculations",
+      "type": "single",
+      "prompt": "Math practice only: 600 mL is ordered over 5 hours. What pump rate delivers that volume?",
+      "choices": [
+        "120 mL/hour.",
+        "60 mL/hour.",
+        "150 mL/hour.",
+        "300 mL/hour."
+      ],
+      "correct": [
+        0
+      ],
+      "rationale": "600 mL ÷ 5 hours = 120 mL/hour.",
+      "sources": [
+        "math"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-044",
+      "session": 9,
+      "topic": "Medication calculations",
+      "type": "single",
+      "prompt": "Math practice only: a fictional order specifies 6 mg/kg per dose for a child weighing 18 kg. How many milligrams are in one dose?",
+      "choices": [
+        "3 mg.",
+        "24 mg.",
+        "108 mg.",
+        "432 mg."
+      ],
+      "correct": [
+        2
+      ],
+      "rationale": "6 mg/kg per dose × 18 kg = 108 mg per dose. This is not a recommended dose for any medicine.",
+      "sources": [
+        "math"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-045",
+      "session": 9,
+      "topic": "Medication calculations",
+      "type": "single",
+      "prompt": "Math practice only: 90 mL must infuse over 45 minutes using tubing rated 20 drops/mL. What whole-number drip rate matches the order?",
+      "choices": [
+        "30 drops/minute.",
+        "40 drops/minute.",
+        "60 drops/minute.",
+        "90 drops/minute."
+      ],
+      "correct": [
+        1
+      ],
+      "rationale": "90 mL × 20 drops/mL ÷ 45 minutes = 40 drops/minute.",
+      "sources": [
+        "math"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-046",
+      "session": 10,
+      "topic": "Falls and blood clots",
+      "type": "single",
+      "prompt": "An older adult reports dizziness after starting a new medicine. Which action best supports fall prevention?",
+      "choices": [
+        "Accept the dizziness without review.",
+        "Avoid all movement permanently.",
+        "Double the medicine dose.",
+        "Arrange medication and fall-risk review with the care team."
+      ],
+      "correct": [
+        3
+      ],
+      "rationale": "Medicines and dizziness can increase fall risk; review causes and prevention measures.",
+      "sources": [
+        "falls"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-047",
+      "session": 10,
+      "topic": "Falls and blood clots",
+      "type": "single",
+      "prompt": "A client recovering from surgery reports a newly swollen, warm, painful calf on one side. What is the best response?",
+      "choices": [
+        "Arrange prompt assessment for a possible DVT.",
+        "Treat it as normal without assessment.",
+        "Delay reporting until discharge.",
+        "Assume a clot is impossible without fever."
+      ],
+      "correct": [
+        0
+      ],
+      "rationale": "Unilateral swelling, warmth, and pain can indicate DVT and need prompt evaluation.",
+      "sources": [
+        "clots"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-048",
+      "session": 10,
+      "topic": "Falls and blood clots",
+      "type": "single",
+      "prompt": "A client at risk for blood clots develops sudden breathlessness and chest pain with inspiration. What is the priority?",
+      "choices": [
+        "Wait for leg swelling.",
+        "Activate emergency evaluation for possible pulmonary embolism.",
+        "Schedule routine testing next month.",
+        "Encourage walking before assessment."
+      ],
+      "correct": [
+        1
+      ],
+      "rationale": "Possible pulmonary embolism requires immediate medical attention.",
+      "sources": [
+        "clots"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-049",
+      "session": 10,
+      "topic": "Falls and blood clots",
+      "type": "single",
+      "prompt": "An older adult fears falling and plans to stop all activity. Which recommendation is most appropriate?",
+      "choices": [
+        "Remain in bed for most of the day.",
+        "Use alcohol to relax before walking.",
+        "Discuss a safe, individualized balance and strength program.",
+        "Avoid reviewing eyesight or medicines."
+      ],
+      "correct": [
+        2
+      ],
+      "rationale": "Appropriate physical activity and balance training can help reduce fall risk.",
+      "sources": [
+        "falls"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    },
+    {
+      "id": "NCDEMO-050",
+      "session": 10,
+      "topic": "Falls and blood clots",
+      "type": "multiple",
+      "prompt": "Which measures may help prevent postoperative venous clots when included in the client's orders? Select all that apply.",
+      "choices": [
+        "Mobilization when safe and authorized.",
+        "Prescribed anticoagulant prophylaxis.",
+        "Prescribed compression measures.",
+        "Unnecessary prolonged immobility."
+      ],
+      "correct": [
+        0,
+        1,
+        2
+      ],
+      "rationale": "Prevention can combine safe movement, prescribed medication, and appropriate compression.",
+      "sources": [
+        "clots"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed"
+    }
+  ]
+}
