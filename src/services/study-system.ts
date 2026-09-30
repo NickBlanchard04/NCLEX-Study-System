@@ -726,8 +726,8 @@ export const generateTestSession = (
     examTrack,
     `${examTrack.toUpperCase()} test mode`,
     config.timed
-      ? `${config.questionCount} questions. Timed, mixed, and focused on realistic exam pressure.`
-      : `${config.questionCount} questions. Untimed, mixed, and built for exam stamina.`,
+      ? `${questionIds.length} questions. Timed, mixed, and focused on realistic exam pressure.`
+      : `${questionIds.length} questions. Untimed, mixed, and built for exam stamina.`,
     questionIds,
     {
       questionCount: questionIds.length,

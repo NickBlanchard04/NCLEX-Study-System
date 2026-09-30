@@ -501,6 +501,8 @@ export interface UserProfile extends CloudOwnedEntity {
     notifications: boolean
     analyticsScope: AnalyticsScope
     onboardingCompletedAt?: string
+    quickStudy?: { seenIds: string[]; savedIds: string[]; missedIds: string[] }
+    studyResults?: import('../services/study-handoff').SavedStudyResult[]
   }
 }
 

@@ -1,6 +1,6 @@
 {
-  "title": "Nurse Command — 50-question Quick Study demo",
-  "version": 1,
+  "title": "Nurse Command — Quick Study draft question bank",
+  "version": 3,
   "created": "2026-09-26",
   "notice": "Original educational draft questions, not copied Quizlet cards, not affiliated with Quizlet or NCSBN, and not expert-reviewed. Not clinical guidance or an NCLEX readiness measure.",
   "sources": {
@@ -79,6 +79,46 @@
     "math": [
       "Original arithmetic exercise — fictional orders; not dosing guidance",
       null
+    ],
+    "transmission": [
+      "CDC — Transmission-Based Precautions",
+      "https://www.cdc.gov/infection-control/hcp/basics/transmission-based-precautions.html"
+    ],
+    "ppe": [
+      "CDC — Preventing Transmission: PPE and Respiratory Hygiene",
+      "https://www.cdc.gov/infection-control/hcp/isolation-precautions/prevention.html"
+    ],
+    "disinfection": [
+      "CDC — Disinfection and Sterilization Recommendations",
+      "https://www.cdc.gov/infection-control/hcp/disinfection-sterilization/summary-recommendations.html"
+    ],
+    "flu": [
+      "CDC — Seasonal Influenza Infection Control",
+      "https://www.cdc.gov/flu/hcp/infection-control/healthcare-settings.html"
+    ],
+    "cdi": [
+      "CDC — C. diff Prevention in Acute Care",
+      "https://www.cdc.gov/c-diff/hcp/clinical-guidance/index.html"
+    ],
+    "cdiCleaning": [
+      "CDC — C. diff Facts for Clinicians",
+      "https://www.cdc.gov/c-diff/hcp/clinical-overview/"
+    ],
+    "sharps": [
+      "CDC/NIOSH — Sharps Disposal",
+      "https://www.cdc.gov/niosh/healthcare/hcp/pandemic/sharps-disposal-mass-vaccination.html"
+    ],
+    "cauti": [
+      "CDC — CAUTI Prevention Recommendations",
+      "https://www.cdc.gov/infection-control/hcp/cauti/summary-of-recommendations.html"
+    ],
+    "cautiSafety": [
+      "CDC — Clinical Safety: Preventing CAUTIs",
+      "https://www.cdc.gov/uti/hcp/clinical-safety/index.html"
+    ],
+    "lines": [
+      "CDC — Preventing Intravascular Catheter Infections",
+      "https://www.cdc.gov/infection-control/hcp/intravascular-catheter-related-infection/prevention-strategies.html"
     ]
   },
   "sessions": [
@@ -89,48 +129,78 @@
     },
     {
       "id": 2,
-      "title": "Infection prevention",
+      "title": "Infection prevention · Everyday care",
       "inspiration": "https://quizlet.com/content/nclex-standard-precautions"
     },
     {
       "id": 3,
+      "title": "Infection prevention · Isolation",
+      "inspiration": "https://quizlet.com/content/nclex-standard-precautions"
+    },
+    {
+      "id": 4,
+      "title": "Infection prevention · Injection safety",
+      "inspiration": "https://quizlet.com/content/nclex-standard-precautions"
+    },
+    {
+      "id": 5,
+      "title": "Infection prevention · Device care",
+      "inspiration": "https://quizlet.com/content/nclex-standard-precautions"
+    },
+    {
+      "id": 6,
       "title": "Maternal and newborn safety",
       "inspiration": "https://quizlet.com/content/nclex-maternal-and-newborn-care"
     },
     {
-      "id": 4,
+      "id": 7,
       "title": "Anxiety and treatment",
       "inspiration": "https://quizlet.com/content/nclex-anxiety"
     },
     {
-      "id": 5,
+      "id": 8,
       "title": "Diabetes essentials",
       "inspiration": "https://quizlet.com/content/nclex-diabetes"
     },
     {
-      "id": 6,
+      "id": 9,
       "title": "Asthma essentials",
       "inspiration": "https://quizlet.com/content/nclex-asthma"
     },
     {
-      "id": 7,
+      "id": 10,
       "title": "Heart failure self-care",
       "inspiration": "https://quizlet.com/content/nclex-congestive-heart-failure"
     },
     {
-      "id": 8,
+      "id": 11,
       "title": "Stroke recognition",
       "inspiration": "https://quizlet.com/content/nclex-stroke"
     },
     {
-      "id": 9,
+      "id": 12,
       "title": "Medication calculations",
       "inspiration": "https://quizlet.com/content/nclex-medication-calculations-and-safe-dosage"
     },
     {
-      "id": 10,
+      "id": 13,
       "title": "Falls and blood clots",
       "inspiration": "https://quizlet.com/content/nclex-fall-prevention-and-thromboembolism-risk-management"
+    },
+    {
+      "id": 14,
+      "title": "Medication calculations · Conversions and liquids",
+      "inspiration": null
+    },
+    {
+      "id": 15,
+      "title": "Medication calculations · IV rates",
+      "inspiration": null
+    },
+    {
+      "id": 16,
+      "title": "Medication calculations · Weight-based math",
+      "inspiration": null
     }
   ],
   "questions": [
@@ -154,7 +224,8 @@
         "delegation",
         "rights"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-002",
@@ -175,7 +246,8 @@
       "sources": [
         "rights"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-003",
@@ -196,7 +268,8 @@
       "sources": [
         "rights"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-004",
@@ -217,7 +290,8 @@
       "sources": [
         "delegation"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-005",
@@ -240,119 +314,595 @@
       "sources": [
         "rights"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-006",
       "session": 2,
       "topic": "Infection prevention",
       "type": "single",
-      "prompt": "A client has no known infection. Which approach should the nurse use during routine care?",
+      "prompt": "After perineal care, the nurse needs to handle the same client's peripheral IV connector. The gloves are intact. What should the nurse do before preparing the connector?",
       "choices": [
-        "No precautions until cultures are positive.",
-        "Standard Precautions only for blood exposure.",
-        "Standard Precautions for all clients.",
-        "Gloves instead of hand hygiene."
+        "Disinfect the gloved hands, then prepare the connector.",
+        "Remove the gloves, clean the hands, and use fresh gloves for the next task.",
+        "Put a second pair of gloves over the first pair.",
+        "Change gloves after accessing the connector."
       ],
       "correct": [
-        2
+        1
       ],
-      "rationale": "Standard Precautions apply to every client; PPE depends on anticipated exposure.",
+      "rationale": "Moving from a contaminated task to an aseptic task requires glove removal and hand hygiene, even for the same client.",
       "sources": [
-        "standard"
+        "hands"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": [
+        "Cleaning disposable gloves does not replace changing them.",
+        "This prevents carrying contamination to the IV task.",
+        "The contaminated outer surfaces can spread organisms during layering.",
+        "The contamination risk occurs before connector access."
+      ],
+      "contentRevision": 2,
+      "sourceCheckedAt": "2026-09-27"
     },
     {
       "id": "NCDEMO-007",
       "session": 2,
       "topic": "Infection prevention",
       "type": "single",
-      "prompt": "After care, the nurse notices visible soil on their hands. What is appropriate?",
+      "prompt": "During wound irrigation, splashing toward the nurse's face and clothing is likely. Gloves are already selected. Which additional PPE best addresses this exposure?",
       "choices": [
-        "Wash with soap and water.",
-        "Apply hand lotion.",
-        "Put on clean gloves without cleaning hands.",
-        "Use a dry towel only."
+        "A surgical mask and a disposable apron.",
+        "A gown and goggles, without a mask.",
+        "A respirator and a gown, without eye protection.",
+        "A gown plus a mask and goggles, or a face shield that protects the face."
       ],
       "correct": [
-        0
+        3
       ],
-      "rationale": "Visible soil requires soap and water; gloves do not replace hand hygiene.",
+      "rationale": "Anticipated splashes require protection of clothing and the eyes, nose, and mouth.",
       "sources": [
-        "hands"
+        "ppe"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": [
+        "The eyes remain exposed, and an apron may leave exposed clothing.",
+        "Goggles protect the eyes but not the nose and mouth.",
+        "A respirator does not provide eye protection.",
+        "This combination covers the anticipated splash-exposure sites."
+      ],
+      "contentRevision": 2,
+      "sourceCheckedAt": "2026-09-27"
     },
     {
       "id": "NCDEMO-008",
       "session": 2,
       "topic": "Infection prevention",
       "type": "single",
-      "prompt": "A nurse removes gloves after emptying a urine container. What should happen next?",
+      "prompt": "After removing gloves, a nurse sees a smear of stool on a finger. What hand-cleaning method is appropriate before the next client?",
       "choices": [
-        "Document before cleaning hands.",
-        "Wear the same gloves to adjust bedding.",
-        "Clean hands only if the gloves tore.",
-        "Perform hand hygiene."
+        "Wash with soap and water, then dry thoroughly.",
+        "Use alcohol hand rub until the hands feel dry.",
+        "Remove the smear with a paper towel, then use hand rub.",
+        "Use two applications of hand rub before putting on gloves."
       ],
       "correct": [
-        3
+        0
       ],
-      "rationale": "Clean hands after removing gloves, even when no tear is visible.",
+      "rationale": "Visible contamination calls for soap and water rather than alcohol hand rub alone.",
       "sources": [
         "hands"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": [
+        "Washing removes visible soil and reduces contamination.",
+        "Alcohol hand rub alone is not appropriate for visibly soiled hands.",
+        "Wiping the visible spot does not replace washing.",
+        "Extra hand rub does not change the recommended method."
+      ],
+      "contentRevision": 2,
+      "sourceCheckedAt": "2026-09-27"
     },
     {
       "id": "NCDEMO-009",
       "session": 2,
       "topic": "Infection prevention",
       "type": "single",
-      "prompt": "A colleague plans to use one syringe for two clients, changing only the needle. What should the nurse do?",
+      "prompt": "At outpatient triage, an adult has a frequent cough and fever but is breathing comfortably. The cause is not yet known. Which action best limits spread while assessment proceeds?",
       "choices": [
-        "Allow it if neither client has an infection.",
-        "Stop the practice and use a new sterile syringe and needle for each client.",
-        "Allow it for saline only.",
-        "Rinse the syringe between clients."
+        "Have staff wear masks but leave the client in the shared waiting area.",
+        "Wait for the respiratory test before deciding where the client should sit.",
+        "Offer the client a mask if tolerated and move them away from others for assessment.",
+        "Place the client in the infusion waiting area, where seating is more widely spaced."
       ],
       "correct": [
-        1
+        2
       ],
-      "rationale": "Changing the needle does not make a used syringe safe for another client.",
+      "rationale": "Respiratory source control and prompt separation should begin before a specific diagnosis is confirmed.",
       "sources": [
-        "injection"
+        "ppe",
+        "flu"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": [
+        "Staff PPE alone does not contain the coughing client's secretions.",
+        "Waiting for test results delays basic prevention.",
+        "Masking and separation reduce exposure while evaluation continues.",
+        "Moving a coughing client near vulnerable infusion patients creates avoidable exposure."
+      ],
+      "contentRevision": 2,
+      "sourceCheckedAt": "2026-09-27"
     },
     {
       "id": "NCDEMO-010",
       "session": 2,
       "topic": "Infection prevention",
-      "type": "multiple",
-      "prompt": "Which practices are appropriate? Select all that apply.",
+      "type": "single",
+      "prompt": "A shared blood-pressure cuff was used for a client on Contact Precautions. No dedicated replacement is available. Before using it for another client, what should the nurse do?",
       "choices": [
-        "Choose PPE for the expected exposure.",
-        "Save an opened single-dose vial for a different client.",
-        "Clean shared equipment between clients as required.",
-        "Perform hand hygiene after glove removal."
+        "Wipe away visible soil; disinfect it during the end-of-shift equipment round.",
+        "Clean and disinfect it with a compatible product, following the required contact time.",
+        "Cover it with a clean pillowcase without processing the cuff.",
+        "Use a skin-antiseptic wipe because it dries faster than the equipment disinfectant."
       ],
       "correct": [
-        0,
-        2,
+        1
+      ],
+      "rationale": "Shared equipment must be appropriately processed before use on another client; product and device instructions matter.",
+      "sources": [
+        "disinfection"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": [
+        "Processing cannot be deferred until after another client is exposed.",
+        "This addresses contamination while respecting material compatibility and contact time.",
+        "A barrier does not decontaminate the cuff.",
+        "A skin product is not automatically validated for equipment disinfection."
+      ],
+      "contentRevision": 2,
+      "sourceCheckedAt": "2026-09-27"
+    },
+    {
+      "id": "NCIP-006",
+      "session": 3,
+      "topic": "Infection prevention",
+      "type": "single",
+      "prompt": "A hospitalized client is being evaluated for infectious pulmonary tuberculosis. An appropriate isolation room is available. Which plan best protects staff and other clients?",
+      "choices": [
+        "Use a private positive-pressure room and surgical masks for staff.",
+        "Use a standard private room and require gowns and gloves only.",
+        "Use an airborne-infection isolation room and appropriate fit-tested respirators for staff entry.",
+        "Use Droplet Precautions until the first sputum result is positive."
+      ],
+      "correct": [
+        2
+      ],
+      "rationale": "Suspected infectious pulmonary TB requires Airborne Precautions, including appropriate room placement and respiratory protection.",
+      "sources": [
+        "transmission"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": [
+        "Positive pressure is not the containment approach for infectious TB.",
+        "Contact PPE does not address inhalation of airborne organisms.",
+        "This addresses both airborne containment and staff inhalation exposure.",
+        "Precautions should not wait for microbiologic confirmation."
+      ],
+      "contentRevision": 2,
+      "sourceCheckedAt": "2026-09-27"
+    },
+    {
+      "id": "NCIP-007",
+      "session": 3,
+      "topic": "Infection prevention",
+      "type": "single",
+      "prompt": "A client on Airborne Precautions for infectious pulmonary TB must leave the room for an essential procedure. The client can tolerate a surgical mask. Which transport plan is appropriate?",
+      "choices": [
+        "Keep the client's mask on during transport and coordinate airborne precautions with the receiving area.",
+        "Fit-test the client for an N95 before any transport is allowed.",
+        "Leave the client unmasked because transport staff will wear respirators.",
+        "Stop Airborne Precautions temporarily so the receiving department can use its usual process."
+      ],
+      "correct": [
+        0
+      ],
+      "rationale": "Use source control during necessary transport and arrange appropriate precautions at the destination.",
+      "sources": [
+        "transmission"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": [
+        "A surgical mask helps contain respiratory secretions during necessary movement.",
+        "Client N95 fit-testing is not the routine source-control requirement.",
+        "Staff respirators do not replace source control for others along the route.",
+        "Changing location does not remove transmission risk."
+      ],
+      "contentRevision": 2,
+      "sourceCheckedAt": "2026-09-27"
+    },
+    {
+      "id": "NCIP-008",
+      "session": 3,
+      "topic": "Infection prevention",
+      "type": "single",
+      "prompt": "A nurse enters the room of a client with confirmed seasonal influenza to give oral medication. No aerosol-generating procedure is planned. In addition to Standard Precautions, which measure is indicated?",
+      "choices": [
+        "An airborne-isolation room for every routine interaction.",
+        "Gown and gloves in place of respiratory protection.",
+        "A mask only if the nurse will remain within arm's reach for several minutes.",
+        "A facemask on entry, following Droplet Precautions."
+      ],
+      "correct": [
         3
       ],
-      "rationale": "Use exposure-based protection, appropriate equipment cleaning, and hand hygiene; do not share single-dose vials.",
+      "rationale": "Routine care for seasonal influenza uses Droplet Precautions; aerosol-generating procedures require additional considerations.",
       "sources": [
-        "standard",
+        "flu"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": [
+        "Airborne isolation is not routinely required for this stated task.",
+        "Contact protection alone leaves respiratory exposure unaddressed.",
+        "Mask use is not delayed until a time or distance threshold is reached.",
+        "This matches routine seasonal-influenza precautions."
+      ],
+      "contentRevision": 2,
+      "sourceCheckedAt": "2026-09-27"
+    },
+    {
+      "id": "NCIP-009",
+      "session": 3,
+      "topic": "Infection prevention",
+      "type": "single",
+      "prompt": "An inpatient receiving antibiotics develops new unexplained watery diarrhea. C. diff is suspected, and testing is pending. Which action should the nurse initiate under the facility's protocol?",
+      "choices": [
+        "Continue Standard Precautions alone until the laboratory confirms infection.",
+        "Begin Contact Precautions and arrange a single room with a dedicated toilet.",
+        "Use Droplet Precautions because flushing toilets can disperse droplets.",
+        "Place the client with another patient who has diarrhea but no established diagnosis."
+      ],
+      "correct": [
+        1
+      ],
+      "rationale": "Suspected C. diff warrants prompt isolation and Contact Precautions during evaluation.",
+      "sources": [
+        "cdi"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": [
+        "Suspected infection is enough to trigger precautions during evaluation.",
+        "This limits contact and environmental exposure before results return.",
+        "Droplet Precautions do not replace the indicated contact measures.",
+        "Undiagnosed diarrhea does not establish a safe cohort match."
+      ],
+      "contentRevision": 2,
+      "sourceCheckedAt": "2026-09-27"
+    },
+    {
+      "id": "NCIP-010",
+      "session": 3,
+      "topic": "Infection prevention",
+      "type": "single",
+      "prompt": "Environmental services is choosing a product for daily cleaning of a confirmed C. diff room. Which product characteristic is most important?",
+      "choices": [
+        "A broad bactericidal claim, even without a claim against C. difficile spores.",
+        "A label showing activity against enveloped respiratory viruses only.",
+        "An EPA-registered claim against C. diff spores, used according to its label.",
+        "A high alcohol concentration regardless of the surface-disinfection claims."
+      ],
+      "correct": [
+        2
+      ],
+      "rationale": "C. diff environmental cleaning needs a product with an appropriate sporicidal claim and correct use.",
+      "sources": [
+        "cdiCleaning",
+        "disinfection"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": [
+        "A broad bactericidal claim does not establish effectiveness against C. difficile spores.",
+        "Activity against viruses does not establish spore-killing activity.",
+        "The relevant organism claim and use instructions determine suitability.",
+        "Alcohol concentration alone does not establish effectiveness against C. diff spores."
+      ],
+      "contentRevision": 2,
+      "sourceCheckedAt": "2026-09-27"
+    },
+    {
+      "id": "NCIP-011",
+      "session": 4,
+      "topic": "Infection prevention",
+      "type": "single",
+      "prompt": "After preparing one client's injection, a nurse has medication remaining in a vial labeled single-dose. The vial was accessed correctly. What should happen to the remainder?",
+      "choices": [
+        "Discard the remainder after that single use under the facility's procedure.",
+        "Date the vial and keep it for the same client's next scheduled dose.",
+        "Return it to the medication room for another client with the same order.",
+        "Combine it with another partial vial of the same medication."
+      ],
+      "correct": [
+        0
+      ],
+      "rationale": "A single-dose vial is not a source for later doses, even when some medication remains.",
+      "sources": [
         "injection"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": [
+        "This follows the single-dose limitation.",
+        "Correct initial access does not authorize storage for another dose.",
+        "A matching prescription does not make multi-client use safe.",
+        "Pooling leftovers creates another contamination opportunity."
+      ],
+      "contentRevision": 2,
+      "sourceCheckedAt": "2026-09-27"
+    },
+    {
+      "id": "NCIP-012",
+      "session": 4,
+      "topic": "Infection prevention",
+      "type": "single",
+      "prompt": "A multidose vial intended for several clients was brought into one client's room and accessed there. Sterility is not otherwise known to be compromised. Which action is appropriate?",
+      "choices": [
+        "Return it to shared stock after wiping the outside.",
+        "Keep it shared, but change the needle for each withdrawal.",
+        "Reserve it for that client only, following storage and beyond-use requirements.",
+        "Treat it as shared stock if it was in the room for less than five minutes."
+      ],
+      "correct": [
+        2
+      ],
+      "rationale": "A multidose vial that enters an immediate treatment area should be dedicated to one client.",
+      "sources": [
+        "injection"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": [
+        "Cleaning the exterior does not restore shared-use status.",
+        "New equipment is required but does not address the location-related restriction.",
+        "Patient dedication addresses the exposure associated with entering the treatment area.",
+        "There is no short-exposure exemption for shared use."
+      ],
+      "contentRevision": 2,
+      "sourceCheckedAt": "2026-09-27"
+    },
+    {
+      "id": "NCIP-013",
+      "session": 4,
+      "topic": "Infection prevention",
+      "type": "single",
+      "prompt": "A nurse sees a syringe that was used for a client enter a shared medication vial after its needle was changed. What is the safest response?",
+      "choices": [
+        "Replace the needle again and keep the vial in service.",
+        "Stop use, remove the vial from service, and report the breach through the facility process.",
+        "Disinfect the vial stopper and assign the vial a new opening date.",
+        "Refrigerate the vial until infection prevention can review it, while continuing scheduled withdrawals."
+      ],
+      "correct": [
+        1
+      ],
+      "rationale": "A used syringe can contaminate a vial even after a needle change; the suspect vial must not remain in use.",
+      "sources": [
+        "injection"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": [
+        "Changing the needle does not make the syringe sterile.",
+        "This stops further exposure and enables an appropriate breach assessment.",
+        "Surface disinfection cannot reverse possible contamination inside the vial.",
+        "Cold storage does not make continued use acceptable."
+      ],
+      "contentRevision": 2,
+      "sourceCheckedAt": "2026-09-27"
+    },
+    {
+      "id": "NCIP-014",
+      "session": 4,
+      "topic": "Infection prevention",
+      "type": "single",
+      "prompt": "Immediately after an injection with a safety-engineered needle, which action best prevents sharps exposure?",
+      "choices": [
+        "Carry the uncapped needle to the medication room for disposal.",
+        "Recap it with both hands before activating the safety mechanism.",
+        "Detach the exposed needle so the syringe can go in regular waste.",
+        "Activate the safety feature as directed and discard the device promptly into a nearby sharps container."
+      ],
+      "correct": [
+        3
+      ],
+      "rationale": "Activate the device's safety feature and dispose of the sharp promptly at the point of use.",
+      "sources": [
+        "sharps"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": [
+        "Transporting an exposed sharp creates extra exposure opportunities.",
+        "Recapping introduces an avoidable needlestick risk.",
+        "Separating the exposed needle adds unnecessary handling.",
+        "This minimizes handling and time with an exposed sharp."
+      ],
+      "contentRevision": 2,
+      "sourceCheckedAt": "2026-09-27"
+    },
+    {
+      "id": "NCIP-015",
+      "session": 4,
+      "topic": "Infection prevention",
+      "type": "single",
+      "prompt": "The designated medication-preparation counter is unavailable. Which temporary location should the charge nurse approve?",
+      "choices": [
+        "A cleared section of the handwashing sink counter.",
+        "A cleaned bedside table in a shared treatment bay.",
+        "A designated clean surface separated from sinks and used supplies.",
+        "A cart beside the area where used specimen containers are processed."
+      ],
+      "correct": [
+        2
+      ],
+      "rationale": "Prepare injections in a clean area away from water sources and contaminated materials.",
+      "sources": [
+        "injection"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": [
+        "Sink splash can contaminate a nearby preparation surface.",
+        "A treatment area is not an equivalent shared medication-preparation zone.",
+        "This reduces environmental contamination during preparation.",
+        "Used-specimen handling is a potential contamination source."
+      ],
+      "contentRevision": 2,
+      "sourceCheckedAt": "2026-09-27"
+    },
+    {
+      "id": "NCIP-016",
+      "session": 5,
+      "topic": "Infection prevention",
+      "type": "single",
+      "prompt": "A fresh urine culture is ordered for a client with an indwelling catheter and a functioning closed drainage system. Which collection method is appropriate?",
+      "choices": [
+        "Collect newly drained urine from the bag into a sterile cup.",
+        "Disconnect the catheter from the tubing and catch urine directly.",
+        "Insert a needle through the drainage tubing below the catheter.",
+        "Disinfect the needleless sampling port and obtain the specimen aseptically with the appropriate sterile device."
+      ],
+      "correct": [
+        3
+      ],
+      "rationale": "Use the disinfected sampling port for a fresh culture specimen without unnecessarily breaking the closed system.",
+      "sources": [
+        "cauti"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": [
+        "Bag urine is not the recommended source for a fresh culture.",
+        "Disconnection unnecessarily breaks the closed drainage system.",
+        "Use the designed sampling port rather than puncturing tubing.",
+        "This obtains fresh urine while preserving the system."
+      ],
+      "contentRevision": 2,
+      "sourceCheckedAt": "2026-09-27"
+    },
+    {
+      "id": "NCIP-017",
+      "session": 5,
+      "topic": "Infection prevention",
+      "type": "single",
+      "prompt": "During transfer to a chair, the nurse notices the urine collection bag resting on the client's lap. Which correction is appropriate?",
+      "choices": [
+        "Hang the bag below bladder level, off the floor, with unobstructed tubing.",
+        "Keep the bag on the lap as long as the outlet valve remains closed.",
+        "Place the bag on the floor to keep it as low as possible.",
+        "Clamp the tubing until the client returns to bed."
+      ],
+      "correct": [
+        0
+      ],
+      "rationale": "Dependent, unobstructed drainage and keeping the bag off the floor support safe catheter maintenance.",
+      "sources": [
+        "cautiSafety",
+        "cauti"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": [
+        "This supports flow while avoiding floor contamination.",
+        "A closed outlet does not correct positioning above the bladder.",
+        "Floor placement introduces contamination risk.",
+        "Routine clamping interrupts drainage rather than correcting the position."
+      ],
+      "contentRevision": 2,
+      "sourceCheckedAt": "2026-09-27"
+    },
+    {
+      "id": "NCIP-018",
+      "session": 5,
+      "topic": "Infection prevention",
+      "type": "single",
+      "prompt": "A stable client can void but needs help reaching the toilet. There is no retention, critical output-monitoring need, or other catheter indication. What should the nurse recommend for urinary incontinence?",
+      "choices": [
+        "An indwelling catheter to keep linen dry overnight.",
+        "A catheter only while staffing is reduced.",
+        "A toileting and skin-care plan with appropriate nonindwelling options.",
+        "Daily catheter insertion and removal to limit continuous exposure."
+      ],
+      "correct": [
+        2
+      ],
+      "rationale": "Incontinence and convenience alone do not justify an indwelling urinary catheter.",
+      "sources": [
+        "cauti"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": [
+        "Linen management alone is not an appropriate catheter indication.",
+        "Staffing convenience does not justify device-related infection risk.",
+        "This addresses care needs without an unnecessary invasive device.",
+        "Repeated insertion still adds avoidable exposure and trauma."
+      ],
+      "contentRevision": 2,
+      "sourceCheckedAt": "2026-09-27"
+    },
+    {
+      "id": "NCIP-019",
+      "session": 5,
+      "topic": "Infection prevention",
+      "type": "single",
+      "prompt": "A central venous catheter's transparent dressing becomes damp and lifts at one edge. The next scheduled change is tomorrow. What should the nurse do?",
+      "choices": [
+        "Tape over the edge and wait for the scheduled change.",
+        "Replace the compromised dressing using the required aseptic procedure.",
+        "Remove the loose portion but leave the damp dressing over the site.",
+        "Apply an additional transparent dressing over the existing one."
+      ],
+      "correct": [
+        1
+      ],
+      "rationale": "A damp or loose central-line dressing needs replacement rather than waiting for the routine schedule.",
+      "sources": [
+        "lines"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": [
+        "Reinforcement does not correct the damp, compromised dressing.",
+        "This restores an appropriate protective dressing at the site.",
+        "Trimming does not restore dressing integrity.",
+        "Layering leaves the compromised material in place."
+      ],
+      "contentRevision": 2,
+      "sourceCheckedAt": "2026-09-27"
+    },
+    {
+      "id": "NCIP-020",
+      "session": 5,
+      "topic": "Infection prevention",
+      "type": "single",
+      "prompt": "Before accessing an exposed needleless IV connector with a sterile syringe, which step best reduces contamination risk?",
+      "choices": [
+        "Scrub the connector with an appropriate antiseptic according to the device and product instructions.",
+        "Flush the connector with saline before attaching the medication syringe.",
+        "Wipe the outside of the syringe instead of treating the connector.",
+        "Wear sterile gloves and connect without disinfecting the access surface."
+      ],
+      "correct": [
+        0
+      ],
+      "rationale": "Disinfect the access surface and use sterile access equipment; gloves and flushing do not replace connector antisepsis.",
+      "sources": [
+        "lines"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": [
+        "This directly addresses organisms on the connector's access surface.",
+        "A flush is not a substitute for surface antisepsis.",
+        "Cleaning the syringe exterior does not disinfect the connector.",
+        "Sterile gloves do not make an untreated connector surface safe."
+      ],
+      "contentRevision": 2,
+      "sourceCheckedAt": "2026-09-27"
     },
     {
       "id": "NCDEMO-011",
-      "session": 3,
+      "session": 6,
       "topic": "Maternal and newborn safety",
       "type": "single",
       "prompt": "A client at 32 weeks of pregnancy reports a severe persistent headache and blurred vision. Which response is best?",
@@ -369,11 +919,12 @@
       "sources": [
         "maternal"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-012",
-      "session": 3,
+      "session": 6,
       "topic": "Maternal and newborn safety",
       "type": "single",
       "prompt": "One week after birth, a client calls about bleeding that soaks a pad in an hour. What is the priority advice?",
@@ -390,11 +941,12 @@
       "sources": [
         "maternal"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-013",
-      "session": 3,
+      "session": 6,
       "topic": "Maternal and newborn safety",
       "type": "single",
       "prompt": "Which sleep arrangement should the nurse recommend for a healthy newborn?",
@@ -411,11 +963,12 @@
       "sources": [
         "sleep"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-014",
-      "session": 3,
+      "session": 6,
       "topic": "Maternal and newborn safety",
       "type": "single",
       "prompt": "A pregnant client says their baby's usual movement has noticeably decreased today. What should the nurse recommend?",
@@ -432,11 +985,12 @@
       "sources": [
         "maternal"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-015",
-      "session": 3,
+      "session": 6,
       "topic": "Maternal and newborn safety",
       "type": "multiple",
       "prompt": "Which postpartum reports require immediate medical evaluation? Select all that apply.",
@@ -455,11 +1009,12 @@
       "sources": [
         "maternal"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-016",
-      "session": 4,
+      "session": 7,
       "topic": "Anxiety and treatment",
       "type": "single",
       "prompt": "A client with a history of panic attacks develops new chest pain. Which response avoids an unsafe assumption?",
@@ -476,11 +1031,12 @@
       "sources": [
         "panic"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-017",
-      "session": 4,
+      "session": 7,
       "topic": "Anxiety and treatment",
       "type": "single",
       "prompt": "A client started an SSRI for panic disorder two days ago and reports no improvement. Which teaching is appropriate?",
@@ -497,11 +1053,12 @@
       "sources": [
         "panic"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-018",
-      "session": 4,
+      "session": 7,
       "topic": "Anxiety and treatment",
       "type": "single",
       "prompt": "A client taking a prescribed benzodiazepine regularly wants to stop abruptly. What should the nurse recommend?",
@@ -518,11 +1075,12 @@
       "sources": [
         "meds"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-019",
-      "session": 4,
+      "session": 7,
       "topic": "Anxiety and treatment",
       "type": "single",
       "prompt": "A client asks what cognitive behavioral therapy for panic disorder involves. Which explanation is accurate?",
@@ -539,11 +1097,12 @@
       "sources": [
         "panic"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-020",
-      "session": 4,
+      "session": 7,
       "topic": "Anxiety and treatment",
       "type": "multiple",
       "prompt": "Which statements show understanding of prescribed buspirone? Select all that apply.",
@@ -562,11 +1121,12 @@
       "sources": [
         "meds"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-021",
-      "session": 5,
+      "session": 8,
       "topic": "Diabetes essentials",
       "type": "single",
       "prompt": "An alert adult with diabetes can swallow safely and has a glucose of 62 mg/dL. Their plan uses the 15-minute recheck approach. What comes first?",
@@ -583,11 +1143,12 @@
       "sources": [
         "low"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-022",
-      "session": 5,
+      "session": 8,
       "topic": "Diabetes essentials",
       "type": "single",
       "prompt": "Fifteen minutes after treating a low glucose, an alert adult's glucose is still 64 mg/dL. What follows the usual treatment approach?",
@@ -604,11 +1165,12 @@
       "sources": [
         "low"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-023",
-      "session": 5,
+      "session": 8,
       "topic": "Diabetes essentials",
       "type": "single",
       "prompt": "A client with diabetes has reduced foot sensation. Which daily action is most useful?",
@@ -625,11 +1187,12 @@
       "sources": [
         "feet"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-024",
-      "session": 5,
+      "session": 8,
       "topic": "Diabetes essentials",
       "type": "single",
       "prompt": "A client cannot bend enough to see the bottoms of their feet. Which suggestion helps?",
@@ -646,11 +1209,12 @@
       "sources": [
         "feet"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-025",
-      "session": 5,
+      "session": 8,
       "topic": "Diabetes essentials",
       "type": "multiple",
       "prompt": "Which foot-care statements are appropriate? Select all that apply.",
@@ -669,11 +1233,12 @@
       "sources": [
         "feet"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-026",
-      "session": 6,
+      "session": 9,
       "topic": "Asthma essentials",
       "type": "single",
       "prompt": "A client has severe breathlessness despite following their prescribed reliever instructions. What is the priority?",
@@ -690,11 +1255,12 @@
       "sources": [
         "asthma"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-027",
-      "session": 6,
+      "session": 9,
       "topic": "Asthma essentials",
       "type": "single",
       "prompt": "A client prescribed a daily inhaled corticosteroid feels well and plans to stop it. Which response is best?",
@@ -711,11 +1277,12 @@
       "sources": [
         "plan"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-028",
-      "session": 6,
+      "session": 9,
       "topic": "Asthma essentials",
       "type": "single",
       "prompt": "A child with an asthma flare becomes drowsy and develops blue lips. What should the nurse prioritize?",
@@ -732,11 +1299,12 @@
       "sources": [
         "asthma"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-029",
-      "session": 6,
+      "session": 9,
       "topic": "Asthma essentials",
       "type": "single",
       "prompt": "A client is unsure which inhaler to use when symptoms worsen. What is the best teaching aid?",
@@ -753,11 +1321,12 @@
       "sources": [
         "plan"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-030",
-      "session": 6,
+      "session": 9,
       "topic": "Asthma essentials",
       "type": "multiple",
       "prompt": "Which items belong in an asthma action plan? Select all that apply.",
@@ -776,11 +1345,12 @@
       "sources": [
         "plan"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-031",
-      "session": 7,
+      "session": 10,
       "topic": "Heart failure self-care",
       "type": "single",
       "prompt": "A client with heart failure has new ankle swelling and increasing breathlessness. What should the nurse suspect?",
@@ -797,11 +1367,12 @@
       "sources": [
         "hf"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-032",
-      "session": 7,
+      "session": 10,
       "topic": "Heart failure self-care",
       "type": "single",
       "prompt": "A heart failure discharge plan asks for daily weights. Which approach makes the trend most useful?",
@@ -818,11 +1389,12 @@
       "sources": [
         "hf"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-033",
-      "session": 7,
+      "session": 10,
       "topic": "Heart failure self-care",
       "type": "single",
       "prompt": "A client with heart failure wants an over-the-counter medicine. Which advice is safest?",
@@ -839,11 +1411,12 @@
       "sources": [
         "hf"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-034",
-      "session": 7,
+      "session": 10,
       "topic": "Heart failure self-care",
       "type": "single",
       "prompt": "A client reports troublesome effects from a heart failure medicine. What should the nurse recommend?",
@@ -860,11 +1433,12 @@
       "sources": [
         "hf"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-035",
-      "session": 7,
+      "session": 10,
       "topic": "Heart failure self-care",
       "type": "multiple",
       "prompt": "Which statements support a heart failure self-care plan? Select all that apply.",
@@ -883,11 +1457,12 @@
       "sources": [
         "hf"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-036",
-      "session": 8,
+      "session": 11,
       "topic": "Stroke recognition",
       "type": "single",
       "prompt": "During a community visit, a client suddenly develops one-sided arm weakness and slurred speech. What is the priority?",
@@ -904,11 +1479,12 @@
       "sources": [
         "stroke"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-037",
-      "session": 8,
+      "session": 11,
       "topic": "Stroke recognition",
       "type": "single",
       "prompt": "A client's sudden speech difficulty resolves after several minutes. What should the nurse recommend?",
@@ -925,11 +1501,12 @@
       "sources": [
         "stroke"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-038",
-      "session": 8,
+      "session": 11,
       "topic": "Stroke recognition",
       "type": "single",
       "prompt": "While emergency help is being activated for suspected stroke, which history is especially important?",
@@ -946,11 +1523,12 @@
       "sources": [
         "stroke"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-039",
-      "session": 8,
+      "session": 11,
       "topic": "Stroke recognition",
       "type": "single",
       "prompt": "A recovering stroke client coughs during meals. Which response is appropriate?",
@@ -967,11 +1545,12 @@
       "sources": [
         "recovery"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-040",
-      "session": 8,
+      "session": 11,
       "topic": "Stroke recognition",
       "type": "multiple",
       "prompt": "Which new symptoms can indicate stroke? Select all that apply.",
@@ -990,11 +1569,12 @@
       "sources": [
         "stroke"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-041",
-      "session": 9,
+      "session": 12,
       "topic": "Medication calculations",
       "type": "single",
       "prompt": "Math practice only: an order is for 375 mg. The available tablets contain 125 mg each. How many tablets equal the order?",
@@ -1011,11 +1591,12 @@
       "sources": [
         "math"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-042",
-      "session": 9,
+      "session": 12,
       "topic": "Medication calculations",
       "type": "single",
       "prompt": "Math practice only: an ordered liquid dose is 180 mg. The label reads 120 mg per 5 mL. What volume equals the order?",
@@ -1032,11 +1613,12 @@
       "sources": [
         "math"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-043",
-      "session": 9,
+      "session": 12,
       "topic": "Medication calculations",
       "type": "single",
       "prompt": "Math practice only: 600 mL is ordered over 5 hours. What pump rate delivers that volume?",
@@ -1053,11 +1635,12 @@
       "sources": [
         "math"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-044",
-      "session": 9,
+      "session": 12,
       "topic": "Medication calculations",
       "type": "single",
       "prompt": "Math practice only: a fictional order specifies 6 mg/kg per dose for a child weighing 18 kg. How many milligrams are in one dose?",
@@ -1074,11 +1657,12 @@
       "sources": [
         "math"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-045",
-      "session": 9,
+      "session": 12,
       "topic": "Medication calculations",
       "type": "single",
       "prompt": "Math practice only: 90 mL must infuse over 45 minutes using tubing rated 20 drops/mL. What whole-number drip rate matches the order?",
@@ -1095,11 +1679,12 @@
       "sources": [
         "math"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-046",
-      "session": 10,
+      "session": 13,
       "topic": "Falls and blood clots",
       "type": "single",
       "prompt": "An older adult reports dizziness after starting a new medicine. Which action best supports fall prevention?",
@@ -1116,11 +1701,12 @@
       "sources": [
         "falls"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-047",
-      "session": 10,
+      "session": 13,
       "topic": "Falls and blood clots",
       "type": "single",
       "prompt": "A client recovering from surgery reports a newly swollen, warm, painful calf on one side. What is the best response?",
@@ -1137,11 +1723,12 @@
       "sources": [
         "clots"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-048",
-      "session": 10,
+      "session": 13,
       "topic": "Falls and blood clots",
       "type": "single",
       "prompt": "A client at risk for blood clots develops sudden breathlessness and chest pain with inspiration. What is the priority?",
@@ -1158,11 +1745,12 @@
       "sources": [
         "clots"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-049",
-      "session": 10,
+      "session": 13,
       "topic": "Falls and blood clots",
       "type": "single",
       "prompt": "An older adult fears falling and plans to stop all activity. Which recommendation is most appropriate?",
@@ -1179,11 +1767,12 @@
       "sources": [
         "falls"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
     },
     {
       "id": "NCDEMO-050",
-      "session": 10,
+      "session": 13,
       "topic": "Falls and blood clots",
       "type": "multiple",
       "prompt": "Which measures may help prevent postoperative venous clots when included in the client's orders? Select all that apply.",
@@ -1202,7 +1791,414 @@
       "sources": [
         "clots"
       ],
-      "reviewStatus": "draft-not-SME-reviewed"
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": []
+    },
+    {
+      "id": "NCMATH-006",
+      "session": 14,
+      "topic": "Medication calculations",
+      "type": "single",
+      "prompt": "A fictional order is for 0.75 g orally. The supplied tablets contain 250 mg each. How many whole tablets equal the ordered amount?",
+      "choices": [
+        "0.3 tablets",
+        "1 tablet",
+        "3 tablets",
+        "30 tablets"
+      ],
+      "correct": [
+        2
+      ],
+      "rationale": "Convert first: 0.75 g × 1,000 = 750 mg. Then 750 mg ÷ 250 mg/tablet = 3 tablets.",
+      "sources": [
+        "math"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": [
+        "This is ten times too small; convert grams to milligrams before dividing.",
+        "One tablet contains 250 mg, not the ordered 750 mg.",
+        "Three tablets contain 750 mg, equivalent to 0.75 g.",
+        "Thirty tablets contain 7,500 mg, ten times the ordered amount."
+      ]
+    },
+    {
+      "id": "NCMATH-007",
+      "session": 14,
+      "topic": "Medication calculations",
+      "type": "single",
+      "prompt": "A fictional oral solution contains 80 mg in 2 mL. An exercise order calls for 120 mg. What volume corresponds to that amount?",
+      "choices": [
+        "1.5 mL",
+        "3 mL",
+        "6 mL",
+        "30 mL"
+      ],
+      "correct": [
+        1
+      ],
+      "rationale": "Find the concentration: 80 mg ÷ 2 mL = 40 mg/mL. Then 120 mg ÷ 40 mg/mL = 3 mL.",
+      "sources": [
+        "math"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": [
+        "At 40 mg/mL, 1.5 mL contains only 60 mg.",
+        "At 40 mg/mL, 3 mL contains the required 120 mg.",
+        "At 40 mg/mL, 6 mL contains 240 mg, twice the requested amount.",
+        "At 40 mg/mL, 30 mL contains 1,200 mg, ten times the requested amount."
+      ]
+    },
+    {
+      "id": "NCMATH-008",
+      "session": 14,
+      "topic": "Medication calculations",
+      "type": "single",
+      "prompt": "A fictional order calls for 500 micrograms. The supplied solution contains 1 mg/mL. What volume equals the ordered amount?",
+      "choices": [
+        "5 mL",
+        "0.05 mL",
+        "2 mL",
+        "0.5 mL"
+      ],
+      "correct": [
+        3
+      ],
+      "rationale": "Convert 500 micrograms ÷ 1,000 = 0.5 mg. Then 0.5 mg ÷ 1 mg/mL = 0.5 mL.",
+      "sources": [
+        "math"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": [
+        "Five mL contains 5,000 micrograms, ten times the requested amount.",
+        "0.05 mL contains 50 micrograms, one tenth of the requested amount.",
+        "Two mL contains 2,000 micrograms, four times the requested amount.",
+        "0.5 mL contains 0.5 mg, which equals 500 micrograms."
+      ]
+    },
+    {
+      "id": "NCMATH-009",
+      "session": 14,
+      "topic": "Medication calculations",
+      "type": "single",
+      "prompt": "In a fictional calculation, an order is 1.2 mg and the available liquid contains 0.4 mg/mL. What volume is needed?",
+      "choices": [
+        "3 mL",
+        "0.3 mL",
+        "0.48 mL",
+        "4.8 mL"
+      ],
+      "correct": [
+        0
+      ],
+      "rationale": "Divide the ordered amount by the concentration: 1.2 mg ÷ 0.4 mg/mL = 3 mL.",
+      "sources": [
+        "math"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": [
+        "Three mL contains 1.2 mg at the stated concentration.",
+        "0.3 mL contains 0.12 mg, one tenth of the requested amount.",
+        "Multiplying 1.2 by 0.4 does not cancel the units to give the required volume.",
+        "4.8 mL contains 1.92 mg, not 1.2 mg."
+      ]
+    },
+    {
+      "id": "NCMATH-010",
+      "session": 14,
+      "topic": "Medication calculations",
+      "type": "single",
+      "prompt": "A fictional oral suspension contains 125 mg per 5 mL. Calculate the volume for 210 mg. Round the final answer to the nearest tenth of a mL.",
+      "choices": [
+        "8 mL",
+        "42 mL",
+        "8.4 mL",
+        "1.7 mL"
+      ],
+      "correct": [
+        2
+      ],
+      "rationale": "210 mg × (5 mL ÷ 125 mg) = 8.4 mL. It is already expressed to the nearest tenth.",
+      "sources": [
+        "math"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": [
+        "Eight mL contains 200 mg; rounding to a whole mL was not requested.",
+        "Forty-two mL contains 1,050 mg, five times the requested amount.",
+        "8.4 mL contains 210 mg at 25 mg/mL.",
+        "Dividing by 125 without accounting for the 5 mL gives the wrong volume."
+      ]
+    },
+    {
+      "id": "NCMATH-011",
+      "session": 15,
+      "topic": "Medication calculations",
+      "type": "single",
+      "prompt": "For a fictional pump-rate exercise, 1,000 mL is to run evenly over 8 hours. What is the rate in mL/hr?",
+      "choices": [
+        "80 mL/hr",
+        "125 mL/hr",
+        "8 mL/hr",
+        "1,250 mL/hr"
+      ],
+      "correct": [
+        1
+      ],
+      "rationale": "Rate = volume ÷ time: 1,000 mL ÷ 8 hr = 125 mL/hr.",
+      "sources": [
+        "math"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": [
+        "At 80 mL/hr, only 640 mL would run in 8 hours.",
+        "At 125 mL/hr, 1,000 mL runs in 8 hours.",
+        "Eight is the number of hours, not the volume per hour.",
+        "At 1,250 mL/hr, the full volume would run in 0.8 hour."
+      ]
+    },
+    {
+      "id": "NCMATH-012",
+      "session": 15,
+      "topic": "Medication calculations",
+      "type": "single",
+      "prompt": "A fictional pump exercise specifies 150 mL over 45 minutes. What rate in mL/hr delivers that volume in the stated time?",
+      "choices": [
+        "3.3 mL/hr",
+        "112.5 mL/hr",
+        "150 mL/hr",
+        "200 mL/hr"
+      ],
+      "correct": [
+        3
+      ],
+      "rationale": "Convert 45 minutes ÷ 60 = 0.75 hour. Then 150 mL ÷ 0.75 hr = 200 mL/hr.",
+      "sources": [
+        "math"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": [
+        "150 ÷ 45 gives mL per minute; it still must be converted to mL per hour.",
+        "Multiplying the volume by 0.75 hour does not calculate a rate.",
+        "At 150 mL/hr, the infusion takes 60 minutes rather than 45.",
+        "At 200 mL/hr, 150 mL runs in 0.75 hour (45 minutes)."
+      ]
+    },
+    {
+      "id": "NCMATH-013",
+      "session": 15,
+      "topic": "Medication calculations",
+      "type": "single",
+      "prompt": "In a fictional gravity-infusion exercise, 250 mL runs over 2 hours through tubing labeled 15 drops/mL. What rate is required? Round only the final answer to the nearest whole drop per minute.",
+      "choices": [
+        "31 drops/min",
+        "125 drops/min",
+        "62 drops/min",
+        "1,875 drops/min"
+      ],
+      "correct": [
+        0
+      ],
+      "rationale": "(250 mL × 15 drops/mL) ÷ (2 × 60 minutes) = 31.25 drops/min; round to 31 drops/min.",
+      "sources": [
+        "math"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": [
+        "31.25 rounds to 31 whole drops per minute.",
+        "125 is the volume per hour, not the drop rate.",
+        "This is approximately the rate for one hour rather than two.",
+        "Dividing by hours without converting to minutes gives drops per hour, not drops per minute."
+      ]
+    },
+    {
+      "id": "NCMATH-014",
+      "session": 15,
+      "topic": "Medication calculations",
+      "type": "single",
+      "prompt": "A fictional practice infusion contains 400 mg in a final volume of 250 mL. A pump delivers 30 mL/hr. How many mg are delivered each hour?",
+      "choices": [
+        "12 mg/hr",
+        "75 mg/hr",
+        "48 mg/hr",
+        "480 mg/hr"
+      ],
+      "correct": [
+        2
+      ],
+      "rationale": "Concentration = 400 mg ÷ 250 mL = 1.6 mg/mL. Then 1.6 mg/mL × 30 mL/hr = 48 mg/hr.",
+      "sources": [
+        "math"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": [
+        "Twelve mg/hr would correspond to 7.5 mL/hr at this concentration.",
+        "Seventy-five mg/hr would correspond to 46.875 mL/hr, not 30.",
+        "Thirty mL each hour at 1.6 mg/mL delivers 48 mg/hr.",
+        "480 mg/hr is ten times the calculated delivery rate."
+      ]
+    },
+    {
+      "id": "NCMATH-015",
+      "session": 15,
+      "topic": "Medication calculations",
+      "type": "single",
+      "prompt": "A fictional practice order specifies 24 mg/hr. The prepared solution contains 120 mg in a final volume of 100 mL. What pump rate corresponds to the order?",
+      "choices": [
+        "28.8 mL/hr",
+        "20 mL/hr",
+        "5 mL/hr",
+        "200 mL/hr"
+      ],
+      "correct": [
+        1
+      ],
+      "rationale": "120 mg ÷ 100 mL = 1.2 mg/mL. Then 24 mg/hr ÷ 1.2 mg/mL = 20 mL/hr.",
+      "sources": [
+        "math"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": [
+        "Multiplying the dose rate by concentration does not produce mL/hr.",
+        "Twenty mL/hr at 1.2 mg/mL delivers 24 mg/hr.",
+        "Five mL/hr delivers only 6 mg/hr.",
+        "Two hundred mL/hr delivers 240 mg/hr, ten times the requested rate."
+      ]
+    },
+    {
+      "id": "NCMATH-016",
+      "session": 16,
+      "topic": "Medication calculations",
+      "type": "single",
+      "prompt": "A fictional exercise order is 8 mg/kg per dose for a client weighing 66 lb. Use 1 kg = 2.2 lb. What amount is calculated for one dose?",
+      "choices": [
+        "528 mg",
+        "30 mg",
+        "120 mg",
+        "240 mg"
+      ],
+      "correct": [
+        3
+      ],
+      "rationale": "66 lb ÷ 2.2 = 30 kg. Then 30 kg × 8 mg/kg per dose = 240 mg per dose.",
+      "sources": [
+        "math"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": [
+        "Using 66 pounds directly as kilograms overestimates the amount.",
+        "Thirty is the weight in kilograms, not the amount in mg.",
+        "120 mg is half the calculated amount; no division into two doses was requested.",
+        "Thirty kilograms multiplied by 8 mg/kg gives 240 mg for one dose."
+      ]
+    },
+    {
+      "id": "NCMATH-017",
+      "session": 16,
+      "topic": "Medication calculations",
+      "type": "single",
+      "prompt": "A fictional order specifies 30 mg/kg/day divided into 3 equal doses. The client weighs 18 kg. How many mg are in each dose?",
+      "choices": [
+        "180 mg",
+        "540 mg",
+        "60 mg",
+        "1,620 mg"
+      ],
+      "correct": [
+        0
+      ],
+      "rationale": "Daily total = 30 mg/kg/day × 18 kg = 540 mg/day. Divide by 3 doses/day: 180 mg/dose.",
+      "sources": [
+        "math"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": [
+        "Three doses of 180 mg give the calculated daily total of 540 mg.",
+        "540 mg is the daily total, not each of the three doses.",
+        "Sixty mg results from dividing the daily total into nine doses instead of three.",
+        "Multiplying the daily total by three reverses the required division."
+      ]
+    },
+    {
+      "id": "NCMATH-018",
+      "session": 16,
+      "topic": "Medication calculations",
+      "type": "single",
+      "prompt": "For a fictional arithmetic exercise, the prescribed amount is 6 mg/kg per dose and the client weighs 25 kg. The liquid contains 100 mg per 5 mL. What volume equals one dose?",
+      "choices": [
+        "1.5 mL",
+        "30 mL",
+        "7.5 mL",
+        "15 mL"
+      ],
+      "correct": [
+        2
+      ],
+      "rationale": "Dose = 6 mg/kg × 25 kg = 150 mg. Volume = 150 mg × (5 mL ÷ 100 mg) = 7.5 mL.",
+      "sources": [
+        "math"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": [
+        "1.5 mL contains 30 mg; the 5 mL concentration factor must be included.",
+        "Thirty mL contains 600 mg, four times the calculated amount.",
+        "7.5 mL contains 150 mg at 20 mg/mL.",
+        "Fifteen mL contains 300 mg, twice the calculated amount."
+      ]
+    },
+    {
+      "id": "NCMATH-019",
+      "session": 16,
+      "topic": "Medication calculations",
+      "type": "single",
+      "prompt": "A fictional continuous-infusion exercise specifies 2 micrograms/kg/min for a 60 kg client. The prepared solution contains 50 mg in a final volume of 250 mL. Calculate mL/hr.",
+      "choices": [
+        "0.6 mL/hr",
+        "36 mL/hr",
+        "3.6 mL/hr",
+        "600 mL/hr"
+      ],
+      "correct": [
+        1
+      ],
+      "rationale": "2 × 60 = 120 micrograms/min. Multiply by 60 = 7,200 micrograms/hr = 7.2 mg/hr. Concentration = 50 ÷ 250 = 0.2 mg/mL. Rate = 7.2 ÷ 0.2 = 36 mL/hr.",
+      "sources": [
+        "math"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": [
+        "0.6 is the rate in mL per minute; convert it to mL per hour.",
+        "Thirty-six mL/hr at 0.2 mg/mL delivers 7.2 mg/hr, or 120 micrograms/min.",
+        "3.6 mL/hr is one tenth of the calculated rate.",
+        "Dividing 120 micrograms/min by 0.2 mg/mL without matching mass units produces an invalid result."
+      ]
+    },
+    {
+      "id": "NCMATH-020",
+      "session": 16,
+      "topic": "Medication calculations",
+      "type": "single",
+      "prompt": "A fictional arithmetic worksheet states a daily range of 12–18 mg/kg/day for a 20 kg client. A proposed order is 100 mg per dose, 3 doses per day. How does the calculated daily total compare with the worksheet range? This comparison alone does not establish clinical safety.",
+      "choices": [
+        "100 mg/day; below the range",
+        "300 mg/day; above the range",
+        "600 mg/day; above the range",
+        "300 mg/day; within the range"
+      ],
+      "correct": [
+        3
+      ],
+      "rationale": "Worksheet range = 20 × 12 to 20 × 18 = 240–360 mg/day. Proposed total = 100 × 3 = 300 mg/day, which is within that arithmetic range.",
+      "sources": [
+        "math"
+      ],
+      "reviewStatus": "draft-not-SME-reviewed",
+      "choiceRationales": [
+        "One dose is 100 mg; the daily total includes all three doses.",
+        "300 mg/day is less than the upper bound of 360 mg/day, not above it.",
+        "Three 100 mg doses total 300 mg, not 600 mg.",
+        "300 mg/day falls between 240 and 360 mg/day; other safety checks are outside this arithmetic exercise."
+      ]
     }
-  ]
+  ],
+  "updated": "2026-09-27"
 }

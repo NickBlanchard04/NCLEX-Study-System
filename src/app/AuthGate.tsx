@@ -1,13 +1,12 @@
 import { motion } from 'framer-motion'
 import {
+  ArrowLeft,
   ArrowRight,
   Eye,
   EyeOff,
   FileText,
   LockKeyhole,
-  Mail,
   ShieldCheck,
-  UserPlus,
 } from 'lucide-react'
 import { useEffect, useId, useState } from 'react'
 import { useStudySystemStore } from './store'
@@ -16,16 +15,18 @@ import { createBetaTermsConsent } from './beta-terms'
 import { trackAppEvent } from '../services/analytics-client'
 import { examTracks } from '../data/exam-tracks'
 import type { ExamTrackId, StudyIntensity } from './types'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { safeStudyReturn } from '../services/study-handoff'
 
 type AuthMode = 'welcome' | 'signin' | 'signup' | 'reset'
 
 const getInitialAuthMode = (): AuthMode => {
-  if (typeof window === 'undefined') return 'welcome'
+  if (typeof window === 'undefined') return 'signin'
   const authMode = new URLSearchParams(window.location.search).get('auth')?.toLowerCase()
   if (authMode === 'signin' || authMode === 'login') return 'signin'
   if (authMode === 'signup' || authMode === 'register') return 'signup'
   if (authMode === 'reset') return 'reset'
-  return 'welcome'
+  return 'signin'
 }
 
 const studyIntensityOptions: Array<{
@@ -39,6 +40,8 @@ const studyIntensityOptions: Array<{
 ]
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
+  const location = useLocation()
+  const navigate = useNavigate()
   const authInitialized = useStudySystemStore((state) => state.authInitialized)
   const authUser = useStudySystemStore((state) => state.authUser)
   const passwordRecoveryRequired = useStudySystemStore((state) => state.passwordRecoveryRequired)
@@ -62,7 +65,15 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     return <ProfileOnboardingGate>{children}</ProfileOnboardingGate>
   }
 
-  return <AuthLanding />
+  const resultReturn = new URLSearchParams(location.search).has('studyResult')
+    ? safeStudyReturn(location.pathname + location.search)
+    : null
+  const goBack = () => {
+    if (resultReturn) navigate(resultReturn, { replace: true })
+    else if (typeof window.history.state?.idx === 'number' && window.history.state.idx > 0) navigate(-1)
+    else navigate('/', { replace: true })
+  }
+  return <AuthLanding onBack={goBack} savingResult={Boolean(resultReturn)} />
 }
 
 function ProfileOnboardingGate({ children }: { children: React.ReactNode }) {
@@ -150,8 +161,7 @@ function ProfileOnboardingGate({ children }: { children: React.ReactNode }) {
 
   if (!needsOnboarding) return children
 
-  const inputClass =
-    'mt-2 w-full rounded-2xl border border-sky-300/20 bg-[#04101f]/82 px-4 py-3 text-sm text-white outline-none transition placeholder:text-sky-100/34 focus:border-cyan-200/70 focus:ring-4 focus:ring-cyan-300/16'
+  const inputClass = 'auth-input'
 
   return (
     <div className="nurse-command-app relative min-h-screen overflow-x-hidden bg-[#04101f] px-4 py-6 font-['Google_Sans','Product_Sans','Inter',sans-serif] text-white sm:px-6 lg:px-8">
@@ -294,7 +304,7 @@ function ProfileOnboardingGate({ children }: { children: React.ReactNode }) {
   )
 }
 
-function AuthLanding() {
+function AuthLanding({ onBack, savingResult }: { onBack: () => void; savingResult: boolean }) {
   const authConfigured = useStudySystemStore((state) => state.authConfigured)
   const signIn = useStudySystemStore((state) => state.signIn)
   const signUp = useStudySystemStore((state) => state.signUp)
@@ -380,7 +390,6 @@ function AuthLanding() {
         : mode === 'signup'
           ? 'Create account'
           : 'Reset password'
-  const eyebrow = mode === 'reset' ? 'Account recovery' : 'Beta account access'
   const helperText =
     mode === 'welcome'
       ? 'We are excited to help you track progress, repair weak areas, and study from your own materials.'
@@ -395,93 +404,22 @@ function AuthLanding() {
       : mode === 'signin'
         ? 'Sign in'
         : 'Create account'
-  const formIcon =
-    mode === 'signup'
-      ? <UserPlus className="h-5 w-5" />
-      : mode === 'reset'
-        ? <Mail className="h-5 w-5" />
-        : <LockKeyhole className="h-5 w-5" />
-
   return (
-    <div className="nurse-command-app relative min-h-screen overflow-x-hidden bg-[#04101f] px-4 py-6 font-['Google_Sans','Product_Sans','Inter',sans-serif] text-white sm:px-6 lg:px-8">
-      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(56,189,248,0.22),transparent_30%),radial-gradient(circle_at_78%_22%,rgba(163,230,53,0.12),transparent_26%),linear-gradient(180deg,#071d34_0%,#04101f_52%,#020812_100%)]" />
-      <div className="pointer-events-none fixed inset-0 bg-[linear-gradient(90deg,rgba(125,211,252,0.08)_1px,transparent_1px),linear-gradient(180deg,rgba(125,211,252,0.06)_1px,transparent_1px)] bg-[length:72px_72px] opacity-40" />
-      <div className="relative z-10 mx-auto grid min-h-[calc(100vh-3rem)] max-w-6xl items-center gap-8 lg:grid-cols-[minmax(0,0.92fr)_minmax(360px,0.58fr)]">
-        <motion.section
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="order-2 min-w-0 text-center lg:order-1 lg:text-left"
-        >
-          <img
-            src={nursingCommandLogo}
-            alt="Nursing Command"
-            className="mx-auto w-[min(18rem,78vw)] object-contain drop-shadow-[0_30px_80px_rgba(0,0,0,0.42)] lg:mx-0 lg:w-[24rem]"
-          />
-          <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-lime-200/32 bg-lime-300/10 px-4 py-2 text-xs font-black uppercase tracking-normal text-lime-100">
-            <ShieldCheck className="h-4 w-4" />
-            Open beta testing
-          </div>
-          <h1 className="mt-5 max-w-3xl text-4xl font-black leading-tight text-white md:text-6xl">
-            Welcome to Nurse Command.
-          </h1>
-          <p className="mx-auto mt-5 max-w-2xl text-base leading-8 text-sky-50/76 lg:mx-0">
-            A free timesaving nursing study command center for focused practice, weak-area repair, performance signals, and study materials in one place.
-          </p>
-          <details id="beta-terms" className="mx-auto mt-7 max-w-2xl rounded-2xl border border-cyan-200/18 bg-[#071d34]/68 p-5 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition open:border-cyan-200/28 lg:mx-0">
-            <summary className="cursor-pointer text-sm font-black text-white">
-              Open beta notice
-            </summary>
-            <div className="mt-3 space-y-3 text-sm leading-7 text-sky-100/68">
-              <p>
-                Nurse Command is currently in open beta. Features, content, analytics, and availability may change while we test and improve the product.
-              </p>
-              <p>
-                By accessing the beta, users agree not to copy, scrape, reverse engineer, resell, redistribute, or use Nurse Command content or interface patterns to train or build competing systems.
-              </p>
-              <p>
-                Nurse Command is study support only. It is not clinical advice, patient care guidance, licensure prediction, or a substitute for official exam guidance.
-              </p>
-            </div>
-          </details>
-        </motion.section>
-
-        <motion.section
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.08 }}
-          className="order-1 mx-auto w-full max-w-[430px] rounded-[20px] border border-cyan-200/20 bg-[#071d34]/94 p-6 shadow-[0_18px_48px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.06)] md:p-7 lg:order-2"
-        >
-          <div className="mb-7 flex items-center justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-3">
-              <img
-                src={nursingCommandLogo}
-                alt="Nurse Command"
-                className="h-12 w-12 shrink-0 object-contain drop-shadow-[0_12px_32px_rgba(14,165,233,0.32)]"
-              />
-              <div className="min-w-0">
-                <p className="truncate text-sm font-black uppercase tracking-[0.18em] text-white">
-                  Nurse Command
-                </p>
-              </div>
-            </div>
-            <div className="rounded-2xl border border-cyan-200/24 bg-cyan-300/10 p-3 text-cyan-100">
-              {formIcon}
-            </div>
-          </div>
-
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-xs font-black uppercase tracking-normal text-cyan-200/72">
-                {eyebrow}
-              </p>
-              <h2 className="mt-2 text-3xl font-black leading-tight text-white">
-                {title}
-              </h2>
-            </div>
-          </div>
-          <p className="mt-3 text-sm font-semibold leading-6 text-sky-100/66">
-            {helperText}
-          </p>
+    <div className="nurse-command-app auth-page">
+      <header className="auth-header">
+        <Link className="home-launcher-brand" to="/" aria-label="Nurse Command home">
+          <img src={nursingCommandLogo} alt="" />
+          <span>Nurse <span>Command</span></span>
+        </Link>
+        <button className="auth-back-button" type="button" onClick={onBack}>
+          <ArrowLeft size={22} aria-hidden="true" /> Go back
+        </button>
+      </header>
+      <main className="auth-main">
+        <section className="auth-card" aria-labelledby="auth-title">
+          <h1 id="auth-title">{title}</h1>
+          <p className="auth-description">{helperText}</p>
+          {savingResult && <p className="auth-result-note">Your result is waiting. After sign-in, we’ll save it and bring you back. Open any verification email in this same browser.</p>}
 
           {mode === 'welcome' ? (
             <div className="mt-8 space-y-5">
@@ -611,9 +549,7 @@ function AuthLanding() {
                 type="submit"
                 disabled={!canSubmit}
                 aria-busy={busy}
-                className={mode === 'signup'
-                  ? 'group flex min-h-[50px] w-full items-center justify-center gap-2 rounded-2xl border border-lime-200/24 bg-[linear-gradient(135deg,#0ea5e9,#14b8a6)] px-5 py-3 text-sm font-black text-white shadow-[0_18px_42px_rgba(14,165,233,0.24)] transition hover:[transform:translateY(-2px)] hover:border-lime-200/60 hover:brightness-110 hover:shadow-[0_24px_60px_rgba(20,184,166,0.34)] focus:outline-none focus:ring-4 focus:ring-lime-200/18 disabled:cursor-not-allowed disabled:border-transparent disabled:bg-slate-500/70 disabled:opacity-45 disabled:shadow-none disabled:hover:transform-none disabled:hover:brightness-100'
-                  : 'group flex min-h-[50px] w-full items-center justify-center gap-2 rounded-2xl bg-[#0e638d] px-5 py-3 text-sm font-black text-white shadow-[0_16px_34px_rgba(14,99,141,0.24)] transition hover:-translate-y-0.5 hover:bg-[#1181b8] focus:outline-none focus:ring-4 focus:ring-cyan-300/18 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0'}
+                className="auth-primary"
               >
                 {busy ? 'Working...' : submitLabel}
                 {!busy ? <ArrowRight className="h-4 w-4 transition group-hover:[transform:translateX(4px)]" /> : null}
@@ -656,9 +592,10 @@ function AuthLanding() {
           <details className="mt-6 rounded-[18px] border border-sky-200/14 bg-[#04101f]/56 px-4 py-3 text-xs leading-5 text-sky-100/56 transition open:border-cyan-200/24">
             <summary className="flex cursor-pointer items-center gap-2 text-sky-100/78">
               <FileText className="h-4 w-4" />
-              <span className="font-black uppercase tracking-normal">Privacy and terms summary</span>
+              <span className="font-black uppercase tracking-normal">Privacy & beta terms</span>
             </summary>
             <div className="mt-3 space-y-2">
+              <p>Nurse Command is in open beta. Features, content, analytics, and availability may change. It is study support, not clinical advice, patient care guidance, a licensure prediction, or a substitute for official exam guidance.</p>
               <p>
                 Privacy: cloud accounts store your email and synced study activity. Do not upload protected health information, patient-identifying data, or clinical records.
               </p>
@@ -670,8 +607,8 @@ function AuthLanding() {
               </p>
             </div>
           </details>
-        </motion.section>
-      </div>
+        </section>
+      </main>
     </div>
   )
 }

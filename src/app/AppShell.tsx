@@ -1,3 +1,4 @@
+import { StudyToolsMenu } from '../features/study-tools-menu'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   Bell,
@@ -20,7 +21,6 @@ import {
   HeartPulse,
   House,
   Layers,
-  LayoutDashboard,
   LockKeyhole,
   Menu,
   NotebookPen,
@@ -43,7 +43,7 @@ import {
   type ReactNode,
   type RefObject,
 } from 'react'
-import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { Link, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { clsx } from 'clsx'
 import { PublicLaunchPage } from '../features/PublicLaunchPages'
 import { isPublicLaunchPath } from '../features/publicLaunchPaths'
@@ -51,6 +51,10 @@ import nursingCommandLogo from '../assets/brand/nursing-command-logo.png'
 import { getExamTrack } from '../data/exam-tracks'
 import { useStudySystemStore } from './store'
 import { AuthGate } from './AuthGate'
+const GuestPracticePage = lazy(() => import('../features/guest-practice-page').then((module) => ({ default: module.GuestPracticePage })))
+const AccountPracticePage = lazy(() => import('../features/guest-practice-page').then((module) => ({ default: module.AccountPracticePage })))
+const StudyResultReturn = lazy(() => import('../features/study-result-save').then((module) => ({ default: module.StudyResultReturn })))
+const SavedStudyResultsPage = lazy(() => import('../features/study-result-save').then((module) => ({ default: module.SavedStudyResultsPage })))
 import {
   checkAdminAccess,
   hasStoredAdminPreviewPasskeyAccess,
@@ -92,7 +96,6 @@ const nurseLabRoutePaths = [
 
 const commandNavigation: NavigationItem[] = [
   { label: 'Home', icon: House, to: '/' },
-  { label: 'Dashboard', icon: LayoutDashboard, to: '/dashboard' },
   { label: 'Study Plan', icon: CalendarCheck, to: '/study-plan' },
 ]
 
@@ -109,7 +112,6 @@ const reviewNavigation: NavigationItem[] = [
 ]
 
 const libraryNavigation: NavigationItem[] = [
-  { label: 'Study Library', icon: FolderOpen, to: '/my-materials' },
   { label: 'Flashcards', icon: Layers, to: '/flashcards' },
   { label: 'Notes', icon: NotebookPen, to: '/notes' },
   { label: 'Resources', icon: BookOpen, to: '/strategy-training' },
@@ -150,12 +152,12 @@ const sidebarNavigationGroups: NavigationGroup[] = [
 ]
 
 const mobilePrimaryNavigation: NavigationItem[] = [
-  { label: 'Dashboard', icon: LayoutDashboard, to: '/dashboard' },
+  { label: 'Home', icon: House, to: '/' },
   { label: 'Quick Study', icon: Timer, to: '/quick-study' },
   {
-    label: 'Library',
+    label: 'Review',
     icon: FolderOpen,
-    to: '/my-materials',
+    to: '/flashcards',
     activePaths: ['/flashcards', '/notes', '/strategy-training'],
   },
 ]
@@ -205,24 +207,11 @@ const StudyMenuPage = lazy(() =>
     default: module.StudyMenuPage,
   })),
 )
-const DashboardPage = lazy(() =>
-  import('../features/pages').then((module) => ({
-    default: module.DashboardPage,
-  })),
-)
+const DailyLessonPage = lazy(() => import('../features/learning-entry-pages').then((module) => ({ default: module.DailyLessonPage })))
+const ReviewPage = lazy(() => import('../features/learning-entry-pages').then((module) => ({ default: module.ReviewPage })))
 const ExamPrepPage = lazy(() =>
   import('../features/pages').then((module) => ({
     default: module.ExamPrepPage,
-  })),
-)
-const PracticeQuestionsPage = lazy(() =>
-  import('../features/pages').then((module) => ({
-    default: module.PracticeQuestionsPage,
-  })),
-)
-const TestModePage = lazy(() =>
-  import('../features/pages').then((module) => ({
-    default: module.TestModePage,
   })),
 )
 const NurseCommandLabPage = lazy(() =>
@@ -539,51 +528,32 @@ function NclexAppShell() {
   }
 
   const isQuickStudyRoute = /^\/quick-study\/?$/.test(location.pathname)
-  if (location.pathname === '/' || isQuickStudyRoute) {
-    return (
-      <AuthGate>
-        <div className="nurse-command-app home-route-shell text-white">
-          <div className="w-full">
-            {migrationPromptVisible ? (
-              <div className="home-migration-notice border border-[#36414e] bg-[#101923] p-4">
-                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-blue)]">
-                      Cloud migration ready
-                    </p>
-                    <h2 className="mt-1 nc-section-title text-2xl text-[var(--nclex-text)]">
-                      Move this device's study progress into your account.
-                    </h2>
-                    <p className="mt-1 text-sm text-[var(--nclex-text-muted)]">
-                      We found local attempts, notes, flashcards, or materials that can be synced now.
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => void migrateLocalDataToCloud()}
-                      className="nclex-btn-primary rounded-xl px-4 py-2.5 text-sm font-semibold"
-                    >
-                      Import local progress
-                    </button>
-                    <button
-                      type="button"
-                      onClick={dismissMigrationPrompt}
-                      className="nclex-btn-secondary rounded-xl px-4 py-2.5 text-sm font-semibold"
-                    >
-                      Start fresh
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : null}
-          </div>
-
-          {isQuickStudyRoute ? <QuickStudyPage /> : <StudyMenuPage />}
-          <SupportSheet open={supportOpen} onClose={() => setSupportOpen(false)} />
-        </div>
-      </AuthGate>
-    )
+  const isHomeRoute = location.pathname === '/' || /^\/dashboard\/?$/.test(location.pathname)
+  const isDailyRoute = /^\/daily-lesson\/?$/.test(location.pathname)
+  const isReviewRoute = /^\/review\/?$/.test(location.pathname)
+  const practiceRoute = location.pathname.replace(/\/$/, '')
+  const guestPractice = !authUser && ['/practice-questions', '/exam-prep', '/test-mode'].includes(practiceRoute)
+  const resultReturn = new URLSearchParams(location.search).has('studyResult') && ['/quick-study', '/daily-lesson', '/practice-questions', '/exam-prep', '/test-mode'].includes(practiceRoute)
+  if (guestPractice || resultReturn || practiceRoute === '/study-results') {
+    const content = <div className="nurse-command-app home-route-shell text-white"><LazyRoute label="Loading study">{resultReturn ? <StudyResultReturn /> : practiceRoute === '/study-results' ? <SavedStudyResultsPage /> : <GuestPracticePage key={practiceRoute} route={practiceRoute} />}</LazyRoute></div>
+    if (new URLSearchParams(location.search).has('auth') || practiceRoute === '/study-results' || authUser) return <AuthGate key={location.search}>{content}</AuthGate>
+    return content
+  }
+  if (['/practice-questions', '/test-mode', '/exam-prep', '/study-plan', '/flashcards', '/notes', '/strategy-training'].includes(practiceRoute)) {
+    return <AuthGate><div className="nurse-command-app home-route-shell text-white"><div className="simple-tools-page">
+      <header className="home-launcher-header"><Link className="home-launcher-brand" to="/"><img src={nursingCommandLogo} alt="" /><span>Nurse <span>Command</span></span></Link><div className="simple-tools-nav"><StudyToolsMenu /><Link className="home-tools-trigger" to="/">Home</Link></div></header>
+      <main className="guest-practice-content"><LazyRoute label="Loading study tools">{practiceRoute === '/flashcards' ? <FlashcardsPage /> : practiceRoute === '/notes' ? <NotesPage /> : practiceRoute === '/strategy-training' ? <StrategyTrainingPage /> : practiceRoute === '/study-plan' ? <StudyPlanPage /> : <AccountPracticePage key={practiceRoute} route={practiceRoute} />}</LazyRoute></main>
+    </div></div></AuthGate>
+  }
+  if (isHomeRoute || isQuickStudyRoute || isDailyRoute || isReviewRoute) {
+    const content = <div className="nurse-command-app home-route-shell text-white">
+      <LazyRoute label="Loading study">
+        {isQuickStudyRoute ? <QuickStudyPage key={authUser?.id ?? 'guest'} /> : isDailyRoute ? <DailyLessonPage key={authUser?.id ?? 'guest'} /> : isReviewRoute ? <ReviewPage key={authUser?.id ?? 'guest'} /> : <StudyMenuPage />}
+      </LazyRoute>
+    </div>
+    // Only learning entry surfaces are public; other account routes retain AuthGate.
+    if (authUser || new URLSearchParams(location.search).has('auth')) return <AuthGate key={location.search}>{content}</AuthGate>
+    return content
   }
 
   return (
@@ -722,6 +692,7 @@ function NclexAppShell() {
               </div>
 
               <div className="flex items-center gap-2 md:gap-3">
+                <StudyToolsMenu />
                 <button
                   type="button"
                   onClick={() => void syncNow()}
@@ -880,10 +851,10 @@ function NclexAppShell() {
                 >
                   <Routes location={location}>
                     <Route path="/" element={<LazyRoute label="Loading command hub"><StudyMenuPage /></LazyRoute>} />
-                    <Route path="/dashboard" element={<LazyRoute label="Loading dashboard"><DashboardPage /></LazyRoute>} />
+                    <Route path="/dashboard" element={<LazyRoute label="Loading home"><StudyMenuPage /></LazyRoute>} />
                     <Route path="/exam-prep" element={<LazyRoute label="Loading exam prep"><ExamPrepPage /></LazyRoute>} />
-                    <Route path="/practice-questions" element={<LazyRoute label="Loading question bank"><PracticeQuestionsPage /></LazyRoute>} />
-                    <Route path="/test-mode" element={<LazyRoute label="Loading exam simulation"><TestModePage /></LazyRoute>} />
+                    <Route path="/practice-questions" element={<LazyRoute label="Loading question bank"><AccountPracticePage key="practice" route="/practice-questions" /></LazyRoute>} />
+                    <Route path="/test-mode" element={<LazyRoute label="Loading exam simulation"><AccountPracticePage key="exam" route="/test-mode" /></LazyRoute>} />
                     <Route path="/nurse-command-lab" element={<LazyRoute label="Loading nurse lab"><NurseCommandLabPage /></LazyRoute>} />
                     <Route path="/clinical-simulator" element={<LazyRoute label="Loading clinical simulator"><ClinicalSimulatorPage /></LazyRoute>} />
                     <Route path="/quick-study" element={<LazyRoute label="Loading quick study"><QuickStudyPage /></LazyRoute>} />

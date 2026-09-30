@@ -162,6 +162,8 @@ export async function loadCloudState(userId: string): Promise<CloudStateBundle> 
             notifications: profilePreferences?.notifications ?? true,
             analyticsScope: profilePreferences?.analyticsScope ?? 'selected-track',
             onboardingCompletedAt: profilePreferences?.onboardingCompletedAt,
+            quickStudy: profilePreferences?.quickStudy,
+            studyResults: profilePreferences?.studyResults,
           },
           userId,
           createdAt: profileResult.data.created_at,

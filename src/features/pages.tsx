@@ -1,3 +1,4 @@
+import { createNoteAutosave } from '../services/note-autosave'
 import { useDeferredValue, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
@@ -22,6 +23,7 @@ import {
   CalendarClock,
   CheckCircle2,
   ChevronLeft,
+  ChevronDown,
   ChevronRight,
   Cloud,
   CloudOff,
@@ -46,7 +48,6 @@ import {
   Target,
   Timer,
   Trash2,
-  TrendingDown,
   TrendingUp,
   Upload,
   UploadCloud,
@@ -83,7 +84,6 @@ import {
   getExamCategories,
   getExamContentQualitySummary,
   getExamDashboardCopy,
-  getExamQuestionBank,
   getExamSystems,
   loadLiveBetaFlashcards,
   strategyLessons,
@@ -99,21 +99,16 @@ import {
   questionLookup,
 } from '../services/study-system'
 import {
-  ChecklistItem,
-  CommandActionCard,
   CommandBadge,
   CommandDisclosurePanel,
   CommandEmptyState,
   CommandFocusPanel,
   CommandInsightPanel,
-  CommandMetricGroup,
-  CommandModeControl,
   CommandRouteLink,
   CommandStatTile,
   CommandStatusRow,
   DetailGrid,
   EmptyState,
-  FlipCard,
   FocusPanel,
   MasteryPill,
   MetricChip,
@@ -121,7 +116,6 @@ import {
   PageHeader,
   PageStack,
   ProgressBar,
-  QuickMetric,
   QuestionSessionRunner,
   SectionHeading,
   Surface,
@@ -151,6 +145,7 @@ const seededHash = (value: string) => {
 }
 
 export { StudyMenuPage } from './study-menu-page'
+export { QuickStudyPage } from './quick-study-page'
 
 export function DashboardPage() {
   const navigate = useNavigate()
@@ -1128,39 +1123,6 @@ export function PracticeQuestionsPage() {
         ...overrides,
       })
     })
-  const priorityCategory = category === 'All' ? trackCategories[0] : category
-  const selectedCategoryLabel = category === 'All' ? 'Mixed bank' : shortCategoryLabel(category)
-  const selectedSystemLabel = system === 'All' ? 'All systems' : system
-  const questionStatusLabel =
-    questionStatus === 'all' ? 'All questions' : questionStatus === 'unused' ? 'Unused only' : 'Missed before'
-  const sessionFormatLabel = format === 'mixed' ? 'Mixed formats' : format === 'multiple-choice' ? 'Multiple choice' : 'Select all'
-  const practicePresets = [
-    {
-      title: 'Start adaptive set',
-      description: 'Best everyday route: mixed questions tuned to the filters below.',
-      action: 'Start here',
-      tone: 'amber' as const,
-      icon: <Target className="h-5 w-5" />,
-      config: {},
-    },
-    {
-      title: 'Repair missed questions',
-      description: 'Five misses for a short, direct remediation loop.',
-      action: 'Repair misses',
-      tone: 'rose' as const,
-      icon: <TrendingDown className="h-5 w-5" />,
-      config: { category: priorityCategory, questionStatus: 'incorrect' as const, questionCount: 5 },
-    },
-    {
-      title: 'New questions only',
-      description: 'Fresh items for a cleaner read on readiness.',
-      action: 'Fresh set',
-      tone: 'emerald' as const,
-      icon: <Sparkles className="h-5 w-5" />,
-      config: { questionStatus: 'unused' as const, questionCount: 10 },
-    },
-  ]
-
   if (activeSession?.mode === 'practice' && isRenderableSession(activeSession)) {
     return (
       <QuestionSessionRunner
@@ -1172,118 +1134,9 @@ export function PracticeQuestionsPage() {
     )
   }
 
-  return (
-    <PageStack>
-      <PageHeader
-        eyebrow="Question Bank"
-        title="Question Bank"
-        description="Build a focused practice set without turning the setup screen into the work."
-        action={
-          <button
-            type="button"
-            onClick={() => launchPracticeSession()}
-            className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
-          >
-            {isPending ? 'Building set...' : 'Start adaptive set'}
-            <ArrowRight className="h-4 w-4" />
-          </button>
-        }
-      />
-      <FocusPanel className="border-amber-200/34 bg-[linear-gradient(135deg,rgba(251,191,36,0.16),rgba(6,28,49,0.94)_42%,rgba(2,8,18,0.96))] text-white shadow-[0_0_38px_rgba(251,191,36,0.12)]">
-        <div className="grid gap-5 p-4 sm:p-5 md:p-6 xl:grid-cols-[minmax(0,1fr)_21rem]">
-          <div className="min-w-0">
-            <div className="flex flex-wrap gap-2">
-              <CommandBadge tone="cyan" icon={<BadgeCheck className="h-3.5 w-3.5" />}>{activeTrack.shortName}</CommandBadge>
-              <CommandBadge tone="amber" icon={<Zap className="h-3.5 w-3.5" />}>Practice mode</CommandBadge>
-              <CommandBadge tone="emerald" icon={<ShieldCheck className="h-3.5 w-3.5" />}>Instant rationale</CommandBadge>
-            </div>
-            <h3 className="mt-4 max-w-3xl text-3xl font-bold tracking-normal text-white md:text-4xl">
-              Start focused set
-            </h3>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-sky-100/72">
-              {questionCount} questions from {selectedCategoryLabel}. Start adaptive for the cleanest signal, or tune the set below when you need precision.
-            </p>
-            <div className="mt-5 grid gap-2 sm:grid-cols-3">
-              <CommandStatTile label="Count" value={`${questionCount}`} detail="questions" icon={<ClipboardList className="h-4 w-4" />} tone="amber" />
-              <CommandStatTile label="Track" value={activeTrack.shortName} detail="blueprint bank" icon={<BadgeCheck className="h-4 w-4" />} tone="cyan" />
-              <CommandStatTile label="Review" value="Instant" detail="rationale" icon={<BookOpen className="h-4 w-4" />} tone="emerald" />
-            </div>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <button
-                type="button"
-                onClick={() => launchPracticeSession()}
-                className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
-              >
-                {isPending ? 'Building set...' : 'Start adaptive set'}
-                <ArrowRight className="h-4 w-4" />
-              </button>
-              <Link
-                to="/quick-study"
-                className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl border border-cyan-200/24 bg-cyan-300/[0.07] px-5 py-3 text-sm font-bold text-cyan-100 transition hover:border-cyan-100/55 hover:bg-cyan-300/13"
-              >
-                Quick Study
-                <Zap className="h-4 w-4" />
-              </Link>
-            </div>
-          </div>
-          <div className="rounded-[1rem] border border-white/10 bg-[#031426]/74 p-4">
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-100/58">Set preview</p>
-            <p className="mt-2 text-3xl font-bold text-white">{questionCount}</p>
-            <p className="text-sm font-semibold text-sky-100/70">questions queued</p>
-            <div className="mt-4 space-y-2">
-              {[
-                { label: 'Focus', value: selectedCategoryLabel, tone: 'amber' },
-                { label: 'System', value: selectedSystemLabel, tone: 'cyan' },
-                { label: 'Status', value: questionStatusLabel, tone: 'rose' },
-                { label: 'Format', value: sessionFormatLabel, tone: 'violet' },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className={clsx(
-                    'flex items-center justify-between gap-3 rounded-xl border px-3 py-2',
-                    item.tone === 'amber' && 'border-amber-200/18 bg-amber-300/[0.06]',
-                    item.tone === 'cyan' && 'border-cyan-200/18 bg-cyan-300/[0.06]',
-                    item.tone === 'rose' && 'border-rose-200/18 bg-rose-300/[0.06]',
-                    item.tone === 'violet' && 'border-violet-200/18 bg-fuchsia-300/[0.06]',
-                  )}
-                >
-                  <span className="text-xs font-bold uppercase text-sky-100/48">{item.label}</span>
-                  <span className="min-w-0 break-words text-right text-sm font-bold text-white">{item.value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </FocusPanel>
-
-      <Surface>
-        <SectionHeading
-          title="Choose a practice route"
-          description="Amber starts a normal set, rose repairs misses, emerald gives you fresh questions."
-        />
-        <div className="mt-5 grid gap-3 md:grid-cols-3">
-          {practicePresets.map((preset) => (
-            <CommandActionCard
-              key={preset.title}
-              title={preset.title}
-              description={preset.description}
-              meta={preset.action}
-              tone={preset.tone}
-              icon={preset.icon}
-              action={<ArrowRight className="h-4 w-4" />}
-              onClick={() => launchPracticeSession(preset.config)}
-            />
-          ))}
-        </div>
-      </Surface>
-
-      <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
-        <Surface>
-          <SectionHeading
-            title="Tune the set"
-            description="Use filters when you need precision. Otherwise, start adaptive and keep moving."
-          />
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
+  return <section className="simple-study" aria-labelledby="bank-title">
+    <header><h1 id="bank-title">Question Bank</h1><p>{activeTrack.shortName} · Practice at your own pace.</p></header>
+    <div className="simple-study-fields">
             <Field label="Category">
               <select value={category} onChange={(event) => setCategory(event.target.value as QuestionCategory | 'All')} className={selectClass}>
                 <option value="All">All categories</option>
@@ -1292,7 +1145,10 @@ export function PracticeQuestionsPage() {
                 ))}
               </select>
             </Field>
-            <Field label="System">
+
+      <Field label="Questions"><select className={selectClass} value={questionCount} onChange={(event) => setQuestionCount(Number(event.target.value))}>{[5,10,15,20].map((count) => <option key={count} value={count}>Up to {count} questions</option>)}</select></Field>
+    </div>
+    <details className="simple-study-details"><summary>More options</summary><div className="simple-study-fields">            <Field label="System">
               <select value={system} onChange={(event) => setSystem(event.target.value)} className={selectClass}>
                 <option value="All">All systems</option>
                 {trackSystems.map((item) => (
@@ -1331,812 +1187,67 @@ export function PracticeQuestionsPage() {
                 <option value="mixed">Mixed</option>
               </select>
             </Field>
-            <Field label="Question count">
-              <input
-                type="range"
-                min={5}
-                max={20}
-                step={5}
-                value={questionCount}
-                onChange={(event) => setQuestionCount(Number(event.target.value))}
-                className="w-full accent-sky-600"
-              />
-              <p className="mt-2 text-sm text-[#7e97aa]">{questionCount} questions</p>
-            </Field>
-          </div>
-          <button
-            type="button"
-            onClick={() => launchPracticeSession()}
-            className="nclex-btn-secondary mt-6 inline-flex min-h-[48px] items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold"
-          >
-            {isPending ? 'Building set...' : 'Start with these settings'}
-            <ArrowRight className="h-4 w-4" />
-          </button>
-        </Surface>
-
-        <Surface>
-          <SectionHeading
-            title="After this set"
-            description="Misses become repairs. Finished sets update your performance readout."
-          />
-          <div className="mt-5 grid gap-3">
-            <CommandActionCard
-              to="/weak-areas"
-              title="Open remediation"
-              description="Turn missed categories into a repair queue."
-              meta="Repair"
-              tone="rose"
-              icon={<Target className="h-5 w-5" />}
-              action={<ArrowRight className="h-4 w-4" />}
-            />
-            <CommandActionCard
-              to="/performance-analytics"
-              title="Check performance"
-              description="See whether practice is improving readiness signal."
-              meta="Readout"
-              tone="violet"
-              icon={<BarChart3 className="h-5 w-5" />}
-              action={<ArrowRight className="h-4 w-4" />}
-            />
-            <ChecklistItem label="Answer, confidence, rationale, next action" completed meta="Session loop" />
-            <ChecklistItem label="Flag confusing items without leaving the set" completed={false} meta="Optional" />
-          </div>
-        </Surface>
-      </div>
-    </PageStack>
-  )
+</div></details>
+    <button className="simple-study-start" disabled={isPending} onClick={() => launchPracticeSession()}>{isPending ? 'Building set…' : 'Start practice'}<ArrowRight size={18} /></button>
+    <Link className="simple-study-link" to="/study-results">Saved results</Link>
+  </section>
 }
 
 export function ExamPrepPage() {
-  const navigate = useNavigate()
   const profile = useStudySystemStore((state) => state.profile)
-  const activeSession = useStudySystemStore((state) => state.activeSession)
-  const practiceSessions = useStudySystemStore((state) => state.practiceSessions)
   const updateProfile = useStudySystemStore((state) => state.updateProfile)
+  const active = useStudySystemStore((state) => state.activeSession)
   const startPracticeSession = useStudySystemStore((state) => state.startPracticeSession)
-  const [selectedTrackId, setSelectedTrackId] = useState<ExamTrackId>(profile.examTrack ?? 'nclex-rn')
-  const [fnpBoard, setFnpBoard] = useState<'AANP' | 'ANCC'>('AANP')
-  const [questionStatus, setQuestionStatus] = useState<'unused' | 'incorrect' | 'all'>('unused')
-  const [fnpSystem, setFnpSystem] = useState('Cardiology')
-  const [testMode, setTestMode] = useState<'Tutor' | 'Timed'>('Tutor')
-  const [createdTest, setCreatedTest] = useState(false)
-  const selectedTrack = getExamTrack(selectedTrackId)
-  const activeTrack = getExamTrack(profile.examTrack ?? 'nclex-rn')
-  const isFnp = selectedTrack.id === 'fnp'
-  const selectedBankSize = getExamQuestionBank(selectedTrack.id).length
-  const qualitySummary = getExamContentQualitySummary(selectedTrack.id)
-  const activePracticeSummary = activeSession?.mode === 'practice' ? getActiveSessionSummary(activeSession) : null
-  const recentPracticeHistory = useMemo(
-    () => getPracticeHistory(practiceSessions, 3).filter((session) => session.mode === 'practice'),
-    [practiceSessions],
-  )
-  const createFnpPracticeTest = () => {
-    updateProfile({ examTrack: 'fnp' })
-    const sessionIsOpen = isActiveSessionOpen(activeSession)
-    if (!(sessionIsOpen && activeSession?.mode === 'practice')) {
-      startPracticeSession({
-        category: 'All',
-        system: fnpSystem,
-        board: fnpBoard,
-        questionStatus,
-        difficulty: 'adaptive',
-        format: 'mixed',
-        questionCount: 15,
-      })
-      setCreatedTest(true)
-    }
-    navigate('/practice-questions')
-  }
-
-  const fnpCoverage = [
-    '1,100+ FNP practice questions target',
-    'Customizable practice tests',
-    'Total AANP & ANCC coverage',
-    'Detailed diagnostic reports',
-    'In-depth answer explanations',
-    'Specialist NP review-ready rationales',
-    'Spaced-repetition flashcards',
-    'Tutor & Timed options',
-    'Digital notebook',
-    'Mobile access',
-    'One-time reset option',
-  ]
-  const reportRows = [
-    { label: 'Cardiovascular', value: 0.58, tone: 'amber' as const, detail: 'Prioritize cardiology review before mixed FNP tests.' },
-    { label: 'Psychiatry', value: 0.74, tone: 'blue' as const, detail: 'Stable but needs more ANCC-style reasoning.' },
-    { label: 'Pharmacology', value: 0.62, tone: 'amber' as const, detail: 'Focus on prescribing safety and adverse effects.' },
-    { label: 'Health Promotion', value: 0.86, tone: 'green' as const, detail: 'Strong domain. Keep in spaced review.' },
-  ]
-  const selectedTrackIsActive = selectedTrack.id === activeTrack.id
-  const prepActionTitle = selectedTrackIsActive
-    ? `Start ${selectedTrack.shortName} high-yield review`
-    : `Switch to ${selectedTrack.shortName}`
-  const prepActionDetail = selectedTrackIsActive
-    ? 'Your active exam lane is set. Start with a focused block, then review misses.'
-    : `Use ${selectedTrack.shortName} before starting so questions, performance, and remediation stay aligned.`
-  const applySelectedTrack = () => {
-    if (profile.examTrack !== selectedTrackId) {
-      updateProfile({ examTrack: selectedTrackId })
-    }
-  }
-  const startSelectedPractice = () => {
-    applySelectedTrack()
-    navigate('/practice-questions')
-  }
-  const startSelectedExam = () => {
-    applySelectedTrack()
-    navigate('/test-mode')
-  }
-
-  return (
-    <PageStack>
-      <PageHeader
-        eyebrow="Exam Prep"
-        title="Exam Prep"
-        description="Plan the next high-yield review before you start testing."
-        action={
-          <button
-            type="button"
-            onClick={startSelectedPractice}
-            className="inline-flex min-h-[48px] items-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
-          >
-            Start high-yield review
-            <ArrowRight className="h-4 w-4" />
-          </button>
-        }
-      />
-
-      {activePracticeSummary || recentPracticeHistory.length ? (
-        <Surface className="border-emerald-200/18 bg-emerald-300/[0.045]">
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.8fr)]">
-            <div className="min-w-0">
-              <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-100/68">
-                Practice progress
-              </p>
-              <h3 className="mt-2 text-2xl font-bold text-white">
-                {activePracticeSummary ? 'Resume before you reset the lane.' : 'Use recent results before starting another block.'}
-              </h3>
-              <p className="mt-2 text-sm leading-6 text-sky-100/66">
-                {activePracticeSummary
-                  ? `${activePracticeSummary.answeredCount}/${activePracticeSummary.questionCount} answered in ${activePracticeSummary.topCategory}. Finish or discard it before creating a clean set.`
-                  : 'Completed review blocks stay tied to the account, so use the trail before choosing the next exam-prep move.'}
-              </p>
-              <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                {activePracticeSummary ? (
-                  <button
-                    type="button"
-                    onClick={() => navigate(activePracticeSummary.route)}
-                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-emerald-100/30 bg-emerald-300/[0.12] px-4 py-2 text-sm font-bold text-emerald-100 transition hover:bg-emerald-300/18"
-                  >
-                    Resume practice
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
-                ) : null}
-                <Link
-                  to="/performance-analytics"
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-cyan-200/20 bg-cyan-300/[0.08] px-4 py-2 text-sm font-bold text-cyan-100 transition hover:bg-cyan-300/14"
-                >
-                  View history
-                  <BarChart3 className="h-4 w-4" />
-                </Link>
-              </div>
-            </div>
-            {recentPracticeHistory.length ? (
-              <div className="grid gap-2">
-                {recentPracticeHistory.slice(0, 2).map((session) => (
-                  <div key={session.id} className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="truncate text-sm font-bold text-white">{session.title || session.label}</p>
-                      <span className="shrink-0 rounded-lg border border-emerald-200/24 bg-emerald-300/10 px-2.5 py-1 text-xs font-bold text-emerald-100">
-                        {Math.round(session.score * 100)}%
-                      </span>
-                    </div>
-                    <p className="mt-1 text-xs font-semibold text-sky-100/56">
-                      {session.topCategory} - {new Date(session.completedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-          </div>
-        </Surface>
-      ) : null}
-
-      <CommandFocusPanel tone="amber">
-        <div className="grid gap-5 p-5 md:p-6 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-stretch">
-          <div>
-            <div className="flex flex-wrap gap-2">
-              <CommandBadge tone="amber" icon={<Sparkles className="h-3.5 w-3.5" />}>Recommended prep</CommandBadge>
-              <CommandBadge tone="cyan" icon={<BadgeCheck className="h-3.5 w-3.5" />}>{selectedTrack.shortName}</CommandBadge>
-              {selectedTrackIsActive ? (
-                <CommandBadge tone="emerald" icon={<CheckCircle2 className="h-3.5 w-3.5" />}>Active lane</CommandBadge>
-              ) : null}
-            </div>
-            <h3 className="mt-4 max-w-3xl text-3xl font-bold tracking-normal text-white md:text-4xl">
-              {prepActionTitle}
-            </h3>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-sky-100/72">
-              {prepActionDetail} Keep blueprint details available, but let the next action stay obvious.
-            </p>
-            <CommandMetricGroup
-              className="mt-5"
-              metrics={[
-                { label: 'Question Bank', value: `${selectedBankSize}`, detail: 'ready now', tone: 'cyan', icon: <ClipboardList className="h-4 w-4" /> },
-                { label: 'Boards', value: `${selectedTrack.boards.length}`, detail: selectedTrack.boards.join(' + '), tone: 'violet', icon: <BookOpen className="h-4 w-4" /> },
-                { label: 'Status', value: selectedTrack.status === 'live' ? 'Live' : 'Ready', detail: 'content lane', tone: selectedTrack.status === 'live' ? 'emerald' : 'amber', icon: <ShieldCheck className="h-4 w-4" /> },
-              ]}
-            />
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <button
-                type="button"
-                onClick={startSelectedPractice}
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
-              >
-                Start review block
-                <ArrowRight className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={startSelectedExam}
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-cyan-200/24 bg-cyan-300/[0.07] px-5 py-3 text-sm font-bold text-cyan-100 transition hover:border-cyan-100/55 hover:bg-cyan-300/13 focus:outline-none focus:ring-4 focus:ring-cyan-300/18"
-              >
-                Start exam simulation
-                <Target className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-          <div className="grid gap-3">
-            <CommandInsightPanel
-              eyebrow="Active track"
-              title={activeTrack.shortName}
-              description={activeTrack.subtitle}
-              tone="cyan"
-            />
-            <CommandStatusRow
-              icon={<Target className="h-4 w-4" />}
-              title="Prep rule"
-              detail="Pick the credential first, start a short block, then let misses feed remediation."
-              tone="amber"
-            />
-          </div>
-        </div>
-      </CommandFocusPanel>
-
-      <div className="grid gap-5 xl:grid-cols-3">
-        <Surface className="border-amber-200/22 bg-amber-300/[0.055]">
-          <SectionHeading
-            title="High-Yield Review"
-            description="Recommended work before a longer exam block."
-          />
-          <div className="mt-5 grid gap-3">
-            <CommandStatusRow
-              icon={<Sparkles className="h-4 w-4" />}
-              title={`Review in ${selectedTrack.shortName}`}
-              detail="Start with questions, not reading. The results will point to the next repair."
-              tone="amber"
-            />
-            <CommandStatusRow
-              icon={<Target className="h-4 w-4" />}
-              title="Repair the misses"
-              detail="Use remediation after the block instead of adding random volume."
-              tone="rose"
-            />
-            <button
-              type="button"
-              onClick={startSelectedPractice}
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(251,191,36,0.18)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
-            >
-              Start high-yield block
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
-        </Surface>
-
-        <Surface className="border-cyan-200/18 bg-cyan-300/[0.045]">
-          <SectionHeading
-            title="Test Strategy"
-            description="Choose the credential lane before you test."
-          />
-          <div className="mt-5 grid gap-2">
-            {examTracks.map((track) => (
-              <button
-                key={track.id}
-                type="button"
-                onClick={() => {
-                  setSelectedTrackId(track.id)
-                  setCreatedTest(false)
-                }}
-                className={clsx(
-                  'rounded-[18px] border p-4 text-left transition hover:-translate-y-0.5',
-                  selectedTrack.id === track.id
-                    ? 'border-amber-200/50 bg-amber-300/[0.09] shadow-[0_0_24px_rgba(251,191,36,0.12)]'
-                    : 'border-cyan-200/18 bg-white/[0.045] hover:border-cyan-100/38 hover:bg-cyan-300/[0.07]',
-                )}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-semibold text-white">{track.shortName}</p>
-                    <p className="mt-1 text-sm leading-6 text-sky-100/64">
-                      {track.title}
-                    </p>
-                  </div>
-                  <span className={track.status === 'live' ? 'nclex-chip nclex-chip-success' : 'nclex-chip nclex-chip-info'}>
-                    {track.status === 'live' ? 'Live' : 'Ready'}
-                  </span>
-                </div>
-              </button>
-            ))}
-          </div>
-          <div className="mt-4 flex flex-col gap-2 sm:flex-row xl:flex-col">
-            <button
-              type="button"
-              onClick={applySelectedTrack}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-cyan-200/24 bg-cyan-300/[0.08] px-4 py-2 text-sm font-bold text-cyan-100 transition hover:border-cyan-100/50 hover:bg-cyan-300/[0.14]"
-            >
-              Use {selectedTrack.shortName}
-              <CheckCircle2 className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={startSelectedExam}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-violet-200/24 bg-violet-300/[0.08] px-4 py-2 text-sm font-bold text-violet-100 transition hover:border-violet-100/50 hover:bg-violet-300/[0.14]"
-            >
-              Start exam simulation
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
-        </Surface>
-
-        <Surface className="border-violet-200/18 bg-violet-300/[0.045]">
-          <SectionHeading
-            title="Readiness Checks"
-            description="A quick confidence check before deep details."
-          />
-          <div className="mt-5 grid gap-3">
-            <CommandStatusRow
-              icon={<ClipboardList className="h-4 w-4" />}
-              title={`${selectedBankSize} questions ready`}
-              detail={selectedTrack.questionTarget}
-              tone="cyan"
-            />
-            <CommandStatusRow
-              icon={<ShieldCheck className="h-4 w-4" />}
-              title={`${qualitySummary.reviewReady} review-ready`}
-              detail={`${qualitySummary.smeReviewed} SME-reviewed, ${qualitySummary.authoredDraft} authored drafts.`}
-              tone={qualitySummary.reviewReady ? 'emerald' : 'amber'}
-            />
-            <CommandStatusRow
-              icon={<BarChart3 className="h-4 w-4" />}
-              title="Check performance after"
-              detail="Use the post-block insight page before deciding whether to test again."
-              tone="violet"
-            />
-          </div>
-        </Surface>
-      </div>
-
-      <Surface className="overflow-hidden border-violet-200/18 bg-[#061426] p-0">
-        <details>
-          <summary className="flex cursor-pointer list-none flex-col gap-3 px-5 py-5 text-white transition hover:bg-white/[0.035] md:flex-row md:items-center md:justify-between md:px-6">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-100/70">
-                Blueprint details
-              </p>
-              <h3 className="mt-2 text-2xl font-bold tracking-normal text-white">
-                Coverage, format, and quality notes
-              </h3>
-              <p className="mt-1 text-sm leading-6 text-sky-100/62">
-                Open this when you need the domains, systems, formats, and resource list.
-              </p>
-            </div>
-            <span className="inline-flex min-h-10 items-center justify-center rounded-xl border border-violet-200/24 bg-violet-300/[0.08] px-4 py-2 text-sm font-bold text-violet-100">
-              Show details
-            </span>
-          </summary>
-          <div className="border-t border-violet-200/14">
-            <div className="bg-[linear-gradient(135deg,#003b66_0%,#12375a_100%)] px-5 py-6 text-white md:px-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-100">
-                {selectedTrack.shortName} overview
-              </p>
-              <h3 className="mt-3 nc-section-title text-3xl leading-tight md:text-4xl">
-                {selectedTrack.title}
-              </h3>
-              <p className="mt-3 max-w-4xl text-sm leading-7 text-sky-100/85">
-                {selectedTrack.subtitle}
-              </p>
-              <div className="mt-5 grid gap-3 md:grid-cols-3">
-                <QuickMetric label="Question Bank" value={`${selectedBankSize} ready now`} detail={selectedTrack.questionTarget} />
-                <QuickMetric label="Boards" value={selectedTrack.boards.join(' + ')} detail="Exam-specific preparation path." />
-                <QuickMetric label="Formats" value={`${selectedTrack.testingFormats.length}`} detail="Testing modes and item types." />
-              </div>
-            </div>
-            <div className="grid gap-5 p-5 md:grid-cols-2 md:p-6">
-              <div className="rounded-[18px] border border-violet-200/18 bg-white/[0.045] p-4 md:col-span-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-100/70">
-                  Content quality pass
-                </p>
-                <div className="mt-4 grid gap-3 md:grid-cols-4">
-                  <MetricChip label="Review-ready" value={`${qualitySummary.reviewReady}`} />
-                  <MetricChip label="Authored drafts" value={`${qualitySummary.authoredDraft}`} />
-                  <MetricChip label="SME reviewed" value={`${qualitySummary.smeReviewed}`} />
-                  <MetricChip label="Starter fill" value={`${qualitySummary.generatedStarter}`} />
-                </div>
-                <p className="mt-4 text-sm leading-6 text-sky-100/64">
-                  Review-ready items are higher-quality clinical-editor drafts prepared for SME validation. The app does not label content as SME-authored until a real reviewer marks it reviewed.
-                </p>
-              </div>
-              <ExamTrackList title="Domains" items={selectedTrack.domains} />
-              <ExamTrackList title="Systems" items={selectedTrack.systems} />
-              <ExamTrackList title="Testing formats" items={selectedTrack.testingFormats} />
-              <ExamTrackList title="Resources" items={selectedTrack.resources} />
-            </div>
-          </div>
-        </details>
-      </Surface>
-
-      {isFnp ? (
-        <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-          <Surface className="border-amber-200/20 bg-amber-300/[0.055]">
-            <SectionHeading
-              title="FNP product: Create test"
-              description="Gold is the next action: build the test block, then move into practice."
-            />
-            <div className="mt-5 grid gap-4 md:grid-cols-2">
-              <Field label="Board blueprint">
-                <select value={fnpBoard} onChange={(event) => setFnpBoard(event.target.value as typeof fnpBoard)} className={selectClass}>
-                  <option value="AANP">AANP</option>
-                  <option value="ANCC">ANCC</option>
-                </select>
-              </Field>
-              <Field label="Question status">
-                <select value={questionStatus} onChange={(event) => setQuestionStatus(event.target.value as typeof questionStatus)} className={selectClass}>
-                  <option value="unused">Unused</option>
-                  <option value="incorrect">Previously incorrect</option>
-                  <option value="all">All questions</option>
-                </select>
-              </Field>
-              <Field label="Domain / system">
-                <select value={fnpSystem} onChange={(event) => setFnpSystem(event.target.value)} className={selectClass}>
-                  {selectedTrack.systems.map((system) => (
-                    <option key={system} value={system}>{system}</option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Mode">
-                <select value={testMode} onChange={(event) => setTestMode(event.target.value as typeof testMode)} className={selectClass}>
-                  <option value="Tutor">Tutor Mode</option>
-                  <option value="Timed">Timed Mode</option>
-                </select>
-              </Field>
-            </div>
-            <button
-              type="button"
-              onClick={createFnpPracticeTest}
-              className="nclex-btn-primary mt-5 inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold"
-            >
-              Create FNP practice test
-              <ArrowRight className="h-4 w-4" />
-            </button>
-            {createdTest ? (
-              <div className="mt-5 rounded-[18px] border border-emerald-200/24 bg-emerald-300/[0.08] p-4 text-sm leading-6 text-emerald-100">
-                Created a {testMode} {fnpBoard} FNP practice test using {questionStatus} questions in {fnpSystem}. In the next content pass, this connects to the FNP QBank and question status history.
-              </div>
-            ) : null}
-          </Surface>
-
-          <Surface className="border-violet-200/18 bg-violet-300/[0.045]">
-            <SectionHeading
-              title="FNP feature coverage"
-              description="Violet is strategy and mastery: what this exam lane needs to support."
-            />
-            <div className="mt-5 grid gap-3 md:grid-cols-2">
-              {fnpCoverage.map((item) => (
-                <div key={item} className="rounded-[16px] border border-violet-200/16 bg-white/[0.045] p-4">
-                  <div className="flex items-start gap-3">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-200" />
-                    <p className="text-sm font-semibold leading-6 text-sky-100/74">{item}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Surface>
-
-          <Surface className="border-violet-200/18 bg-[#061426] xl:col-span-2">
-            <SectionHeading
-              title="FNP diagnostic report preview"
-              description="Breaks results down by AANP/ANCC blueprint, domain, body system, mode, and question status."
-            />
-            <div className="mt-5 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-              {reportRows.map((row) => (
-                <div key={row.label} className="rounded-[18px] border border-violet-200/16 bg-white/[0.045] p-4">
-                  <p className="font-semibold text-white">{row.label}</p>
-                  <p className="mt-2 text-sm leading-6 text-sky-100/64">{row.detail}</p>
-                  <div className="mt-4">
-                    <ProgressBar value={row.value} tone={row.tone} />
-                  </div>
-                  <p className="mt-2 text-sm font-semibold text-sky-100">
-                    {Math.round(row.value * 100)}%
-                  </p>
-                </div>
-              ))}
-            </div>
-          </Surface>
-        </div>
-      ) : null}
-    </PageStack>
-  )
+  const abandonSession = useStudySystemStore((state) => state.abandonSession)
+  const [trackId, setTrackId] = useState<ExamTrackId>(profile.examTrack ?? 'nclex-rn')
+  const [category, setCategory] = useState<QuestionCategory | 'All'>('All')
+  const [isPending, startTransition] = useTransition()
+  const track = getExamTrack(trackId)
+  const quality = getExamContentQualitySummary(trackId)
+  if (active?.mode === 'practice' && isRenderableSession(active)) return <QuestionSessionRunner key={active.id + active.currentIndex} session={active} modeLabel="Exam Prep" onExit={abandonSession} />
+  const start = () => startTransition(() => {
+    updateProfile({ examTrack: trackId })
+    startPracticeSession({ category, questionCount: 10, difficulty: 'adaptive', format: 'mixed' })
+  })
+  return <section className="simple-study" aria-labelledby="prep-title">
+    <header><h1 id="prep-title">Exam Prep</h1><p>Review one topic before a longer exam.</p></header>
+    <div className="simple-study-fields">
+      <Field label="Your exam"><select className={selectClass} value={trackId} onChange={(event) => { setTrackId(event.target.value as ExamTrackId); setCategory('All') }}>{examTracks.map((item) => <option key={item.id} value={item.id}>{item.shortName}</option>)}</select></Field>
+      <Field label="Topic"><select className={selectClass} value={category} onChange={(event) => setCategory(event.target.value as QuestionCategory | 'All')}><option value="All">All topics</option>{getExamCategories(trackId).map((item) => <option key={item}>{item}</option>)}</select></Field>
+    </div>
+    <p>Up to 10 questions · Explanations after each answer</p>
+    <button className="simple-study-start" disabled={isPending} onClick={start}>{isPending ? 'Building review…' : 'Start review'}<ArrowRight size={18} /></button>
+    <details className="simple-study-details"><summary>Exam coverage & content details</summary>
+      <p>{track.subtitle}</p><p>Boards: {track.boards.join(', ')}</p>
+      <p>{quality.smeReviewed} SME-reviewed questions; {quality.authoredDraft} authored drafts. Practice is not a licensure prediction.</p>
+      <ul>{track.testingFormats.map((format) => <li key={format}>{format}</li>)}</ul>
+      <Link className="simple-study-link" to="/test-mode">Take a practice exam</Link>
+    </details>
+  </section>
 }
-
-export { QuickStudyPage } from './quick-study-page'
 
 export function TestModePage() {
   const profile = useStudySystemStore((state) => state.profile)
   const activeSession = useStudySystemStore((state) => state.activeSession)
-  const practiceSessions = useStudySystemStore((state) => state.practiceSessions)
   const startTestSession = useStudySystemStore((state) => state.startTestSession)
   const abandonSession = useStudySystemStore((state) => state.abandonSession)
   const [isPending, startTransition] = useTransition()
-  const [resumeExamNow, setResumeExamNow] = useState(false)
   const [questionCount, setQuestionCount] = useState(25)
   const [timed, setTimed] = useState(true)
   const [noBacktracking, setNoBacktracking] = useState(true)
-  const activeTrack = getExamTrack(profile.examTrack ?? 'nclex-rn')
-  const activeTestSummary = activeSession?.mode === 'test' ? getActiveSessionSummary(activeSession) : null
-  const recentExamHistory = useMemo(
-    () => getPracticeHistory(practiceSessions, 4).filter((session) => session.mode === 'test'),
-    [practiceSessions],
-  )
-  const latestExam = recentExamHistory[0]
-  const latestExamScore = latestExam ? Math.round(latestExam.score * 100) : null
-  const activeAnsweredPercent = activeTestSummary
-    ? Math.round((activeTestSummary.answeredCount / Math.max(activeTestSummary.questionCount, 1)) * 100)
-    : 0
-  const examVerdict = activeTestSummary
-    ? 'Exam block in progress'
-    : latestExamScore === null
-      ? 'No exam signal yet'
-      : latestExamScore >= 75
-        ? 'Last exam block held up'
-        : 'Last exam block needs repair'
-  const examVerdictDetail = activeTestSummary
-    ? `${activeTestSummary.answeredCount}/${activeTestSummary.questionCount} answered from ${activeTestSummary.topCategory}. Resume the block or discard it before starting clean.`
-    : latestExamScore === null
-      ? `Start with a ${questionCount}-question timed block to establish a baseline.`
-      : `${latestExamScore}% on the last exam-style set. Review misses before adding another timed block.`
-  const reviewQueueTitle = activeTestSummary
-    ? 'Resume active exam'
-    : latestExam
-      ? 'Review last misses'
-      : 'Create first result'
-  const reviewQueueDetail = activeTestSummary
-    ? 'Finish the current block so the result screen stays clean.'
-    : latestExam
-      ? 'Send weak patterns to remediation before the next simulation.'
-      : 'Your first completed block will unlock a review queue.'
-  const activeSessionIsOpen = isActiveSessionOpen(activeSession)
-  if (
-    activeSession?.mode === 'test' &&
-    isRenderableSession(activeSession) &&
-    (resumeExamNow || activeSession.responses.length === 0 || Boolean(activeSession.endedAt))
-  ) {
-    return (
-      <QuestionSessionRunner
-        key={`${activeSession.id}-${activeSession.currentIndex}`}
-        session={activeSession}
-        modeLabel="Test Mode"
-        onExit={abandonSession}
-      />
-    )
-  }
-
-  const examMode = timed ? (noBacktracking ? 'Timed' : 'Readiness') : 'Tutor'
-  const modeOptions = [
-    {
-      label: 'Timed',
-      detail: 'Pressure practice',
-      active: examMode === 'Timed',
-      onSelect: () => {
-        setTimed(true)
-        setNoBacktracking(true)
-      },
-    },
-    {
-      label: 'Tutor',
-      detail: 'Learn as you go',
-      active: examMode === 'Tutor',
-      onSelect: () => {
-        setTimed(false)
-        setNoBacktracking(false)
-      },
-    },
-    {
-      label: 'Readiness',
-      detail: 'Balanced check',
-      active: examMode === 'Readiness',
-      onSelect: () => {
-        setTimed(true)
-        setNoBacktracking(false)
-      },
-    },
-  ]
-  const launchTestSession = () => {
-    setResumeExamNow(true)
-    startTransition(() => {
-      if (!(activeSessionIsOpen && activeSession?.mode === 'test')) {
-        startTestSession({ questionCount, timed, noBacktracking })
-      }
-    })
-  }
-
-  return (
-    <PageStack>
-      <PageHeader
-        eyebrow="Exam Simulation"
-        title="Exam Simulation"
-        description={`Start a serious exam block for ${activeTrack.shortName}. Choose the simulation style, run the set, then leave with one verdict and a review queue.`}
-        action={
-          <button
-            type="button"
-            onClick={launchTestSession}
-            className="inline-flex min-h-[48px] items-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
-          >
-            {isPending ? 'Building exam...' : 'Start timed exam'}
-            <ArrowRight className="h-4 w-4" />
-          </button>
-        }
-      />
-
-      <CommandFocusPanel tone="amber">
-        <div className="grid gap-5 p-5 md:p-6 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-end">
-          <div>
-            <div className="flex flex-wrap gap-2">
-              <CommandBadge tone="amber" icon={<Clock3 className="h-3.5 w-3.5" />}>Start action</CommandBadge>
-              <CommandBadge tone="cyan" icon={<BadgeCheck className="h-3.5 w-3.5" />}>{activeTrack.shortName}</CommandBadge>
-            </div>
-            <h3 className="mt-4 max-w-3xl text-3xl font-bold tracking-normal text-white md:text-5xl">
-              Start timed exam
-            </h3>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-sky-100/72">
-              {questionCount} mixed questions, one clean timer, and a result screen that turns misses into a repair queue. Switch to Tutor or Readiness only when that better matches the session.
-            </p>
-            <CommandModeControl options={modeOptions} className="mt-6" />
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <button
-                type="button"
-                onClick={launchTestSession}
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(251,191,36,0.22)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
-              >
-                {isPending ? 'Building exam...' : 'Start exam'}
-                <ArrowRight className="h-4 w-4" />
-              </button>
-              {activeTestSummary ? (
-                <button
-                  type="button"
-                  onClick={() => setResumeExamNow(true)}
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-cyan-200/24 bg-cyan-300/[0.09] px-5 py-3 text-sm font-bold text-cyan-100 transition hover:border-cyan-100/45 hover:bg-cyan-300/[0.14] focus:outline-none focus:ring-4 focus:ring-cyan-300/18"
-                >
-                  Resume current block
-                </button>
-              ) : null}
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-3 xl:grid-cols-1">
-            <CommandStatTile label="Count" value={`${questionCount}`} detail="questions" tone="amber" icon={<ClipboardList className="h-4 w-4" />} />
-            <CommandStatTile label="Mode" value={examMode} detail="exam setup" tone="cyan" icon={<Clock3 className="h-4 w-4" />} />
-            <CommandStatTile label="Review" value="After" detail="miss queue" tone="violet" icon={<BarChart3 className="h-4 w-4" />} />
-          </div>
-        </div>
-      </CommandFocusPanel>
-
-      <DetailGrid>
-        <Surface className="border-violet-200/22 bg-violet-300/[0.055]">
-          <SectionHeading
-            title="Results and resume"
-            description="One verdict first, then the three numbers that decide what to review."
-            action={
-              <Link
-                to="/performance-analytics"
-                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-violet-200/24 bg-violet-300/[0.08] px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-violet-100 transition hover:bg-violet-300/14"
-              >
-                Performance
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            }
-          />
-          <div className="mt-5 rounded-2xl border border-violet-200/18 bg-[#061426]/75 p-4">
-            <p className="text-xs font-black uppercase tracking-[0.16em] text-violet-100/62">Verdict</p>
-            <h4 className="mt-2 text-2xl font-black tracking-normal text-white">{examVerdict}</h4>
-            <p className="mt-2 text-sm leading-6 text-sky-100/66">{examVerdictDetail}</p>
-          </div>
-          <div className="mt-4 grid gap-2 sm:grid-cols-3">
-            <CommandStatTile
-              label={activeTestSummary ? 'Answered' : 'Last score'}
-              value={activeTestSummary ? `${activeTestSummary.answeredCount}` : latestExamScore === null ? '-' : `${latestExamScore}%`}
-              detail={activeTestSummary ? `${activeAnsweredPercent}% complete` : 'exam result'}
-              tone={latestExamScore !== null && latestExamScore < 75 ? 'rose' : 'violet'}
-              icon={<BarChart3 className="h-4 w-4" />}
-            />
-            <CommandStatTile
-              label={activeTestSummary ? 'Remaining' : 'Questions'}
-              value={activeTestSummary ? `${activeTestSummary.questionCount - activeTestSummary.answeredCount}` : latestExam ? `${latestExam.questionCount}` : `${questionCount}`}
-              detail={activeTestSummary ? 'left in block' : 'mixed block'}
-              tone="cyan"
-              icon={<ClipboardList className="h-4 w-4" />}
-            />
-            <CommandStatTile
-              label="Review queue"
-              value={activeTestSummary ? 'Open' : latestExam ? 'Ready' : 'Locked'}
-              detail={activeTestSummary ? 'finish first' : latestExam ? 'misses available' : 'after exam'}
-              tone={latestExam ? 'rose' : 'amber'}
-              icon={<Target className="h-4 w-4" />}
-            />
-          </div>
-          <div className="mt-5 rounded-2xl border border-rose-200/18 bg-rose-300/[0.055] p-4">
-            <CommandStatusRow icon={<Target className="h-4 w-4" />} title={reviewQueueTitle} detail={reviewQueueDetail} tone="rose" />
-            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-              {activeTestSummary ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setResumeExamNow(true)}
-                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-amber-300/16 px-4 py-2 text-sm font-bold text-amber-100 transition hover:bg-amber-300/24"
-                  >
-                    Resume exam
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={abandonSession}
-                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-rose-200/25 bg-rose-300/[0.08] px-4 py-2 text-sm font-bold text-rose-100 transition hover:bg-rose-300/14"
-                  >
-                    Discard
-                  </button>
-                </>
-              ) : (
-                <Link
-                  to="/weak-areas"
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-rose-200/25 bg-rose-300/[0.08] px-4 py-2 text-sm font-bold text-rose-100 transition hover:bg-rose-300/14"
-                >
-                  Review weak areas
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              )}
-            </div>
-          </div>
-        </Surface>
-
-        <Surface>
-          <SectionHeading
-            title="Advanced settings"
-            description="Useful controls, parked below the start action."
-          />
-          <div className="mt-5 grid gap-4">
-            <Field label="Question count">
-              <input
-                type="range"
-                min={20}
-                max={60}
-                step={5}
-                value={questionCount}
-                onChange={(event) => setQuestionCount(Number(event.target.value))}
-                className="w-full accent-amber-300"
-              />
-              <p className="mt-2 text-sm font-semibold text-sky-100/70">{questionCount} mixed questions</p>
-            </Field>
-            <div className="rounded-2xl border border-cyan-200/18 bg-cyan-300/[0.055] p-4">
-              <p className="text-xs font-black uppercase tracking-[0.14em] text-cyan-100/62">Question mix</p>
-              <p className="mt-2 text-sm font-bold text-white">All {activeTrack.shortName} categories</p>
-              <p className="mt-1 text-sm leading-6 text-sky-100/62">
-                Exam simulation stays mixed. Use Question Bank when you need a category-specific drill.
-              </p>
-            </div>
-            <ToggleRow label="Timed mode" description="Uses a realistic countdown and keeps the interface lean." checked={timed} onChange={setTimed} />
-            <ToggleRow label="No backtracking" description="Once you move forward, you stay forward." checked={noBacktracking} onChange={setNoBacktracking} />
-          </div>
-        </Surface>
-      </DetailGrid>
-    </PageStack>
-  )
+  if (activeSession?.mode === 'test' && isRenderableSession(activeSession)) return <QuestionSessionRunner key={activeSession.id + activeSession.currentIndex} session={activeSession} modeLabel="Exam practice" onExit={abandonSession} />
+  return <section className="simple-study" aria-labelledby="exam-title">
+    <header><h1 id="exam-title">Take an Exam</h1><p>{getExamTrack(profile.examTrack ?? 'nclex-rn').shortName} · A mixed practice exam.</p></header>
+    <Field label="Questions"><select className={selectClass} value={questionCount} onChange={(event) => setQuestionCount(Number(event.target.value))}>{[20,25,30,35,40,45,50,55,60].map((count) => <option key={count} value={count}>Up to {count} questions</option>)}</select></Field>
+    <p>{timed ? 'Timed' : 'Untimed'} · {noBacktracking ? 'No going back to earlier questions' : 'Earlier questions can be revisited'}</p>
+    <details className="simple-study-details"><summary>Exam options</summary>
+      <label className="simple-study-check"><input type="checkbox" checked={timed} onChange={(event) => setTimed(event.target.checked)} />Use a timer</label>
+      <label className="simple-study-check"><input type="checkbox" checked={noBacktracking} onChange={(event) => setNoBacktracking(event.target.checked)} />Prevent backtracking</label>
+      <p>For timed exams, the clock keeps running if you leave.</p>
+    </details>
+    <button className="simple-study-start" disabled={isPending} onClick={() => startTransition(() => startTestSession({ questionCount, timed, noBacktracking }))}>{isPending ? 'Building exam…' : 'Start exam'}<ArrowRight size={18} /></button>
+    <Link className="simple-study-link" to="/study-results">Saved results</Link>
+  </section>
 }
 
 export function WeakAreasPage() {
@@ -2698,7 +1809,6 @@ export function PerformanceAnalyticsPage() {
 }
 
 export function FlashcardsPage() {
-  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const initialCategory = searchParams.get('category')
   const materialIdParam = searchParams.get('materialId')
@@ -2728,6 +1838,10 @@ export function FlashcardsPage() {
   const [shuffleSeed, setShuffleSeed] = useState(1)
   const [index, setIndex] = useState(0)
   const [isFlipped, setIsFlipped] = useState(false)
+  const [deckComplete, setDeckComplete] = useState(false)
+  const [ratingPending, setRatingPending] = useState(false)
+  const [ratingError, setRatingError] = useState('')
+  const flashcardButtonRef = useRef<HTMLButtonElement>(null)
   const [liveBetaFlashcards, setLiveBetaFlashcards] = useState<Flashcard[]>([])
   const [liveBetaLoadFailed, setLiveBetaLoadFailed] = useState(false)
   const [flashcardFeedbackOpen, setFlashcardFeedbackOpen] = useState(false)
@@ -2777,6 +1891,7 @@ export function FlashcardsPage() {
     void regenerateMaterialStudyTools(activeMaterialId).finally(() => {
       repairingMaterialIdsRef.current.delete(activeMaterialId)
       setIndex(0)
+                  setDeckComplete(false)
       setIsFlipped(false)
     })
   }, [activeMaterialId, materialFlashcards, materials, regenerateMaterialStudyTools])
@@ -2893,13 +2008,22 @@ export function FlashcardsPage() {
     })
   }, [combinedCards, reviewNowMs])
 
-  const setCardStatus = (status: FlashcardStatus) => {
-    if (!currentCard) return
-    if (currentCard.origin === 'imported') {
-      void updateMaterialFlashcardStatus(currentCard.id, status)
-      return
+  const setCardStatus = async (status: FlashcardStatus) => {
+    if (!currentCard || ratingPending) return
+    setRatingPending(true)
+    setRatingError('')
+    try {
+      if (currentCard.origin === 'imported') await updateMaterialFlashcardStatus(currentCard.id, status)
+      else updateFlashcardStatus(currentCard.id, status)
+      if (activeIndex === filtered.length - 1) setDeckComplete(true)
+      else setIndex(statusFilter !== 'All' && statusFilter !== status ? activeIndex : activeIndex + 1)
+      setIsFlipped(false)
+      requestAnimationFrame(() => flashcardButtonRef.current?.focus())
+    } catch {
+      setRatingError('Could not save this card. Please try again.')
+    } finally {
+      setRatingPending(false)
     }
-    updateFlashcardStatus(currentCard.id, status)
   }
 
   const submitFlashcardFeedback = () => {
@@ -2954,40 +2078,15 @@ export function FlashcardsPage() {
   }, [combinedCards])
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        eyebrow="Flashcards"
-        title="High-yield concepts without the fluff."
-        description="Use the deck when you want fast reinforcement of meds, labs, safety rules, prioritization frameworks, or study tools generated from your own files."
-        action={
-          <button
-            type="button"
-            onClick={() => navigate('/my-materials')}
-            className="nclex-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold"
-          >
-            <FolderOpen className="h-4 w-4" />
-            Open Study Library
-          </button>
-        }
-      />
+    <section className="reference-page flashcards-workspace">
+      <h1>Flashcards</h1>
       {liveBetaLoadFailed ? (
         <p role="alert" className="border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           The live-beta deck could not load. Refresh the page to try again.
         </p>
       ) : null}
-      <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
-        <Surface>
-          <div className="mb-5 rounded-[20px] border border-[#cfe1f7] bg-[#eef5ff] p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-blue)]">
-              Spaced repetition queue
-            </p>
-            <h3 className="mt-2 nc-section-title text-2xl text-[var(--nclex-text)]">
-              {dueCards.length} card{dueCards.length === 1 ? '' : 's'} due now
-            </h3>
-            <p className="mt-2 text-sm leading-6 text-[var(--nclex-text-muted)]">
-              Cards marked Needs review come back sooner. Cards marked Known are spaced farther apart as they stabilize.
-            </p>
-          </div>
+      <div className="flashcards-layout">
+        <details className="reference-options"><summary>Filters</summary>
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="Deck">
               <select
@@ -2995,6 +2094,7 @@ export function FlashcardsPage() {
                 onChange={(event) => {
                   setDeckFilter(event.target.value as typeof deckFilter)
                   setIndex(0)
+                  setDeckComplete(false)
                   setIsFlipped(false)
                   if (event.target.value !== 'Imported Materials') setSourceFilter('All')
                 }}
@@ -3011,6 +2111,7 @@ export function FlashcardsPage() {
                 onChange={(event) => {
                   setCategory(event.target.value)
                   setIndex(0)
+                  setDeckComplete(false)
                   setIsFlipped(false)
                 }}
                 className={selectClass}
@@ -3030,6 +2131,7 @@ export function FlashcardsPage() {
                   onChange={(event) => {
                     setSourceFilter(event.target.value)
                     setIndex(0)
+                  setDeckComplete(false)
                     setIsFlipped(false)
                   }}
                   className={selectClass}
@@ -3049,6 +2151,7 @@ export function FlashcardsPage() {
                 onChange={(event) => {
                   setStatusFilter(event.target.value)
                   setIndex(0)
+                  setDeckComplete(false)
                   setIsFlipped(false)
                 }}
                 className={selectClass}
@@ -3066,6 +2169,7 @@ export function FlashcardsPage() {
               setShuffleMode((current) => !current)
               setShuffleSeed((current) => current + 1)
               setIndex(0)
+                  setDeckComplete(false)
               setIsFlipped(false)
             }}
             className={clsx('mt-5 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold', shuffleMode ? 'nclex-btn-primary border-transparent text-white' : 'nclex-btn-secondary border-transparent text-slate-700')}
@@ -3073,31 +2177,43 @@ export function FlashcardsPage() {
             <Shuffle className="h-4 w-4" />
             {shuffleMode ? 'Shuffle on' : 'Shuffle off'}
           </button>
-          <div className="mt-6 grid gap-3 md:grid-cols-3">
-            <MetricChip label="Deck size" value={`${filtered.length}`} />
-            <MetricChip label="Known" value={`${filtered.filter((card) => card.status === 'known').length}`} />
-            <MetricChip label="Due now" value={`${dueCards.length}`} />
-          </div>
-        </Surface>
+          <p className="reference-muted">{dueCards.length} cards due for review</p>
+        </details>
 
-        <Surface>
-          {currentCard ? (
+        <div className="flashcard-stage">
+
+          {deckComplete ? <div className="reference-flashcard"><h2>Deck complete</h2><p>Your review choices are saved.</p><button type="button" className="simple-study-primary" onClick={() => { setIndex(0); setDeckComplete(false); setIsFlipped(false) }}>Review again</button></div> : currentCard ? (
             <>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="nclex-label text-xs font-semibold uppercase">{currentCard.category}</p>
-                  <h3 className="mt-2 nc-section-title text-2xl text-[#163042]">Card {activeIndex + 1} of {filtered.length}</h3>
-                  <p className="mt-1 text-sm text-[var(--nclex-text-muted)]">{currentCard.sourceLabel}</p>
-                  {currentCard.review?.nextReviewAt ? (
-                    <p className="mt-1 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)]">
-                      Next review {formatReviewDate(currentCard.review.nextReviewAt)}
-                    </p>
-                  ) : null}
-                </div>
-                  <span className="nclex-chip nclex-chip-info">
-                    {currentCard.status}
-                  </span>
+              <div className="reference-card-meta"><span>{currentCard.category}</span><span>Card {activeIndex + 1} of {filtered.length}</span></div>
+              <div
+                className="mt-6"
+                onTouchStart={(event) => {
+                  touchStartXRef.current = event.touches[0]?.clientX ?? null
+                }}
+                onTouchEnd={(event) => {
+                  if (touchStartXRef.current === null) return
+                  const delta = (event.changedTouches[0]?.clientX ?? touchStartXRef.current) - touchStartXRef.current
+                  touchStartXRef.current = null
+                  if (Math.abs(delta) < 48) return
+                  if (delta < 0) showNextCard()
+                  else showPreviousCard()
+                }}
+              >
+                <button ref={flashcardButtonRef} type="button" className="reference-flashcard" aria-label={isFlipped ? 'Show question' : 'Show answer'} onClick={() => setIsFlipped((current) => !current)}>
+                  <p>{isFlipped ? currentCard.back : currentCard.front}</p>
+                  <span className="reference-flip-hint">{isFlipped ? 'Tap to see question' : 'Tap to reveal answer'}</span>
+                </button>
+                <p className="mt-3 text-center text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)] sm:hidden">
+                  Swipe to change cards
+                </p>
               </div>
+              {isFlipped ? <div className="reference-card-actions">
+                <button type="button" disabled={ratingPending} onClick={() => void setCardStatus('needs-review')} className="reference-review-button">Review again</button>
+                <button type="button" disabled={ratingPending} onClick={() => void setCardStatus('known')} className="simple-study-primary">Got it</button>
+              </div> : null}
+              {ratingError ? <p role="alert">{ratingError}</p> : null}
+              <p className="reference-muted reference-card-status" role="status">{currentCard.status === 'known' ? 'Marked as known' : currentCard.status === 'needs-review' ? 'Marked for review' : 'Not yet reviewed'}{currentCardNeedsDraftWarning ? ' · Draft content' : ''}</p>
+              <details className="reference-options"><summary>Card details &amp; report an issue</summary><p>{currentCard.sourceLabel}</p>
               {currentCardNeedsDraftWarning ? (
                 <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
                   <div className="flex gap-3">
@@ -3190,46 +2306,13 @@ export function FlashcardsPage() {
                   ) : null}
                 </div>
               ) : null}
-              <div
-                className="mt-6"
-                onTouchStart={(event) => {
-                  touchStartXRef.current = event.touches[0]?.clientX ?? null
-                }}
-                onTouchEnd={(event) => {
-                  if (touchStartXRef.current === null) return
-                  const delta = (event.changedTouches[0]?.clientX ?? touchStartXRef.current) - touchStartXRef.current
-                  touchStartXRef.current = null
-                  if (Math.abs(delta) < 48) return
-                  if (delta < 0) showNextCard()
-                  else showPreviousCard()
-                }}
-              >
-                <FlipCard isFlipped={isFlipped} onFlip={() => setIsFlipped((current) => !current)} front={currentCard.front} back={currentCard.back} />
-                <p className="mt-3 text-center text-xs font-semibold uppercase tracking-[0.14em] text-[var(--nclex-text-muted)] sm:hidden">
-                  Swipe cards - tap to flip
-                </p>
-              </div>
-              <div className="mobile-quiz-actions sticky bottom-[5.2rem] z-10 -mx-1 mt-6 flex flex-wrap items-center gap-3 rounded-[20px] border border-[var(--nclex-border)] bg-white/96 p-3 backdrop-blur-xl md:static md:mx-0 md:border-0 md:bg-transparent md:p-0">
-                <button type="button" onClick={showPreviousCard} disabled={activeIndex === 0} className="inline-flex min-h-[46px] flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-40 md:flex-none">
-                  <ChevronLeft className="h-4 w-4" />
-                  Prev
-                </button>
-                <button type="button" onClick={showNextCard} disabled={activeIndex === filtered.length - 1} className="inline-flex min-h-[46px] flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 disabled:opacity-40 md:flex-none">
-                  Next
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-                <button type="button" onClick={() => setCardStatus('needs-review')} className="min-h-[46px] flex-[1.1] rounded-xl bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 md:flex-none">
-                  Review
-                </button>
-                <button type="button" onClick={() => setCardStatus('known')} className="min-h-[46px] flex-[1.1] rounded-xl bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 md:flex-none">
-                  Know it
-                </button>
-              </div>
+
+              </details>
             </>
           ) : (
             <EmptyState
               title="No flashcards match this filter."
-              description="Relax the filters, upload a new file, or switch decks so you can get back into a useful review loop."
+              description="Try a different category, status, or deck."
               action={
                 activeMaterialId ? (
                   <button
@@ -3244,9 +2327,9 @@ export function FlashcardsPage() {
               }
             />
           )}
-        </Surface>
+        </div>
       </div>
-    </div>
+    </section>
   )
 }
 
@@ -4668,220 +3751,34 @@ export function StudyPlanPage() {
   const attempts = useStudySystemStore((state) => state.attempts)
   const activeSession = useStudySystemStore((state) => state.activeSession)
   const updateProfile = useStudySystemStore((state) => state.updateProfile)
-  const startQuickStudy = useStudySystemStore((state) => state.startQuickStudy)
-  const [studyPlanToday] = useState(() => new Date().toISOString().slice(0, 10))
-  const [studyPlanNowMs] = useState(() => new Date().getTime())
-  const weakAreas = useMemo(
-    () => getWeakAreas(attempts, profile.examTrack ?? 'nclex-rn', profile.preferences.analyticsScope ?? 'selected-track'),
-    [attempts, profile.examTrack, profile.preferences.analyticsScope],
-  )
+  const startPracticeSession = useStudySystemStore((state) => state.startPracticeSession)
+  const weakAreas = useMemo(() => getWeakAreas(attempts, profile.examTrack ?? 'nclex-rn', profile.preferences.analyticsScope ?? 'selected-track'), [attempts, profile.examTrack, profile.preferences.analyticsScope])
   const plan = useMemo(() => buildStudyPlan(profile, weakAreas), [profile, weakAreas])
-  const activeTrack = getExamTrack(profile.examTrack ?? 'nclex-rn')
-  const priorityArea = weakAreas[0]?.category ?? 'prioritization'
-  const todayCompleted = useMemo(() => {
-    return attempts.filter((attempt) => attempt.completedAt.slice(0, 10) === studyPlanToday).length
-  }, [attempts, studyPlanToday])
-  const todayProgress = profile.dailyGoal ? todayCompleted / profile.dailyGoal : 0
-  const daysUntilExam = Math.max(
-    0,
-    Math.ceil((new Date(profile.examDate).getTime() - studyPlanNowMs) / (1000 * 60 * 60 * 24)),
-  )
-  const todayTasks = [
-    {
-      title: `Priority drill: ${shortCategoryLabel(priorityArea)}`,
-      detail: `${Math.max(5, Math.min(profile.dailyGoal, 15))} focused questions before anything else.`,
-      meta: 'Next Action',
-    },
-    {
-      title: 'Review the misses',
-      detail: plan.dailyFocus[1] ?? 'Use rationales and notes to repair the decision pattern.',
-      meta: 'Later Today',
-    },
-    {
-      title: 'Lock one recall set',
-      detail: plan.dailyFocus[2] ?? 'Run a short flashcard pass for the next weak category.',
-      meta: 'Extra Time',
-    },
-  ]
-  const thisWeekTasks = plan.weeklyGoals.slice(0, 4)
-  const laterTasks = plan.recommendedSessions.slice(0, 4)
-  const launchTodaySession = () => {
-    const sessionIsOpen = isActiveSessionOpen(activeSession)
-    if (!(sessionIsOpen && activeSession?.mode === 'quick-study')) {
-      startQuickStudy(priorityArea)
-    }
-    navigate('/quick-study')
+  const category = weakAreas[0]?.category
+  const questionCount = Math.max(5, Math.min(profile.dailyGoal, 15))
+  const resume = isActiveSessionOpen(activeSession) && activeSession?.mode === 'practice'
+  const start = () => {
+    if (!resume) startPracticeSession({ category: category ?? 'All', questionCount, difficulty: 'adaptive', format: 'mixed' })
+    navigate('/practice-questions', { state: { resumeStudySession: true } })
   }
-
-  return (
-    <PageStack>
-      <PageHeader
-        eyebrow="Study Plan"
-        title="Today first. The rest can wait."
-        description={`A simpler ${activeTrack.shortName} plan: one action now, a small weekly lane, and later work kept out of the way.`}
-        action={
-          <button
-            type="button"
-            onClick={launchTodaySession}
-            className="nclex-btn-primary inline-flex min-h-11 items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold"
-          >
-            <Sparkles className="h-4 w-4" />
-            Start today's session
-          </button>
-        }
-      />
-
-      <FocusPanel>
-        <div className="bg-[linear-gradient(135deg,#003b66_0%,#12375a_100%)] px-5 py-5 text-white md:px-6">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-3xl">
-              <p className="text-sm font-semibold text-sky-100/85">Next Action</p>
-              <h3 className="mt-3 nc-section-title text-3xl leading-tight md:text-[2.15rem]">
-                Start with {shortCategoryLabel(priorityArea)}
-              </h3>
-              <p className="mt-3 max-w-3xl text-sm leading-7 text-sky-100/82">
-                Run the priority drill first. Everything else on the plan stays secondary until this repair set is complete.
-              </p>
-            </div>
-            <div className="grid grid-cols-3 gap-2 lg:w-[22rem]">
-              {[
-                { label: 'Questions', value: `${Math.max(5, Math.min(profile.dailyGoal, 15))}` },
-                { label: 'Completed', value: `${todayCompleted}` },
-                { label: 'Exam', value: `${daysUntilExam}d` },
-              ].map((item) => (
-                <div key={item.label} className="rounded-2xl border border-white/15 bg-white/10 px-3 py-3 text-center">
-                  <p className="text-lg font-bold text-white">{item.value}</p>
-                  <p className="mt-1 text-[0.68rem] font-bold uppercase tracking-[0.12em] text-sky-100/62">{item.label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </FocusPanel>
-
-      <Surface>
-        <SectionHeading
-          title="Today"
-          description="A small sequence: do the repair set, review what broke, then decide whether to keep going."
-        />
-        <div className="mt-5 grid gap-3">
-          {todayTasks.map((task, index) => (
-            <div key={task.title} className="rounded-2xl border border-cyan-200/15 bg-sky-300/[0.055] px-4 py-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div className="flex min-w-0 gap-3">
-                  <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-cyan-300/12 text-sm font-bold text-cyan-100">
-                    {index + 1}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="font-bold text-white">{task.title}</p>
-                    <p className="mt-1 text-sm leading-6 text-sky-100/70">{task.detail}</p>
-                  </div>
-                </div>
-                <span className="w-fit shrink-0 rounded-full border border-cyan-200/25 bg-cyan-300/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-cyan-100">
-                  {task.meta}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Surface>
-
-      <DetailGrid>
-        <Surface>
-          <SectionHeading
-            title="This Week"
-            description="Only the weekly commitments that should influence today."
-          />
-          <ul className="mt-5 space-y-3">
-            {thisWeekTasks.map((goal, index) => (
-              <li key={goal} className="rounded-2xl border border-cyan-200/15 bg-sky-300/[0.055] px-4 py-3">
-                <div className="flex items-start gap-3">
-                  <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-cyan-300/12 text-xs font-bold text-cyan-100">
-                    {index + 1}
-                  </span>
-                  <p className="text-sm leading-6 text-sky-100/76">{goal}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </Surface>
-
-        <Surface>
-          <SectionHeading
-            title="Later"
-            description="Useful work, parked below the main plan until today is complete."
-            action={<CalendarClock className="h-5 w-5 text-[#2d77bf]" />}
-          />
-          <ul className="mt-5 space-y-3">
-            {laterTasks.map((item) => (
-              <li key={item} className="rounded-2xl border border-cyan-200/15 bg-sky-300/[0.055] px-4 py-3">
-                <div className="flex items-start gap-3">
-                  <Clock3 className="mt-1 h-4 w-4 shrink-0 text-sky-200/70" />
-                  <p className="text-sm leading-6 text-sky-100/76">{item}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </Surface>
-      </DetailGrid>
-
-      <Surface>
-        <SectionHeading
-          title="Progress"
-          description="A quick read on today and the exam window. Settings stay below the main plan."
-        />
-        <div className="mt-5 grid gap-4 md:grid-cols-[minmax(0,1fr)_0.9fr]">
-          <div className="rounded-2xl border border-emerald-300/20 bg-emerald-300/[0.055] p-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-100/70">Today progress</p>
-                <p className="mt-2 text-3xl font-bold text-white">{todayCompleted}/{profile.dailyGoal}</p>
-                <p className="text-sm font-semibold text-sky-100/70">questions completed</p>
-              </div>
-              <span className="rounded-full border border-emerald-200/25 bg-emerald-300/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-emerald-100">
-                {Math.round(todayProgress * 100)}%
-              </span>
-            </div>
-            <div className="mt-4">
-              <ProgressBar value={todayProgress} tone="green" />
-            </div>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-1">
-            <div className="rounded-2xl border border-cyan-200/15 bg-sky-300/[0.055] p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-100/58">Intensity</p>
-              <p className="mt-2 text-xl font-bold capitalize text-white">{profile.studyIntensity}</p>
-            </div>
-            <div className="rounded-2xl border border-amber-200/20 bg-amber-300/[0.07] p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-amber-100/62">Exam window</p>
-              <p className="mt-2 text-xl font-bold text-white">{daysUntilExam} days</p>
-            </div>
-          </div>
-        </div>
-      </Surface>
-
-      <Surface>
-        <SectionHeading
-          title="Plan Controls"
-          description={`Lower priority settings. The plan is biased toward ${shortCategoryLabel(priorityArea)} because that is where the most score lift is available.`}
-        />
-        <div className="mt-5 grid gap-4 md:grid-cols-3">
-          <Field label="Exam date">
-            <input type="date" value={profile.examDate} onChange={(event) => updateProfile({ examDate: event.target.value })} className={inputClass} />
-          </Field>
-          <Field label="Study intensity">
-            <select value={profile.studyIntensity} onChange={(event) => updateProfile({ studyIntensity: event.target.value as typeof profile.studyIntensity })} className={selectClass}>
-              <option value="steady">Steady</option>
-              <option value="focused">Focused</option>
-              <option value="accelerated">Accelerated</option>
-            </select>
-          </Field>
-          <Field label="Daily question goal">
-            <input type="number" min={5} max={40} value={profile.dailyGoal} onChange={(event) => updateProfile({ dailyGoal: Number(event.target.value) })} className={inputClass} />
-          </Field>
-        </div>
-      </Surface>
-    </PageStack>
-  )
+  return <section className="simple-study" aria-labelledby="plan-title">
+    <header><h1 id="plan-title">Study Plan</h1><p>{getExamTrack(profile.examTrack ?? 'nclex-rn').shortName} · Your next study session.</p></header>
+    <div className="simple-study-today"><h2>{resume ? 'Continue your practice' : category ? shortCategoryLabel(category) : 'Mixed practice'}</h2>
+      <p>{resume ? activeSession?.responses.length + ' of ' + activeSession?.questionIds.length + ' answered' : 'Up to ' + questionCount + ' questions · Review your answers as you go'}</p>
+      <button className="simple-study-start" onClick={start}>{resume ? 'Resume session' : "Start today’s session"}<ArrowRight size={18} /></button>
+    </div>
+    <details className="simple-study-details"><summary>This week & later</summary>
+      <h2>This week</h2><ul>{plan.weeklyGoals.map((goal) => <li key={goal}>{goal}</li>)}</ul>
+      <h2>Later</h2><ul>{plan.recommendedSessions.map((goal) => <li key={goal}>{goal}</li>)}</ul>
+      <Link className="simple-study-link" to="/review">Review saved & missed questions</Link>
+    </details>
+    <details className="simple-study-details"><summary>Plan settings</summary><div className="simple-study-fields">
+      <Field label="Exam date"><input className={inputClass} type="date" value={profile.examDate} onChange={(event) => updateProfile({ examDate: event.target.value })} /></Field>
+      <Field label="Study pace"><select className={selectClass} value={profile.studyIntensity} onChange={(event) => updateProfile({ studyIntensity: event.target.value as typeof profile.studyIntensity })}><option value="steady">Steady</option><option value="focused">Focused</option><option value="accelerated">Accelerated</option></select></Field>
+      <Field label="Daily question goal"><select className={selectClass} value={profile.dailyGoal} onChange={(event) => updateProfile({ dailyGoal: Number(event.target.value) })}>{Array.from(new Set([5,10,15,20,25,30,35,40,profile.dailyGoal])).sort((a,b) => a-b).map((count) => <option key={count} value={count}>{count}</option>)}</select></Field>
+    </div></details>
+    <Link className="simple-study-link" to="/performance-analytics">View progress</Link>
+  </section>
 }
 
 const clinicalScenarios = [
@@ -5367,7 +4264,10 @@ export function ClinicalSimulatorPage() {
   )
 }
 
+const resourceNames: Record<string, string> = { 'strat-1': 'Prioritization', 'strat-2': 'Basic needs', 'strat-3': 'Patient safety', 'strat-4': 'Delegation', 'strat-5': 'Clinical trends' }
+
 export function StrategyTrainingPage() {
+  const [search, setSearch] = useState('')
   const activeSession = useStudySystemStore((state) => state.activeSession)
   const startClinicalThinking = useStudySystemStore((state) => state.startClinicalThinking)
   const abandonSession = useStudySystemStore((state) => state.abandonSession)
@@ -5390,158 +4290,28 @@ export function StrategyTrainingPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        eyebrow="Resources"
-        title="Pick a thinking pattern, then practice it."
-        description="Curated NCLEX strategy support for prioritization, delegation, first action, and safety decisions."
-        action={
-          <Link
-            to="/my-materials"
-            className="nclex-btn-secondary inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold"
-          >
-            <FolderOpen className="h-4 w-4" />
-            Upload study material
-          </Link>
-        }
-      />
-      <NextActionPanel
-        eyebrow="Recommended"
-        title="Run a prioritization drill."
-        description="The fastest use of Resources is not reading more. Pick a decision type, answer a few items, then review the rationale."
-        tone="cyan"
-        primary={
-          <button
-            type="button"
-            onClick={() => launchClinicalThinking('Prioritization')}
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-cyan-100/45 bg-[linear-gradient(180deg,#24b8ff_0%,#0b83d6_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_12px_34px_rgba(14,165,233,0.24)] transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-cyan-200/55"
-          >
-            Start prioritization drill
-            <ArrowRight className="h-4 w-4" />
-          </button>
-        }
-        secondary={
-          <Link
-            to="/my-materials"
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-violet-200/24 bg-violet-300/[0.08] px-5 py-3 text-sm font-bold text-violet-100 transition hover:bg-violet-300/14"
-          >
-            Add class material
-            <FolderOpen className="h-4 w-4" />
-          </Link>
-        }
-      />
-      <Surface className="border-violet-200/18 bg-violet-300/[0.045]">
-        <SectionHeading
-          title="Choose support by need"
-          description="Resources stay in the Library bucket, but each option should point to a study action."
-        />
-        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <CommandActionCard
-            title="Strategy drills"
-            description="Practice prioritization, delegation, and first-action decisions."
-            meta="Practice"
-            icon={<Target className="h-4 w-4" />}
-            tone="cyan"
-            action="Start"
-            onClick={() => launchClinicalThinking('Prioritization')}
-          />
-          <CommandActionCard
-            title="Safety cues"
-            description="Train immediate risk, infection control, and escalation patterns."
-            meta="Safety"
-            icon={<ShieldCheck className="h-4 w-4" />}
-            tone="emerald"
-            action="Drill"
-            onClick={() => launchClinicalThinking('Patient Safety')}
-          />
-          <CommandActionCard
-            title="Content refresh"
-            description="Turn notes, guides, and links into editable review tools."
-            meta="Library"
-            icon={<FolderOpen className="h-4 w-4" />}
-            tone="violet"
-            action="Import"
-            to="/my-materials"
-          />
-          <CommandActionCard
-            title="Exam logistics"
-            description="Choose a credential lane before starting longer test work."
-            meta="Exam"
-            icon={<CalendarClock className="h-4 w-4" />}
-            tone="amber"
-            action="Prep"
-            to="/exam-prep"
-          />
-        </div>
-      </Surface>
-      <Surface className="overflow-hidden p-0">
-        <div className="flex flex-col gap-5 bg-[linear-gradient(135deg,#ffffff_0%,#eef5ff_100%)] px-5 py-6 lg:flex-row lg:items-end lg:justify-between md:px-6">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--nclex-blue)]">Clinical thinking mode</p>
-            <h3 className="mt-3 nc-section-title text-4xl text-[var(--nclex-text)]">Drill the decision types that move scores.</h3>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--nclex-text-muted)]">
-              Practice prioritization, delegation, first-action decisions, and patient safety in short targeted bursts.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            {['Prioritization', 'Delegation', 'First Action', 'Patient Safety'].map((focus) => (
-              <button
-                key={focus}
-                type="button"
-                onClick={() => launchClinicalThinking(focus)}
-                className="nclex-btn-secondary rounded-xl px-4 py-2.5 text-sm font-semibold"
-              >
-                {focus}
-              </button>
-            ))}
-          </div>
-        </div>
-      </Surface>
-      <div className="grid gap-4">
-        {strategyLessons.map((lesson) => (
-          <Surface key={lesson.id} className="p-0">
-            <details className="group">
-              <summary className="flex cursor-pointer list-none flex-col gap-3 p-5 md:flex-row md:items-center md:justify-between md:p-6">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-100/66">{lesson.framework}</p>
-                  <h3 className="mt-2 text-2xl font-black tracking-normal text-white">{lesson.title}</h3>
-                  <p className="mt-2 max-w-3xl text-sm leading-6 text-sky-100/64">{lesson.summary}</p>
-                </div>
-                <span className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-cyan-200/24 bg-cyan-300/[0.07] px-4 py-2 text-sm font-bold text-cyan-100">
-                  Open framework
-                  <ArrowRight className="h-4 w-4" />
-                </span>
-              </summary>
-              <div className="grid gap-5 border-t border-cyan-200/14 p-5 lg:grid-cols-[0.95fr_1.05fr] md:p-6">
-                <div>
-                  <ul className="space-y-3 text-sm leading-6 text-sky-100/70">
-                    {lesson.bullets.map((bullet) => (
-                      <li key={bullet}>{bullet}</li>
-                    ))}
-                  </ul>
-                  <button
-                    type="button"
-                    onClick={() => launchClinicalThinking(lesson.framework)}
-                    className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-cyan-200/24 bg-cyan-300/[0.07] px-4 py-2 text-sm font-bold text-cyan-100 transition hover:bg-cyan-300/13 focus:outline-none focus:ring-4 focus:ring-cyan-300/18"
-                  >
-                    Practice this
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
-                </div>
-                <div className="rounded-[18px] border border-cyan-200/16 bg-cyan-300/[0.06] p-5">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200/24 bg-emerald-300/[0.08] px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-100">
-                    <BrainCircuit className="h-3.5 w-3.5" />
-                    Mini scenario
-                  </div>
-                  <p className="mt-4 font-semibold text-white">{lesson.microScenario.prompt}</p>
-                  <p className="mt-3 text-sm leading-6 text-sky-100/70">{lesson.microScenario.bestResponse}</p>
-                </div>
-              </div>
-            </details>
-          </Surface>
+    <section className="reference-page resources-workspace">
+      <h1>Resources</h1>
+      <label className="reference-search">Search resources
+        <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Find a topic or framework" className={inputClass} />
+      </label>
+      <div className="reference-resource-list">
+        {strategyLessons.filter((lesson) => [resourceNames[lesson.id], lesson.title, lesson.framework, lesson.summary].join(' ').toLowerCase().includes(search.toLowerCase())).map((lesson) => (
+          <details className="reference-resource" name="resource-topic" key={lesson.id}>
+            <summary>{resourceNames[lesson.id] ?? lesson.title}<ChevronDown size={18} aria-hidden="true" /></summary>
+            <div className="reference-resource-body">
+              <p>{lesson.summary}</p>
+              <ul>{lesson.bullets.map((bullet) => <li key={bullet}>{bullet}</li>)}</ul>
+              <details className="reference-options"><summary>Example</summary>
+                <p>{lesson.microScenario.prompt}</p><p>{lesson.microScenario.bestResponse}</p>
+              </details>
+              <button type="button" className="simple-study-primary" onClick={() => launchClinicalThinking(lesson.framework)}>Practice this topic <ArrowRight size={18} /></button>
+            </div>
+          </details>
         ))}
+        {!strategyLessons.some((lesson) => [resourceNames[lesson.id], lesson.title, lesson.framework, lesson.summary].join(' ').toLowerCase().includes(search.toLowerCase())) ? <p className="reference-muted">No resources match your search.</p> : null}
       </div>
-    </div>
+    </section>
   )
 }
 
@@ -5554,21 +4324,37 @@ export function NotesPage() {
   const notes = useStudySystemStore((state) => state.notes)
   const saveNote = useStudySystemStore((state) => state.saveNote)
   const deleteNote = useStudySystemStore((state) => state.deleteNote)
-  const importStudyMaterialFromText = useStudySystemStore((state) => state.importStudyMaterialFromText)
   const startPracticeSession = useStudySystemStore((state) => state.startPracticeSession)
   const [selectedCategory, setSelectedCategory] = useState<string>(seedCategory ?? 'All')
   const [search, setSearch] = useState('')
   const deferredSearch = useDeferredValue(search)
   const [noteMessage, setNoteMessage] = useState('')
-  const [draft, setDraft] = useState<Note>({
+  const ownerId = useStudySystemStore((state) => state.authUser?.id ?? 'local')
+  const syncStatus = useStudySystemStore((state) => state.syncStatus)
+  const noteKey = `nurse-command-last-note:${ownerId}`
+  const [mobileView, setMobileView] = useState<'list' | 'editor'>('editor')
+  const autosave = useMemo(() => createNoteAutosave(saveNote), [saveNote])
+  useEffect(() => {
+    const flush = () => autosave.flush()
+    window.addEventListener('pagehide', flush)
+    return () => { window.removeEventListener('pagehide', flush); flush() }
+  }, [autosave])
+  const rememberNote = (id: string) => { try { localStorage.setItem(noteKey, id) } catch { /* Storage may be unavailable. */ } }
+  const [draft, setDraft] = useState<Note>(() => {
+    let lastId: string | null = null
+    try { lastId = localStorage.getItem(noteKey) } catch { /* Fall back to latest note. */ }
+    const candidates = seedCategory ? notes.filter((note) => note.category === seedCategory) : notes
+    return candidates.find((note) => note.id === lastId) ?? [...candidates].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0] ?? {
     id: createClientId(),
     title: '',
     body: '',
     category: (seedCategory as QuestionCategory) ?? 'General',
     updatedAt: new Date().toISOString(),
-  })
+  } })
   const trackCategories = getExamCategories(profile.examTrack ?? 'nclex-rn')
   const resetDraft = () => {
+    autosave.flush()
+    setMobileView('editor')
     setDraft({
       id: createClientId(),
       title: '',
@@ -5578,31 +4364,30 @@ export function NotesPage() {
     })
     setNoteMessage('')
   }
+  const editDraft = (patch: Partial<Note>) => {
+    const next = { ...draft, ...patch }
+    setDraft(next)
+    rememberNote(next.id)
+    setNoteMessage('')
+    if (next.title.trim() || next.body.trim() || notes.some((note) => note.id === next.id)) autosave.schedule(next)
+  }
+  const selectedSavedNote = notes.find((note) => note.id === draft.id)
+  const isSaved = selectedSavedNote?.title === draft.title && selectedSavedNote?.body === draft.body && selectedSavedNote?.category === draft.category
+  const saveStatus = isSaved ? (syncStatus === 'error' || syncStatus === 'offline' ? 'Saved on this device · Cloud sync unavailable' : syncStatus === 'syncing' ? 'Saved on this device · Syncing…' : 'Saved on this device') : draft.title || draft.body ? 'Saving…' : 'Changes save automatically'
   const draftHasContent = Boolean(draft.title.trim() || draft.body.trim())
   const saveDraft = () => {
     if (!draftHasContent) {
       setNoteMessage('Add a title or body before saving this note.')
       return false
     }
-    saveNote({ ...draft, updatedAt: new Date().toISOString() })
+    autosave.schedule({ ...draft, updatedAt: new Date().toISOString() })
+    autosave.flush()
+    rememberNote(draft.id)
     setNoteMessage('Note saved.')
     return true
   }
-  const convertDraftToMaterial = async (mode: MaterialImportMode = 'full') => {
-    if (!saveDraft()) return
-    try {
-      await importStudyMaterialFromText({
-        mode,
-        title: draft.title.trim() || 'Study note',
-        text: [draft.title, draft.body].filter(Boolean).join('\n\n'),
-      })
-      navigate('/my-materials')
-    } catch (error) {
-      reportSafeError('material-assisted-import', error)
-      setNoteMessage(getSafeErrorCopy('material-assisted-import'))
-    }
-  }
   const quizDraftTopic = () => {
+    autosave.flush()
     if (draft.category === 'General') {
       navigate('/practice-questions')
       return
@@ -5631,187 +4416,41 @@ export function NotesPage() {
   }, [deferredSearch, notes, selectedCategory])
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        eyebrow="Notes"
-        title="Turn your own words into study tools."
-        description="Capture the clinical anchor, attach it to a topic, then turn it into review tools when it is worth practicing."
-        action={
-          <button
-            type="button"
-            onClick={resetDraft}
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-amber-100/48 bg-[linear-gradient(180deg,#fbbf24_0%,#b77912_100%)] px-5 py-3 text-sm font-bold text-white shadow-[0_14px_34px_rgba(251,191,36,0.2)] transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-amber-300/20"
-          >
-            <NotebookPen className="h-4 w-4" />
-            New note
-          </button>
-        }
-      />
-      <NextActionPanel
-        eyebrow="Library action"
-        title={draftHasContent ? 'Make this note usable.' : 'Start with one clinical anchor.'}
-        description={draftHasContent ? 'Save it, turn it into editable cards and quiz items, or run a topic drill from the attached category.' : 'Write the rule, pitfall, or reminder that makes an answer click. Keep it short enough to review later.'}
-        tone="violet"
-        primary={
-          <button
-            type="button"
-            onClick={() => void convertDraftToMaterial('full')}
-            disabled={!draftHasContent}
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-violet-200/30 bg-violet-300/[0.1] px-5 py-3 text-sm font-bold text-violet-100 transition hover:bg-violet-300/16 focus:outline-none focus:ring-4 focus:ring-violet-300/18 disabled:cursor-not-allowed disabled:opacity-45"
-          >
-            Make cards + quiz
-            <Sparkles className="h-4 w-4" />
-          </button>
-        }
-        secondary={
-          <button
-            type="button"
-            onClick={quizDraftTopic}
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-cyan-200/24 bg-cyan-300/[0.07] px-5 py-3 text-sm font-bold text-cyan-100 transition hover:border-cyan-100/55 hover:bg-cyan-300/13 focus:outline-none focus:ring-4 focus:ring-cyan-300/18"
-          >
-            Quiz this topic
-            <ClipboardList className="h-4 w-4" />
-          </button>
-        }
-      />
-      {noteMessage ? (
-        <p role="status" aria-live="polite" className="rounded-2xl border border-cyan-200/20 bg-cyan-300/[0.08] px-4 py-3 text-sm font-semibold text-cyan-100">
-          {noteMessage}
-        </p>
-      ) : null}
-      <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-        <Surface>
-          <div className="mb-5 grid gap-3 md:grid-cols-3">
-            <CommandActionCard
-              title="Create clinical anchor"
-              description="Capture the one rule or pitfall you want to remember."
-              meta="Write"
-              icon={<NotebookPen className="h-4 w-4" />}
-              tone="violet"
-              onClick={resetDraft}
-            />
-            <CommandActionCard
-              title="Import larger notes"
-              description="Use Materials when a file, lecture handout, or copied page needs parsing."
-              meta="Import"
-              icon={<Upload className="h-4 w-4" />}
-              tone="cyan"
-              to="/my-materials"
-            />
-            <CommandActionCard
-              title="Review missed areas"
-              description="Open the repair queue and attach notes to the weak topic."
-              meta="Repair"
-              icon={<Target className="h-4 w-4" />}
-              tone="rose"
-              to="/weak-areas"
-            />
+    <section className="reference-page notes-workspace">
+      <h1>Notes</h1>
+      <div className={`reference-notebook note-view-${mobileView}`}>
+        <button type="button" className="reference-mobile-back" onClick={() => { autosave.flush(); setMobileView('list') }}>← Your notes</button>
+        <aside className="reference-note-list" aria-label="Your notes">
+          <button type="button" className="simple-study-primary" onClick={resetDraft}>New note</button>
+          <label className="reference-search">Search notes<input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search your notes" className={inputClass} /></label>
+          <details className="reference-options"><summary>Filter by category</summary>
+            <select aria-label="Category filter" value={selectedCategory} onChange={(event) => setSelectedCategory(event.target.value)} className={selectClass}>
+              <option value="All">All categories</option><option value="General">General</option>
+              {trackCategories.map((item) => <option key={item} value={item}>{item}</option>)}
+            </select>
+          </details>
+          <div className="reference-note-entries">
+            {filteredNotes.map((note) => <button key={note.id} type="button" aria-pressed={draft.id === note.id} onClick={() => { autosave.flush(); setDraft(note); rememberNote(note.id); setMobileView('editor'); setNoteMessage('') }}>
+              <strong>{note.title || 'Untitled note'}</strong><span>{note.category}</span>
+            </button>)}
+            {!filteredNotes.length ? <p className="reference-muted">No notes yet in this view.</p> : null}
           </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <Field label="Category filter">
-              <select value={selectedCategory} onChange={(event) => setSelectedCategory(event.target.value)} className={selectClass}>
-                <option value="All">All categories</option>
-                <option value="General">General</option>
-                {trackCategories.map((item) => (
-                  <option key={item} value={item}>{item}</option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Search">
-              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search your notes" className={inputClass} />
-            </Field>
+        </aside>
+        <form className="reference-note-editor" onSubmit={(event) => { event.preventDefault(); saveDraft() }}>
+          <label>Note title<input value={draft.title} onChange={(event) => editDraft({ title: event.target.value })} placeholder="Give your note a title" className={inputClass} /></label>
+          <label>Category<select value={draft.category} onChange={(event) => editDraft({ category: event.target.value as Note['category'] })} className={selectClass}>
+            <option value="General">General</option>{trackCategories.map((item) => <option key={item} value={item}>{item}</option>)}
+          </select></label>
+          <label className="reference-note-body">Note content<textarea value={draft.body} onChange={(event) => editDraft({ body: event.target.value })} placeholder="Write your notes here..." className={textareaClass} /></label>
+          <div className="reference-editor-actions">
+            <span className="reference-save-status" role="status" aria-live="polite">{saveStatus}</span>
+            {notes.some((note) => note.id === draft.id) ? <button type="button" className="nclex-btn-secondary" onClick={() => { autosave.flush(); deleteNote(draft.id); resetDraft(); setNoteMessage('Note deleted.') }}>Delete</button> : null}
+            <button type="button" className="reference-text-button" onClick={quizDraftTopic}>Practice this topic</button>
           </div>
-          <div className="mt-6 space-y-4">
-            {filteredNotes.length ? filteredNotes.map((note) => (
-              <button
-                key={note.id}
-                type="button"
-                onClick={() => setDraft(note)}
-                className="w-full rounded-2xl border border-cyan-200/16 bg-white/[0.045] p-4 text-left transition hover:border-cyan-100/38 focus:outline-none focus:ring-2 focus:ring-cyan-200/55"
-              >
-                <div className="flex items-center justify-between gap-4">
-                  <p className="font-semibold text-white">{note.title || 'Untitled note'}</p>
-                  <span className="nclex-chip nclex-chip-info">
-                    {note.category}
-                  </span>
-                </div>
-                <p className="mt-2 line-clamp-2 text-sm leading-6 text-sky-100/62">{note.body}</p>
-              </button>
-            )) : (
-              <EmptyState
-                title="No notes match this view."
-                description="Create a clinical anchor, relax the filters, or import a larger study file into Materials."
-              />
-            )}
-          </div>
-        </Surface>
-        <Surface>
-          <div className="flex items-center justify-between">
-            <h3 className="nc-section-title text-3xl text-white">{draft.title || 'New note'}</h3>
-            <button
-              type="button"
-              onClick={resetDraft}
-              className="inline-flex min-h-10 items-center justify-center rounded-xl border border-cyan-200/20 bg-cyan-300/[0.07] px-4 py-2 text-sm font-semibold text-cyan-100"
-            >
-              New note
-            </button>
-          </div>
-          <div className="mt-6 grid gap-4">
-            <Field label="Title">
-              <input value={draft.title} onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))} placeholder="What concept are you trying to remember?" className={inputClass} />
-            </Field>
-            <Field label="Category">
-              <select id="note-category-select" value={draft.category} onChange={(event) => setDraft((current) => ({ ...current, category: event.target.value as Note['category'] }))} className={selectClass}>
-                <option value="General">General</option>
-                {trackCategories.map((item) => (
-                  <option key={item} value={item}>{item}</option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Body">
-              <textarea value={draft.body} onChange={(event) => setDraft((current) => ({ ...current, body: event.target.value }))} rows={10} placeholder="Write the pattern, pitfall, or reminder that makes this click for you." className={textareaClass} />
-            </Field>
-          </div>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={() => saveDraft()}
-              className="nclex-btn-primary rounded-xl px-4 py-2.5 text-sm font-semibold"
-            >
-              Save note
-            </button>
-            <button
-              type="button"
-              onClick={() => document.getElementById('note-category-select')?.focus()}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-violet-200/24 bg-violet-300/[0.08] px-4 py-2.5 text-sm font-bold text-violet-100 transition hover:bg-violet-300/14"
-            >
-              Attach to topic
-              <Target className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => void convertDraftToMaterial('full')}
-              disabled={!draftHasContent}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-cyan-200/24 bg-cyan-300/[0.08] px-4 py-2.5 text-sm font-bold text-cyan-100 transition hover:bg-cyan-300/14 disabled:cursor-not-allowed disabled:opacity-45"
-            >
-              Make cards + quiz
-              <Sparkles className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                deleteNote(draft.id)
-                resetDraft()
-                setNoteMessage('Note deleted.')
-              }}
-              className="rounded-xl border border-rose-200/25 bg-rose-300/[0.08] px-4 py-2.5 text-sm font-semibold text-rose-100"
-            >
-              Delete
-            </button>
-          </div>
-        </Surface>
+          <p className="reference-muted" role="status" aria-live="polite">{noteMessage}</p>
+        </form>
       </div>
-    </div>
+    </section>
   )
 }
 
@@ -6453,20 +5092,6 @@ function FeatureCallout({ title, description }: { title: string; description: st
   )
 }
 
-function ExamTrackList({ title, items }: { title: string; items: string[] }) {
-  return (
-    <div className="rounded-[18px] border border-cyan-200/16 bg-white/[0.045] p-4">
-      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-cyan-100/68">{title}</p>
-      <div className="mt-3 flex flex-wrap gap-2">
-        {items.map((item) => (
-          <span key={item} className="rounded-full border border-cyan-200/18 bg-cyan-300/[0.07] px-3 py-1.5 text-xs font-semibold text-sky-100/78">
-            {item}
-          </span>
-        ))}
-      </div>
-    </div>
-  )
-}
 
 function InsightRow({ icon, title, body }: { icon: React.ReactNode; title: string; body: string }) {
   return (
@@ -6553,18 +5178,6 @@ function formatImportDate(value: string) {
     day: 'numeric',
     year: 'numeric',
   }).format(new Date(value))
-}
-
-function formatReviewDate(value: string) {
-  const date = new Date(value)
-  const today = new Date()
-  if (date.toDateString() === today.toDateString()) {
-    return `today at ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
-  }
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-  }).format(date)
 }
 
 const inputClass =

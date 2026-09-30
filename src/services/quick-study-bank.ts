@@ -6,6 +6,10 @@ export const quickStudySources = data.sources as Record<string, (string | null)[
 export function getQuickStudySet(sessionId: number) {
   return data.questions.filter((question) => question.session === sessionId)
 }
+export function getNextQuickStudySessionId(sessionId: number) {
+  const index = data.sessions.findIndex((session) => session.id === sessionId)
+  return data.sessions[(index + 1) % data.sessions.length].id
+}
 export function isQuickStudyCorrect(selected: number[], correct: number[]) {
   return selected.length === correct.length && new Set(selected).size === selected.length && selected.every((choice) => correct.includes(choice))
 }

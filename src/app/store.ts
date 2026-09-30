@@ -291,7 +291,7 @@ const createFreshProfile = ({
 }): UserProfile => ({
   name: name?.trim() || email.split('@')[0] || 'New learner',
   nursingSchool: nursingSchool?.trim() || undefined,
-  directoryVisible: true,
+  directoryVisible: false,
   examTrack: examTrack ?? 'nclex-rn',
   examDate: createDefaultExamDate(),
   studyIntensity: 'focused',
@@ -310,12 +310,15 @@ const createFreshProfileForAuthUser = (user: AuthUser) => {
     user.nursingSchool === initialProfile.nursingSchool &&
     user.examTrack === initialProfile.examTrack
 
-  return createFreshProfile({
-    email: user.email,
-    name: authMetadataIsSeeded ? undefined : user.name,
-    nursingSchool: authMetadataIsSeeded ? undefined : user.nursingSchool,
-    examTrack: user.examTrack,
-  })
+  return {
+    ...createFreshProfile({
+      email: user.email,
+      name: authMetadataIsSeeded ? undefined : user.name,
+      nursingSchool: authMetadataIsSeeded ? undefined : user.nursingSchool,
+      examTrack: user.examTrack,
+    }),
+    userId: user.id,
+  }
 }
 
 const createCleanAccountState = (profile: UserProfile) => ({
@@ -337,6 +340,16 @@ const createCleanAccountState = (profile: UserProfile) => ({
   syncEvents: [] as SyncEvent[],
   migrationPromptVisible: false,
 })
+
+export function prepareGuestPractice(session: ActiveSession | null = null) {
+  const state = useStudySystemStore.getState()
+  if (state.authUser || !state.authInitialized) return
+  useStudySystemStore.setState({
+    ...createCleanAccountState(createFreshProfile({ email: 'guest@example.com', name: 'Guest learner' })),
+    activeSession: session,
+    isDemoMode: false,
+  })
+}
 
 const isSeedProfile = (profile: UserProfile | null | undefined) =>
   profile?.name === initialProfile.name &&
@@ -685,7 +698,7 @@ export const useStudySystemStore = create<StudySystemState>()(
           }
 
           set({
-            ...createCleanAccountState(freshProfile),
+            ...createCleanAccountState({ ...freshProfile, userId: snapshot.user.id }),
             authUser: snapshot.user,
             authSession: snapshot.session,
             isDemoMode: false,

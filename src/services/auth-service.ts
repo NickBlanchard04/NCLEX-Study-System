@@ -1,4 +1,5 @@
 import type { AuthSession, AuthUser, UserProfile } from '../app/types'
+import { safeStudyReturn } from './study-handoff'
 import { BETA_TERMS_EMAIL_COPY, type BetaTermsConsent } from '../app/beta-terms'
 import {
   initialUrlHasPasswordRecovery,
@@ -26,7 +27,10 @@ const requireSupabase = () => {
 const getAuthRedirectTo = () => {
   const baseUrl = import.meta.env.BASE_URL || '/'
   if (typeof window === 'undefined') return baseUrl
-  return new URL(baseUrl, window.location.origin).toString()
+  const redirect = new URL(baseUrl, window.location.origin)
+  const destination = safeStudyReturn(window.location.pathname + window.location.search)
+  if (destination) redirect.searchParams.set('studyReturn', destination)
+  return redirect.toString()
 }
 
 export async function getCurrentAuthSnapshot(): Promise<AuthSnapshot> {
