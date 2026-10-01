@@ -19,7 +19,7 @@ export function AccountPracticePage({ route }: { route: string }) {
     {active.config.timed && <p>The exam timer keeps running while you are away.</p>}
     <div className="quick-session-review-actions"><button className="quick-session-primary" onClick={() => setResumeId(null)}>Resume session</button><button className="quick-session-secondary" onClick={() => { if (window.confirm('Discard the unfinished session and start fresh?')) { useStudySystemStore.getState().abandonSession(); setResumeId(null) } }}>Start fresh</button></div>
   </section>
-  if (active?.mode === mode && !active.deletedAt && active.status !== 'discarded') return <QuestionSessionRunner key={`${active.id}-${active.currentIndex}`} session={active} modeLabel={mode === 'test' ? 'Exam practice' : 'Practice'} onExit={() => useStudySystemStore.getState().abandonSession()} />
+  if (active?.mode === mode && !active.deletedAt && active.status !== 'discarded') return <QuestionSessionRunner focused={route === '/practice-questions'} key={`${active.id}-${active.currentIndex}`} session={active} modeLabel={mode === 'test' ? 'Exam practice' : 'Practice'} onExit={() => useStudySystemStore.getState().abandonSession()} />
   return route === '/test-mode' ? <TestModePage /> : route === '/exam-prep' ? <ExamPrepPage /> : <PracticeQuestionsPage />
 }
 
@@ -54,9 +54,9 @@ export function GuestPracticePage({ route }: { route: string }) {
       {!initialized ? <p role="status">Loading study tools…</p> : !ready ? <section className="learning-entry"><h1>{saved?.endedAt ? 'Your previous results' : 'Welcome back'}</h1><p>{saved?.endedAt ? 'View your results or start a new session.' : 'Continue where you left off?'}</p>
         {saved?.config.timed && <p>The exam timer keeps running while you are away. Resuming an expired exam will show your results.</p>}
         <div className="quick-session-review-actions"><button className="quick-session-primary" onClick={() => begin(true)}>{saved?.endedAt ? 'View results' : 'Resume session'}</button><button className="quick-session-secondary" onClick={() => { if (window.confirm('Start fresh and replace the session saved on this device?')) begin(false) }}>Start fresh</button></div></section> : <>
-        <p className="guest-study-note" role="status">{storageError ? 'Browser storage is unavailable. Keep this page open; your session cannot be resumed after leaving.' : 'Your session is saved on this device for 30 days. Create an account after finishing to keep your results.'}</p>
+        {storageError || route !== '/practice-questions' || !active || active.endedAt ? <p className="guest-study-note" role="status">{storageError ? 'Browser storage is unavailable. Keep this page open; your session cannot be resumed after leaving.' : 'Your session is saved on this device for 30 days. Create an account after finishing to keep your results.'}</p> : null}
         {active?.endedAt && <section className="learning-entry"><h1>Session complete</h1><p>{active.responses.filter((answer) => answer.isCorrect).length} / {active.questionIds.length} correct</p><StudyResultSave onContinue={() => begin(false)} result={{ id: active.id, title, route, completedAt: active.endedAt, total: active.questionIds.length, answers: active.responses.map((answer) => ({ id: answer.questionId, correct: answer.isCorrect })) }} /></section>}
-        {!active?.endedAt && (active ? <QuestionSessionRunner key={`${active.id}-${active.currentIndex}`} session={active} modeLabel={title} onExit={() => { if (window.confirm('Discard this unfinished session?')) begin(false) }} /> : route === '/test-mode' ? <TestModePage /> : route === '/exam-prep' ? <ExamPrepPage /> : <PracticeQuestionsPage />)}
+        {!active?.endedAt && (active ? <QuestionSessionRunner focused={route === '/practice-questions'} key={`${active.id}-${active.currentIndex}`} session={active} modeLabel={title} onExit={() => { if (window.confirm('Discard this unfinished session?')) begin(false) }} /> : route === '/test-mode' ? <TestModePage /> : route === '/exam-prep' ? <ExamPrepPage /> : <PracticeQuestionsPage />)}
       </>}
     </main>
   </div>

@@ -1,3 +1,59 @@
+# Question Bank navy/light release QA — 2026-10-01
+
+Selected reference: codex-clipboard-157bb75e-faaf-4c75-b903-64f5a374cf79.png.
+Implemented navy question area, light answer sheet, right-side selection indicators, cyan selection, dark primary action, and two-column desktop answers. Removed patient-context label. Feedback retains explicit correct/incorrect labels with light-surface contrast.
+
+Validated through the in-app browser at 375x667 and 1440x900, including selection, wrong-answer feedback, Continue and correct-answer feedback. Document fits viewport; longer mobile feedback scrolls internally rather than hiding content. Browser error log empty. Fresh tab recovered a stale preview connection. Fixed feedback label and hover contrast discovered during QA.
+
+Automated gates: 187 tests pass; lint and production build pass; formatting audit passes for 1,250 questions, with 67 pre-existing metadata warnings. Generated distractors now start with capitals and end with periods; clinical content, correct keys, and fingerprints unchanged. This is not a claim of exhaustive clinical or spelling review of the entire bank. Intentional tests/e2e/global.setup.ts change excluded from release.
+
+final result: passed
+
+## Prior iteration
+
+# Question Bank selected-layout QA — 2026-10-01
+
+final result: passed
+
+Scope: local Question Bank active runner only, for guest and account entry. No deployment. Existing exam and Quick Study presentation remains unchanged. Preserve prior QA records below.
+
+## Visual truth and evidence
+
+- Mobile target: `C:/Users/lblan/AppData/Local/Temp/codex-clipboard-c1aa8ab1-741e-493e-b06f-e075827e559e.png` (853x1844 image, approximately 390x844 CSS at 2.18x density).
+- Desktop target: `C:/Users/lblan/AppData/Local/Temp/codex-clipboard-b051d74d-384b-4c65-b42f-db8da8584231.png` (1505x1045, approximately 1440x1000 CSS).
+- Rendered mobile: `C:/Users/lblan/.codex/generated_images/019f4cd2-809f-7d71-9244-6a8b0626b41a/practice-mobile-implemented.png` (390x844, 1x).
+- Rendered desktop: same directory, `practice-desktop-implemented.png` (1440x1000, 1x).
+- Reference and implementation images opened together in the same comparison input; compared proportions at the logical viewport rather than raw pixel sizes. Full-view text and control detail were readable, so no extra crops were needed.
+- State: A selected, not submitted. Live bank selects a different existing question and a two-question filtered set; copy wrapping and progress fraction therefore differ. No pixel-identical clinical-copy claim. No question wording or scoring key changed.
+
+## Fidelity and iteration findings
+
+- Initial P2: mobile brand wrapped and primary action did not span the screen. Fixed scoped brand width and button width/margin; recaptured.
+- Initial P2: desktop body centered too low, and answer letters remained beside the text. Fixed top alignment and desktop tile column layout; recaptured.
+- Initial P2: excess unused space under mobile choices. Allowed rows to distribute available height with a maximum size; small-screen minimum content size retained. Recaptured.
+- Typography: existing product font retained; 16px answers/context on phones, larger desktop text, bold question-first hierarchy on phones. No text scaling or truncation.
+- Layout: stacked phone answers, two-column desktop tiles, patient context with left rule on mobile and contained context on desktop. Compact responsive header/footer intentionally use less height than the generated mock to preserve room on short screens.
+- Colors: matte #080f15, navy answer surfaces, cyan selection and action; semantic green/red feedback plus explicit text labels.
+- Assets: existing Nurse Command logo reused, not recreated; existing Lucide icons. No new raster assets required.
+- Copy: “Your patient” replaces “Clinical scenario”; question and answer wording preserved. More retains source/review status, question navigation, reporting and discard. This small additional control is intentional.
+
+## Verification
+
+- In-app Browser at `http://127.0.0.1:4197/practice-questions`; meaningful page, correct title, no framework overlay, no captured warning/error logs.
+- Guest setup -> Start practice -> select -> wrong-answer feedback -> Continue passed. Separate correct answer -> Why dialog -> Save & leave -> reload -> Resume session restored recorded answer and question position.
+- Selected test question had no document or question-body overflow at 375x667, 390x844, 414x896, 768x1024, 1024x768, and 1440x1000; four answers and CTA visible. Rechecked smallest size after spacing fix.
+- Longer items, enlarged text and feedback may scroll within the question area, with footer kept visible. No guarantee that arbitrary-length content fits without internal scrolling. No content is hidden or made unreadably small to force fit.
+- Build and lint passed. All 187 tests across 30 files passed, including four new focused-view tests for ordering, selection versus correctness, wrong-answer labeling and unchanged Quick Study/SATA behavior.
+- No authenticated production/cloud persistence QA, no release, no E2E cloud reset. Intentional local `tests/e2e/global.setup.ts` remains untouched.
+
+## Follow-up polish / remaining risk
+
+- Generated-mock gradient and exact line wrapping are not reproduced; flat existing brand tokens and real bank content are intentional.
+- Signed-in integration shares the same component and is wired in code, but this browser pass used only an isolated guest local session.
+- Content clinical quality/expert review is outside this layout change.
+
+---
+
 # Viewport-fit home launcher verification
 
 Date: 2026-09-20. Scope: home route only; preserve the three approved banner crops and hover effects while replacing everything around them.

@@ -2725,6 +2725,89 @@ textarea {
 @media(min-width:701px) and (max-height:850px){.simple-tools-page .reference-page{margin:12px auto}.reference-page.reference-page h1{margin-bottom:16px}.reference-page .reference-note-editor{gap:12px}.reference-page .reference-note-body textarea{min-height:180px}.reference-page .reference-flashcard{min-height:230px}.reference-page .reference-options{margin:8px 0}.reference-page .reference-note-entries{max-height:260px}}
 .reference-page h1{font-size:30px;line-height:1.2;font-weight:700;margin:0 0 24px}
 .simple-tools-page:has(.reference-page){background:#080f15}
+
+/* Question Bank: navy question area and a light answer sheet. */
+.nurse-command-app:has(.focused-practice) { background: #102a40; }
+.nurse-command-app:has(.focused-practice)::before,
+.nurse-command-app:has(.focused-practice)::after { display: none; }
+.quick-study-page:has(.focused-practice),
+.simple-tools-page:has(.focused-practice) {
+  height: 100dvh; min-height: 0; display: flex; flex-direction: column;
+  padding: 0 1rem max(.5rem, env(safe-area-inset-bottom)); overflow: hidden; background: #102a40;
+}
+:is(.quick-study-page,.simple-tools-page):has(.focused-practice) > .home-launcher-header {
+  min-height: 3.5rem; flex-shrink: 0; padding: .375rem 0; flex-wrap: nowrap;
+}
+:is(.quick-study-page,.simple-tools-page):has(.focused-practice) .home-launcher-brand { gap: .5rem; font-size: 1.125rem; }
+:is(.quick-study-page,.simple-tools-page):has(.focused-practice) .home-launcher-brand img { width: 2rem; height: 2rem; }
+:is(.quick-study-page,.simple-tools-page):has(.focused-practice) .home-launcher-brand > span { max-width: none; white-space: nowrap; }
+:is(.quick-study-page,.simple-tools-page):has(.focused-practice) .home-launcher-header a.home-tools-trigger { display: none; }
+.guest-practice-content:has(.focused-practice) { flex: 1; display: flex; flex-direction: column; width: 100%; max-width: 80rem; padding: 0; overflow: hidden; }
+.guest-practice-content:has(.focused-practice) > .guest-study-note:not(:empty) { font-size: .875rem; margin: .25rem 0; }
+.focused-practice.quick-session { flex: 1; width: 100%; max-height: none; border: 0; border-radius: 0; background: transparent; }
+.focused-practice .quick-session-header { padding: .25rem 0; border: 0; background: transparent; }
+.focused-practice-progress { display: flex; align-items: center; gap: .75rem; color: #b7cde1; font-size: .875rem; }
+.focused-practice-progress > span { white-space: nowrap; }
+.focused-practice-progress a { min-height: 2.75rem; display: inline-flex; align-items: center; }
+.focused-practice-progress progress { flex: 1; min-width: 1rem; height: .25rem; border: 0; border-radius: .25rem; overflow: hidden; appearance: none; background: #1a3445; }
+.focused-practice-progress progress::-webkit-progress-bar { background: #1a3445; }
+.focused-practice-progress progress::-webkit-progress-value { background: #39d5e8; }
+.focused-practice-progress progress::-moz-progress-bar { background: #39d5e8; }
+.focused-practice .quick-session-body { padding: .375rem 0 0; display: flex; flex-direction: column; gap: clamp(.5rem, 1.5dvh, 1.25rem); }
+.focused-practice .quick-session-body h2 { font-size: clamp(1.25rem, 2.6dvh, 1.5rem); line-height: 1.25; font-weight: 750; margin: 0; }
+.focused-practice-patient > span { display: block; color: #a6bdd1; font-size: .875rem; margin-bottom: .375rem; }
+.focused-practice-patient p { color: #bdcfe1; font-size: 1rem; line-height: 1.4; margin: 0; }
+.focused-practice .quick-session-choices { grid-template-columns: 1fr; gap: .25rem; margin: .5rem 0 0; flex: 1; padding: .75rem; background: #edf2f7; border-radius: 1.5rem 1.5rem 0 0; }
+.focused-practice .quick-session-choice { padding: .625rem; align-items: center; gap: .625rem; background: transparent; border: 0; border-bottom: 1px solid #c1cedb; border-radius: 0; color: #123451; line-height: 1.4; min-height: 44px; }
+.focused-practice .quick-session-choice:last-child { border-bottom-color: transparent; }
+.focused-practice .quick-session-choice[data-selected="true"] { background: #cceff8; border-radius: .75rem; border-bottom-color: transparent; }
+.focused-practice-marker { display: flex; align-items: center; gap: .5rem; flex-shrink: 0; color: #33546e; font-weight: 700; order: 2; margin-left: auto; }
+.focused-practice-marker > span { display: none; }
+.focused-practice-marker svg { flex-shrink: 0; }
+.focused-practice [data-selected="true"] .focused-practice-marker { color: #0a4871; }
+.focused-practice .quick-session-choice[data-result="correct"],
+.focused-practice .quick-session-choice[data-result="missed"] { background: #d4eee2; color: #124d38; }
+.focused-practice .quick-session-choice[data-result="incorrect"] { background: #f9dfe3; color: #84233b; }
+.focused-practice .quick-session-choice[data-result] .quick-session-choice-label { color: inherit; }
+.focused-practice .quick-session-footer { padding: .25rem .75rem .75rem; background: #edf2f7; border-top: 0; color: #123451; }
+.focused-practice .quick-session-footer .quick-session-text-button { color: #123451; }
+.focused-practice .quick-session-footer .quick-session-result { color: #84233b; }
+.focused-practice .quick-session-footer .quick-session-result[data-result="correct"] { color: #126044; }
+.focused-practice .quick-session-footer .quick-session-result[data-result="partial"] { color: #785400; }
+.focused-practice .quick-session-navigation { display: flex; flex-direction: column; align-items: stretch; gap: .25rem; }
+.focused-practice .quick-session-navigation-secondary { display: flex; justify-content: space-between; gap: .25rem; }
+.focused-practice .quick-session-text-button { min-height: 2.75rem; padding: .25rem .375rem; font-size: .875rem; }
+.focused-practice .quick-session-primary { min-height: 2.75rem; background: #0b385e; color: #fff; border: 1px solid #0b385e; border-radius: .75rem; }
+.focused-practice .quick-session-primary:disabled { opacity: .65; }
+.focused-practice .quick-session-primary:hover:not(:disabled) { background: #164e78; color: #fff; }
+.focused-practice .quick-session-choice:focus-visible { outline: 3px solid #08769a; outline-offset: -3px; }
+.focused-practice .quick-session-navigation > .quick-session-primary { width: 100%; margin-left: 0; }
+.focused-practice .quick-session-feedback { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .25rem 0; }
+.focused-practice .quick-session-feedback p { margin: 0; }
+.focused-practice-instruction { font-size: .875rem; margin: 0; color: #b7cde1; }
+@media (min-width: 768px) {
+  :is(.quick-study-page,.simple-tools-page):has(.focused-practice) { padding-inline: clamp(1.5rem, 5vw, 5rem); }
+  :is(.quick-study-page,.simple-tools-page):has(.focused-practice) > .home-launcher-header { min-height: 5rem; }
+  :is(.quick-study-page,.simple-tools-page):has(.focused-practice) .home-launcher-brand { font-size: 1.5rem; }
+  :is(.quick-study-page,.simple-tools-page):has(.focused-practice) .home-launcher-brand img { width: 2.75rem; height: 2.75rem; }
+  .focused-practice .quick-session-header { padding: .5rem 0; }
+  .focused-practice .quick-session-body { justify-content: flex-start; padding-top: clamp(1rem, 3dvh, 2rem); gap: clamp(1rem, 3dvh, 2rem); }
+  .focused-practice .quick-session-body h2 { font-size: clamp(1.75rem, 2.5vw, 2.5rem); }
+  .focused-practice-patient { padding: 0; }
+  .focused-practice-patient p { border: 0; padding: 0; font-size: 1.125rem; }
+  .focused-practice .quick-session-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; flex: 1; padding: 1.5rem; }
+  .focused-practice .quick-session-choice { min-height: 7rem; padding: 1.25rem; font-size: 1.125rem; flex-direction: row; align-items: center; gap: 1rem; }
+  .focused-practice .quick-session-choice:nth-last-child(-n+2) { border-bottom-color: transparent; }
+  .focused-practice .quick-session-navigation { flex-direction: row; justify-content: space-between; align-items: center; padding: .5rem 0; }
+  .focused-practice .quick-session-navigation-secondary { gap: 1rem; }
+  .focused-practice .quick-session-primary { min-width: 12rem; }
+  .focused-practice .quick-session-navigation > .quick-session-primary { width: auto; }
+}
+@media (max-width: 767px) and (max-height: 740px) {
+  .focused-practice .quick-session-body { gap: .375rem; }
+  .focused-practice .quick-session-choice { padding: .375rem .5rem; }
+  .focused-practice-patient > span { margin-bottom: .125rem; }
+}
 .home-route-shell:has(.reference-page)::before{display:none}
 .reference-page .simple-study-primary{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:44px;padding:12px 24px;background:#42c9df;color:#04131c;border:1px solid #42c9df;border-radius:8px;font-size:15px;font-weight:700}
 .reference-page button:focus-visible,.reference-page summary:focus-visible{outline:2px solid #42c9df;outline-offset:4px}

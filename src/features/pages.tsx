@@ -1129,6 +1129,7 @@ export function PracticeQuestionsPage() {
         key={`${activeSession.id}-${activeSession.currentIndex}`}
         session={activeSession}
         modeLabel="Practice Set"
+        focused
         onExit={abandonSession}
       />
     )

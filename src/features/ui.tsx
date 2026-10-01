@@ -974,11 +974,13 @@ export function QuestionSessionRunner({
   modeLabel,
   onExit,
   compact = false,
+  focused = false,
 }: {
   session: ActiveSession
   modeLabel: string
   onExit: () => void
   compact?: boolean
+  focused?: boolean
 }) {
   const submitCurrentResponse = useStudySystemStore((state) => state.submitCurrentResponse)
   const nextQuestion = useStudySystemStore((state) => state.nextQuestion)
@@ -1481,9 +1483,10 @@ export function QuestionSessionRunner({
   ]
   const evidenceBadges = [...tutorInsight.trustFlags, `Evidence: ${evidenceLevel}`]
 
-  if (compact) {
+  if (compact || focused) {
     return (
       <QuickStudyQuestionView
+        focused={focused}
         session={session}
         question={question}
         selectedAnswers={selectedAnswers}

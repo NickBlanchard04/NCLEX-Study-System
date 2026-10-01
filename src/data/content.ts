@@ -1317,7 +1317,7 @@ const makeGeneratedQuestion = (
   const board = blueprint.boards[index % blueprint.boards.length]
   const scenario = blueprint.scenarioLeads[index % blueprint.scenarioLeads.length]
   const intervention = blueprint.interventions[index % blueprint.interventions.length]
-  const wrong = blueprint.distractors
+  const wrong = blueprint.distractors.map((text) => `${text.charAt(0).toUpperCase()}${text.slice(1).replace(/[.]+$/, '')}.`)
   const isSata = index % 5 === 0
   const isPriority = index % 7 === 0
   const isCase = index % 6 === 0
