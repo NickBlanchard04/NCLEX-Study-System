@@ -141,3 +141,17 @@ Boundary: these are layout/navigation checks, not new live authentication or clo
 - Removed the repeated practice/SME line and Item details control from the main question surface at the owner's request. Source/review status and reporting remain available in Sources & options / Why. Existing clinical rationale is unchanged; short rationales appear in desktop feedback, full explanation remains available on every size.
 - Local isolated Chrome: correct, incorrect, and SATA partial feedback passed at 320x568, 390x844, 768x1024, 1280x720, 1920x1080, and 844x390. No document overflow; long content remains internally scrollable. Verified selection labels, locked answers, immediate save, dialog Escape/focus, three-question completion, backtracking, save/resume, and duplicate prevention. Screenshots inspected in output/playwright/feedback-*-desktop.png and feedback-*-mobile.png.
 - Lint, 110 tests, TypeScript/Vite build, bundle budgets, question-engine simulation (100 learners / 6000 attempts), and formatting audit passed. Formatting retains the existing nonblocking metadata warnings. Local QA blocks external requests and uses synthetic in-memory state; no cloud accounts were reset or modified. Intentional tests/e2e/global.setup.ts change remains untouched.
+# Session trail end screen — 2026-10-02
+
+- Source: C:/Users/lblan/.codex/generated_images/019f4cd2-809f-7d71-9244-6a8b0626b41a/exec-a78f0eb7-567e-4694-88fd-97465d21f9c3.png
+- Desktop evidence: C:/Users/lblan/Documents/NursingSoftware/end-screen-desktop.png (1672 × 941 CSS/pixels, 1x).
+- Mobile evidence: C:/Users/lblan/Documents/NursingSoftware/end-screen-mobile.png (375 × 667 CSS/pixels, 1x).
+- Full-view comparison: source and implementation emitted together in browser QA. Same completed-session state; real test results are 6/10 rather than the mock's 2/10. Guest account-saving disclosure intentionally preserved.
+- Typography: existing product sans-serif retained; headline hierarchy matches. Supporting controls retain production 16px scale rather than enlarged mock labels.
+- Layout: ten desktop tiles, five-column mobile wrap, inline actions and optional details. First mobile pass overflowed; reduced mobile top spacing and tile height. Final small-phone capture fits all collapsed controls without scrolling.
+- Colors: navy base, cyan action, teal checks, coral circled Xs. Icons use existing Lucide library; no raster assets needed.
+- Content: actual response count, per-question outcomes, missed count, and score. No fixed mock data or licensure claim.
+- Interaction: completed a local guest session; opened missed review and returned to results. No browser console errors.
+- Focused crop unnecessary: labels and icons readable in full-size paired evidence.
+- Remaining polish: mock navigation is wider; existing shared navigation width intentionally retained.
+- final result: passed

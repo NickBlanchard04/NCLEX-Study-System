@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, ArrowRight, Check, Flag, FileText, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, CircleX, Flag, FileText, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { StudyToolsMenu } from './study-tools-menu'
 import type { ActiveSession, ConfidenceLevel, Question, SessionResponse } from '../app/types'
@@ -284,17 +284,24 @@ export function QuickStudyCompleteView({ focused = false, completionActions, ses
     <header className="quick-session-header"><nav className="focused-practice-top" aria-label="Practice navigation"><Link to="/" className="focused-practice-home"><ArrowLeft size={24} aria-hidden="true" />Home</Link><StudyToolsMenu /></nav></header>
     <div className="quick-session-body" tabIndex={0} aria-label="Session results and review">
       {!reviewOpen && <div className="practice-complete-summary">
-        <Check size={40} aria-hidden="true" />
-        <h1>Session complete</h1>
-        <p className="practice-complete-score">{score}<span>%</span></p>
-        <p>{session.responses.filter((response) => response.isCorrect).length} correct · {missed.length} to review</p>
-        <p className="practice-complete-note">{missed.length ? 'Take a moment to review what you missed.' : 'You answered every question correctly.'}</p>
+        <h1>Your session, at a glance</h1>
+        <p>{session.responses.length} questions completed</p>
+        <ol className="practice-result-trail" aria-label="Question results">
+          {session.questionIds.map((id, index) => {
+            const correct = session.responses.find(response => response.questionId === id)?.isCorrect === true
+            return <li key={id} aria-label={`Question ${index + 1}: ${correct ? 'Correct' : 'To review'}`}><span>{index + 1}</span>{correct ? <Check className="practice-result-correct" size={32} aria-hidden="true" /> : <CircleX className="practice-result-missed" size={32} aria-hidden="true" />}</li>
+          })}
+        </ol>
+        <div className="practice-result-legend"><span><Check className="practice-result-correct" size={26} aria-hidden="true" />{session.responses.filter(response => response.isCorrect).length} correct</span><span><CircleX className="practice-result-missed" size={26} aria-hidden="true" />{missed.length} to review</span><span className="practice-result-accuracy"><strong>{score}%</strong> accuracy</span></div>
       </div>}
+      <div className="practice-complete-actions">
+        {!reviewOpen && <p>{missed.length ? 'Revisit the questions you missed.' : 'You answered every question correctly.'}</p>}
+        <div>{missed.length > 0 && <button className="quick-session-primary" onClick={() => setReviewOpen(value => !value)} aria-expanded={reviewOpen}>{reviewOpen ? 'Back to results' : 'Review missed questions'}<ArrowRight size={18} aria-hidden="true" /></button>}<button className="quick-session-secondary" onClick={onExit}>Done</button></div>
+      </div>
       {completionActions && !reviewOpen ? <details className="practice-complete-details"><summary>Save results to an account</summary>{completionActions}</details> : null}
       {reviewOpen && <section className="quick-session-missed" aria-label="Missed questions"><h2>Review missed questions</h2>{missed.map((item,index) => <details key={item.id}><summary>{index + 1}. {item.question?.prompt ?? 'Saved question unavailable'}</summary>{item.question ? <><p>{item.question.scenario}</p><p><strong>Correct answer: </strong>{item.question.choices.filter(choice => item.question!.correctAnswer.includes(choice.id)).map(choice => choice.text).join(' ')}</p><p>{item.question.rationale.whyCorrect}</p></> : <p>This saved question is no longer available.</p>}</details>)}</section>}
       <details className="practice-complete-details"><summary>Session details</summary><p>Practice results only, not a licensure prediction.</p><dl>{breakdown.map(item => <div key={item.category}><dt>{item.category}</dt><dd>{Math.round(item.accuracy * 100)}%</dd></div>)}</dl>{onRepair && <button className="quick-session-secondary" onClick={onRepair}>Practice missed topic</button>}<button className="quick-session-text-button" onClick={onRemediation}>Open study review</button></details>
     </div>
-    <footer className="quick-session-footer practice-feedback-dock"><button className="quick-session-text-button" onClick={onExit}>Done</button>{missed.length > 0 && <button className="quick-session-primary" onClick={() => setReviewOpen(value => !value)} aria-expanded={reviewOpen}>{reviewOpen ? 'Hide review' : 'Review missed questions'}<ArrowRight size={18} aria-hidden="true" /></button>}</footer>
   </section>
   return (
     <section className="quick-session quick-session-complete" aria-label="Quick Study results">
