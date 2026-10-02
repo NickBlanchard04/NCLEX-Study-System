@@ -2849,6 +2849,39 @@ textarea {
 .practice-complete .quick-session-missed summary { cursor: pointer; min-height: 2.75rem; }
 .practice-complete .quick-session-missed p { margin: .75rem 0; line-height: 1.5; }
 .practice-complete .practice-feedback-dock { min-height: 8rem; }
+/* Phone study flow: keep reading room and thumb-sized actions without shrinking copy. */
+@media (max-width: 767px) {
+  .focused-practice-top { padding: max(.5rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) .5rem max(1rem, env(safe-area-inset-left)); gap: .375rem 1rem; }
+  .focused-practice .quick-session-body { padding: .75rem 1rem; gap: .75rem; scrollbar-gutter: auto; overflow-x: hidden; }
+  .focused-practice-patient { padding-left: .75rem; }
+  .focused-practice .quick-session-choices { gap: .5rem; }
+  .focused-practice .quick-session-choice { gap: .625rem; padding: .625rem .75rem; min-height: 3rem; }
+  .focused-practice-marker { flex-basis: 1.625rem; height: 1.625rem; }
+  .focused-practice .quick-session-choice > span:last-child { min-width: 0; overflow-wrap: anywhere; }
+  .focused-practice .practice-feedback-dock { min-height: 0; padding: .625rem 1rem max(.625rem, env(safe-area-inset-bottom)); gap: .625rem; }
+  .focused-practice .practice-feedback-dock > .quick-session-primary { width: 100%; min-height: 3.125rem; }
+  .practice-feedback-summary { gap: .5rem; }
+  .practice-feedback-icon { width: 2rem; height: 2rem; flex-basis: 2rem; }
+  .practice-feedback-icon > svg { width: 1.5rem; height: 1.5rem; }
+  .practice-feedback-copy > p { font-size: 1.125rem; }
+  .practice-feedback-actions { gap: .375rem; }
+  .practice-feedback-actions button { min-height: 2.75rem; padding: .25rem .5rem; }
+  .focused-practice .quick-session-dialog { width: calc(100% - 1rem); max-height: calc(100dvh - 1rem); }
+  .focused-practice .quick-session-dialog-header, .focused-practice .quick-session-dialog-footer { padding: .75rem; }
+  .focused-practice .quick-session-dialog-header button { min-width: 2.75rem; min-height: 2.75rem; }
+  .focused-practice .quick-session-dialog-body { padding: .75rem 1rem; overflow-wrap: anywhere; }
+  .practice-complete .quick-session-body { gap: .5rem; }
+  .practice-complete-summary h1 { font-size: clamp(1.5rem, 6.4vw, 1.875rem); line-height: 1.2; text-wrap: balance; }
+  .practice-result-legend { display: grid; grid-template-columns: 1fr 1fr; gap: .625rem; }
+  .practice-result-legend > span { font-size: .875rem; }
+  .practice-result-accuracy { grid-column: 1 / -1; justify-self: center; margin: 0; }
+  .practice-complete-actions { padding-top: .875rem; }
+  .practice-complete-actions > p { font-size: .9375rem; margin-bottom: .75rem; }
+  .practice-complete-actions > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .5rem; }
+  .practice-complete-actions .quick-session-primary { padding: .75rem; min-width: 0; min-height: 3rem; gap: .375rem; font-size: .9375rem; }
+  .practice-complete-actions .quick-session-secondary { min-width: 3.5rem; min-height: 3rem; padding: .5rem .75rem; }
+  .practice-complete .quick-session-missed details { padding: .75rem; overflow-wrap: anywhere; }
+}
 @media (prefers-reduced-motion: reduce) { .practice-feedback-icon.practice-check-draw, .practice-check-draw svg path { animation: none; stroke-dashoffset: 0; } }
 @keyframes practice-sparkles { 0% { transform: scale(.4); opacity: 0; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .practice-feedback-icon, .practice-feedback-sparkles { animation: none; } .practice-feedback-sparkles { display: none; } }
