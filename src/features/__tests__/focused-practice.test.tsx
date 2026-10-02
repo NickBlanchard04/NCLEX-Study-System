@@ -38,6 +38,8 @@ describe('focused Question Bank presentation', () => {
     expect(html).toContain('data-selected="true"')
     expect(html).not.toContain('data-result="correct"')
     expect(html).not.toContain('Correct answer · Your answer')
+    expect(html).not.toContain('Save &amp; leave')
+    expect(html).not.toContain('practice-feedback-actions')
   })
   it('labels both a wrong selection and the correct answer after checking', () => {
     const wrong = question.choices.find((choice) => !question.correctAnswer.includes(choice.id))!
@@ -45,6 +47,16 @@ describe('focused Question Bank presentation', () => {
     expect(html).toContain('Your answer · Incorrect')
     expect(html).toContain('Correct answer')
     expect(html).toContain('Not quite')
+    expect(html).toContain('practice-feedback-actions')
+    expect(html).toContain('Save &amp; leave')
+    expect(html).toMatch(/<button type="button" aria-pressed="false">/)
+  })
+  it('shows the correct feedback icon and post-answer actions without a new submission', () => {
+    const html = render({ submitted: true, isCorrect: true, selectedAnswers: question.correctAnswer, flagged: true })
+    expect(html).toContain('practice-feedback-sparkles')
+    expect(html).toContain('Correct!')
+    expect(html).toContain('Flagged')
+    expect(html).not.toContain('Check answer')
   })
   it('keeps select-all instructions and the original Quick Study layout', () => {
     const multiple = questionBank.find((item) => item.format === 'select-all-that-apply')!

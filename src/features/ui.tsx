@@ -1507,7 +1507,11 @@ export function QuestionSessionRunner({
         feedbackNote={feedbackNote}
         feedbackSubmittedId={feedbackSubmittedId}
         onChoice={toggleChoice}
-        onFlag={() => setFlagged((current) => !current)}
+        onFlag={() => {
+          const next = !flagged
+          setFlagged(next)
+          if (existingResponse) useStudySystemStore.getState().setCurrentResponseFlag(next)
+        }}
         onSubmit={() => {
           if (submitted || existingResponse || !selectedAnswers.length) return
           submitCurrentResponse({

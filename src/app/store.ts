@@ -160,6 +160,7 @@ interface StudySystemState {
     timeSpentSec: number
   }) => void
   nextQuestion: () => void
+  setCurrentResponseFlag: (flagged: boolean) => void
   previousQuestion: () => void
   finishSession: () => void
   abandonSession: () => void
@@ -1238,6 +1239,23 @@ export const useStudySystemStore = create<StudySystemState>()(
           },
           { userId: state.authUser?.id, isDemoUser: state.isDemoMode },
         )
+        void get().syncNow()
+      },
+      setCurrentResponseFlag: (flagged) => {
+        set((state) => {
+          const session = state.activeSession
+          const questionId = session?.questionIds[session.currentIndex]
+          const response = session?.responses.find((entry) => entry.questionId === questionId)
+          if (!session || !response || response.flagged === flagged) return state
+          const nextSession = touchPracticeSession({ ...session, responses: session.responses.map((entry) => entry === response ? { ...entry, flagged } : entry) })
+          const changedAttempts = state.attempts.filter((attempt) => attempt.sessionId === session.id && attempt.questionId === questionId && attempt.completedAt === response.submittedAt).map((attempt) => ({ ...attempt, flagged }))
+          return {
+            activeSession: nextSession,
+            practiceSessions: upsertPracticeSession(state.practiceSessions, nextSession),
+            attempts: state.attempts.map((attempt) => changedAttempts.find((changed) => changed.id === attempt.id) ?? attempt),
+            syncEvents: [...state.syncEvents, ...changedAttempts.map((attempt) => makeSyncEvent('attempt', attempt.id, 'upsert', attempt)), makeSyncEvent('practice-session', nextSession.id, 'upsert', nextSession)],
+          }
+        })
         void get().syncNow()
       },
       nextQuestion: () => {

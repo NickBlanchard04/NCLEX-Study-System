@@ -1,3 +1,33 @@
+# Bottom answer feedback and post-submit utilities — 2026-10-02
+
+Source visual truth: `C:/Users/lblan/.codex/generated_images/019f4cd2-809f-7d71-9244-6a8b0626b41a/exec-9c4eab6c-8a38-4560-8256-e3516898ff9f.png` (1487x1058 concept board). User refinement: move compact Flag / Save & leave into the feedback dock, visible only after submission. Existing selected mobile light sheet remains controlling on phones.
+
+Implementation evidence: `C:/Users/lblan/Documents/NursingSoftware/practice-feedback-desktop.png` (1440x1000), `C:/Users/lblan/Documents/NursingSoftware/practice-feedback-mobile.png` (390x844), and `C:/Users/lblan/Documents/NursingSoftware/practice-feedback-wrong.png` (1440x1000), all browser captures at 1x CSS density. Source and desktop correct-state capture opened together in one comparison input; compare the source's main app region, excluding its explanatory state strip. Actual clinical questions intentionally differ from the concept arithmetic placeholder; no clinical wording or scoring changed. No claim of pixel-exact typography/content matching.
+
+Fidelity: existing product sans-serif/weight hierarchy retained; navy desktop, light mobile answer sheet, green/coral semantic dock and prominent Continue match the selected direction. Library Check/X/Sparkles icons are sharp vectors; original logo preserved, no new image assets needed. Compact utility buttons are a deliberate user-requested deviation from the source board. Long explanations remain behind Why. Main-view text and controls are legible without a separate crop.
+
+Iteration: first 390x844 correct-state capture clipped the end of the final answer within the scrollable body. Tightened dock gaps/padding and removed redundant mobile "Nice work"; recapture shows all four answers for the tested question. Tiny phones/longer content retain internal scrolling without hiding Home/Menu or Continue. No remaining actionable P0/P1/P2 findings for this scoped change.
+
+Verification: 188 tests, build, lint and diff checks passed. In-app browser checked selected-before-submit, correct, wrong, disabled answer editing after submission, post-submit Flag, Save & leave, resume with Flagged preserved, and Continue returning to a clean unanswered state. Guest session only; no live account writes. Geometry at 375x667, 390x844, 414x896, 768x1024, 1024x768 and 1440x1000 shows no document overflow; Continue stays visible. Error console empty. CSS reduced-motion rule disables result/sparkle animations; OS preference not changed. Signed-in cloud flag persistence not independently reverified.
+
+Implementation: persisted flag updates modify the existing response and matching attempt plus sync events without re-scoring or adding an attempt. Nonfocused exam/Quick Study UI retained. Correct icon pops with short sparkles; wrong X pops in the same bottom location. Animations never gate navigation. Intentional E2E setup change untouched. Local only; not deployed.
+
+final result: passed
+
+# Separate mobile and desktop reference revision — 2026-10-01
+
+Source visual truth: mobile `C:/Users/lblan/AppData/Local/Temp/codex-clipboard-3aacbe45-81d9-44b1-8648-d13177018c8f.png` (853x1844, approximately 390x844 CSS); desktop `C:/Users/lblan/AppData/Local/Temp/codex-clipboard-4b7e5550-a1af-4dc9-9403-3dfa49cbad49.png` (1487x1058).
+
+Implementation screenshots: `C:/Users/lblan/Documents/NursingSoftware/practice-revised-mobile.png` (390x844, 1x), `C:/Users/lblan/Documents/NursingSoftware/practice-revised-desktop.png` (1440x1000, 1x). Both sources and captures opened together in the same comparison tool input. Real question content differs from reference; wrapping compared proportionally, not pixel-exact. Mobile capture selected; final desktop capture unselected, with selected state tested separately.
+
+Findings and iteration: fixed desktop vertical auto-margin gap, then capped answer-list height and adjusted tall-screen spacing. Post-fix capture shows dark single-column desktop list, scenario before question with cyan rule, and arrow Home beside Menu. Mobile uses edge-to-edge light sheet, right-side selectors, no logo, and 48px Home aligned with Menu. Typography uses existing product font; navy/light mobile and black/navy/cyan desktop tokens match respective directions. Existing sharp logo and library icons reused. Copy and scoring unchanged. More remains as a quiet source/options control; no extra clinical claims introduced. Full-view captures make text and controls readable, so a separate focused crop was not needed. Minor icon treatment differs from generated mock (uniform radio markers instead of lettered desktop circles).
+
+Checks: 187 tests passed; build and lint passed. Browser checked 375x667, 390x844, 414x896, 768x1024, 1024x768, 1440x1000. No document overflow at measured sizes; internal scrolling remains for longer questions/feedback. Menu opens, Home navigates, resume works, selections work; no console errors. Existing global.setup.ts untouched. Local preview only; not deployed.
+
+final result: passed
+
+## Earlier release
+
 # Question Bank navy/light release QA — 2026-10-01
 
 Selected reference: codex-clipboard-157bb75e-faaf-4c75-b903-64f5a374cf79.png.

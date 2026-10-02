@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, ArrowRight, Check, Circle, CircleDot, Flag, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Circle, CircleDot, Flag, FileText, Sparkles, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { StudyToolsMenu } from './study-tools-menu'
+import logo from '../assets/brand/nursing-command-logo.png'
 import type { ActiveSession, ConfidenceLevel, Question, SessionResponse } from '../app/types'
 import {
   contentFeedbackReasonLabels,
@@ -80,12 +82,15 @@ export function QuickStudyQuestionView(props: QuestionViewProps) {
   return (
     <section className={`quick-session${props.focused ? ' focused-practice' : ''}`} aria-label={props.focused ? 'Practice session' : 'Quick Study session'}>
       <header className="quick-session-header">
-        {props.focused ? <div className="focused-practice-progress">
+        {props.focused ? <><nav className="focused-practice-top" aria-label="Practice navigation">
+          <Link to="/" className="focused-practice-home"><ArrowLeft size={24} aria-hidden="true" />Home</Link>
+          <Link to="/" className="focused-practice-brand"><img src={logo} alt="" /><span>Nurse <strong>Command</strong></span></Link>
+          <StudyToolsMenu />
+        </nav><div className="focused-practice-progress">
           <span>Practice</span>
           <progress value={session.currentIndex + 1} max={session.questionIds.length} aria-label="Question position" />
-          <Link to="/">Home</Link>
-          <span>{session.currentIndex + 1} of {session.questionIds.length}</span>
-        </div> : <>
+          <span><span className="focused-practice-count-prefix">Question </span>{session.currentIndex + 1} of {session.questionIds.length}</span>
+        </div></> : <>
         <div className="quick-session-heading">
           <h1>Quick Study</h1>
           <span>{question.category}</span>
@@ -146,7 +151,26 @@ export function QuickStudyQuestionView(props: QuestionViewProps) {
           </>
       </div>
 
-      <footer className="quick-session-footer">
+      {props.focused ? <footer className="quick-session-footer practice-feedback-dock" data-result={submitted ? result : undefined}>
+        {submitted ? <div className="practice-feedback-summary" key={`${question.id}-${result}`}>
+          <span className="practice-feedback-icon" aria-hidden="true">
+            {props.isCorrect ? <Check size={32} strokeWidth={3} /> : <X size={32} strokeWidth={3} />}
+            {props.isCorrect ? <span className="practice-feedback-sparkles"><Sparkles size={25} /></span> : null}
+          </span>
+          <div className="practice-feedback-copy">
+            <p role="status">{props.isCorrect ? 'Correct!' : result === 'partial' ? 'Almost!' : 'Not quite.'}</p>
+            <span>{props.isCorrect ? 'Nice work.' : result === 'partial' ? 'Review the highlighted choices.' : 'The correct answer is highlighted above.'}</span>
+            <div className="practice-feedback-actions">
+              <button type="button" onClick={props.onFlag} aria-pressed={props.flagged}><Flag size={16} aria-hidden="true" />{props.flagged ? 'Flagged' : 'Flag'}</button>
+              <button type="button" onClick={props.onSaveAndLeave}><FileText size={16} aria-hidden="true" />Save &amp; leave</button>
+              <button type="button" onClick={() => setDetailsOpen(true)}>Why?<span className="sr-only"> Explanation and sources</span></button>
+            </div>
+          </div>
+        </div> : null}
+        <button type="button" className="quick-session-primary" disabled={!submitted ? !selectedAnswers.length : !finalResponse} onClick={!submitted ? props.onSubmit : isLast ? props.onFinish : props.onNext}>
+          {!submitted ? 'Check answer' : isLast ? 'Finish session' : 'Continue'}<ArrowRight size={18} aria-hidden="true" />
+        </button>
+      </footer> : <footer className="quick-session-footer">
         {submitted ? (
           <div className="quick-session-feedback" data-result={result}>
             <p className="quick-session-result" data-result={result} role="status">
@@ -160,7 +184,7 @@ export function QuickStudyQuestionView(props: QuestionViewProps) {
         <div className="quick-session-navigation">
           <div className="quick-session-navigation-secondary">
             {props.focused ? <button type="button" className="quick-session-text-button" onClick={props.onFlag} disabled={submitted || Boolean(finalResponse)} aria-pressed={props.flagged}><Flag size={20} aria-hidden="true" />{props.flagged ? 'Flagged' : 'Flag'}</button> : <button type="button" className="quick-session-text-button" onClick={props.onBack} disabled={session.currentIndex === 0 || Boolean(session.config.noBacktracking)} aria-label="Previous question"><ArrowLeft size={18} aria-hidden="true" /><span>Back</span></button>}
-            <button type="button" className="quick-session-text-button" onClick={props.onSaveAndLeave}>Save &amp; leave</button>
+            <button type="button" className="quick-session-text-button" onClick={props.onSaveAndLeave}>{props.focused ? <FileText size={20} aria-hidden="true" /> : null}Save &amp; leave</button>
             {!submitted ? <button type="button" className="quick-session-text-button" onClick={() => setDetailsOpen(true)}>{props.focused ? 'More' : 'Sources & options'}</button> : null}
           </div>
           {!submitted ? (
@@ -169,7 +193,7 @@ export function QuickStudyQuestionView(props: QuestionViewProps) {
             <button type="button" className="quick-session-primary" onClick={isLast ? props.onFinish : props.onNext}>{isLast ? 'Finish session' : 'Continue'}<ArrowRight size={18} aria-hidden="true" /></button>
           ) : null}
         </div>
-      </footer>
+      </footer>}
 
       <dialog ref={dialogRef} className="quick-session-dialog" aria-labelledby="quick-study-details-title" onClose={() => { setDetailsOpen(false); setDiscardRequested(false) }} onCancel={() => { setDetailsOpen(false); setDiscardRequested(false) }}>
         <header className="quick-session-dialog-header">
