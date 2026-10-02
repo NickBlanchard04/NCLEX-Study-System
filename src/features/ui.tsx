@@ -973,6 +973,7 @@ export function QuestionSessionRunner({
   session,
   modeLabel,
   onExit,
+  completionActions,
   compact = false,
   focused = false,
 }: {
@@ -981,6 +982,7 @@ export function QuestionSessionRunner({
   onExit: () => void
   compact?: boolean
   focused?: boolean
+  completionActions?: React.ReactNode
 }) {
   const submitCurrentResponse = useStudySystemStore((state) => state.submitCurrentResponse)
   const nextQuestion = useStudySystemStore((state) => state.nextQuestion)
@@ -1068,9 +1070,11 @@ export function QuestionSessionRunner({
       navigate('/practice-questions')
     }
 
-    if (compact) {
+    if (compact || focused) {
       return (
         <QuickStudyCompleteView
+          completionActions={completionActions}
+          focused={focused}
           session={session}
           score={score}
           takeaway={sessionTakeaway}

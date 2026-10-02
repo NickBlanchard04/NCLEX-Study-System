@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, ArrowRight, Check, Circle, CircleDot, Flag, FileText, Sparkles, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Flag, FileText, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { StudyToolsMenu } from './study-tools-menu'
-import logo from '../assets/brand/nursing-command-logo.png'
 import type { ActiveSession, ConfidenceLevel, Question, SessionResponse } from '../app/types'
 import {
   contentFeedbackReasonLabels,
@@ -84,13 +83,12 @@ export function QuickStudyQuestionView(props: QuestionViewProps) {
       <header className="quick-session-header">
         {props.focused ? <><nav className="focused-practice-top" aria-label="Practice navigation">
           <Link to="/" className="focused-practice-home"><ArrowLeft size={24} aria-hidden="true" />Home</Link>
-          <Link to="/" className="focused-practice-brand"><img src={logo} alt="" /><span>Nurse <strong>Command</strong></span></Link>
-          <StudyToolsMenu />
-        </nav><div className="focused-practice-progress">
-          <span>Practice</span>
+          <div className="focused-practice-progress">
           <progress value={session.currentIndex + 1} max={session.questionIds.length} aria-label="Question position" />
-          <span><span className="focused-practice-count-prefix">Question </span>{session.currentIndex + 1} of {session.questionIds.length}</span>
-        </div></> : <>
+          <span>{session.currentIndex + 1} of {session.questionIds.length}</span>
+          </div>
+          <StudyToolsMenu />
+        </nav></> : <>
         <div className="quick-session-heading">
           <h1>Quick Study</h1>
           <span>{question.category}</span>
@@ -116,8 +114,8 @@ export function QuickStudyQuestionView(props: QuestionViewProps) {
               </button>
             </div> : null}
             {!props.focused && question.scenario ? <p className="quick-session-scenario">{question.scenario}</p> : null}
-            <h2 id="quick-study-question">{question.prompt}</h2>
             {props.focused && question.scenario ? <div className="focused-practice-patient"><p>{question.scenario}</p></div> : null}
+            <h2 id="quick-study-question">{question.prompt}</h2>
             {props.focused && question.format === 'select-all-that-apply' ? <p className="focused-practice-instruction">Select all that apply.</p> : null}
             <div className="quick-session-choices" role="group" aria-labelledby="quick-study-question">
               {question.choices.map((choice) => {
@@ -140,7 +138,7 @@ export function QuickStudyQuestionView(props: QuestionViewProps) {
                     disabled={submitted || Boolean(finalResponse)}
                     onClick={() => props.onChoice(choice.id)}
                   >
-                    {props.focused ? <span className="focused-practice-marker">{selected ? <CircleDot size={24} aria-hidden="true" /> : <Circle size={24} aria-hidden="true" />}<span>{choice.id}</span></span> : <span className="quick-session-choice-key">{choice.id}</span>}
+                    {props.focused ? <span className="focused-practice-marker" aria-hidden="true">{choice.id}</span> : <span className="quick-session-choice-key">{choice.id}</span>}
                     <span className="quick-session-choice-content"><span>{choice.text}</span>
                       {label && (!props.focused || submitted) ? <span className="quick-session-choice-label">{submitted ? correct ? <Check size={16} aria-hidden="true" /> : <X size={16} aria-hidden="true" /> : <Check size={16} aria-hidden="true" />}{label}</span> : null}
                     </span>
@@ -153,9 +151,8 @@ export function QuickStudyQuestionView(props: QuestionViewProps) {
 
       {props.focused ? <footer className="quick-session-footer practice-feedback-dock" data-result={submitted ? result : undefined}>
         {submitted ? <div className="practice-feedback-summary" key={`${question.id}-${result}`}>
-          <span className="practice-feedback-icon" aria-hidden="true">
+          <span className={`practice-feedback-icon${props.isCorrect ? ' practice-check-draw' : ''}`} aria-hidden="true">
             {props.isCorrect ? <Check size={32} strokeWidth={3} /> : <X size={32} strokeWidth={3} />}
-            {props.isCorrect ? <span className="practice-feedback-sparkles"><Sparkles size={25} /></span> : null}
           </span>
           <div className="practice-feedback-copy">
             <p role="status">{props.isCorrect ? 'Correct!' : result === 'partial' ? 'Almost!' : 'Not quite.'}</p>
@@ -197,19 +194,22 @@ export function QuickStudyQuestionView(props: QuestionViewProps) {
 
       <dialog ref={dialogRef} className="quick-session-dialog" aria-labelledby="quick-study-details-title" onClose={() => { setDetailsOpen(false); setDiscardRequested(false) }} onCancel={() => { setDetailsOpen(false); setDiscardRequested(false) }}>
         <header className="quick-session-dialog-header">
-          <h2 id="quick-study-details-title">{submitted ? 'Explanation & sources' : 'Item details'}</h2>
+          <h2 id="quick-study-details-title">{submitted ? 'Why this answer?' : 'Item details'}</h2>
           <button type="button" className="quick-session-text-button" aria-label="Close item details" onClick={() => setDetailsOpen(false)}><X size={22} aria-hidden="true" /></button>
         </header>
         <div className="quick-session-dialog-body">
           {submitted ? (
             <>
-              <h3>Why this answer is correct</h3><p>{question.rationale.whyCorrect}</p>
-              <h3>Why the other options fall away</h3><p>{question.rationale.whyOthers}</p>
+              <p className="quick-session-main-explanation">{question.rationale.whyCorrect}</p>
+              <details className="quick-session-explanation-more"><summary>Why not the other answers?</summary><p>{question.rationale.whyOthers}</p>
               {question.rationale.choices ? <dl>{Object.entries(question.rationale.choices).map(([id, explanation]) => <div key={id}><dt>Option {id}</dt><dd>{explanation}</dd></div>)}</dl> : null}
-              <h3>Test-taking cue</h3><p>{question.nclexTip} {props.tutorCue}</p>
+              </details>
+              <details className="quick-session-explanation-more"><summary>Study tips</summary><p>{question.nclexTip} {props.tutorCue}</p>
               <h3>Clinical relevance</h3><p>{question.clinicalRelevance}</p>
+              </details>
             </>
           ) : null}
+          <details className="quick-session-explanation-more"><summary>Sources &amp; review status</summary>
           <h3>Content &amp; source status</h3>
           <p>{props.evidenceLevel}. This is study practice, not a licensure prediction or clinical guidance.</p>
           <p>{clinicalReviewed ? 'SME reviewed.' : 'Not marked as SME reviewed.'} {sourcesNeeded ? 'Source verification is incomplete.' : 'Source-backed practice item.'}</p>
@@ -220,6 +220,8 @@ export function QuickStudyQuestionView(props: QuestionViewProps) {
           {question.contentStage ? <p>Content stage: {question.contentStage.replaceAll('_', ' ')}</p> : null}
           {question.sourceRefs?.length ? <ul>{question.sourceRefs.map((source, index) => <li key={`${source}-${index}`}>{source}</li>)}</ul> : <p>No source references are listed for this item.</p>}
           {question.sourceNeededClaims?.length ? <><h3>Claims awaiting source review</h3><ul>{question.sourceNeededClaims.map((claim) => <li key={claim}>{claim}</li>)}</ul></> : null}
+          </details>
+          <details className="quick-session-explanation-more"><summary>Report an issue &amp; session options</summary>
           {question.feedbackEnabled ? (
             <section className="quick-session-report">
               <h3>Report content issue</h3>
@@ -249,7 +251,9 @@ export function QuickStudyQuestionView(props: QuestionViewProps) {
               </div>
             ) : <button type="button" className="quick-session-text-button" onClick={() => setDiscardRequested(true)}>Discard this session</button>}
           </section>
+          </details>
         </div>
+        <footer className="quick-session-dialog-footer"><button type="button" className="quick-session-primary" onClick={() => setDetailsOpen(false)}>Back to question<ArrowRight size={18} aria-hidden="true" /></button></footer>
       </dialog>
     </section>
   )
@@ -263,7 +267,9 @@ interface MissedReview {
   remediation?: string
 }
 
-export function QuickStudyCompleteView({ session, score, takeaway, missed, breakdown, onRepair, onRemediation, onExit }: {
+export function QuickStudyCompleteView({ focused = false, completionActions, session, score, takeaway, missed, breakdown, onRepair, onRemediation, onExit }: {
+  completionActions?: React.ReactNode
+  focused?: boolean
   session: ActiveSession
   score: number
   takeaway: string
@@ -273,6 +279,23 @@ export function QuickStudyCompleteView({ session, score, takeaway, missed, break
   onRemediation: () => void
   onExit: () => void
 }) {
+  const [reviewOpen, setReviewOpen] = useState(false)
+  if (focused) return <section className="quick-session focused-practice practice-complete" aria-label="Practice results">
+    <header className="quick-session-header"><nav className="focused-practice-top" aria-label="Practice navigation"><Link to="/" className="focused-practice-home"><ArrowLeft size={24} aria-hidden="true" />Home</Link><StudyToolsMenu /></nav></header>
+    <div className="quick-session-body" tabIndex={0} aria-label="Session results and review">
+      {!reviewOpen && <div className="practice-complete-summary">
+        <Check size={40} aria-hidden="true" />
+        <h1>Session complete</h1>
+        <p className="practice-complete-score">{score}<span>%</span></p>
+        <p>{session.responses.filter((response) => response.isCorrect).length} correct · {missed.length} to review</p>
+        <p className="practice-complete-note">{missed.length ? 'Take a moment to review what you missed.' : 'You answered every question correctly.'}</p>
+      </div>}
+      {completionActions && !reviewOpen ? <details className="practice-complete-details"><summary>Save results to an account</summary>{completionActions}</details> : null}
+      {reviewOpen && <section className="quick-session-missed" aria-label="Missed questions"><h2>Review missed questions</h2>{missed.map((item,index) => <details key={item.id}><summary>{index + 1}. {item.question?.prompt ?? 'Saved question unavailable'}</summary>{item.question ? <><p>{item.question.scenario}</p><p><strong>Correct answer: </strong>{item.question.choices.filter(choice => item.question!.correctAnswer.includes(choice.id)).map(choice => choice.text).join(' ')}</p><p>{item.question.rationale.whyCorrect}</p></> : <p>This saved question is no longer available.</p>}</details>)}</section>}
+      <details className="practice-complete-details"><summary>Session details</summary><p>Practice results only, not a licensure prediction.</p><dl>{breakdown.map(item => <div key={item.category}><dt>{item.category}</dt><dd>{Math.round(item.accuracy * 100)}%</dd></div>)}</dl>{onRepair && <button className="quick-session-secondary" onClick={onRepair}>Practice missed topic</button>}<button className="quick-session-text-button" onClick={onRemediation}>Open study review</button></details>
+    </div>
+    <footer className="quick-session-footer practice-feedback-dock"><button className="quick-session-text-button" onClick={onExit}>Done</button>{missed.length > 0 && <button className="quick-session-primary" onClick={() => setReviewOpen(value => !value)} aria-expanded={reviewOpen}>{reviewOpen ? 'Hide review' : 'Review missed questions'}<ArrowRight size={18} aria-hidden="true" /></button>}</footer>
+  </section>
   return (
     <section className="quick-session quick-session-complete" aria-label="Quick Study results">
       <header className="quick-session-header"><div className="quick-session-heading"><h1>Quick Study</h1><span>Session complete</span></div></header>

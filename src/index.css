@@ -536,6 +536,16 @@ textarea {
 .quick-session-discard { display: grid; gap: .75rem; padding-top: 1rem; border-top: 1px solid #ffffff20; }
 .quick-session-dialog-body ul { padding-left: 1.25rem; list-style: disc; }
 .quick-session-dialog-body dt { font-weight: 600; }
+.quick-session-dialog[open] { display: flex; flex-direction: column; overflow: hidden; }
+.quick-session-dialog-header, .quick-session-dialog-footer { flex-shrink: 0; }
+.quick-session-dialog-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.quick-session-main-explanation { font-size: 1.125rem; line-height: 1.6; margin: 0 0 1.5rem; color: #e1edf5; }
+.quick-session-explanation-more { border-top: 1px solid #34505f; margin-top: 0 !important; }
+.quick-session-explanation-more > summary { cursor: pointer; min-height: 3rem; padding: .75rem .25rem; color: #b9d5e5; font-size: .9375rem; font-weight: 600; }
+.quick-session-explanation-more > :not(summary) { margin: .5rem 0 1rem; }
+.quick-session-dialog-footer { padding: 1rem; border-top: 1px solid #34505f; display: flex; justify-content: flex-end; }
+.quick-session-dialog-footer .quick-session-primary { min-height: 3rem; padding: .75rem 1.25rem; }
+@media (max-width: 767px) { .quick-session-dialog-footer .quick-session-primary { width: 100%; } }
 
 @media (min-width: 640px) {
   .quick-session-navigation-secondary button[aria-label="Previous question"] > span { display: inline; }
@@ -2726,188 +2736,101 @@ textarea {
 .reference-page h1{font-size:30px;line-height:1.2;font-weight:700;margin:0 0 24px}
 .simple-tools-page:has(.reference-page){background:#080f15}
 
-/* Question Bank: navy question area and a light answer sheet. */
-.nurse-command-app:has(.focused-practice) { background: #102a40; }
+/* Focused lessons share one canvas and a stable feedback dock on every device. */
+.nurse-command-app:has(.focused-practice) { background: #101f29; }
 .nurse-command-app:has(.focused-practice)::before,
 .nurse-command-app:has(.focused-practice)::after { display: none; }
-.quick-study-page:has(.focused-practice),
-.simple-tools-page:has(.focused-practice) {
+:is(.quick-study-page,.simple-tools-page):has(.focused-practice) {
   height: 100dvh; min-height: 0; display: flex; flex-direction: column;
-  padding: 0 1rem max(.5rem, env(safe-area-inset-bottom)); overflow: hidden; background: #102a40;
+  padding: 0; overflow: hidden; background: #101f29;
 }
-:is(.quick-study-page,.simple-tools-page):has(.focused-practice) > .home-launcher-header {
-  min-height: 3.5rem; flex-shrink: 0; padding: .375rem 0; flex-wrap: nowrap;
-}
-:is(.quick-study-page,.simple-tools-page):has(.focused-practice) .home-launcher-brand { gap: .5rem; font-size: 1.125rem; }
-:is(.quick-study-page,.simple-tools-page):has(.focused-practice) .home-launcher-brand img { width: 2rem; height: 2rem; }
-:is(.quick-study-page,.simple-tools-page):has(.focused-practice) .home-launcher-brand > span { max-width: none; white-space: nowrap; }
-:is(.quick-study-page,.simple-tools-page):has(.focused-practice) .home-launcher-header a.home-tools-trigger { display: none; }
-.guest-practice-content:has(.focused-practice) { flex: 1; display: flex; flex-direction: column; width: 100%; max-width: 80rem; padding: 0; overflow: hidden; }
-.guest-practice-content:has(.focused-practice) > .guest-study-note:not(:empty) { font-size: .875rem; margin: .25rem 0; }
-.focused-practice.quick-session { flex: 1; width: 100%; max-height: none; border: 0; border-radius: 0; background: transparent; }
-.focused-practice .quick-session-header { padding: .25rem 0; border: 0; background: transparent; }
-.focused-practice-progress { display: flex; align-items: center; gap: .75rem; color: #b7cde1; font-size: .875rem; }
-.focused-practice-progress > span { white-space: nowrap; }
-.focused-practice-progress a { min-height: 2.75rem; display: inline-flex; align-items: center; }
-.focused-practice-progress progress { flex: 1; min-width: 1rem; height: .25rem; border: 0; border-radius: .25rem; overflow: hidden; appearance: none; background: #1a3445; }
-.focused-practice-progress progress::-webkit-progress-bar { background: #1a3445; }
-.focused-practice-progress progress::-webkit-progress-value { background: #39d5e8; }
-.focused-practice-progress progress::-moz-progress-bar { background: #39d5e8; }
-.focused-practice .quick-session-body { padding: .375rem 0 0; display: flex; flex-direction: column; gap: clamp(.5rem, 1.5dvh, 1.25rem); }
-.focused-practice .quick-session-body h2 { font-size: clamp(1.25rem, 2.6dvh, 1.5rem); line-height: 1.25; font-weight: 750; margin: 0; }
-.focused-practice-patient > span { display: block; color: #a6bdd1; font-size: .875rem; margin-bottom: .375rem; }
-.focused-practice-patient p { color: #bdcfe1; font-size: 1rem; line-height: 1.4; margin: 0; }
-.focused-practice .quick-session-choices { grid-template-columns: 1fr; gap: .25rem; margin: .5rem 0 0; flex: 1; padding: .75rem; background: #edf2f7; border-radius: 1.5rem 1.5rem 0 0; }
-.focused-practice .quick-session-choice { padding: .625rem; align-items: center; gap: .625rem; background: transparent; border: 0; border-bottom: 1px solid #c1cedb; border-radius: 0; color: #123451; line-height: 1.4; min-height: 44px; }
-.focused-practice .quick-session-choice:last-child { border-bottom-color: transparent; }
-.focused-practice .quick-session-choice[data-selected="true"] { background: #cceff8; border-radius: .75rem; border-bottom-color: transparent; }
-.focused-practice-marker { display: flex; align-items: center; gap: .5rem; flex-shrink: 0; color: #33546e; font-weight: 700; order: 2; margin-left: auto; }
-.focused-practice-marker > span { display: none; }
-.focused-practice-marker svg { flex-shrink: 0; }
-.focused-practice [data-selected="true"] .focused-practice-marker { color: #0a4871; }
-.focused-practice .quick-session-choice[data-result="correct"],
-.focused-practice .quick-session-choice[data-result="missed"] { background: #d4eee2; color: #124d38; }
-.focused-practice .quick-session-choice[data-result="incorrect"] { background: #f9dfe3; color: #84233b; }
-.focused-practice .quick-session-choice[data-result] .quick-session-choice-label { color: inherit; }
-.focused-practice .quick-session-footer { padding: .25rem .75rem .75rem; background: #edf2f7; border-top: 0; color: #123451; }
-.focused-practice .quick-session-footer .quick-session-text-button { color: #123451; }
-.focused-practice .quick-session-footer .quick-session-result { color: #84233b; }
-.focused-practice .quick-session-footer .quick-session-result[data-result="correct"] { color: #126044; }
-.focused-practice .quick-session-footer .quick-session-result[data-result="partial"] { color: #785400; }
-.focused-practice .quick-session-navigation { display: flex; flex-direction: column; align-items: stretch; gap: .25rem; }
-.focused-practice .quick-session-navigation-secondary { display: flex; justify-content: space-between; gap: .25rem; }
-.focused-practice .quick-session-text-button { min-height: 2.75rem; padding: .25rem .375rem; font-size: .875rem; }
-.focused-practice .quick-session-primary { min-height: 2.75rem; background: #0b385e; color: #fff; border: 1px solid #0b385e; border-radius: .75rem; }
-.focused-practice .quick-session-primary:disabled { opacity: .65; }
-.focused-practice .quick-session-primary:hover:not(:disabled) { background: #164e78; color: #fff; }
-.focused-practice .quick-session-choice:focus-visible { outline: 3px solid #08769a; outline-offset: -3px; }
-.focused-practice .quick-session-navigation > .quick-session-primary { width: 100%; margin-left: 0; }
-.focused-practice .quick-session-feedback { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .25rem 0; }
-.focused-practice .quick-session-feedback p { margin: 0; }
-.focused-practice-instruction { font-size: .875rem; margin: 0; color: #b7cde1; }
-@media (min-width: 768px) {
-  :is(.quick-study-page,.simple-tools-page):has(.focused-practice) { padding-inline: clamp(1.5rem, 5vw, 5rem); }
-  :is(.quick-study-page,.simple-tools-page):has(.focused-practice) > .home-launcher-header { min-height: 5rem; }
-  :is(.quick-study-page,.simple-tools-page):has(.focused-practice) .home-launcher-brand { font-size: 1.5rem; }
-  :is(.quick-study-page,.simple-tools-page):has(.focused-practice) .home-launcher-brand img { width: 2.75rem; height: 2.75rem; }
-  .focused-practice .quick-session-header { padding: .5rem 0; }
-  .focused-practice .quick-session-body { justify-content: flex-start; padding-top: clamp(1rem, 3dvh, 2rem); gap: clamp(1rem, 3dvh, 2rem); }
-  .focused-practice .quick-session-body h2 { font-size: clamp(1.75rem, 2.5vw, 2.5rem); }
-  .focused-practice-patient { padding: 0; }
-  .focused-practice-patient p { border: 0; padding: 0; font-size: 1.125rem; }
-  .focused-practice .quick-session-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; flex: 1; padding: 1.5rem; }
-  .focused-practice .quick-session-choice { min-height: 7rem; padding: 1.25rem; font-size: 1.125rem; flex-direction: row; align-items: center; gap: 1rem; }
-  .focused-practice .quick-session-choice:nth-last-child(-n+2) { border-bottom-color: transparent; }
-  .focused-practice .quick-session-navigation { flex-direction: row; justify-content: space-between; align-items: center; padding: .5rem 0; }
-  .focused-practice .quick-session-navigation-secondary { gap: 1rem; }
-  .focused-practice .quick-session-primary { min-width: 12rem; }
-  .focused-practice .quick-session-navigation > .quick-session-primary { width: auto; }
-}
-@media (max-width: 767px) and (max-height: 740px) {
-  .focused-practice .quick-session-body { gap: .375rem; }
-  .focused-practice .quick-session-choice { padding: .375rem .5rem; }
-  .focused-practice-patient > span { margin-bottom: .125rem; }
-}
-/* Selected separate mobile sheet / desktop dark-list references. */
-:is(.quick-study-page,.simple-tools-page):has(.focused-practice) { padding: 0; }
 :is(.quick-study-page,.simple-tools-page):has(.focused-practice) > .home-launcher-header { display: none; }
-.focused-practice .quick-session-header { padding: 0; }
-.focused-practice-top { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem .375rem; gap: 1rem; }
-.focused-practice-home { display: inline-flex; align-items: center; gap: .5rem; min-height: 3rem; font-size: 1.25rem; color: #a7e8f5; }
-.focused-practice-brand { display: none; }
-.focused-practice-progress { justify-content: flex-end; padding: .25rem 1.5rem; font-size: 1rem; }
-.focused-practice-progress > span:first-child, .focused-practice-progress progress, .focused-practice-count-prefix { display: none; }
-.focused-practice .quick-session-body { gap: 1rem; padding-top: .5rem; }
-.focused-practice .quick-session-body h2 { font-size: clamp(1.375rem, 5.6vw, 1.75rem); line-height: 1.25; padding: 0 1.5rem; }
-.focused-practice-patient { padding: 0 1.5rem; }
-.focused-practice-patient p { font-size: 1.0625rem; line-height: 1.45; }
-.focused-practice .quick-session-choices { padding: 1rem .9375rem 0; border-radius: 1.5rem 1.5rem 0 0; margin-top: .5rem; max-height: none; }
-.focused-practice .quick-session-choice { padding: .75rem 1rem; font-size: 1rem; line-height: 1.4; }
-.focused-practice-marker svg { width: 1.75rem; height: 1.75rem; }
-.focused-practice .quick-session-footer { padding: .375rem 1.25rem max(1rem, env(safe-area-inset-bottom)); }
-.focused-practice .quick-session-navigation-secondary { align-items: center; }
-.focused-practice .quick-session-text-button { font-size: 1rem; }
-.focused-practice .quick-session-navigation-secondary > button:last-child:nth-child(3) { font-size: .875rem; }
-.focused-practice .quick-session-primary { min-height: 3.25rem; font-size: 1.125rem; }
-.focused-practice-instruction { padding-inline: 1.5rem; }
-@media (max-width: 767px) and (max-height: 740px) {
-  .focused-practice-top { padding-top: .5rem; }
-  .focused-practice .quick-session-body { gap: .5rem; }
-  .focused-practice .quick-session-choice { padding: .375rem .75rem; }
-  .focused-practice .quick-session-choices { padding-top: .5rem; }
-}
-@media (min-width: 768px) {
-  .nurse-command-app:has(.focused-practice), :is(.quick-study-page,.simple-tools-page):has(.focused-practice) { background: #060f16; }
-  .guest-practice-content:has(.focused-practice) { max-width: 90rem; padding-inline: clamp(2rem, 6vw, 6rem); }
-  .focused-practice-top { padding: 1rem 0; }
-  .focused-practice-brand { display: flex; align-items: center; gap: 1rem; font-size: 1.5rem; font-weight: 700; margin-right: auto; order: -1; }
-  .focused-practice-brand img { width: 3rem; height: 3rem; object-fit: contain; }
-  .focused-practice-brand strong { color: #67dfed; }
-  .focused-practice-home { order: 1; padding: .375rem .875rem; border: 1px solid #284356; border-radius: .625rem; font-size: 1rem; }
-  .focused-practice-progress { display: grid; grid-template-columns: 1fr auto; gap: .625rem; margin: 1rem auto 0; padding: 0; width: 100%; max-width: 68.5rem; }
-  .focused-practice-progress > span:first-child, .focused-practice-count-prefix { display: inline; }
-  .focused-practice-progress > span:first-child { font-weight: 700; text-transform: uppercase; }
-  .focused-practice-progress progress { display: block; grid-row: 2; grid-column: 1 / -1; width: 100%; height: .5rem; }
-  .focused-practice .quick-session-body { width: 100%; max-width: 68.5rem; height: 100%; margin: 0 auto; padding-top: clamp(1rem, 5dvh, 3rem); gap: clamp(1rem, 3dvh, 2rem); }
-  .focused-practice-patient { order: -1; padding: 0 1.25rem; border-left: 4px solid #32d9e9; }
-  .focused-practice-patient p { font-size: clamp(1.125rem, 1.5vw, 1.375rem); line-height: 1.5; }
-  .focused-practice .quick-session-body h2 { padding: 0; font-size: clamp(1.75rem, 2.6vw, 2.5rem); }
-  .focused-practice .quick-session-choices { grid-template-columns: 1fr; gap: .875rem; padding: 0; margin: 0; background: transparent; border-radius: 0; max-height: 25rem; }
-  .focused-practice .quick-session-choice { min-height: 3.75rem; padding: .75rem 1rem; border: 1px solid #294b62; border-radius: .625rem; background: #0a1a27; color: #c4d5e3; font-size: 1.125rem; gap: 1.25rem; }
-  .focused-practice .quick-session-choice:nth-last-child(-n+2) { border-bottom-color: #294b62; }
-  .focused-practice .quick-session-choice[data-selected="true"] { border: 1px solid #32d9e9; border-radius: .625rem; background: #072331; color: #fff; }
-  .focused-practice-marker { order: 0; margin: 0; color: #93b9d2; }
-  .focused-practice [data-selected="true"] .focused-practice-marker { color: #32d9e9; }
-  .focused-practice .quick-session-choice[data-result="correct"], .focused-practice .quick-session-choice[data-result="missed"] { background: #12362c; color: #a3f0cc; border-color: #4ad7ab; }
-  .focused-practice .quick-session-choice[data-result="incorrect"] { background: #38212c; color: #ffc0ca; border-color: #f19aaa; }
-  .focused-practice .quick-session-footer { width: 100%; max-width: 68.5rem; margin: auto; padding: 1rem 0; background: transparent; color: #b7d1e5; }
-  .focused-practice .quick-session-footer .quick-session-text-button { color: #a9cde6; }
-  .focused-practice .quick-session-primary { background: #32d9e9; color: #03171e; border-color: #32d9e9; }
-  .focused-practice .quick-session-primary:hover:not(:disabled) { background: #78e6f1; color: #03171e; }
-  .focused-practice .quick-session-footer .quick-session-result { color: #ffc0ca; }
-  .focused-practice .quick-session-footer .quick-session-result[data-result="correct"] { color: #a3f0cc; }
-  .focused-practice .quick-session-footer .quick-session-result[data-result="partial"] { color: #f4c260; }
-}
-@media (min-width: 768px) and (min-height: 900px) {
-  .focused-practice-progress { margin-top: 2.5rem; }
-  .focused-practice .quick-session-body { padding-top: 4rem; gap: 2.5rem; }
-}
-/* Feedback stays in one bottom dock; motion never blocks Continue. */
-.focused-practice .practice-feedback-dock { display: flex; flex-direction: column; gap: .75rem; flex-shrink: 0; }
-.practice-feedback-summary { display: flex; align-items: flex-start; gap: .875rem; min-width: 0; }
-.practice-feedback-icon { position: relative; display: flex; align-items: center; justify-content: center; width: 3rem; height: 3rem; flex: 0 0 3rem; border-radius: 50%; background: #f96b7a; color: #28131b; animation: practice-result-pop 320ms ease-out both; }
-.practice-feedback-sparkles { position: absolute; right: -.5rem; top: -.5rem; color: #148447; animation: practice-sparkles 650ms ease-out both; }
-.practice-feedback-copy { min-width: 0; }
+.guest-practice-content:has(.focused-practice) { flex: 1; min-height: 0; width: 100%; max-width: none; padding: 0; }
+.focused-practice.quick-session { display: flex; flex-direction: column; height: 100%; min-height: 0; max-height: none; width: 100%; max-width: none; border: 0; border-radius: 0; background: #101f29; color: #edf5fa; overflow: hidden; }
+.focused-practice .quick-session-header { flex-shrink: 0; padding: 0; border: 0; background: transparent; }
+.focused-practice-top { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: .75rem 1.25rem; max-width: 72rem; margin: auto; padding: .75rem 1rem; }
+.focused-practice-home { display: inline-flex; align-items: center; gap: .5rem; min-height: 2.75rem; justify-self: start; color: #b6dcea; font-size: 1rem; padding-right: .75rem; }
+.focused-practice-progress { display: flex; align-items: center; gap: 1rem; grid-column: 1 / -1; grid-row: 2; min-width: 0; color: #bbd0df; font-size: .875rem; }
+.focused-practice-progress > span { white-space: nowrap; }
+.focused-practice-progress progress { flex: 1; width: 100%; min-width: 0; height: .5rem; border: 0; border-radius: .25rem; overflow: hidden; background: #2a414f; accent-color: #32d9e9; }
+.focused-practice-progress progress::-webkit-progress-bar { background: #2a414f; border-radius: .25rem; }
+.focused-practice-progress progress::-webkit-progress-value { background: #32d9e9; border-radius: .25rem; }
+.focused-practice-progress progress::-moz-progress-bar { background: #32d9e9; border-radius: .25rem; }
+.focused-practice .quick-session-body { flex: 1; min-height: 0; width: 100%; max-width: 47rem; margin: 0 auto; padding: 1rem; display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
+.focused-practice .quick-session-body > * { flex-shrink: 0; }
+.focused-practice-patient { border-left: 3px solid #32d9e9; padding-left: 1rem; }
+.focused-practice-patient p { margin: 0; font-size: 1rem; line-height: 1.5; color: #bbd0df; }
+.focused-practice .quick-session-body h2 { margin: 0; padding: 0; font-size: clamp(1.375rem, 3vw, 1.875rem); line-height: 1.25; font-weight: 750; }
+.focused-practice-instruction { font-size: .875rem; margin: 0; color: #bbd0df; }
+.focused-practice .quick-session-choices { display: grid; grid-template-columns: 1fr; gap: .625rem; margin: .25rem 0 0; padding: 0; background: transparent; border-radius: 0; flex: none; max-height: none; }
+.focused-practice .quick-session-choice { display: flex; align-items: center; gap: .875rem; min-height: 3.75rem; padding: .75rem; background: #132936; color: #e2edf4; border: 2px solid #345467; border-radius: .5rem; text-align: left; font-size: 1rem; line-height: 1.45; transition: background-color 150ms, border-color 150ms; }
+.focused-practice .quick-session-choice:hover:not(:disabled):not([data-selected="true"]) { background: #193644; border-color: #7395a8; }
+.focused-practice .quick-session-choice[data-selected="true"] { background: #123e52; border-color: #32d9e9; color: #d0f8ff; }
+.focused-practice-marker { display: flex; align-items: center; justify-content: center; flex: 0 0 2rem; height: 2rem; border: 1px solid #7898ad; border-radius: .375rem; font-size: .875rem; font-weight: 700; color: #bbd0df; text-transform: uppercase; }
+.focused-practice [data-selected="true"] .focused-practice-marker { background: #32d9e9; border-color: #32d9e9; color: #062432; }
+.focused-practice .quick-session-choice[data-result="correct"],
+.focused-practice .quick-session-choice[data-result="missed"] { background: #12362c; color: #a3f0cc; border-color: #62df7b; }
+.focused-practice .quick-session-choice[data-result="incorrect"] { background: #38212c; color: #ffc0ca; border-color: #ff7180; }
+.focused-practice [data-result="correct"] .focused-practice-marker { background: #62df7b; border-color: #62df7b; color: #073d22; }
+.focused-practice [data-result="incorrect"] .focused-practice-marker { background: #ff7180; border-color: #ff7180; color: #31111a; }
+.focused-practice .quick-session-choice[data-result] .quick-session-choice-label { color: inherit; font-size: .875rem; }
+.focused-practice .quick-session-choice:disabled { opacity: 1; }
+.focused-practice :is(button,a):focus-visible { outline: 3px solid #b4f5ff; outline-offset: 3px; }
+.focused-practice .practice-feedback-dock { display: flex; flex-direction: column; justify-content: flex-end; gap: .5rem; flex-shrink: 0; min-height: 12.5rem; width: 100%; max-width: none; margin: 0; padding: .75rem 1rem max(.75rem,env(safe-area-inset-bottom)); border-top: 1px solid #34505f; border-radius: 0; background: #101f29; color: #bbd0df; }
+.focused-practice .quick-session-primary { min-height: 3rem; border: 1px solid #32d9e9; border-radius: .5rem; background: #32d9e9; color: #062432; font-size: 1rem; font-weight: 700; }
+.focused-practice .quick-session-primary:hover:not(:disabled) { filter: brightness(1.12); }
+.focused-practice .quick-session-primary:disabled { background: #304753; border-color: #304753; color: #a8bbc7; opacity: 1; }
+.practice-feedback-summary { display: flex; align-items: flex-start; gap: .75rem; min-width: 0; }
+.practice-feedback-icon { position: relative; display: flex; align-items: center; justify-content: center; width: 2.5rem; height: 2.5rem; flex: 0 0 2.5rem; border-radius: 50%; background: #ff7180; color: #31111a; animation: practice-result-pop 320ms ease-out both; }
+.practice-feedback-sparkles { position: absolute; right: -.5rem; top: -.5rem; color: #62df7b; animation: practice-sparkles 650ms ease-out both; }
+.practice-feedback-copy { min-width: 0; flex: 1; }
 .practice-feedback-copy > p { font-size: 1.25rem; font-weight: 750; margin: 0 0 .125rem; }
 .practice-feedback-copy > span { display: block; font-size: .875rem; line-height: 1.4; }
-.practice-feedback-actions { display: flex; align-items: center; flex-wrap: wrap; gap: .375rem; margin-top: .375rem; }
-.practice-feedback-actions button { display: inline-flex; align-items: center; justify-content: center; gap: .375rem; min-height: 2.75rem; padding: .25rem .625rem; border: 1px solid currentColor; border-radius: .375rem; color: inherit; font-size: .8125rem; background: transparent; }
+.practice-feedback-dock[data-result="correct"] .practice-feedback-copy > span { display: none; }
+.practice-feedback-actions { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; margin-top: .375rem; }
+.practice-feedback-actions button { display: inline-flex; align-items: center; justify-content: center; gap: .375rem; min-height: 2.75rem; padding: .25rem .5rem; border: 1px solid currentColor; border-radius: .375rem; color: inherit; font-size: .875rem; background: transparent; }
 .practice-feedback-actions button:hover, .practice-feedback-actions button[aria-pressed="true"] { background: #ffffff20; }
-.practice-feedback-actions button:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
-.focused-practice .practice-feedback-dock[data-result="correct"] { background: #dcefe4; color: #175736; border-top: 1px solid #459c69; }
-.focused-practice .practice-feedback-dock[data-result="incorrect"] { background: #f8e3e7; color: #832438; border-top: 1px solid #d27f8c; }
-.focused-practice .practice-feedback-dock[data-result="partial"] { background: #f6ebcf; color: #725108; border-top: 1px solid #b2923c; }
+.focused-practice .practice-feedback-dock[data-result="correct"] { background: #0d2a22; color: #a7f0bd; border-top-color: #459c69; }
+.focused-practice .practice-feedback-dock[data-result="incorrect"] { background: #302028; color: #ffb3bd; border-top-color: #d27f8c; }
+.focused-practice .practice-feedback-dock[data-result="partial"] { background: #30291a; color: #f4d68c; border-top-color: #b2923c; }
 .practice-feedback-dock[data-result="correct"] .practice-feedback-icon { background: #62df7b; color: #073d22; }
 .practice-feedback-dock[data-result="partial"] .practice-feedback-icon { background: #f4ca70; color: #503c0b; }
 .focused-practice .practice-feedback-dock[data-result="correct"] .quick-session-primary { background: #62df7b; border-color: #62df7b; color: #073d22; }
 .focused-practice .practice-feedback-dock[data-result="incorrect"] .quick-session-primary { background: #ff7180; border-color: #ff7180; color: #31111a; }
 .focused-practice .practice-feedback-dock[data-result="partial"] .quick-session-primary { background: #f4ca70; border-color: #f4ca70; color: #503c0b; }
-@media (max-width: 767px) {
-  .focused-practice .practice-feedback-dock { gap: .375rem; padding-top: .5rem; padding-bottom: max(.5rem, env(safe-area-inset-bottom)); }
-  .practice-feedback-dock[data-result="correct"] .practice-feedback-copy > span { display: none; }
-  .practice-feedback-icon { width: 2.5rem; height: 2.5rem; flex-basis: 2.5rem; }
-}
 @media (min-width: 768px) {
-  .focused-practice .practice-feedback-dock { max-width: none; flex-direction: row; align-items: center; justify-content: flex-end; gap: 1.5rem; padding: 1rem max(1rem, calc((100% - 68.5rem) / 2)); }
+  .focused-practice-top { display: flex; gap: 2rem; padding: 1.5rem 2rem; }
+  .focused-practice-progress { flex: 1; gap: 1.5rem; font-size: 1rem; }
+  .focused-practice .quick-session-body { padding-top: clamp(1.5rem, 6dvh, 4rem); gap: 1.5rem; }
+  .focused-practice-patient p { font-size: 1.125rem; }
+  .focused-practice .quick-session-choice { min-height: 4rem; padding: .875rem 1rem; font-size: 1.0625rem; }
+  .focused-practice .practice-feedback-dock { flex-direction: row; align-items: center; min-height: 9rem; padding: 1rem max(2rem,calc((100% - 68rem) / 2)); gap: 1.5rem; }
   .practice-feedback-summary { flex: 1; align-items: center; }
-  .practice-feedback-icon { width: 4rem; height: 4rem; flex-basis: 4rem; }
-  .focused-practice .practice-feedback-dock[data-result="correct"] { background: #0d2a22; color: #a7f0bd; }
-  .focused-practice .practice-feedback-dock[data-result="incorrect"] { background: #302028; color: #ffb3bd; }
-  .focused-practice .practice-feedback-dock[data-result="partial"] { background: #30291a; color: #f4d68c; }
-  .practice-feedback-sparkles { color: #62df7b; }
-  .focused-practice .quick-session-choice[data-selected="true"]:not([data-result]) { background: #123e52; border: 2px solid #32d9e9; padding: calc(.75rem - 1px) calc(1rem - 1px); color: #b7f4ff; }
+  .practice-feedback-icon { width: 3.5rem; height: 3.5rem; flex-basis: 3.5rem; }
+  .focused-practice .quick-session-primary { min-width: 12rem; }
 }
 @keyframes practice-result-pop { 0% { transform: scale(.7); opacity: 0; } 70% { transform: scale(1.08); } 100% { transform: scale(1); opacity: 1; } }
+.practice-feedback-icon.practice-check-draw { animation: practice-check-arrive 450ms ease-out both; }
+.practice-check-draw svg path { stroke-dasharray: 40; stroke-dashoffset: 40; animation: practice-check-stroke 450ms 120ms ease-out forwards; }
+@keyframes practice-check-arrive { from { opacity: 0; transform: translateY(.375rem); } to { opacity: 1; transform: translateY(0); } }
+@keyframes practice-check-stroke { to { stroke-dashoffset: 0; } }
+.practice-complete .focused-practice-top { display: flex; justify-content: space-between; }
+.practice-complete .quick-session-body { padding-top: clamp(1rem, 5dvh, 3rem); }
+.practice-complete-summary { text-align: center; padding: 1rem 0; }
+.practice-complete-summary > svg { color: #62df7b; margin: 0 auto 1rem; }
+.practice-complete-summary h1 { font-size: clamp(1.75rem, 4vw, 2.25rem); font-weight: 750; margin: 0; }
+.practice-complete-summary .practice-complete-score { font-size: clamp(3rem, 8vw, 4.5rem); line-height: 1.2; font-weight: 750; color: #eaf5fa; margin: 1.5rem 0 .5rem; }
+.practice-complete-score span { font-size: .5em; }
+.practice-complete-summary p { color: #bbd0df; margin: .5rem 0; }
+.practice-complete-note { font-size: 1rem; }
+.practice-complete-details { border-top: 1px solid #34505f; padding: .75rem 0; color: #bbd0df; }
+.practice-complete-details summary { cursor: pointer; min-height: 2.75rem; display: flex; align-items: center; justify-content: center; color: #c8e9f2; }
+.practice-complete-details dl > div { display: flex; justify-content: space-between; gap: 1rem; margin: 1rem 0; }
+.practice-complete .quick-session-missed details { border: 1px solid #345467; border-radius: .5rem; padding: 1rem; margin-top: .75rem; }
+.practice-complete .quick-session-missed summary { cursor: pointer; min-height: 2.75rem; }
+.practice-complete .quick-session-missed p { margin: .75rem 0; line-height: 1.5; }
+.practice-complete .practice-feedback-dock { min-height: 8rem; }
+@media (prefers-reduced-motion: reduce) { .practice-feedback-icon.practice-check-draw, .practice-check-draw svg path { animation: none; stroke-dashoffset: 0; } }
 @keyframes practice-sparkles { 0% { transform: scale(.4); opacity: 0; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .practice-feedback-icon, .practice-feedback-sparkles { animation: none; } .practice-feedback-sparkles { display: none; } }
 .home-route-shell:has(.reference-page)::before{display:none}

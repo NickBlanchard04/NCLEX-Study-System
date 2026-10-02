@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import { questionBank } from '../../data/content'
-import { QuickStudyQuestionView } from '../quick-study-session-view'
+import { QuickStudyCompleteView, QuickStudyQuestionView } from '../quick-study-session-view'
 
 const question = questionBank.find((item) => item.format === 'multiple-choice' && item.scenario)!
 const noop = () => {}
@@ -24,9 +24,24 @@ const render = (overrides: Partial<typeof base> = {}) => renderToStaticMarkup(
 )
 
 describe('focused Question Bank presentation', () => {
-  it('puts the question before the patient context and retains all choices', () => {
+  it('keeps completed practice focused with optional review and details', () => {
+    const html = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(QuickStudyCompleteView, {
+      focused: true, session: base.session, score: 50, takeaway: 'Legacy recommendation',
+      missed: [{ id: question.id, question, reason: 'Review this item' }], breakdown: [],
+      onRemediation: noop, onExit: noop,
+    })))
+    expect(html).toContain('aria-label="Practice results"')
+    expect(html).toContain('Review missed questions')
+    expect(html).toContain('Session details')
+    expect(html).not.toContain('Legacy recommendation')
+    expect(html).not.toContain('aria-label="Missed questions"')
+  })
+  it('puts patient context before the question and retains all choices', () => {
     const html = render()
-    expect(html.indexOf('id="quick-study-question"')).toBeLessThan(html.indexOf('focused-practice-patient'))
+    expect(html.indexOf('focused-practice-patient')).toBeLessThan(html.indexOf('id="quick-study-question"'))
+    expect(html).not.toContain('focused-practice-brand')
+    expect(html).toContain('aria-label="Practice navigation"')
+    expect(html).toContain('aria-label="Question position"')
     expect(html).not.toContain('Your patient')
     expect(html).not.toContain('Clinical scenario')
     expect(html.match(/class="quick-session-choice"/g)).toHaveLength(question.choices.length)
@@ -41,6 +56,15 @@ describe('focused Question Bank presentation', () => {
     expect(html).not.toContain('Save &amp; leave')
     expect(html).not.toContain('practice-feedback-actions')
   })
+  it('keeps the main explanation visible and extra detail collapsed', () => {
+    const html = render({ submitted: true })
+    expect(html).toContain('Why this answer?')
+    expect(html).toContain('quick-session-main-explanation')
+    expect(html).toContain('<summary>Why not the other answers?</summary>')
+    expect(html).toContain('<summary>Sources &amp; review status</summary>')
+    expect(html).toContain('Back to question')
+    expect(html).not.toMatch(/<details[^>]*\sopen(?:\s|=|>)/)
+  })
   it('labels both a wrong selection and the correct answer after checking', () => {
     const wrong = question.choices.find((choice) => !question.correctAnswer.includes(choice.id))!
     const html = render({ submitted: true, selectedAnswers: [wrong.id] })
@@ -53,7 +77,7 @@ describe('focused Question Bank presentation', () => {
   })
   it('shows the correct feedback icon and post-answer actions without a new submission', () => {
     const html = render({ submitted: true, isCorrect: true, selectedAnswers: question.correctAnswer, flagged: true })
-    expect(html).toContain('practice-feedback-sparkles')
+    expect(html).toContain('practice-check-draw')
     expect(html).toContain('Correct!')
     expect(html).toContain('Flagged')
     expect(html).not.toContain('Check answer')

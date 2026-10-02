@@ -1,3 +1,19 @@
+# Unified lesson canvas — 2026-10-02
+
+Source visual truth: `C:/Users/lblan/.codex/generated_images/019f4cd2-809f-7d71-9244-6a8b0626b41a/exec-b665ea2c-bb47-4436-9e73-a2fe71e72516.png`, 1659x948 comparison board depicting desktop 1440x1024 and mobile 390x844. Compare each app region, excluding board labels/frame; generated board is not a literal pixel-density reference.
+
+Implementation screenshots: `C:/Users/lblan/Documents/NursingSoftware/unified-practice-desktop.png` (1440x1024, selected before submission), `C:/Users/lblan/Documents/NursingSoftware/unified-practice-mobile.png` (390x844, correct after submission), and `C:/Users/lblan/Documents/NursingSoftware/unified-practice-wrong.png` (1440x1024). Browser captures use 1x CSS pixels. Source plus desktop/mobile captures opened in the same comparison input. Clinical content and question number intentionally differ: retained real questions rather than replacing them with mock arithmetic.
+
+Findings and iteration: initial desktop capture exposed inherited 52rem max-height leaving the dock above the viewport bottom; removed that cap. Selected hover also overrode cyan emphasis; restricted hover to unselected answers. Revised desktop capture and viewport geometry confirm both fixes. No remaining actionable P0/P1/P2 findings.
+
+Required fidelity surfaces: product sans-serif and clear heading/body weights retained; narrow single-column question/answer grouping and compact Home/progress/Menu replace branding and white sheet. Shared navy canvas, cyan selection, green correct/coral wrong feedback follow the selected target. Existing library check/X/sparkle icons remain sharp; no raster imagery is needed. Clinical copy, scoring and source access unchanged. Deliberate accessibility detail: retain textual correct/wrong answer labels rather than only colored icons. Source's subtle lighting and exact font rasterization are P3-only differences. Full-view captures make all relevant typography/controls readable; no separate crop needed.
+
+Verification: 188 tests, production build and lint passed. Browser checked selected state, correct and wrong feedback, Why dialog, Continue, Flag, Save & leave, and resume preserving Flagged. No console errors. At 375x667, 390x844, 414x896, 768x1024, 1024x768 and 1440x1024, document bounds match viewport and bottom controls remain visible. Long content on small phones uses internal body scrolling. Reduced-motion rule retained; OS preference not changed. Signed-in cloud persistence not independently tested. E2E setup user changes preserved.
+
+Implementation checklist: unified canvas complete; compact navigation complete; A–D selected markers complete; stable feedback dock complete; local guest regression checks complete. Not deployed.
+
+final result: passed
+
 # Bottom answer feedback and post-submit utilities — 2026-10-02
 
 Source visual truth: `C:/Users/lblan/.codex/generated_images/019f4cd2-809f-7d71-9244-6a8b0626b41a/exec-9c4eab6c-8a38-4560-8256-e3516898ff9f.png` (1487x1058 concept board). User refinement: move compact Flag / Save & leave into the feedback dock, visible only after submission. Existing selected mobile light sheet remains controlling on phones.
