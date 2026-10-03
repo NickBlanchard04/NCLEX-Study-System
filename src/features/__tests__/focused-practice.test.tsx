@@ -59,6 +59,12 @@ describe('focused Question Bank presentation', () => {
     expect(html).not.toContain('Correct answer · Your answer')
     expect(html).not.toContain('Save &amp; leave')
     expect(html).not.toContain('practice-feedback-actions')
+    expect(html).toContain('data-check-answer="true"')
+    expect(html).not.toMatch(/data-check-answer="true"[^>]*disabled/)
+  })
+  it('disables checking until an answer is selected', () => {
+    expect(render()).toMatch(/data-check-answer="true"[^>]*disabled/)
+    expect(render({ submitted: true })).not.toContain('data-check-answer="true"')
   })
   it('keeps the main explanation visible and extra detail collapsed', () => {
     const html = render({ submitted: true })

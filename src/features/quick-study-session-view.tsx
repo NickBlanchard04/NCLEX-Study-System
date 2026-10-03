@@ -164,7 +164,7 @@ export function QuickStudyQuestionView(props: QuestionViewProps) {
             </div>
           </div>
         </div> : null}
-        <button type="button" className="quick-session-primary" disabled={!submitted ? !selectedAnswers.length : !finalResponse} onClick={!submitted ? props.onSubmit : isLast ? props.onFinish : props.onNext}>
+        <button type="button" className="quick-session-primary" data-check-answer={!submitted || undefined} disabled={!submitted ? !selectedAnswers.length : !finalResponse} onClick={!submitted ? props.onSubmit : isLast ? props.onFinish : props.onNext}>
           {!submitted ? 'Check answer' : isLast ? 'Finish session' : 'Continue'}<ArrowRight size={18} aria-hidden="true" />
         </button>
       </footer> : <footer className="quick-session-footer">
@@ -185,7 +185,7 @@ export function QuickStudyQuestionView(props: QuestionViewProps) {
             {!submitted ? <button type="button" className="quick-session-text-button" onClick={() => setDetailsOpen(true)}>{props.focused ? 'More' : 'Sources & options'}</button> : null}
           </div>
           {!submitted ? (
-            <button type="button" className="quick-session-primary" onClick={props.onSubmit} disabled={!selectedAnswers.length}>Check answer<ArrowRight size={18} aria-hidden="true" /></button>
+            <button type="button" className="quick-session-primary" data-check-answer="true" onClick={props.onSubmit} disabled={!selectedAnswers.length}>Check answer<ArrowRight size={18} aria-hidden="true" /></button>
           ) : finalResponse ? (
             <button type="button" className="quick-session-primary" onClick={isLast ? props.onFinish : props.onNext}>{isLast ? 'Finish session' : 'Continue'}<ArrowRight size={18} aria-hidden="true" /></button>
           ) : null}

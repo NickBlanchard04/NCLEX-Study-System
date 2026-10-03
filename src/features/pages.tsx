@@ -1194,7 +1194,17 @@ export function PracticeQuestionsPage() {
   </section>
 }
 
+const examPrepArtwork: Record<string, string> = {
+  All: 'all-topics',
+  'Management of Care': 'management',
+  'Safety and Infection Control': 'safety',
+  'Health Promotion': 'health',
+  'Psychosocial Integrity': 'psychosocial',
+  'Physiological Integrity': 'physiology',
+}
+
 export function ExamPrepPage() {
+  const [examOpen, setExamOpen] = useState(false)
   const profile = useStudySystemStore((state) => state.profile)
   const updateProfile = useStudySystemStore((state) => state.updateProfile)
   const active = useStudySystemStore((state) => state.activeSession)
@@ -1205,18 +1215,24 @@ export function ExamPrepPage() {
   const [isPending, startTransition] = useTransition()
   const track = getExamTrack(trackId)
   const quality = getExamContentQualitySummary(trackId)
-  if (active?.mode === 'practice' && isRenderableSession(active)) return <QuestionSessionRunner key={active.id + active.currentIndex} session={active} modeLabel="Exam Prep" onExit={abandonSession} />
+  if (active?.mode === 'practice' && isRenderableSession(active)) return <QuestionSessionRunner focused key={active.id + active.currentIndex} session={active} modeLabel="Exam Prep" onExit={abandonSession} />
   const start = () => startTransition(() => {
     updateProfile({ examTrack: trackId })
     startPracticeSession({ category, questionCount: 10, difficulty: 'adaptive', format: 'mixed' })
   })
-  return <section className="simple-study" aria-labelledby="prep-title">
-    <header><h1 id="prep-title">Exam Prep</h1><p>Review one topic before a longer exam.</p></header>
-    <div className="simple-study-fields">
-      <Field label="Your exam"><select className={selectClass} value={trackId} onChange={(event) => { setTrackId(event.target.value as ExamTrackId); setCategory('All') }}>{examTracks.map((item) => <option key={item.id} value={item.id}>{item.shortName}</option>)}</select></Field>
-      <Field label="Topic"><select className={selectClass} value={category} onChange={(event) => setCategory(event.target.value as QuestionCategory | 'All')}><option value="All">All topics</option>{getExamCategories(trackId).map((item) => <option key={item}>{item}</option>)}</select></Field>
+  return <section className="simple-study exam-prep-setup" aria-labelledby="prep-title">
+    <header><h1 id="prep-title">Exam Prep</h1><p>Choose a topic. Review up to 10 questions.</p></header>
+    <div className="exam-prep-exam"><button className="exam-prep-switcher" aria-expanded={examOpen} aria-controls="prep-exam-choice" onClick={() => setExamOpen(!examOpen)}>{track.shortName}<span>Change exam</span></button>
+      {examOpen && <div id="prep-exam-choice"><Field label="Your exam"><select className={selectClass} value={trackId} onChange={(event) => { setTrackId(event.target.value as ExamTrackId); setCategory('All'); setExamOpen(false) }}>{examTracks.map((item) => <option key={item.id} value={item.id}>{item.shortName}</option>)}</select></Field></div>}
     </div>
-    <p>Up to 10 questions · Explanations after each answer</p>
+    <fieldset className="exam-prep-topics"><legend className="sr-only">What would you like to review?</legend>
+      {['All', ...getExamCategories(trackId)].map((item) => <label key={item} className="exam-prep-topic" data-selected={category === item}>
+        <input type="radio" name="exam-prep-topic" value={item} checked={category === item} onChange={() => setCategory(item)} />
+        <img className="exam-prep-art" src={`/images/exam-prep/${examPrepArtwork[item] ?? 'all-topics'}.webp`} alt="" width="160" height="160" />
+        <span className="exam-prep-topic-name">{item === 'All' ? 'All topics' : item}</span>
+        {category === item && <CheckCircle2 className="exam-prep-selected" size={28} aria-hidden="true" />}
+      </label>)}
+    </fieldset>
     <button className="simple-study-start" disabled={isPending} onClick={start}>{isPending ? 'Building review…' : 'Start review'}<ArrowRight size={18} /></button>
     <details className="simple-study-details"><summary>Exam coverage & content details</summary>
       <p>{track.subtitle}</p><p>Boards: {track.boards.join(', ')}</p>

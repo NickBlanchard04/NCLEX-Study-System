@@ -13,6 +13,7 @@ import {
   getInternalDraftFixtureQuestions,
 } from './internal-draft-fixtures'
 import { qualityQuestionPacks } from './quality-question-packs'
+import { nclexCategoryExpansion } from './nclex-category-expansion'
 
 const makeChoices = (...choices: string[]): AnswerChoice[] =>
   choices.map((text, index) => ({
@@ -1435,6 +1436,7 @@ const buildTrackBank = (examTrack: ExamTrackId): Question[] => {
   const authoredRnQuestions = [...internalDraftQuestions, ...qualityPack, ...nclexRnBaseQuestions]
   const generatedIds = new Set(authoredRnQuestions.map((question) => question.id))
   return [
+    ...nclexCategoryExpansion,
     ...authoredRnQuestions,
     ...generated.filter((question) => !generatedIds.has(question.id)).slice(0, generatedQuestionCount - authoredRnQuestions.length),
   ].map((question) => ({ ...question, feedbackEnabled: question.feedbackEnabled ?? true }))
