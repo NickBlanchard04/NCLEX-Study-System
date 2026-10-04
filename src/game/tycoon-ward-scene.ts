@@ -126,6 +126,7 @@ export function createTycoonWard(options: Options): TycoonWard {
       for (const key of ['concept-wall', 'concept-bed-occupied']) this.load.image(key, `${BASE}${key}.png`)
       for (const key of ['reference-room-corner', 'reference-bed-table', 'reference-bed-table-empty', 'reference-station']) this.load.image(key, `${BASE}${key}.png`)
       for (const key of ['elevator-core', 'stair-core']) this.load.image(key, `${BASE}${key}.png`)
+      this.load.image('patient-oak-door-detail-v1',`${BASE}patient-oak-door-detail-v1.png`)
       this.load.image('studio-headwall-v1',`${BASE}studio-headwall-v1.png`)
       this.load.json('building-core-registration', `${BASE}building-core-registration.json`)
       this.load.json('reference-nurse-pivots', `${BASE}rigged-nurse-pivots.json?v=care-v2`)
@@ -150,7 +151,7 @@ export function createTycoonWard(options: Options): TycoonWard {
         this.registration.environment['reference-station'] = REFERENCE_ROOM_ART.station
         this.registration.nurse = this.cache.json.get('reference-nurse-pivots') as ArtworkRegistration['nurse']
       }
-      const requiredArt = [...environmentKeys, 'elevator-core', 'stair-core', 'concept-wall', 'concept-bed-occupied', 'reference-room-corner', 'reference-bed-table', 'reference-bed-table-empty', 'reference-station', 'nurse-03']
+      const requiredArt = [...environmentKeys, 'elevator-core', 'stair-core', 'concept-wall', 'concept-bed-occupied', 'reference-room-corner', 'reference-bed-table', 'reference-bed-table-empty', 'reference-station', 'patient-oak-door-detail-v1', 'nurse-03']
       if (!this.registration?.nurse?.frames || requiredArt.some((key) => !this.textures.exists(key))) {
         options.onError('Hospital artwork is incomplete.'); return
       }

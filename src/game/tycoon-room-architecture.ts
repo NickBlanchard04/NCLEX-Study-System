@@ -1,4 +1,5 @@
 import type Phaser from 'phaser'
+import { OAK_DOOR_TEXTURE, paintOakDoorLeaf, paintOakDoorFrame } from './tycoon-oak-door'
 import { buildingWall } from './tycoon-building-shell'
 import { HOSPITAL_MAP, PATIENT_ROOM, placeRoomPoint, roomEntrance } from './tycoon-map-config'
 import { projectGround, type GroundPoint } from './tycoon-care-presentation'
@@ -59,11 +60,11 @@ export function drawClinicalArchitecture(scene:Phaser.Scene,index:number,closed:
   return {frame,leaf,hit}
 }
 
-function doorSurface(scene:Phaser.Scene,id:string,from:GroundPoint,to:GroundPoint,height:number,paint:(c:CanvasRenderingContext2D,a:{x:number;y:number},b:{x:number;y:number})=>void) {
-  const a=projectGround(from),b=projectGround(to),left=Math.min(a.x,b.x)-12,top=Math.min(a.y,b.y)-height-12
+function doorSurface(scene:Phaser.Scene,id:string,from:GroundPoint,to:GroundPoint,height:number,paint:(c:CanvasRenderingContext2D,a:{x:number;y:number},b:{x:number;y:number})=>void,margin=12) {
+  const a=projectGround(from),b=projectGround(to),left=Math.min(a.x,b.x)-margin,top=Math.min(a.y,b.y)-height-12
   const key=`studio-door-${id}`
   if(cachedArchitectureFrame(scene,key))return depthSortedSurface(scene,key,left,top,a,b,3)
-  const cached=cachedSurface(scene,key,Math.abs(a.x-b.x)+26,Math.abs(a.y-b.y)+height+28,c=>{
+  const cached=cachedSurface(scene,key,Math.abs(a.x-b.x)+margin*2+2,Math.abs(a.y-b.y)+height+28,c=>{
     c.translate(-left,-top);paint(c,a,b)
   })
   cached.destroy()
@@ -72,6 +73,10 @@ function doorSurface(scene:Phaser.Scene,id:string,from:GroundPoint,to:GroundPoin
 
 export function drawDoorPanel(scene:Phaser.Scene,id:string,from:GroundPoint,to:GroundPoint) {
   return doorSurface(scene,id,from,to,156,(c,a,b)=>{
+    if(id.startsWith('clinical-')) {
+      const art=scene.textures.get(OAK_DOOR_TEXTURE).getSourceImage()
+      if(art instanceof HTMLImageElement || art instanceof HTMLCanvasElement) {paintOakDoorLeaf(c,art,a,b);return}
+    }
     const plane=(start:number,end:number,low:number,high:number,color:string)=>{
       const at=(t:number,h:number)=>({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t-h})
       const pts=[at(start,low),at(end,low),at(end,high),at(start,high)]
@@ -88,6 +93,10 @@ export function drawDoorPanel(scene:Phaser.Scene,id:string,from:GroundPoint,to:G
 
 export function drawDoorFrame(scene:Phaser.Scene,index:number|string,from:GroundPoint,to:GroundPoint,number:string) {
   return doorSurface(scene,`frame-${index}`,from,to,WALL_HEIGHT,(c,a,b)=>{
+    if(typeof index==='number') {
+      const art=scene.textures.get(OAK_DOOR_TEXTURE).getSourceImage()
+      if(art instanceof HTMLImageElement || art instanceof HTMLCanvasElement) {paintOakDoorFrame(c,art,a,b,number);return}
+    }
     c.strokeStyle='#887657';c.lineWidth=13;c.beginPath();c.moveTo(a.x,a.y);c.lineTo(a.x,a.y-160);c.lineTo(b.x,b.y-160);c.lineTo(b.x,b.y);c.stroke()
     c.strokeStyle='#ead8b8';c.lineWidth=8;c.stroke()
     c.strokeStyle='#faf1dd';c.lineWidth=1;c.stroke()
@@ -97,5 +106,5 @@ export function drawDoorFrame(scene:Phaser.Scene,index:number|string,from:Ground
     c.fillStyle='#263944';c.font='700 20px Arial, sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText(number,width/2,14)
     c.restore()
     c.strokeStyle='#b6bcb5';c.lineWidth=4;c.beginPath();c.moveTo(a.x,a.y+2);c.lineTo(b.x,b.y+2);c.stroke()
-  })
+  },typeof index==='number'?48:12)
 }
