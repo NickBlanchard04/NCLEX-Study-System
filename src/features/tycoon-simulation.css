@@ -1,0 +1,49 @@
+.tycoon-observations { padding: 12px 0; color: #244c58; }
+.tycoon-observations > strong { text-transform: capitalize; }
+.tycoon-observations p { margin: 8px 0; line-height: 1.45; font-size: 14px; }
+.tycoon-observations dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 10px 0; }
+.tycoon-observations dl > div { border-left: 2px solid #528881; padding-left: 8px; }
+.tycoon-observations dt { font-size: 11px; }
+.tycoon-observations dd { margin: 2px 0 0; font-weight: 700; }
+.tycoon-observations small { font-size: 11px; }
+.tycoon-observations a { color: inherit; text-decoration: underline; }
+.tycoon-dialog > .tycoon-observations { padding: 0 24px 12px; }
+.tycoon-decision { margin: 16px 0; }
+.tycoon-decision h3 { font-size: 16px; }
+.tycoon-decision > div { display: grid; gap: 8px; }
+.tycoon-decision button { min-height: 44px; padding: 12px; border: 1px solid #789c9d; border-radius: 6px; background: #ffffffa8; color: #183e4b; text-align: left; font: inherit; cursor: pointer; }
+.tycoon-decision button:disabled { cursor: default; opacity: .55; }
+.tycoon-decision button:focus-visible { outline: 3px solid #236d77; outline-offset: 2px; }
+.tycoon-decision p { font-size: 14px; line-height: 1.5; }
+.tycoon-shift-objectives { display: grid; gap: 3px; font-size: 11px; padding-top: 7px; }
+.tycoon-shift-objectives strong { font-size: 12px; }
+.tycoon-debrief { padding: 0 24px 18px; }
+.tycoon-debrief ol { padding-left: 20px; font-size: 13px; line-height: 1.5; }
+.tycoon-debrief li { margin-bottom: 10px; }
+.tycoon-command-details .tycoon-observations { padding: 0 14px 10px; }
+.tycoon-prototype .tycoon-observations { color: #fff; }
+.tycoon-prototype .tycoon-observations a { color: #e1f6fa; }
+.tycoon-prototype .tycoon-decision > div > button { color: #183e4b; background: #ffffffdf; }
+.tycoon-prototype .tycoon-priority .tycoon-saved-rooms { position: static; margin-top: 10px; width: 100%; max-width: none; flex-wrap: wrap; background: transparent; border: 0; padding: 0; backdrop-filter: none; }
+.tycoon-patient-response { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #ffffff40; }
+.tycoon-patient-response svg { flex: 0 0 54px; width: 54px; height: 58px; }
+.tycoon-patient-response > div { display: grid; gap: 5px; }
+.tycoon-patient-response q { font-size: 13px; line-height: 1.4; }
+.tycoon-prototype .tycoon-remote-hint { font-size: 12px; color: #d0e7eb; }
+.tycoon-telemetry { font-size: 12px; color: #b7ecd0; }
+.tycoon-call-board { margin-top: 10px; padding-top: 8px; border-top: 1px solid #ffffff40; }
+.tycoon-call-board summary { cursor: pointer; font-size: 12px; min-height: 32px; align-content: center; }
+.tycoon-call-board > div { max-height: 230px; overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; }
+.tycoon-call-board section { padding: 10px 0; border-bottom: 1px solid #ffffff30; }
+.tycoon-call-board section > strong { font-size: 12px; }
+.tycoon-call-board section small { display: block; font-size: 11px; margin: 6px 0; }
+.tycoon-call-board section > div { display: grid; gap: 5px; }
+.tycoon-prototype .tycoon-call-board button { min-height: 40px; border: 1px solid #ffffff70; border-radius: 4px; padding: 7px; background: #173b5299; color: #fff; font-size: 12px; text-align: left; }
+.tycoon-call-board button:disabled { opacity: .55; cursor: default; }
+.tycoon-debrief h3 { margin-top: 16px; }
+.tycoon-debrief ul { padding-left: 20px; font-size: 13px; line-height: 1.5; }
+@media (max-width: 899px) {
+  .tycoon-call-board > div { max-height: 155px; }
+  .tycoon-prototype .tycoon-priority { max-height: calc(100dvh - 260px); overflow-y: auto; overscroll-behavior: contain; }
+}
+@media (max-width: 599px) { .tycoon-shift-objectives { font-size: 10px; } .tycoon-shift-objectives strong { font-size: 11px; } }

@@ -1,8 +1,10 @@
+import { walkFrame } from '../tycoon-walk-cycle'
+import { HOSPITAL_MAP, localRoomPoint, roomEntrance } from '../tycoon-map-config'
 import { describe, expect, it, vi } from 'vitest'
 import { tycoonStarterTasks } from '../../data/tycoon'
 import { projectGround, type GroundPoint } from '../tycoon-care-presentation'
 import { findWardPath, isWardWalkable, STATION_POSITION, TycoonWardController, unprojectGround, wardTargets, type WardState } from '../tycoon-ward'
-import { CORRIDOR, ROOM_DOOR, ROOM_SPACING, WARD_ROOM, roomPoint } from '../tycoon-ward-layout'
+import { WARD_ROOM, roomPoint } from '../tycoon-ward-layout'
 
 const state = (count = 3): WardState => ({ shiftId: 'shift-1', tasks: tycoonStarterTasks.slice(0, count), selectedTaskId: tycoonStarterTasks[0].id, reviewedTaskIds: [], paused: false, reducedMotion: false })
 const drive = (ward: TycoonWardController, frames = 2000) => {
@@ -25,6 +27,45 @@ const samplePath = (start: GroundPoint, path: GroundPoint[]) => {
 }
 
 describe('playable ward', () => {
+  it('opens purchased empty rooms without allowing travel into still locked rooms', () => {
+    const ward = new TycoonWardController(vi.fn()), initial = { ...state(3), upgrades: {} }
+    ward.update(initial)
+    const fourth = roomPoint(3, { u: 6.4, v: 1.85 })
+    expect(ward.moveTo(fourth)).toBe(false)
+    ward.update({ ...initial, upgrades: { 'extra-bed': 1 } })
+    expect(ward.moveTo(fourth)).toBe(true)
+    expect(ward.moveTo(roomPoint(4, { u: 6.4, v: 1.85 }))).toBe(false)
+  })
+
+  it('keeps subsequent routes safe when a caller edits a returned path and the ward size changes', () => {
+    const end = roomPoint(0, { u: 6.4, v: -0.6 })
+    const first = findWardPath(STATION_POSITION, end, 3)!
+    expect(first.length).toBeGreaterThan(1)
+    for (const point of first) { point.u = -100; point.v = -100 }
+    for (const rooms of [1, 6, 3]) {
+      const path = findWardPath(STATION_POSITION, end, rooms)!
+      expect(path.at(-1)).toEqual(end)
+      expect(samplePath(STATION_POSITION, path).every((point) => isWardWalkable(point, rooms))).toBe(true)
+    }
+  })
+
+  it('cancels routes to discharged identities and preserves nurse position during admission turnover', () => {
+    const interact = vi.fn(), ward = new TycoonWardController(interact), initial = state()
+    ward.update(initial)
+    ward.goTo(`patient:${initial.tasks[0].id}`)
+    ward.tick(16)
+    const position = ward.snapshot().position
+    const replacement = { ...initial.tasks[0], id: 'new-admission', patientName: 'New Patient' }
+    ward.update({ ...initial, tasks: [replacement, ...initial.tasks.slice(1)] })
+    expect(ward.snapshot().position).toEqual(position)
+    expect(ward.snapshot().path).toHaveLength(0)
+    expect(ward.goTo(`patient:${initial.tasks[0].id}`)).toBe(false)
+    expect(ward.goTo('patient:new-admission')).toBe(true)
+    drive(ward)
+    expect(interact).toHaveBeenCalledTimes(1)
+    expect(interact.mock.calls[0][0].taskId).toBe('new-admission')
+    expect(wardTargets([{ ...replacement, simulation: { scenario: 'chest', variant: 0, admittedMinute: 0, condition: 'stable', attempted: [], discharged: true } }])).toHaveLength(1)
+  })
   it('routes through doors and around furniture to every patient and monitor, including legacy six-room saves', () => {
     const interact = vi.fn(), ward = new TycoonWardController(interact)
     ward.update(state(6))
@@ -38,7 +79,7 @@ describe('playable ward', () => {
   })
 
   it('rejects beds, walls, station furniture and the outside of the ward', () => {
-    for (const point of [{ u: 5.4, v: 1.2 }, { u: 6.97, v: -0.08 }, { u: 3.7, v: 2 }, { u: 4.5, v: 2.8 }, { u: 1, v: 3.5 }, { u: -10, v: 4 }]) {
+    for (const point of [{ u: 5.4, v: 1.2 }, { u: 6.97, v: -0.08 }, { u: 3.7, v: 2 }, { u: 4.5, v: 3.8 }, { u: 10.85, v: 6.65 }, { u: -10, v: 4 }]) {
       expect(isWardWalkable(point, 3)).toBe(false)
       expect(findWardPath(STATION_POSITION, point, 3)).toBeNull()
     }
@@ -61,10 +102,10 @@ describe('playable ward', () => {
   it('keeps the room gaps and side walls outside the walkable floor', () => {
     for (let room = 0; room < 6; room++) {
       const blocked = [
-        roomPoint(room, { u: WARD_ROOM.minU, v: 1.7 }),
-        roomPoint(room, { u: WARD_ROOM.maxU, v: 1.7 }),
+        roomPoint(room, { u: WARD_ROOM.minU, v: .25 }),
+        roomPoint(room, { u: WARD_ROOM.maxU, v: .25 }),
       ]
-      if (room < 5) blocked.push(roomPoint(room, { u: (WARD_ROOM.maxU + WARD_ROOM.minU + ROOM_SPACING) / 2, v: 1.7 }))
+      blocked.push(roomPoint(room, { u: 4.1, v: WARD_ROOM.maxV }))
       for (const point of blocked) {
         expect(isWardWalkable(point, 6)).toBe(false)
         expect(findWardPath(STATION_POSITION, point, 6)).toBeNull()
@@ -75,18 +116,18 @@ describe('playable ward', () => {
   it('uses the corridor and both doorways when travelling between neighboring rooms', () => {
     for (let room = 0; room < 5; room++) {
       const start = roomPoint(room, { u: 7.7, v: 0.8 })
-      const end = roomPoint(room + 1, { u: 4.1, v: -0.6 })
+      const end = roomPoint(room + 1, { u: 4.1, v: 0.5 })
       const path = findWardPath(start, end, 6)
       expect(path).not.toBeNull()
       const samples = samplePath(start, path!)
       expect(samples.filter((point) => !isWardWalkable(point, 6))).toEqual([])
-      expect(samples.some((point) => point.v >= CORRIDOR.minV + 0.22)).toBe(true)
+      const spine=HOSPITAL_MAP.corridors[0]
+      expect(samples.some(point=>point.u>spine.minU+.25&&point.u<spine.maxU-.25)).toBe(true)
       for (const crossedRoom of [room, room + 1]) {
-        const doorway = samples.filter((point) => point.v > WARD_ROOM.maxV - 0.15 && point.v < WARD_ROOM.maxV + 0.15
-          && point.u > WARD_ROOM.minU + crossedRoom * ROOM_SPACING && point.u < WARD_ROOM.maxU + crossedRoom * ROOM_SPACING)
+        const door=roomEntrance(crossedRoom)
+        const doorway = samples.map(point => localRoomPoint(HOSPITAL_MAP.rooms[crossedRoom],point)).filter(point=>Math.abs(point.u-door.u)<.15&&point.v>WARD_ROOM.minV&&point.v<WARD_ROOM.maxV)
         expect(doorway.length).toBeGreaterThan(0)
-        expect(doorway.every((point) => point.u >= ROOM_DOOR.minU + crossedRoom * ROOM_SPACING
-          && point.u <= ROOM_DOOR.maxU + crossedRoom * ROOM_SPACING)).toBe(true)
+        expect(doorway.every(point=>point.v>=door.minV&&point.v<=door.maxV)).toBe(true)
       }
     }
   })
@@ -164,5 +205,50 @@ describe('playable ward', () => {
     expect(ward.status().caring).toBe(false)
     expect(ward.snapshot().position).toEqual(STATION_POSITION)
     expect(interact).toHaveBeenCalledExactlyOnceWith(ward.targets()[0])
+  })
+})
+
+  describe('distance driven movement', () => {
+    it('travels the same distance with the same stride at 30, 60, 120 and 144 Hz',()=>{
+      const poses=[30,60,120,144].map(hz=>{
+        const ward=new TycoonWardController(vi.fn());ward.update(state())
+        for(let i=0;i<hz;i++)ward.tick(1000/hz,{x:-1,y:0})
+        return ward.snapshot()
+      })
+      for(const pose of poses) {
+        expect(pose.strideDistance).toBeCloseTo(poses[0].strideDistance,5)
+        expect(pose.screenPosition.y).toBeCloseTo(poses[0].screenPosition.y,5)
+        expect(pose.frame).toBe(poses[0].frame)
+      }
+    })
+  it('eases in, coasts to a short stop, and freezes the stride while idle or paused', () => {
+    const ward = new TycoonWardController(vi.fn()); ward.update(state())
+    ward.tick(16, { x: 1, y: 0 }); const first = ward.snapshot()
+    for (let i = 0; i < 12; i++) ward.tick(16, { x: 1, y: 0 })
+    expect(ward.snapshot().speed).toBeGreaterThan(first.speed)
+    const from = ward.snapshot().screenPosition
+    ward.tick(16); expect(ward.snapshot().moving).toBe(true)
+    for (let i = 0; i < 20; i++) ward.tick(16)
+    const stopped = ward.snapshot()
+    expect(stopped.speed).toBe(0)
+    expect(stopped.screenPosition.x - from.x).toBeLessThan(12)
+    for (let i = 0; i < 20; i++) ward.tick(16)
+    expect(ward.snapshot().strideDistance).toBe(stopped.strideDistance)
+    ward.update({ ...state(), paused: true }); ward.tick(5000, {x: 1, y: 0})
+    expect(ward.snapshot().strideDistance).toBe(stopped.strideDistance)
+  })
+  it('changes walk frames from traveled distance, preserves phase on turns, and faces the bedside on arrival', () => {
+    const ward = new TycoonWardController(vi.fn()); ward.update(state())
+    for (let i = 0; i < 10; i++) ward.tick(16, {x: 1, y: 0})
+    const stride = ward.snapshot().strideDistance
+    expect(ward.snapshot().frame).toContain(`walk-${walkFrame(stride)}`)
+    for (let i = 0; i < 3; i++) ward.tick(16, {x: 1, y: i % 2 ? 0.001 : -0.001})
+    expect(ward.snapshot().direction).toBe('se')
+    ward.goTo(`patient:${state().tasks[0].id}`); drive(ward)
+    expect(ward.snapshot().direction).toBe('ne')
+    const stationary = ward.snapshot().strideDistance; drive(ward, 10)
+    expect(ward.snapshot().strideDistance).toBe(stationary)
+    ward.goTo('station'); drive(ward)
+    expect(ward.snapshot().direction).toBe('ne')
   })
 })

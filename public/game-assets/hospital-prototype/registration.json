@@ -342,6 +342,206 @@
       },
       "suggestedVisibleWidth": 61,
       "sha256": "6255eb70d77ac3ae3d31194ac308f6626467a897f86f7252132ded07219d8775"
+    },
+    "furniture-waiting-sofa": {
+      "filename": "furniture-waiting-sofa.png",
+      "url": "/game-assets/hospital-prototype/furniture-waiting-sofa.png",
+      "width": 1536,
+      "height": 1024,
+      "visibleBounds": {
+        "x": 182,
+        "y": 129,
+        "width": 1186,
+        "height": 860
+      },
+      "groundPoint": {
+        "x": 780,
+        "y": 950
+      },
+      "groundOrigin": {
+        "x": 0.5078125,
+        "y": 0.927734375
+      },
+      "sha256": "4a3bc2a99b560f4b7ed9a9884cb476a6ae00765ca05e5522d2d43375c3d378b0"
+    },
+    "furniture-visitor-chair": {
+      "filename": "furniture-visitor-chair.png",
+      "url": "/game-assets/hospital-prototype/furniture-visitor-chair.png",
+      "width": 1254,
+      "height": 1254,
+      "visibleBounds": {
+        "x": 255,
+        "y": 149,
+        "width": 739,
+        "height": 992
+      },
+      "groundPoint": {
+        "x": 630,
+        "y": 1100
+      },
+      "groundOrigin": {
+        "x": 0.5023923444976076,
+        "y": 0.8771929824561403
+      },
+      "sha256": "146692fc9cd41d38c1204d42bc72ab6b9e7b6bbb54d2cb05002b58c4d4fd96a3"
+    },
+    "equipment-medication-cart": {
+      "filename": "equipment-medication-cart.png",
+      "url": "/game-assets/hospital-prototype/equipment-medication-cart.png",
+      "width": 1254,
+      "height": 1254,
+      "visibleBounds": {
+        "x": 378,
+        "y": 361,
+        "width": 544,
+        "height": 736
+      },
+      "groundPoint": {
+        "x": 650,
+        "y": 1080
+      },
+      "groundOrigin": {
+        "x": 0.518341307814992,
+        "y": 0.861244019138756
+      },
+      "sha256": "6c990520c7f06e8801a80991b7c615be75456d9a6238d4d68b585265b1de82c5"
+    },
+    "linen-cabinet": {
+      "filename": "linen-cabinet.png",
+      "width": 1295,
+      "height": 1214,
+      "visibleBounds": {
+        "x": 230,
+        "y": 40,
+        "width": 847,
+        "height": 1156
+      },
+      "groundOrigin": {
+        "x": 0.5046332046332046,
+        "y": 0.9785831960461285
+      },
+      "sha256": "dcd0819f434744ca2aa8067b255c1908dd784c1cd90d35e56183552ef6944ddd"
+    },
+    "dispatch-counter": {
+      "filename": "dispatch-counter.png",
+      "width": 1322,
+      "height": 1190,
+      "visibleBounds": {
+        "x": 89,
+        "y": 74,
+        "width": 1142,
+        "height": 1060
+      },
+      "groundOrigin": {
+        "x": 0.49924357034795763,
+        "y": 0.946218487394958
+      },
+      "sha256": "7f887d65daa7e3308e8ac8e414201ff2df2b34c6d4417ed4c24dc25e821c7ee6"
+    },
+    "reception-desk": {
+      "filename": "reception-desk.png",
+      "width": 1536,
+      "height": 1024,
+      "visibleBounds": {
+        "x": 82,
+        "y": 115,
+        "width": 1377,
+        "height": 810
+      },
+      "groundOrigin": {
+        "x": 0.5016276041666666,
+        "y": 0.8955078125
+      },
+      "sha256": "fc579236041b959c4e550b19dc7d1225aec96261718a0741a68ef090d4e24c57"
+    },
+    "renovation-barrier": {
+      "filename": "renovation-barrier.png",
+      "width": 1374,
+      "height": 1145,
+      "visibleBounds": {
+        "x": 193,
+        "y": 129,
+        "width": 1063,
+        "height": 931
+      },
+      "groundOrigin": {
+        "x": 0.527292576419214,
+        "y": 0.9187772925764193
+      },
+      "sha256": "0c7ddc326d10710d145f080bce4c44c3481f6a2a9f32c469923f17c65e16b5ab"
+    },
+    "hospital-vinyl": {
+      "filename": "hospital-vinyl.png",
+      "width": 1254,
+      "height": 1254,
+      "visibleBounds": {
+        "x": 0,
+        "y": 0,
+        "width": 1254,
+        "height": 1254
+      },
+      "groundOrigin": {
+        "x": 0.5,
+        "y": 0.9936204146730463
+      },
+      "sha256": "def12acdeecdc5f0539e026855e4d2ef5be3bbb9e21ffc31598246ca4e156421"
+    },
+    "waste-bin": {
+      "width": 1225,
+      "height": 1284,
+      "visibleBounds": {
+        "width": 704
+      },
+      "groundOrigin": {
+        "x": 0.5061224489795918,
+        "y": 0.910436137071651
+      },
+      "sha256": "9fcdb585d069cba3d2692bcd9075e704703690f56d6b527cee33ff7aeda39d41"
+    },
+    "sanitizer-stand": {
+      "width": 1145,
+      "height": 1374,
+      "visibleBounds": {
+        "width": 313
+      },
+      "groundOrigin": {
+        "x": 0.5235807860262008,
+        "y": 0.9454148471615721
+      },
+      "sha256": "0a0c24bba422aa9bbc9ed297ac0b262eefb9318007773ea0bc6d65c654bec2cb"
+    },
+    "washroom-fixtures": {
+      "filename": "washroom-fixtures.png",
+      "width": 1536,
+      "height": 1024,
+      "visibleBounds": {
+        "x": 321,
+        "y": 109,
+        "width": 887,
+        "height": 775
+      },
+      "groundOrigin": {
+        "x": 0.5,
+        "y": 0.86328125
+      },
+      "sha256": "eda744e13e9c2718d3d06621fe6329cf6be32338ad76003496fb8336dcc1d4f8"
+    },
+    "staff-kitchenette": {
+      "filename": "staff-kitchenette.png",
+      "url": "/game-assets/hospital-prototype/staff-kitchenette.png",
+      "width": 1402,
+      "height": 1122,
+      "visibleBounds": {
+        "x": 340,
+        "y": 207,
+        "width": 729,
+        "height": 752
+      },
+      "groundOrigin": {
+        "x": 0.5024964336661911,
+        "y": 0.8547237076648841
+      },
+      "sha256": "fcfcd2dff2a6b35e7141afc378fdefb9e9d5dc917175d6c8b85353b4c58fbb5b"
     }
   },
   "nurse": {

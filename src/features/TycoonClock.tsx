@@ -130,6 +130,7 @@ export function TycoonClock({
               Shift {completedShifts + 1} / {Math.max(3, completedShifts + 1)}
             </span>
           ) : null}
+          {inGame ? <span className="tycoon-clock-shift">Shift {completedShifts + 1}</span> : null}
         </div>
       </div>
     </TycoonTooltip>

@@ -46,7 +46,7 @@ describe('bedside care workflow', () => {
     expect(nextCareStep({ ...task, status: 'completed' })).toBeNull()
   })
   it('allows mid-shift purchases with affordability and maximum-level guards', () => {
-    const state = start()
+    const state = { ...start(), successfulShifts: 1 }
     const purchased = purchaseTycoonUpgradeById(state, 'staff-training')
     expect(purchased.activeShift!.id).toBe(state.activeShift!.id)
     expect(purchased.activeShift!.status).toBe('running')
