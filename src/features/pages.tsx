@@ -1221,7 +1221,9 @@ export function ExamPrepPage() {
   })
   return <section className="simple-study exam-prep-setup" aria-labelledby="prep-title">
     <header><h1 id="prep-title">Exam Prep</h1><p>Choose a topic. Review up to 10 questions.</p></header>
-    {trackId === 'nclex-rn' && <p><strong>Practice with 300+ NCLEX-RN questions.</strong>{!user && <> <Link className="simple-study-link" to="/exam-prep?auth=signup">Sign up</Link> or <Link className="simple-study-link" to="/exam-prep?auth=signin">log in</Link> to save your progress.</>}</p>}
+    {trackId === 'nclex-rn' && <div className="exam-prep-signup">
+      {!user ? <><Link className="exam-prep-signup-button" to="/exam-prep?auth=signup">Sign up to get access to over 300+ NCLEX-RN Exam Questions<ArrowRight size={22} aria-hidden="true" /></Link><p>Already have an account? <Link className="simple-study-link" to="/exam-prep?auth=signin">Log in</Link></p></> : <p><strong>Practice with 300+ NCLEX-RN questions.</strong></p>}
+    </div>}
     <div className="exam-prep-exam"><button className="exam-prep-switcher" aria-expanded={examOpen} aria-controls="prep-exam-choice" onClick={() => setExamOpen(!examOpen)}>{track.shortName}<span>Change exam</span></button>
       {examOpen && <div id="prep-exam-choice"><Field label="Your exam"><select className={selectClass} value={trackId} onChange={(event) => { setTrackId(event.target.value as ExamTrackId); setCategory('All'); setExamOpen(false) }}>{examTracks.map((item) => <option key={item.id} value={item.id}>{item.shortName}</option>)}</select></Field></div>}
     </div>
@@ -1233,7 +1235,7 @@ export function ExamPrepPage() {
         {category === item && <CheckCircle2 className="exam-prep-selected" size={28} aria-hidden="true" />}
       </label>)}
     </fieldset>
-    <button className="simple-study-start" disabled={isPending} onClick={start}>{isPending ? 'Building review…' : 'Start review'}<ArrowRight size={18} /></button>
+    <div className="exam-prep-start-bar"><button className="simple-study-start" disabled={isPending} onClick={start}>{isPending ? 'Building review…' : 'Start review'}<ArrowRight size={18} /></button></div>
   </section>
 }
 

@@ -2935,7 +2935,15 @@ textarea {
 .exam-prep-setup header h1 { font-size: clamp(1.75rem, 3.4vw, 3rem); }
 .exam-prep-setup header { margin-bottom: 1rem; text-align: center; }
 .exam-prep-setup header p { margin-bottom: 0; }
-.exam-prep-exam { margin: 1.25rem 0; border-bottom: 1px solid #344c58; }
+.exam-prep-signup { text-align: center; margin: .75rem auto; max-width: 48rem; }
+.exam-prep-signup-button { display: flex; align-items: center; justify-content: center; gap: .75rem; min-height: 3.5rem; padding: .875rem 1.25rem; border-radius: .5rem; background: #32d4e8; color: #05212b; font-size: clamp(1rem, 1.6vw, 1.25rem); line-height: 1.4; font-weight: 750; text-decoration: none; }
+.exam-prep-signup-button:hover { background: #7be1ed; }
+.exam-prep-signup-button svg { flex-shrink: 0; }
+.exam-prep-signup-button:focus-visible { outline: 3px solid white; outline-offset: 3px; }
+.exam-prep-signup p { margin: 0; font-size: .875rem; }
+.exam-prep-start-bar { position: sticky; bottom: 0; z-index: 5; background: #061f2d; padding: .5rem 0 max(.5rem, env(safe-area-inset-bottom)); }
+.exam-prep-start-bar .simple-study-start { margin: 0; }
+.exam-prep-exam { margin: .5rem 0 .75rem; border-bottom: 1px solid #344c58; }
 .exam-prep-switcher { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 3rem; gap: 1rem; cursor: pointer; font-weight: 600; background: transparent; border: 0; padding: 0; color: inherit; }
 .exam-prep-switcher span { font-size: .875rem; color: #aad5e2; font-weight: 400; }
 #prep-exam-choice { padding-bottom: 1rem; }
@@ -2959,12 +2967,12 @@ textarea {
   .exam-prep-art { width: 7rem; height: 7rem; }
 }
 @media (min-width: 1024px) {
-  .exam-prep-setup { margin: clamp(1rem, 4vh, 3.5rem) auto 1rem; }
-  .exam-prep-setup header { margin-bottom: 2rem; }
+  .exam-prep-setup { margin: .75rem auto; }
+  .exam-prep-setup header { margin-bottom: .75rem; }
   .exam-prep-setup header p { font-size: 1.25rem; }
-  .exam-prep-topic { min-height: clamp(10rem, 22vh, 14.5rem); font-size: 1.375rem; }
+  .exam-prep-topic { min-height: clamp(8rem, 18vh, 11rem); font-size: 1.125rem; padding: .75rem; }
   .exam-prep-topic-name { max-width: 18rem; }
-  .exam-prep-art { width: clamp(6rem, 14vh, 9rem); height: clamp(6rem, 14vh, 9rem); }
+  .exam-prep-art { width: clamp(4rem, 10vh, 6rem); height: clamp(4rem, 10vh, 6rem); }
   .exam-prep-selected { top: 1rem; right: 1rem; width: 1.75rem; height: 1.75rem; }
   .exam-prep-setup .simple-study-start { min-height: 3.75rem; font-size: 1.125rem; }
 }

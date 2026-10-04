@@ -396,7 +396,7 @@ function AuthLanding({ onBack, savingResult }: { onBack: () => void; savingResul
       : mode === 'signin'
         ? 'Welcome back to Nurse Command.'
         : mode === 'signup'
-          ? 'Start a clean beta profile. We will send a verification email before your account is active.'
+          ? ''
           : 'Enter the email linked to your account and we will send a secure reset link.'
   const submitLabel =
     mode === 'reset'
@@ -418,7 +418,7 @@ function AuthLanding({ onBack, savingResult }: { onBack: () => void; savingResul
       <main className="auth-main">
         <section className="auth-card" aria-labelledby="auth-title">
           <h1 id="auth-title">{title}</h1>
-          <p className="auth-description">{helperText}</p>
+          {helperText && <p className="auth-description">{helperText}</p>}
           {savingResult && <p className="auth-result-note">Your result is waiting. After sign-in, we’ll save it and bring you back. Open any verification email in this same browser.</p>}
 
           {mode === 'welcome' ? (
@@ -506,9 +506,6 @@ function AuthLanding({ onBack, savingResult }: { onBack: () => void; savingResul
               ) : null}
               {mode === 'signup' ? (
                 <>
-                  <div className="rounded-2xl border border-cyan-200/16 bg-cyan-300/8 px-4 py-3 text-sm leading-6 text-sky-100/70">
-                    We will send a verification email. Your account starts with a clean profile after verification.
-                  </div>
                   <label className="flex cursor-pointer gap-3 rounded-2xl border border-cyan-200/18 bg-[#04101f]/58 p-4">
                     <input
                       type="checkbox"
