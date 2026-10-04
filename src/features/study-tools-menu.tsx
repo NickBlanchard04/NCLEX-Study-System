@@ -18,6 +18,7 @@ const studyToolGroups = [
     { title: 'Saved results', route: '/study-results' },
   ] },
   { title: 'More', links: [
+    { title: 'Nurse Tycoon game', route: '/nursing-game/' },
     { title: 'Nurse Lab', route: '/nurse-command-lab' },
     { title: 'Account & settings', route: '/settings' },
   ] },

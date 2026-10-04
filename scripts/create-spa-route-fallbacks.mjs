@@ -55,9 +55,10 @@ const topics = JSON.parse(readFileSync(join(process.cwd(), 'src/seo/topics.json'
 const renderedTopics = new Map()
 const renderer = await createServer({ configFile: false, logLevel: 'silent', server: { middlewareMode: true } })
 try {
-  const { renderTopic } = await renderer.ssrLoadModule('/src/seo/render-topics.tsx')
+  const { renderTopic, renderGame } = await renderer.ssrLoadModule('/src/seo/render-topics.tsx')
   const logo = readdirSync(join(distDir, 'assets')).find(file => /^nursing-command-logo-small-.*\.webp$/.test(file))
   if (!logo) throw new Error('Missing built topic logo')
+  renderedTopics.set('/nursing-game', renderGame().replaceAll('/src/assets/brand/nursing-command-logo-small.webp', `/assets/${logo}`))
   for (const topic of topics) renderedTopics.set(`/nclex-rn/${topic.slug}`, renderTopic(topic.slug).replaceAll('/src/assets/brand/nursing-command-logo-small.webp', `/assets/${logo}`))
 } finally { await renderer.close() }
 const template = readFileSync(indexFile, 'utf8')

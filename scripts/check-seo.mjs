@@ -2,6 +2,12 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 const pages = JSON.parse(readFileSync('src/seo/pages.json', 'utf8'))
 const sitemap = readFileSync('dist/sitemap.xml', 'utf8')
+const game = readFileSync('dist/nursing-game/index.html', 'utf8')
+assert.ok(game.includes('Play Nurse Tycoon'))
+assert.ok(game.includes('What happens during a shift?'))
+assert.ok(game.includes('href="/nurse-tycoon/"'))
+assert.ok(!game.includes('/src/assets/'))
+assert.ok(readFileSync('dist/nurse-tycoon/index.html', 'utf8').includes('noindex,follow'))
 for (const page of pages) {
   const html = readFileSync(`dist${page.path === '/' ? '' : page.path}/index.html`, 'utf8')
   assert.equal((html.match(/rel="canonical"/g) ?? []).length, 1, page.path)

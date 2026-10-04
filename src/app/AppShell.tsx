@@ -49,6 +49,7 @@ import { PublicLaunchPage } from '../features/PublicLaunchPages'
 import { isPublicLaunchPath } from '../features/publicLaunchPaths'
 import topics from '../seo/topics.json'
 const TopicLandingPage = lazy(() => import('../features/topic-landing-page').then(module => ({ default: module.TopicLandingPage })))
+const GameLandingPage = lazy(() => import('../features/game-landing-page').then(module => ({ default: module.GameLandingPage })))
 import nursingCommandLogo from '../assets/brand/nursing-command-logo.png'
 import { getExamTrack } from '../data/exam-tracks'
 import { useStudySystemStore } from './store'
@@ -305,6 +306,7 @@ function LazyRoute({
 export function AppShell() {
   const location = useLocation()
 
+  if (location.pathname.replace(/\/$/, '') === '/nursing-game') return <LazyRoute label="Loading game guide"><GameLandingPage /></LazyRoute>
   const topic = topics.find(item => location.pathname.replace(/\/$/, '') === `/nclex-rn/${item.slug}`)
   if (topic) return <LazyRoute label="Loading topic"><TopicLandingPage key={topic.slug} slug={topic.slug} /></LazyRoute>
 
