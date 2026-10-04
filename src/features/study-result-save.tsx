@@ -6,6 +6,10 @@ import { mergeStudyResult, readStudyLocal, validStudyResult, writeStudyLocal } f
 import type { SavedStudyResult } from '../services/study-handoff'
 import { normalizeQuickStudyProgress, recordQuickStudyAnswer } from '../services/daily-lesson'
 import logo from '../assets/brand/nursing-command-logo.png'
+import { trackAppEvent } from '../services/analytics-client'
+import { getExamQuestionBank } from '../data/content'
+
+const availableRnQuestions = new Set(getExamQuestionBank('nclex-rn').filter(question => question.learnerVisible !== false && question.visibility !== 'internal').map(question => question.id)).size
 
 function ResultFrame({ children }: { children: React.ReactNode }) {
   return <div className="quick-study-page"><header className="home-launcher-header"><Link className="home-launcher-brand" to="/"><img src={logo} alt="" /><span>Nurse <span>Command</span></span></Link><div className="home-launcher-actions"><StudyToolsMenu /><Link className="home-tools-trigger" to="/">Home</Link></div></header><div className="quick-study-main">{children}</div></div>
@@ -37,6 +41,7 @@ export function StudyResultSave({ result, autoSave = false, onContinue }: { resu
       setError('Browser storage is unavailable. Allow site storage before signing in so your result is not lost.'); return
     }
     navigate(`${result.route}?studyResult=${result.id}&auth=${mode}`)
+    void trackAppEvent('external_cta_clicked', { page_path: result.route, feature_name: 'Results signup CTA', metadata: { destination: mode, placement: 'session_results' } })
   }
   if (user) return <section className="study-save-prompt" aria-label="Result saving">
     <p role="status">{stored ? sync === 'syncing' ? 'Saving your result…' : sync === 'error' || sync === 'offline' ? 'Result is on this device; cloud save needs a connection.' : 'Result saved to your private study history.' : 'Your result is available on this device.'}</p>
@@ -46,9 +51,9 @@ export function StudyResultSave({ result, autoSave = false, onContinue }: { resu
     <Link to="/social">Explore the community</Link>
   </section>
   return <section className="study-save-prompt" aria-labelledby="keep-progress-title">
-    <h2 id="keep-progress-title">Keep your progress</h2>
-    <p>Save your results and build your personal study profile. Connect with other nursing students when you’re ready.</p>
-    <div className="quick-session-review-actions"><button className="quick-session-primary" onClick={() => signIn('signup')}>Create account &amp; save results</button>{onContinue ? <button className="quick-session-secondary" onClick={onContinue}>Keep practicing as a guest</button> : <Link className="quick-session-secondary" to={result.route}>Keep practicing as a guest</Link>}</div>
+    <h2 id="keep-progress-title">Keep your progress. Keep practicing.</h2>
+    <p>Create an account to save your results and keep practicing{availableRnQuestions > 300 ? ' with 300+ NCLEX-RN questions.' : ' by topic.'}</p>
+    <div className="quick-session-review-actions"><button className="quick-session-primary" onClick={() => signIn('signup')}>Create my account</button>{onContinue ? <button className="quick-session-secondary" onClick={onContinue}>Keep practicing as a guest</button> : <Link className="quick-session-secondary" to={result.route}>Keep practicing as a guest</Link>}</div>
     <button className="quick-session-text-button" onClick={() => signIn('signin')}>Already have an account? Sign in</button>
     <p className="quick-bank-muted">Private by default. Joining the community is optional.</p>
     {error && <p role="alert">{error}</p>}

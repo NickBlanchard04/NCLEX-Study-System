@@ -1,25 +1,6 @@
 User-agent: *
 Allow: /
-Disallow: /admin
-Disallow: /dashboard
-Disallow: /exam-prep
-Disallow: /practice-questions
-Disallow: /test-mode
-Disallow: /nurse-command-lab
-Disallow: /clinical-simulator
-Disallow: /quick-study
-Disallow: /weak-areas
-Disallow: /performance-analytics
-Disallow: /flashcards
-Disallow: /study-plan
-Disallow: /strategy-training
-Disallow: /notes
-Disallow: /my-materials
-Disallow: /social
-Disallow: /settings
-Disallow: /medical-command-center
-Disallow: /shift-command
-Disallow: /hospitalvania
-Disallow: /nurse-tycoon
+# Account pages use noindex metadata; allow crawlers to read that directive.
+# Authentication, not robots.txt, protects private study data.
 
 Sitemap: https://nursecommand.com/sitemap.xml

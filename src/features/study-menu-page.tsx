@@ -2,9 +2,9 @@ import { StudyToolsMenu } from './study-tools-menu'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useStudySystemStore } from '../app/store'
-import nursingCommandLogo from '../assets/brand/nursing-command-logo.png'
+import nursingCommandLogo from '../assets/brand/nursing-command-logo-small.webp'
 import { launchDailyLesson } from '../services/learning-progress'
-import bannerReference from '../assets/home/banner-reference.png'
+import bannerReference from '../assets/home/banner-reference.webp'
 
 const learningActivities = [
   { title: 'Daily Lesson', description: 'The default 3–5 minute learning session', route: '/daily-lesson', tone: 'gold', x: 106, width: 402 },
@@ -54,6 +54,8 @@ export function StudyMenuPage() {
                 {/* Preserve the supplied artwork's exact crop and proportions. */}
                 <img
                   src={bannerReference}
+                  fetchPriority="high"
+                  decoding="async"
                   alt=""
                   aria-hidden="true"
                   draggable={false}

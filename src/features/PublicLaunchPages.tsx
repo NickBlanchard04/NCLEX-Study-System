@@ -13,6 +13,8 @@ import {
 } from 'lucide-react'
 import nursingCommandLogo from '../assets/brand/nursing-command-logo.png'
 import { trackAppEvent } from '../services/analytics-client'
+import { Breadcrumbs } from '../seo/RouteSeo'
+import { TopicLinks } from './topic-links'
 
 type PublicPageKey = 'beta' | 'pricing' | 'nclex-rn' | 'nclex-pn' | 'about' | 'privacy' | 'terms'
 
@@ -42,14 +44,14 @@ const publicPages: Record<PublicPageKey, PublicPage> = {
     eyebrow: 'Open beta nursing study command center',
     title: 'Start with one focused NCLEX study action.',
     description:
-      'Create a free beta account, verify your email, and use Nurse Command to organize practice, weak-area repair, notes, and uploaded study material in one place.',
-    bullets: ['One next action after signup', 'Editable study tools from your material', 'Practice evidence only, never licensure claims'],
+      'Use Nurse Command for daily lessons, practice questions, topic-based exam prep, notes, and review. Create an account to save your progress.',
+    bullets: ['Daily Lesson, Practice, and Review', 'Topic-based exam preparation', 'Study support, not a pass guarantee'],
     ctaLabel: 'Create free beta account',
     ctaPath: '/?auth=signup',
     sections: [
       {
         title: 'What happens first',
-        body: 'After account verification, Nurse Command asks for a few study preferences, then points you toward one starter action: quick practice, upload material, or set a study target.',
+        body: 'Choose Daily Lesson, Practice, or Review from the home screen. Guests can try practice; create an account and verify your email to save your study progress.',
       },
       {
         title: 'What it is built around',
@@ -66,8 +68,8 @@ const publicPages: Record<PublicPageKey, PublicPage> = {
         answer: 'The current launch path is a free open beta while the product is tested and refined with nursing learners.',
       },
       {
-        question: 'Can I upload my own notes?',
-        answer: 'Yes. You can upload study files or use assisted import for study links, then review generated cards and questions before saving them.',
+        question: 'Which study tools can I use?',
+        answer: 'The menu includes Question Bank, Exam Prep, Take an Exam, Study Plan, Flashcards, Notes, Resources, and Progress. Study Library is currently hidden.',
       },
       {
         question: 'Does it replace official NCLEX prep guidance?',
@@ -88,7 +90,7 @@ const publicPages: Record<PublicPageKey, PublicPage> = {
     sections: [
       {
         title: 'What is included',
-        body: 'Adaptive practice, exam-style sessions, flashcards, uploaded-material study tools, weak-area review, and progress dashboards are included in the launch experience.',
+        body: 'Practice questions, topic-based exam prep, exam-style sessions, flashcards, notes, study plans, and review tools are available through the study menu.',
       },
       {
         title: 'Who it is for',
@@ -102,7 +104,7 @@ const publicPages: Record<PublicPageKey, PublicPage> = {
     faqs: [
       {
         question: 'Is Nurse Command only for NCLEX?',
-        answer: 'The launch pages focus on NCLEX-RN and NCLEX-PN prep, while the app also supports study planning, flashcards, notes, and uploaded material review.',
+        answer: 'The launch pages focus on NCLEX-RN and NCLEX-PN prep, while the app also provides study planning, flashcards, notes, and resources.',
       },
       {
         question: 'Is there a free beta?',
@@ -156,7 +158,7 @@ const publicPages: Record<PublicPageKey, PublicPage> = {
     title: 'NCLEX-PN prep for fundamentals, safety, and practical nursing priorities.',
     description:
       'Use focused NCLEX-PN practice, rationales, flashcards, and study signals to reinforce fundamentals and repair weak areas.',
-    bullets: ['PN-focused practice sets', 'Daily study plan signals', 'Flashcards, notes, and uploaded-material tools'],
+    bullets: ['PN-focused practice sets', 'Study planning', 'Flashcards, notes, and resources'],
     ctaLabel: 'Open PN study mode',
     ctaPath: '/',
     sections: [
@@ -194,7 +196,7 @@ const publicPages: Record<PublicPageKey, PublicPage> = {
     eyebrow: 'About Nurse Command',
     title: 'A study command center for nursing students.',
     description:
-      'Nurse Command brings practice questions, remediation, study planning, flashcards, notes, and material review into one calm workflow.',
+      'Nurse Command connects daily lessons, practice questions, topic-based exam prep, study planning, flashcards, notes, and review.',
     bullets: ['Built around study behavior', 'Designed for repeated practice', 'Privacy-aware analytics'],
     ctaLabel: 'Explore the app',
     ctaPath: '/',
@@ -205,7 +207,7 @@ const publicPages: Record<PublicPageKey, PublicPage> = {
       },
       {
         title: 'How it works',
-        body: 'The app turns practice history into dashboards, weak-area recommendations, study plans, and review tools you can return to every day.',
+        body: 'Start with Daily Lesson, Practice, or Review. Use the optional menu for Exam Prep, Question Bank, Take an Exam, flashcards, notes, resources, and progress. Create an account to save your study history.',
       },
       {
         title: 'What we measure',
@@ -284,32 +286,6 @@ const pageFromPath = (pathname: string) => {
 
 function usePublicPageMeta(page: PublicPage) {
   useEffect(() => {
-    const title = `${page.title} | Nurse Command`
-    const canonicalUrl = `https://nursecommand.com${page.path}`
-    document.title = title
-
-    const upsertMeta = (selector: string, create: () => HTMLMetaElement | HTMLLinkElement) => {
-      const existing = document.head.querySelector(selector)
-      if (existing) return existing
-      const next = create()
-      document.head.appendChild(next)
-      return next
-    }
-
-    const description = upsertMeta('meta[name="description"]', () => {
-      const meta = document.createElement('meta')
-      meta.setAttribute('name', 'description')
-      return meta
-    }) as HTMLMetaElement
-    description.setAttribute('content', page.description)
-
-    const canonical = upsertMeta('link[rel="canonical"]', () => {
-      const link = document.createElement('link')
-      link.setAttribute('rel', 'canonical')
-      return link
-    }) as HTMLLinkElement
-    canonical.setAttribute('href', canonicalUrl)
-
     void trackAppEvent('page_view', {
       page_path: page.path,
       feature_name: `Public ${page.key}`,
@@ -361,6 +337,7 @@ export function PublicLaunchPage() {
           </nav>
         </div>
       </header>
+      <div className="mx-auto w-full max-w-7xl px-5 pt-4 md:px-8"><Breadcrumbs /></div>
 
       <section className="mx-auto grid w-full max-w-7xl gap-8 px-5 py-10 md:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:py-14">
         <div>
@@ -452,6 +429,7 @@ export function PublicLaunchPage() {
         </section>
       ) : null}
 
+      {page.key === 'nclex-rn' && <div className="mx-auto w-full max-w-7xl px-5 md:px-8"><TopicLinks /></div>}
       <footer className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-5 py-8 text-sm text-sky-100/58 md:flex-row md:items-center md:justify-between md:px-8">
         <div className="flex items-center gap-2">
           <BadgeCheck className="h-4 w-4 text-cyan-200" />

@@ -47,6 +47,8 @@ import { Link, NavLink, Route, Routes, useLocation, useNavigate } from 'react-ro
 import { clsx } from 'clsx'
 import { PublicLaunchPage } from '../features/PublicLaunchPages'
 import { isPublicLaunchPath } from '../features/publicLaunchPaths'
+import topics from '../seo/topics.json'
+const TopicLandingPage = lazy(() => import('../features/topic-landing-page').then(module => ({ default: module.TopicLandingPage })))
 import nursingCommandLogo from '../assets/brand/nursing-command-logo.png'
 import { getExamTrack } from '../data/exam-tracks'
 import { useStudySystemStore } from './store'
@@ -302,6 +304,9 @@ function LazyRoute({
 
 export function AppShell() {
   const location = useLocation()
+
+  const topic = topics.find(item => location.pathname.replace(/\/$/, '') === `/nclex-rn/${item.slug}`)
+  if (topic) return <LazyRoute label="Loading topic"><TopicLandingPage key={topic.slug} slug={topic.slug} /></LazyRoute>
 
   if (isPublicLaunchPath(location.pathname)) {
     return <PublicLaunchPage />

@@ -1,6 +1,8 @@
 import { createNoteAutosave } from '../services/note-autosave'
 import { useDeferredValue, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import topicGuides from '../seo/topics.json'
+import { TopicLinks } from './topic-links'
 import {
   CartesianGrid,
   Line,
@@ -1203,6 +1205,9 @@ const examPrepArtwork: Record<string, string> = {
 }
 
 export function ExamPrepPage() {
+  const [params] = useSearchParams()
+  const requestedTopic = topicGuides.find(topic => topic.slug === params.get('topic'))
+  const preview = Boolean(requestedTopic && params.get('preview') === '5')
   const [examOpen, setExamOpen] = useState(false)
   const user = useStudySystemStore((state) => state.authUser)
   const profile = useStudySystemStore((state) => state.profile)
@@ -1210,17 +1215,17 @@ export function ExamPrepPage() {
   const active = useStudySystemStore((state) => state.activeSession)
   const startPracticeSession = useStudySystemStore((state) => state.startPracticeSession)
   const abandonSession = useStudySystemStore((state) => state.abandonSession)
-  const [trackId, setTrackId] = useState<ExamTrackId>(profile.examTrack ?? 'nclex-rn')
-  const [category, setCategory] = useState<QuestionCategory | 'All'>('All')
+  const [trackId, setTrackId] = useState<ExamTrackId>(requestedTopic ? 'nclex-rn' : profile.examTrack ?? 'nclex-rn')
+  const [category, setCategory] = useState<QuestionCategory | 'All'>(requestedTopic?.category ?? 'All')
   const [isPending, startTransition] = useTransition()
   const track = getExamTrack(trackId)
   if (active?.mode === 'practice' && isRenderableSession(active)) return <QuestionSessionRunner focused key={active.id + active.currentIndex} session={active} modeLabel="Exam Prep" onExit={abandonSession} />
   const start = () => startTransition(() => {
     updateProfile({ examTrack: trackId })
-    startPracticeSession({ category, questionCount: 10, difficulty: 'adaptive', format: 'mixed' })
+    startPracticeSession({ category, questionCount: preview ? 5 : 10, difficulty: 'adaptive', format: 'mixed' })
   })
   return <section className="simple-study exam-prep-setup" aria-labelledby="prep-title">
-    <header><h1 id="prep-title">Exam Prep</h1><p>Choose a topic. Review up to 10 questions.</p></header>
+    <header><h1 id="prep-title">Exam Prep</h1><p>Choose a topic. Review up to {preview ? 5 : 10} questions.</p></header>
     {trackId === 'nclex-rn' && <div className="exam-prep-signup">
       {!user ? <><Link className="exam-prep-signup-button" to="/exam-prep?auth=signup">Sign up to get access to over 300+ NCLEX-RN Exam Questions<ArrowRight size={22} aria-hidden="true" /></Link><p>Already have an account? <Link className="simple-study-link" to="/exam-prep?auth=signin">Log in</Link></p></> : <p><strong>Practice with 300+ NCLEX-RN questions.</strong></p>}
     </div>}
@@ -1236,6 +1241,7 @@ export function ExamPrepPage() {
       </label>)}
     </fieldset>
     <div className="exam-prep-start-bar"><button className="simple-study-start" disabled={isPending} onClick={start}>{isPending ? 'Building review…' : 'Start review'}<ArrowRight size={18} /></button></div>
+    {trackId === 'nclex-rn' && <TopicLinks />}
   </section>
 }
 

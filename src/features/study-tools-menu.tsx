@@ -1,6 +1,7 @@
 import { useId, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronDown, X } from 'lucide-react'
+import { Breadcrumbs } from '../seo/RouteSeo'
 
 const studyToolGroups = [
   { title: 'Practice and exams', links: [
@@ -45,6 +46,7 @@ export function StudyToolsMenu() {
         }}
       >
         <div className="home-tools-content">
+          <Breadcrumbs />
           <div className="home-tools-heading">
             <h2 id={`${id}-heading`}>Study tools</h2>
             <button type="button" className="home-profile-link" aria-label="Close study tools" onClick={() => toolsDialog.current?.close()}>
@@ -60,6 +62,12 @@ export function StudyToolsMenu() {
                 ))}
               </section>
             ))}
+          </nav>
+          <nav className="site-info-links" aria-label="About Nurse Command">
+            <Link to="/about" onClick={() => toolsDialog.current?.close()}>About</Link>
+            <Link to="/nclex-rn" onClick={() => toolsDialog.current?.close()}>NCLEX-RN</Link>
+            <Link to="/privacy" onClick={() => toolsDialog.current?.close()}>Privacy</Link>
+            <Link to="/terms" onClick={() => toolsDialog.current?.close()}>Terms</Link>
           </nav>
         </div>
       </dialog>

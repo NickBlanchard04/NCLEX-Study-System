@@ -1,42 +1,51 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://nursecommand.com/nclex-rn/management-of-care/</loc></url>
+  <url><loc>https://nursecommand.com/nclex-rn/safety-and-infection-control/</loc></url>
+  <url><loc>https://nursecommand.com/nclex-rn/health-promotion/</loc></url>
+  <url><loc>https://nursecommand.com/nclex-rn/psychosocial-integrity/</loc></url>
+  <url><loc>https://nursecommand.com/nclex-rn/physiological-integrity/</loc></url>
   <url>
     <loc>https://nursecommand.com/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://nursecommand.com/beta</loc>
+    <loc>https://nursecommand.com/beta/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
+  <url><loc>https://nursecommand.com/exam-prep/</loc></url>
+  <url><loc>https://nursecommand.com/practice-questions/</loc></url>
+  <url><loc>https://nursecommand.com/quick-study/</loc></url>
+  <url><loc>https://nursecommand.com/test-mode/</loc></url>
   <url>
-    <loc>https://nursecommand.com/pricing</loc>
+    <loc>https://nursecommand.com/pricing/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://nursecommand.com/nclex-rn</loc>
+    <loc>https://nursecommand.com/nclex-rn/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://nursecommand.com/nclex-pn</loc>
+    <loc>https://nursecommand.com/nclex-pn/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://nursecommand.com/about</loc>
+    <loc>https://nursecommand.com/about/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://nursecommand.com/privacy</loc>
+    <loc>https://nursecommand.com/privacy/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://nursecommand.com/terms</loc>
+    <loc>https://nursecommand.com/terms/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
