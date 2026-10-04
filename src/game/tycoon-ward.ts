@@ -11,6 +11,7 @@ export type WardTask = Pick<TycoonTask, 'id' | 'room' | 'patientName' | 'status'
 export type WardTarget = { id: string; kind: 'patient' | 'equipment' | 'safety' | 'station'; label: string; position: GroundPoint; taskId?: string }
 export type WardState = {
   soundEnabled?: boolean
+  suggestedTargetId?: string
   worldJobs?: readonly TycoonWorldJob[]
   playerWorking?: boolean
   calls?: readonly TycoonCall[]
@@ -18,7 +19,7 @@ export type WardState = {
   reviewedTaskIds: readonly string[]; paused: boolean; reducedMotion: boolean
   upgrades?: Record<string, number>
 }
-export type WardStatus = { label: string; moving: boolean; nearby: WardTarget | null; caring: boolean }
+export type WardStatus = { label: string; moving: boolean; nearby: WardTarget | null; caring: boolean; workKind?: 'assess' | 'treat' | 'chart' | 'scanner' }
 export const unprojectGround = ({ x, y }: ScreenPoint): GroundPoint => ({
   u: (x - 600) / 144 + (y - 80) / 88,
   v: (y - 80) / 88 - (x - 600) / 144,
@@ -48,6 +49,7 @@ export class TycoonWardController {
   private hidden = false
   private animationMs = 0
   private careMs = 0
+  private workKind: 'assess' | 'treat' | null = null
   private speed = 0
   private strideDistance = 0
   private manualHeading: { x: number; y: number } | null = null
@@ -63,10 +65,18 @@ export class TycoonWardController {
     if (state.tasks !== this.state?.tasks) this.cachedTargets = wardTargets(state.tasks)
     if (state.shiftId !== this.state?.shiftId) {
       this.position = { ...STATION_POSITION }; this.path = []; this.destination = null; this.careMs = 0
-      this.queuedTarget = null; this.stopMotion(); this.strideDistance = 0; this.direction = 'se'
+      this.workKind = null; this.queuedTarget = null; this.stopMotion(); this.strideDistance = 0; this.direction = 'se'
       this.message = 'Walk to a patient or inspect their equipment.'
-    } else if (this.animateCare && state.tasks.some((task) => task.careProgress?.steps.includes('care') && !this.state?.tasks.find((old) => old.id === task.id)?.careProgress?.steps.includes('care'))) {
-      this.careMs = 1600; this.path = []; this.destination = null
+    } else if (this.animateCare) {
+      const changed = state.tasks.find(task => task.careProgress?.steps.some(step => step !== 'documentation' && !this.state?.tasks.find(old => old.id === task.id)?.careProgress?.steps.includes(step)))
+      if (changed) {
+        const previous = this.state?.tasks.find(old => old.id === changed.id)
+        this.workKind = changed.careProgress?.steps.includes('care') && !previous?.careProgress?.steps.includes('care') ? 'treat' : 'assess'
+        this.careMs = this.workKind === 'treat' ? 1600 : 1200
+        this.animationMs = 0; this.path = []; this.destination = null
+        const target = this.cachedTargets.find(target => target.taskId === changed.id && target.kind === 'patient')
+        if (target) this.faceTarget(target)
+      }
     }
     this.state = state
     if (state.playerWorking) { this.path = []; this.destination = null; this.queuedTarget = null }
@@ -79,7 +89,7 @@ export class TycoonWardController {
   get paused() { return !this.state || this.state.paused || this.state.playerWorking || this.hidden }
   restorePosition(position: GroundPoint) {
     if (!this.state || !isWardWalkable(position, this.openRooms)) return false
-    this.position = { ...position }; this.path = []; this.destination = null; this.queuedTarget = null; this.careMs = 0; this.moving = false
+    this.position = { ...position }; this.path = []; this.destination = null; this.queuedTarget = null; this.careMs = 0; this.workKind = null; this.moving = false
     this.stopMotion()
     return true
   }
@@ -136,7 +146,8 @@ export class TycoonWardController {
     if (this.careMs > 0) {
       this.stopMotion()
       this.careMs = Math.max(0, this.careMs - delta)
-      this.message = 'Bedside care recorded · reassess this patient'
+      this.message = this.workKind === 'treat' ? 'Bedside care recorded · reassess this patient' : 'Bedside check recorded · continue care'
+      if (!this.careMs) this.workKind = null
       if (!this.careMs && this.queuedTarget) { const target = this.queuedTarget; this.queuedTarget = null; this.goTo(target) }
       return
     }
@@ -197,10 +208,10 @@ export class TycoonWardController {
     if (arrived) { this.faceTarget(arrived); this.onInteract(arrived) }
   }
   status(): WardStatus {
-    return { label: this.paused ? 'Paused' : this.careMs > 0 ? 'Providing bedside care…' : this.message, moving: this.moving, nearby: this.nearby(), caring: this.careMs > 0 }
+    return { label: this.paused ? 'Paused' : this.careMs > 0 ? this.workKind === 'assess' ? 'Recording bedside check…' : 'Providing bedside care…' : this.message, moving: this.moving, nearby: this.nearby(), caring: this.careMs > 0, workKind: this.workKind ?? undefined }
   }
   snapshot() {
-    const pose = this.state?.reducedMotion ? 'idle-0' : this.careMs > 0 ? `care-${Math.floor(this.animationMs / 320) % 2}` : this.moving ? `walk-${walkFrame(this.strideDistance)}` : 'idle-0'
-    return { direction: this.direction, speed: this.speed, strideDistance: this.strideDistance, footfall: Math.floor(this.strideDistance / (WALK_CYCLE_DISTANCE / 2)), position: { ...this.position }, screenPosition: projectGround(this.position), frame: `${this.direction}-${pose}`, path: this.path, destination: this.destination, ...this.status() }
+    const pose = this.state?.reducedMotion ? 'idle-0' : this.careMs > 0 ? `${this.workKind ?? 'assess'}-${Math.floor(this.animationMs / 140) % 8}` : this.moving ? `walk-${walkFrame(this.strideDistance)}` : 'idle-0'
+    return { direction: this.direction, speed: this.speed, strideDistance: this.strideDistance, footfall: Math.floor(this.strideDistance / (WALK_CYCLE_DISTANCE / 2)), position: { ...this.position }, screenPosition: projectGround(this.position), frame: `${this.direction}-${pose}`, path: this.path, workKind: this.workKind, destination: this.destination, ...this.status() }
   }
 }

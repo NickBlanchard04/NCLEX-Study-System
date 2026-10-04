@@ -1,3 +1,4 @@
+import { wardCanvasPointer } from './tycoon-pointer'
 import { HOSPITAL_MAP, PATIENT_ROOM, roomEntrance } from './tycoon-map-config'
 import type Phaser from 'phaser'
 import { projectGround, type GroundPoint, type ScreenPoint } from './tycoon-care-presentation'
@@ -53,13 +54,13 @@ export function drawPatientRoom(o: RoomDrawing, task: WardTask, i: number, goTo:
   const p = (u: number, v: number) => roomPoint(i, { u, v })
   const referenceMonitor = drawRoomShell(o, i, i % 2 ? 0xdde8e1 : 0xd6e8e8)
   const ambient = o.polygon([p(WARD_ROOM.minU, WARD_ROOM.minV), p(WARD_ROOM.maxU, WARD_ROOM.minV), p(WARD_ROOM.maxU, WARD_ROOM.maxV), p(WARD_ROOM.minU, WARD_ROOM.maxV)].map(projectGround), 0xffe3a6, 0.2, -2).setVisible(false)
-  const monitor = (referenceMonitor ?? o.prop(PATIENT_ROOM.props.monitor.asset, roomPoint(i, ROOM_PROPS.monitor), PATIENT_ROOM.props.monitor.width, 20)).setInteractive({ useHandCursor: true, pixelPerfect: true }).on('pointerup', () => goTo(`equipment:${task.id}`))
+  const monitor = (referenceMonitor ?? o.prop(PATIENT_ROOM.props.monitor.asset, roomPoint(i, ROOM_PROPS.monitor), PATIENT_ROOM.props.monitor.width, 20)).setInteractive({ useHandCursor: true, pixelPerfect: true }).on('pointerup', (pointer: Phaser.Input.Pointer) => { if (wardCanvasPointer(pointer, o.scene)) goTo(`equipment:${task.id}`) })
   for(const key of ['doorFrame','doorLeaf']) {
     const door=monitor.getData(key) as Phaser.GameObjects.Image
-    door.setInteractive({useHandCursor:true,pixelPerfect:true}).on('pointerup',()=>goTo(`patient:${task.id}`))
+    door.setInteractive({useHandCursor:true,pixelPerfect:true}).on('pointerup',(pointer: Phaser.Input.Pointer)=>{ if (wardCanvasPointer(pointer, o.scene)) goTo(`patient:${task.id}`) })
   }
-  (monitor.getData('doorHit') as Phaser.GameObjects.Zone).on('pointerup',()=>goTo(`patient:${task.id}`))
-  o.prop(PATIENT_ROOM.props.iv.asset, roomPoint(i, ROOM_PROPS.iv), 28).setInteractive({ useHandCursor: true, pixelPerfect: true }).on('pointerup', () => goTo(`safety:${task.id}`))
+  (monitor.getData('doorHit') as Phaser.GameObjects.Zone).on('pointerup',(pointer: Phaser.Input.Pointer)=>{ if (wardCanvasPointer(pointer, o.scene)) goTo(`patient:${task.id}`) })
+  o.prop(PATIENT_ROOM.props.iv.asset, roomPoint(i, ROOM_PROPS.iv), 28).setInteractive({ useHandCursor: true, pixelPerfect: true }).on('pointerup', (pointer: Phaser.Input.Pointer) => { if (wardCanvasPointer(pointer, o.scene)) goTo(`safety:${task.id}`) })
   const bed = roomPoint(i, ROOM_PROPS.bed), at = projectGround(bed)
   const patient = task.simulation?.discharged ? [] : o.occupiedBed(bed, () => { goTo(`patient:${task.id}`) })
   if (task.simulation?.discharged) { o.prop('reference-bed-table-empty', bed, 230) }

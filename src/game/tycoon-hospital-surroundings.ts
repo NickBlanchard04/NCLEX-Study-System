@@ -27,7 +27,7 @@ export function drawHospitalSurroundings(o:SurroundingsOptions) {
   const prop=o.prop
   const p=(u:number,v:number)=>({
     u:v <= -3.8 ? 2+u*17.8/22 : u < 3.7 ? 2+u*1.7/3.7 : u >=18.6 ? 18+(u-18.6)*1.8/3.4 : u>=14.2?u-.6:u,
-    v:v>=15.8?13.4+(v-15.8)*4/5.2:v < -1?v+1.2:v,
+    v:v>=15.8?HOSPITAL_MAP.zones.arrival.minV+(v-15.8)*4/5.2:v < -1?v+1.2:v,
   })
   const b=HOSPITAL_MAP.building
   const corners=rectCorners(b).map(projectGround)
@@ -82,14 +82,14 @@ export function drawHospitalSurroundings(o:SurroundingsOptions) {
   plaque('SERVICE',20.7,-2.6);prop('equipment-medication-cart',p(20.6,-2.5),50)
   // Window-side sitting alcoves stay outside clinical circulation.
   for(const u of [1.5,20.5]) {
-    for(const v of [1,5.8,10.6]) {
+    for(const v of HOSPITAL_MAP.rooms.slice(0,3).map(room=>1+room.origin.v)) {
       prop('furniture-visitor-chair',p(u-.5,v),58)
       prop('decor-potted-plant',p(u+.6,v+.6),42)
     }
   }
   // Window bays connect the clinical rooms to the outside wall.
   for(let row=0;row<3;row++) {
-    const v=-1+row*4.8
+    const v=PATIENT_ROOM.bounds.minV+HOSPITAL_MAP.rooms[row].origin.v
     buildingWall(scene,`bay-left-${row}`,p(0,v),p(3.7,v),176)
     buildingWall(scene,`bay-right-${row}`,p(18.6,v),p(22,v),176)
   }

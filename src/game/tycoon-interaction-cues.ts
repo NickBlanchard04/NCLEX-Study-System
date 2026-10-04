@@ -2,13 +2,32 @@ import type Phaser from 'phaser'
 import type { WardState, WardTarget } from './tycoon-ward'
 import { CARE_LABELS, nextCareStep } from '../services/tycoon-care'
 import { patientObservation } from '../data/tycoon-scenarios'
-export interface InteractionCue { target: WardTarget; graphic: Phaser.GameObjects.Arc; label: Phaser.GameObjects.Text }
+export const INTERACTION_COLORS = { patient: 0x49baff, equipment: 0x52dea0, safety: 0xffc65c, station: 0xbf9aff } as const
+export interface InteractionCue { target: WardTarget; graphic: Phaser.GameObjects.Arc; glow: Phaser.GameObjects.Image; label: Phaser.GameObjects.Text }
+/** One small shared radial texture supplies all floor glows; no blur filters. */
+export function createInteractionGlow(scene: Phaser.Scene, target: WardTarget, x: number, y: number) {
+  const key = 'ward-interaction-glow-v1'
+  if (!scene.textures.exists(key)) {
+    const canvas = document.createElement('canvas'); canvas.width = canvas.height = 96
+    const context = canvas.getContext('2d')!
+    const gradient = context.createRadialGradient(48, 48, 0, 48, 48, 48)
+    gradient.addColorStop(0, 'rgba(255,255,255,.06)')
+    gradient.addColorStop(.48, 'rgba(255,255,255,.16)')
+    gradient.addColorStop(.58, 'rgba(255,255,255,.65)')
+    gradient.addColorStop(.72, 'rgba(255,255,255,.16)')
+    gradient.addColorStop(1, 'rgba(255,255,255,0)')
+    context.fillStyle = gradient; context.fillRect(0, 0, 96, 96)
+    scene.textures.addCanvas(key, canvas)
+  }
+  return scene.add.image(x, y, key).setScale(.75, .75 * 44 / 72).setTint(INTERACTION_COLORS[target.kind]).setDepth(-.65)
+}
 /** Presentation only: this module never starts care or mutates game state. */
-export function updateInteractionCue({ target, graphic, label }: InteractionCue, state: WardState | null, nearbyTarget: WardTarget | null, hoveredTarget: string | null, paused: boolean, walkingTo: WardTarget | null = null) {
+export function updateInteractionCue({ target, graphic, glow, label }: InteractionCue, state: WardState | null, nearbyTarget: WardTarget | null, hoveredTarget: string | null, paused: boolean, walkingTo: WardTarget | null = null) {
   const task = state?.tasks.find((t) => t.id === target.taskId)
   const complete = target.kind === 'equipment' ? state?.reviewedTaskIds.includes(target.taskId!) : target.kind === 'safety' ? task?.careProgress?.steps.includes('safety') : task?.status === 'completed'
   const failed = target.kind === 'patient' && task?.status === 'failed'
-  graphic.setFillStyle(complete ? 0x438567 : failed ? 0xb3684a : 0x347f86, nearbyTarget?.id === target.id ? 0.1 : 0.05)
+  const color = INTERACTION_COLORS[target.kind]
+  graphic.setFillStyle(color, nearbyTarget?.id === target.id ? 0.18 : 0.08)
   label.setText(complete ? target.kind === 'patient' ? '✓ Care complete' : '✓ Checked' : failed ? 'Task closed' : target.kind === 'patient' ? task && nextCareStep(task) ? CARE_LABELS[nextCareStep(task)!] : 'Bedside' : target.kind === 'station' ? 'Handoff' : target.kind === 'safety' ? 'Safety' : 'Monitor')
   if (target.kind === 'equipment' && task?.simulation && state?.upgrades?.['vitals-monitor']) {
     const observation = patientObservation(task)!
@@ -20,9 +39,12 @@ export function updateInteractionCue({ target, graphic, label }: InteractionCue,
   const stationNext = selected && nextCareStep(selected) === 'documentation'
   const destination = target.kind === 'station' ? Boolean(stationNext) : state?.selectedTaskId === target.taskId && target.kind === nextKind && Boolean(next)
   const travelling = walkingTo?.id === target.id
-  graphic.setStrokeStyle(travelling ? 3 : 1.5, travelling ? 0xc72533 : 0x347f86, travelling ? .95 : .55)
+  graphic.setStrokeStyle(travelling ? 3 : 2, color, .9)
   const hovered = hoveredTarget === target.id
   const nearby = nearbyTarget?.id === target.id
   label.setVisible(!paused && !state?.playerWorking && (hovered || nearby))
-  graphic.setVisible(!paused && (travelling || destination || hovered || nearby)).setAlpha(travelling || hovered || nearby ? 0.85 : 0.5)
+  const highlighted = travelling || destination || hovered || nearby
+  // Keep the interaction locations discoverable without persistent text panels.
+  graphic.setVisible(true).setAlpha(complete || failed ? .4 : highlighted ? 1 : .65)
+  glow.setVisible(true).setAlpha(paused || complete || failed ? .2 : highlighted ? .8 : .45)
 }

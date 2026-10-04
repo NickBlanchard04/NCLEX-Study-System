@@ -27,6 +27,24 @@ const samplePath = (start: GroundPoint, path: GroundPoint[]) => {
 }
 
 describe('playable ward', () => {
+  it('uses planted distinct assessment and treatment poses, freezes while paused and respects reduced motion', () => {
+    const ward = new TycoonWardController(vi.fn()), initial = state()
+    ward.update(initial)
+    const assessed = { ...initial, tasks: initial.tasks.map((task, index) => index ? task : { ...task, careProgress: { assessmentActionId: tycoonStarterTasks[0].correctActionId, steps: ['assessment' as const] } }) }
+    ward.update(assessed); ward.tick(160)
+    const pose = ward.snapshot()
+    expect(pose.frame).toContain('assess-')
+    ward.update({ ...assessed, paused: true }); ward.tick(1000)
+    expect(ward.snapshot().frame).toBe(pose.frame)
+    expect(ward.snapshot().position).toEqual(pose.position)
+    const treated = { ...assessed, tasks: assessed.tasks.map((task, index) => index ? task : { ...task, careProgress: { ...task.careProgress!, steps: ['assessment' as const, 'monitor' as const, 'safety' as const, 'care' as const] } }) }
+    ward.update(treated); ward.tick(160)
+    expect(ward.snapshot().frame).toContain('treat-')
+    expect(ward.snapshot().position).toEqual(pose.position)
+    ward.update({ ...treated, reducedMotion: true })
+    expect(ward.snapshot().frame).toContain('idle-0')
+  })
+
   it('keeps destination guidance through pause and clears it on arrival or manual steering', () => {
     const ward = new TycoonWardController(vi.fn()), initial = state()
     ward.update(initial)
@@ -98,7 +116,7 @@ describe('playable ward', () => {
   })
 
   it('rejects beds, walls, station furniture and the outside of the ward', () => {
-    for (const point of [{ u: 5.4, v: 1.2 }, { u: 6.97, v: -0.08 }, { u: 3.7, v: 2 }, { u: 4.5, v: 3.8 }, { u: 10.85, v: 6.65 }, { u: -10, v: 4 }]) {
+    for (const point of [{ u: 5.4, v: 1.2 }, { u: 6.97, v: -0.08 }, { u: 3.7, v: 2 }, { u: 4.5, v: WARD_ROOM.maxV }, { u: 10.85, v: 6.65 }, { u: -10, v: 4 }]) {
       expect(isWardWalkable(point, 3)).toBe(false)
       expect(findWardPath(STATION_POSITION, point, 3)).toBeNull()
     }
@@ -192,7 +210,7 @@ describe('playable ward', () => {
     const interact = vi.fn(), ward = new TycoonWardController(interact)
     ward.update({ ...state(), reducedMotion: true }); ward.tick(16, { x: 1, y: 0 })
     expect(ward.snapshot().frame).toContain('idle')
-    ward.moveTo({ u: 4, v: 4.5 }); drive(ward); ward.interact()
+    expect(ward.moveTo({ u: 12.8, v: 10 })).toBe(true); drive(ward); ward.interact()
     expect(interact).not.toHaveBeenCalled()
     ward.goTo(`patient:${state().tasks[0].id}`); drive(ward)
     expect(interact).toHaveBeenCalledTimes(1)

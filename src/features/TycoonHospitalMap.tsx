@@ -16,6 +16,7 @@ type Props = {
   calls?: TycoonCall[]
   worldJobs?: TycoonWorldJob[]
   selectedTaskId?: string
+  suggestedTargetId?: string
   reviewedTaskIds: string[]
   upgrades: Record<string, number>
   onOpenPatients: () => void
@@ -28,7 +29,7 @@ type Props = {
   onInteract: (target: WardTarget) => void
 }
 
-export function TycoonHospitalMap({ ref, shiftId, tasks, calls, worldJobs, selectedTaskId, reviewedTaskIds, upgrades, paused, manuallyPaused, onTogglePause, onInteract, onOpenShop, onOpenPatients, patientsOpen, onNearbyTask }: Props) {
+export function TycoonHospitalMap({ ref, shiftId, tasks, calls, worldJobs, selectedTaskId, suggestedTargetId, reviewedTaskIds, upgrades, paused, manuallyPaused, onTogglePause, onInteract, onOpenShop, onOpenPatients, patientsOpen, onNearbyTask }: Props) {
   const [soundEnabled, setSoundEnabled] = useState(() => { try { return localStorage.getItem('tycoon-sound-v1') !== 'off' } catch { return true } })
   function toggleSound() {
     const next = !soundEnabled
@@ -44,7 +45,7 @@ export function TycoonHospitalMap({ ref, shiftId, tasks, calls, worldJobs, selec
   const [error, setError] = useState(false)
   const [attempt, setAttempt] = useState(0)
   const playerWorking = worldJobs?.some((job) => ['scanner', 'chart'].includes(job.kind) && worldJobActive(job)) ?? false
-  const snapshot: WardState = { soundEnabled, shiftId, tasks, calls, worldJobs, playerWorking, selectedTaskId, reviewedTaskIds, upgrades, paused, reducedMotion }
+  const snapshot: WardState = { soundEnabled, shiftId, tasks, calls, worldJobs, playerWorking, selectedTaskId, suggestedTargetId, reviewedTaskIds, upgrades, paused, reducedMotion }
   const latest = useRef({ snapshot, onInteract, onNearbyTask, onOpenShop })
   const lastNearby = useRef<string | null>(null)
   useImperativeHandle(ref, () => ({ goTo: (id) => hospitalRef.current?.goTo(id) ?? false, position: () => hospitalRef.current?.snapshot().position }), [])
@@ -88,7 +89,7 @@ export function TycoonHospitalMap({ ref, shiftId, tasks, calls, worldJobs, selec
   const nearbyTask = tasks.find((task) => task.id === status?.nearby?.taskId)
   const nearbyStep = nearbyTask ? nextCareStep(nearbyTask) : null
   const bedsideLabel = nearbyStep === 'assessment' || nearbyStep === 'care' || nearbyStep === 'reassessment' ? CARE_LABELS[nearbyStep] : 'Patient details'
-  const interactionLabel = status?.caring ? 'Caring…' : status?.nearby?.kind === 'station' ? 'Handoff' : status?.nearby?.kind === 'equipment' ? 'Check monitor' : status?.nearby?.kind === 'safety' ? 'Safety check' : nearbyTask ? bedsideLabel : 'Interact'
+  const interactionLabel = status?.caring ? status.workKind === 'chart' ? 'Charting…' : status.workKind === 'scanner' ? 'Scanning…' : status.workKind === 'assess' ? 'Assessing…' : 'Providing care…' : status?.nearby?.kind === 'station' ? 'Handoff' : status?.nearby?.kind === 'equipment' ? 'Check monitor' : status?.nearby?.kind === 'safety' ? 'Safety check' : nearbyTask ? bedsideLabel : 'Interact'
   return (
     <div className="tycoon-hospital" data-care-phase={status?.caring ? 'caring' : status?.moving ? 'walking' : 'ready'}>
       <div ref={hostRef} className="tycoon-hospital-canvas" aria-hidden="true" />
@@ -138,6 +139,7 @@ export function TycoonHospitalMap({ ref, shiftId, tasks, calls, worldJobs, selec
           <button type="button" className="tycoon-pause" onClick={onTogglePause} aria-label={manuallyPaused ? 'Resume' : 'Pause'} title={manuallyPaused ? 'Resume' : 'Pause'} aria-pressed={manuallyPaused}>
             {manuallyPaused ? <Play aria-hidden="true" /> : <Pause aria-hidden="true" />}<span className="tycoon-control-option-label">{manuallyPaused ? 'Resume' : 'Pause'}</span>
           </button>
+              <div className="tycoon-interaction-legend" aria-label="Interaction colors"><span><i className="cue-bedside" />Bedside</span><span><i className="cue-safety" />Safety</span><span><i className="cue-monitor" />Monitor</span><span><i className="cue-station" />Handoff</span></div>
             </div>
           </div>
         </div>

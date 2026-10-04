@@ -29,7 +29,7 @@ export const REFERENCE_ROOM_LAYOUT = {
   monitor: { u: 3.95, v: .15 },
   patient: { u: 5.4, v: 2.05 },
   equipment: { u: 4.4, v: 1.65 },
-  safety: { u: 6.85, v: 1.8 },
+  safety: { u: 4.8, v: 2.4 },
   obstacles: [
     { minU: 4.25, maxU: 6.58, minV: -.3, maxV: 1.33 },
     { minU: 4.55, maxU: 5.2, minV: -.78, maxV: -.22 },
@@ -37,3 +37,5 @@ export const REFERENCE_ROOM_LAYOUT = {
     { minU: 6.8, maxU: 7.14, minV: -.25, maxV: .1 },
   ],
 } as const
+
+

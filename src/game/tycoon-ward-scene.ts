@@ -1,3 +1,4 @@
+import { wardCanvasPointer } from './tycoon-pointer'
 import { WARD_RENDER_BUDGET } from './tycoon-render-cache'
 import { flushArchitectureAtlas } from './tycoon-architecture-atlas'
 import { cameraWorldBounds, cropIntersectsView, type ViewBounds } from './tycoon-camera-culling'
@@ -5,7 +6,7 @@ import { REFERENCE_ROOM_ART } from './tycoon-reference-room'
 import { objectGrounding, WARD_ART_STANDARD } from './tycoon-grounding'
 import { drawWardUpgrades } from './tycoon-upgrade-renderer'
 import { createStaffVisuals, presentStaff, presentPlayer, type StaffVisual } from './tycoon-character-presentation'
-import { updateInteractionCue, type InteractionCue } from './tycoon-interaction-cues'
+import { createInteractionGlow, updateInteractionCue, type InteractionCue } from './tycoon-interaction-cues'
 import { followCamera, followZoom, overviewCamera } from './tycoon-ward-camera'
 import { HOSPITAL_MAP, availableRoomCount } from './tycoon-map-config'
 import { drawCorridorFloor, drawRegisteredWall } from './tycoon-map-surfaces'
@@ -17,7 +18,7 @@ import { WardSound } from './tycoon-ward-sound'
 import { spaceWardActor, WardActorPresentation } from './tycoon-ward-polish'
 import { TycoonJobActor, type WorldJobReport } from './tycoon-job-actor'
 import { worldJobActive, worldWorkMs } from '../services/tycoon-world-jobs'
-import { nextCareStep } from '../services/tycoon-care'
+import { CARE_LABELS, nextCareStep } from '../services/tycoon-care'
 import { patientResponse } from '../services/tycoon-shift-loop'
 import { projectGround, type GroundPoint, type ScreenPoint } from './tycoon-care-presentation'
 import { TycoonWardController, unprojectGround, type WardState, type WardStatus, type WardTarget } from './tycoon-ward'
@@ -91,6 +92,8 @@ export function createTycoonWard(options: Options): TycoonWard {
     private lastFootfall = 0
     private lastWheelCue = 0
     private seenJobs: Set<string> | null = null
+    private seenCare: Set<string> | null = null
+    private completionPending = false
     private seenCalls: Set<string> | null = null
     private bellPending = false
     private equipmentLabels: { label: Phaser.GameObjects.Text; point: GroundPoint }[] = []
@@ -125,8 +128,8 @@ export function createTycoonWard(options: Options): TycoonWard {
       for (const key of ['elevator-core', 'stair-core']) this.load.image(key, `${BASE}${key}.png`)
       this.load.image('studio-headwall-v1',`${BASE}studio-headwall-v1.png`)
       this.load.json('building-core-registration', `${BASE}building-core-registration.json`)
-      this.load.json('reference-nurse-pivots', `${BASE}rigged-nurse-pivots.json`)
-      this.load.atlas('nurse-03', `${BASE}rigged-nurse-sheet.png`, `${BASE}rigged-nurse-atlas.json`)
+      this.load.json('reference-nurse-pivots', `${BASE}rigged-nurse-pivots.json?v=care-v2`)
+      this.load.atlas('nurse-03', `${BASE}rigged-nurse-sheet.png?v=care-v2`, `${BASE}rigged-nurse-atlas.json?v=care-v2`)
       this.load.on('loaderror', () => options.onError('Hospital artwork could not load.'))
     }
     create() {
@@ -201,7 +204,7 @@ export function createTycoonWard(options: Options): TycoonWard {
     private occupiedBed(point: GroundPoint, onClick: () => void) {
       const at = projectGround(point)
       return [this.prop('reference-bed-table', point, 230).setDepth(at.y + 10)
-        .setInteractive({ useHandCursor: true, pixelPerfect: true }).on('pointerup', onClick)]
+        .setInteractive({ useHandCursor: true, pixelPerfect: true }).on('pointerup', (pointer: Phaser.Input.Pointer) => { if (wardCanvasPointer(pointer, this)) onClick() })]
     }
     private drawHospital() {
       const tasks = bridge!.tasks
@@ -221,17 +224,18 @@ export function createTycoonWard(options: Options): TycoonWard {
       this.route = this.add.graphics().setDepth(1)
       this.destinationDrawKey = ''
       this.destinationPin = this.add.graphics().setScrollFactor(0).setDepth(100000)
-      this.destinationLabel = this.add.text(0, 0, '', { fontFamily: 'system-ui', fontSize: '12px', color: '#ffffff', backgroundColor: '#202626', padding: { x: 8, y: 5 } }).setScrollFactor(0).setDepth(100001).setOrigin(.5, 1).setVisible(false)
+      this.destinationLabel = this.add.text(0, 0, '', { fontFamily: 'system-ui', fontSize: '12px', color: '#ffffff', backgroundColor: '#202626', padding: { x: 8, y: 5 } }).setScrollFactor(0).setDepth(100001).setOrigin(.5, 1).setVisible(false).setData('fixedSign', true)
       controller.targets().forEach((target) => {
         const at = projectGround(target.position)
-        const graphic = this.add.circle(at.x, at.y, 16, 0x347f86, 0.08).setScale(1,44/72).setStrokeStyle(1.5, 0x347f86, 0.55).setDepth(-.6)
+        const graphic = this.add.circle(at.x, at.y, 20, 0x347f86, 0.08).setScale(1,44/72).setStrokeStyle(1.5, 0x347f86, 0.55).setDepth(-.6)
         const label = this.text(target.kind === 'station' ? 'Handoff' : target.kind === 'equipment' ? 'Monitor' : target.kind === 'safety' ? 'Safety' : 'Bedside', target.position, '#214b56', 11).setY(at.y + 25)
-        label.setInteractive({ useHandCursor: true }).on('pointerup', () => controller.goTo(target.id))
+        label.setInteractive({ useHandCursor: true }).on('pointerup', (pointer: Phaser.Input.Pointer) => { if (wardCanvasPointer(pointer, this)) controller.goTo(target.id) })
         const hit = this.add.circle(at.x, at.y - 28, 38, 0xffffff, 0).setDepth(1100).setInteractive({ useHandCursor: true })
-        hit.on('pointerup', () => controller.goTo(target.id))
+        hit.on('pointerup', (pointer: Phaser.Input.Pointer) => { if (wardCanvasPointer(pointer, this)) controller.goTo(target.id) })
         hit.on('pointerover', () => { this.hoveredTarget = target.id; this.invalidate() })
         hit.on('pointerout', () => { this.hoveredTarget = null; this.invalidate() })
-        this.indicators.push({ target, graphic, label })
+        const glow = createInteractionGlow(this, target, at.x, at.y)
+        this.indicators.push({ target, graphic, glow, label })
       })
       this.contact = actorContact(this)
       this.nurse = this.add.sprite(0, 0, 'nurse-03', 'se-idle-0').setScale(WARD_ART_STANDARD.nurseScale)
@@ -268,7 +272,16 @@ export function createTycoonWard(options: Options): TycoonWard {
       if (refreshUi) for (const item of this.equipmentLabels) item.label.setVisible(!controller.paused && !bridge?.playerWorking && Math.hypot(player.position.u - item.point.u, player.position.v - item.point.v) < 1.8)
       sound.configure(bridge?.soundEnabled !== false, Boolean(bridge?.paused || document.hidden))
       if (!this.seenJobs) this.seenJobs = new Set(bridge?.worldJobs?.filter((job) => job.phase === 'complete').map((job) => job.id))
-      for (const job of bridge?.worldJobs ?? []) if (job.phase === 'complete' && !this.seenJobs.has(job.id)) { this.seenJobs.add(job.id); sound.cue('complete') }
+      for (const job of bridge?.worldJobs ?? []) if (job.phase === 'complete' && !this.seenJobs.has(job.id)) { this.seenJobs.add(job.id); if (job.kind !== 'chart') sound.cue('complete') }
+      const careKeys = bridge?.tasks.map(task => `${bridge?.shiftId}:${task.id}:${task.careProgress?.steps.join(',') ?? ''}`) ?? []
+      if (!this.seenCare) this.seenCare = new Set(careKeys)
+      careKeys.forEach((key, index) => {
+        if (!this.seenCare!.has(key)) {
+          this.seenCare!.add(key)
+          if (bridge?.tasks[index].careProgress?.steps.length) this.completionPending = true
+        }
+      })
+      if (this.completionPending && !controller.paused) { sound.cue('complete'); this.completionPending = false }
       if (!this.seenCalls) this.seenCalls = new Set(bridge?.calls?.map((call) => call.id))
       for (const call of bridge?.calls ?? []) if (!this.seenCalls.has(call.id)) { this.seenCalls.add(call.id); this.bellPending = true }
       if (this.bellPending && !bridge?.paused && !document.hidden) { sound.cue('bell'); this.bellPending = false }
@@ -346,7 +359,7 @@ export function createTycoonWard(options: Options): TycoonWard {
         const target = controller.targets().find((target) => target.id === (playerJob.kind === 'chart' ? 'station' : `safety:${playerJob.taskId}`))
         if (target) controller.faceTarget(target)
         const direction = controller.snapshot().direction
-        const frame = `${direction}-${reduced ? 'idle-0' : `care-${Math.floor(this.elapsed / 320) % 2}`}`
+        const frame = `${direction}-${reduced ? 'idle-0' : `${playerJob.kind === 'chart' ? 'chart' : 'assess'}-${Math.floor(this.elapsed / 140) % 8}`}`
         const pivot = this.registration.nurse.frames[frame]
         this.nurse.setFrame(frame).setOrigin(pivot.pivotX, pivot.pivotY).setPosition(at.x, at.y).setDepth(at.y + 1)
         this.lastFrame = frame
@@ -354,7 +367,10 @@ export function createTycoonWard(options: Options): TycoonWard {
           this.playerReported = true
           report(playerJob.id, playerJob.phase, controller.snapshot().position, this.playerWorkMs, bridge!.shiftId)
         }
-      } else this.playerJobKey = ''
+      } else {
+        this.playerJobKey = ''
+        if (player.workKind && player.caring) this.workLabel.setText(player.workKind === 'treat' ? '✓ Bedside care recorded' : '✓ Bedside check recorded').setPosition(player.screenPosition.x, player.screenPosition.y - 98).setVisible(true)
+      }
       this.staffDelta = 0
     }
     private placeLabels() {
@@ -406,18 +422,20 @@ export function createTycoonWard(options: Options): TycoonWard {
       if (refreshUi) this.indicators.forEach(cue => updateInteractionCue(cue, bridge, s.nearby, this.hoveredTarget, controller.paused, s.destination))
       this.followNurse(this.staffDelta)
       // A single camera-space beacon stays readable even when the room is off-screen.
-      const endpoint = s.path.at(-1)
+      const suggested = controller.targets().find(target => target.id === bridge?.suggestedTargetId)
+      const guided = !controller.paused && !s.caring && s.nearby?.id !== suggested?.id ? suggested : undefined
+      const endpoint = s.path.at(-1) ?? guided?.position
       this.destinationLabel.setVisible(Boolean(endpoint))
       if (!endpoint && this.destinationDrawKey) { this.destinationPin.clear(); this.destinationDrawKey = '' }
-      options.parent.dataset.destination = endpoint ? s.destination?.label ?? 'Walk here' : ''
+      options.parent.dataset.destination = endpoint ? s.destination?.label ?? guided?.label ?? 'Walk here' : ''
       if (endpoint) {
         const view = cameraWorldBounds(this.cameras.main), point = projectGround(endpoint)
         const x = (point.x - view.left) * this.cameras.main.zoom
         const y = (point.y - view.top) * this.cameras.main.zoom
         const footer = this.touch && this.scale.width > this.scale.height ? 100 : 150
-        const target = s.destination
+        const target = s.destination ?? guided
         const task = bridge?.tasks.find(task => task.id === target?.taskId)
-        const caption = target?.kind === 'station' ? 'Nursing station' : task ? `${task.room} · ${target?.kind === 'patient' ? 'Bedside' : target?.kind === 'safety' ? 'Safety check' : 'Monitor'}` : 'Walk here'
+        const caption = target?.kind === 'station' ? 'Nursing station' : task ? `${task.room} · ${target?.kind === 'patient' ? CARE_LABELS[nextCareStep(task) ?? 'assessment'] : target?.kind === 'safety' ? 'Safety check' : 'Monitor'}` : 'Walk here'
         this.destinationLabel.setText(caption)
         const margin = this.destinationLabel.width / 2 + 12
         const pinX = Phaser.Math.Clamp(x, margin, this.scale.width - margin)
@@ -451,8 +469,8 @@ export function createTycoonWard(options: Options): TycoonWard {
       this.animateWard(refreshUi)
       if (refreshUi) this.placeLabels()
       const status = controller.status()
-      if (bridge?.playerWorking && !bridge.paused && !document.hidden) { status.label = 'Equipment work in progress'; status.caring = true }
-      const key = `${status.label}:${status.moving}:${status.caring}:${status.nearby?.id ?? ''}`
+      if (bridge?.playerWorking && !bridge.paused && !document.hidden) { const job = bridge.worldJobs?.find(job => worldJobActive(job) && ['chart', 'scanner'].includes(job.kind)); status.workKind = job?.kind === 'chart' ? 'chart' : 'scanner'; status.label = status.workKind === 'chart' ? 'Charting care…' : 'Scanning at bedside…'; status.caring = true }
+      const key = `${status.label}:${status.workKind}:${status.moving}:${status.caring}:${status.nearby?.id ?? ''}`
       if (key !== lastStatus) { lastStatus = key; options.onStatus(status) }
       if (refreshUi) {
         options.parent.dataset.renderFps=this.sceneUpdateFps.toFixed(1)
@@ -462,10 +480,11 @@ export function createTycoonWard(options: Options): TycoonWard {
         options.parent.dataset.ambientTime = this.elapsed.toFixed(0)
         options.parent.dataset.overview = String(this.overview)
         options.parent.dataset.cameraZoom = this.cameras.main.zoom.toFixed(2)
+        options.parent.dataset.workAnimation = this.playerJobKey ? (bridge?.worldJobs?.find(job => job.id && worldJobActive(job) && ['chart', 'scanner'].includes(job.kind))?.kind ?? '') : s.workKind ?? ''
         options.parent.dataset.visibleMarkers = String(this.indicators.filter(item => item.graphic.visible).length)
         options.parent.dataset.mapRooms = String(HOSPITAL_MAP.rooms.length)
         options.parent.dataset.lockedRooms = String(HOSPITAL_MAP.rooms.length - availableRoomCount(bridge!.tasks.length, bridge?.upgrades))
-        const diagnostics = { nurseCount: String(1 + this.staff.length), installedUpgrades: this.upgradeKey, nurseFrame: s.frame, nurseU: s.position.u.toFixed(3), nurseV: s.position.v.toFixed(3), moving: String(s.moving), stride: s.strideDistance.toFixed(2), facing: s.direction, speed: s.speed.toFixed(1), nearby: s.nearby?.id ?? '', worldJobs: JSON.stringify(bridge?.worldJobs?.map(({kind, phase}) => ({kind, phase})) ?? []), carePhase: bridge?.playerWorking ? 'working' : s.caring ? 'caring' : s.moving ? 'walking' : 'ready' }
+        const diagnostics = { nurseCount: String(1 + this.staff.length), installedUpgrades: this.upgradeKey, nurseFrame: String(this.nurse.frame.name), nurseU: s.position.u.toFixed(3), nurseV: s.position.v.toFixed(3), moving: String(s.moving), stride: s.strideDistance.toFixed(2), facing: s.direction, speed: s.speed.toFixed(1), nearby: s.nearby?.id ?? '', worldJobs: JSON.stringify(bridge?.worldJobs?.map(({kind, phase}) => ({kind, phase})) ?? []), carePhase: bridge?.playerWorking ? 'working' : s.caring ? 'caring' : s.moving ? 'walking' : 'ready' }
         for (const [k, v] of Object.entries(diagnostics)) if (options.parent.dataset[k] !== v) options.parent.dataset[k] = v
       }
     }
@@ -497,7 +516,7 @@ export function createTycoonWard(options: Options): TycoonWard {
   }
   const onKeyUp = (event: KeyboardEvent) => held.delete(event.key.toLowerCase())
   const onVisibility = () => { resetInput(); controller.setHidden(document.hidden); scene.invalidate(); scene.sync() }
-  window.addEventListener('pointerdown', unlockSound); window.addEventListener('keydown', unlockSound)
+  window.addEventListener('pointerdown', unlockSound, true); window.addEventListener('keydown', unlockSound)
   window.addEventListener('keydown', onKeyDown); window.addEventListener('keyup', onKeyUp)
   window.addEventListener('blur', resetInput); document.addEventListener('visibilitychange', onVisibility)
   const observer = new ResizeObserver(() => { if (!destroyed) { game.scale.getParentBounds(); game.scale.refresh() } })
@@ -516,7 +535,7 @@ export function createTycoonWard(options: Options): TycoonWard {
       destroyed = true; observer.disconnect(); resetInput()
       window.removeEventListener('keydown', onKeyDown); window.removeEventListener('keyup', onKeyUp)
       window.removeEventListener('blur', resetInput); document.removeEventListener('visibilitychange', onVisibility)
-      window.removeEventListener('pointerdown', unlockSound); window.removeEventListener('keydown', unlockSound)
+      window.removeEventListener('pointerdown', unlockSound, true); window.removeEventListener('keydown', unlockSound)
       sound.destroy(); game.destroy(true)
     },
   }

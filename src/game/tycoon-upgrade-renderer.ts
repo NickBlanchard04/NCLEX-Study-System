@@ -1,3 +1,4 @@
+import { wardCanvasPointer } from './tycoon-pointer'
 import type Phaser from 'phaser'
 import { HOSPITAL_MAP, unlockedRoomCount, rectCorners, roomEntrance } from './tycoon-map-config'
 import { ROOM_PROPS, roomPoint } from './tycoon-ward-layout'
@@ -28,12 +29,12 @@ export function drawWardUpgrades(o: RoomDrawing, state: WardState, paused: () =>
     o.scene.add.circle(door.x,door.y-190,5,locked?0x89938d:0x61b58e).setStrokeStyle(2,0xf4f2e9).setDepth(1250)
     install('reference-bed-table-empty', roomPoint(i, ROOM_PROPS.bed), 230, locked ? `Room ${101 + i} · Unlock in shop` : `Room ${101 + i} · opens next shift`)
     if (locked) {
-      o.prop('renovation-barrier',entrance.outside,75).setInteractive({useHandCursor:true,pixelPerfect:true}).on('pointerup',()=>{if(!paused())openShop()})
+      o.prop('renovation-barrier',entrance.outside,75).setInteractive({useHandCursor:true,pixelPerfect:true}).on('pointerup',(pointer: Phaser.Input.Pointer)=>{if(wardCanvasPointer(pointer,o.scene)&&!paused())openShop()})
       for(const key of ['doorFrame','doorLeaf']) {
-        (monitor.getData(key) as Phaser.GameObjects.Image).setInteractive({useHandCursor:true,pixelPerfect:true}).on('pointerup',()=>{if(!paused())openShop()})
+        (monitor.getData(key) as Phaser.GameObjects.Image).setInteractive({useHandCursor:true,pixelPerfect:true}).on('pointerup',(pointer: Phaser.Input.Pointer)=>{if(wardCanvasPointer(pointer,o.scene)&&!paused())openShop()})
       }
       const doorHit=monitor.getData('doorHit') as Phaser.GameObjects.Zone
-      doorHit.on('pointerup',()=>{if(!paused())openShop()})
+      doorHit.on('pointerup',(pointer: Phaser.Input.Pointer)=>{if(wardCanvasPointer(pointer,o.scene)&&!paused())openShop()})
     }
   }
   state.tasks.forEach((_task, i) => {

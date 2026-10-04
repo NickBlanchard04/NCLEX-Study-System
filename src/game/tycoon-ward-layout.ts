@@ -6,7 +6,7 @@ import { REFERENCE_ROOM_LAYOUT } from './tycoon-reference-room'
 export const WARD_ROOM = PATIENT_ROOM.bounds
 export const ROOM_DOOR = PATIENT_ROOM.door
 export const ROOM_GAP = 1.1
-export const ROOM_SPACING = 4.8
+export const ROOM_SPACING = PATIENT_ROOM.bounds.maxV - PATIENT_ROOM.bounds.minV
 export const CORRIDOR = HOSPITAL_MAP.corridor
 export const STATION_POSITION: GroundPoint = HOSPITAL_MAP.station.anchor
 export const ROOM_PROPS = Object.fromEntries(Object.entries(PATIENT_ROOM.props).map(([key, prop]) => [key, prop.point])) as { [K in keyof typeof PATIENT_ROOM.props]: (typeof PATIENT_ROOM.props)[K]['point'] }

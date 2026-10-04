@@ -30,6 +30,7 @@ import { TycoonClock } from './TycoonClock'
 import { TycoonHospitalMap, type WardMapHandle } from './TycoonHospitalMap'
 import { TycoonShop } from './TycoonShop'
 import { CallBellBoard, PatientCall, PatientObservations, ShiftObjectives } from './TycoonSimulation'
+import { careCompletions, type CareCompletion } from '../services/tycoon-care-feedback'
 import { worldJobActive } from '../services/tycoon-world-jobs'
 import { careNoteDraft } from '../services/tycoon-shift-loop'
 import { TycoonTooltip } from './TycoonTooltip'
@@ -90,6 +91,9 @@ export function NurseTycoonGame() {
   const [nearbyTaskId, setNearbyTaskId] = useState<string | null>(null)
   const [reward, setReward] = useState<{money: number; xp: number} | null>(null)
   useEffect(() => { if (!reward) return; const timer = window.setTimeout(() => setReward(null), 3600); return () => window.clearTimeout(timer) }, [reward])
+  const [completion, setCompletion] = useState<CareCompletion | null>(null)
+  const [guidedTaskId, setGuidedTaskId] = useState<string | null>(null)
+  useEffect(() => { if (!completion) return; const timer = window.setTimeout(() => setCompletion(null), 2400); return () => window.clearTimeout(timer) }, [completion])
   const [toast, setToast] = useState<string | null>(null)
   const panelVisible = commandOpen && !patientView && !feedback && !showUpgrades && !stationOpen
   useEffect(() => {
@@ -125,10 +129,21 @@ export function NurseTycoonGame() {
     if (current?.id !== before?.id || current?.worldJobs === before?.worldJobs) return
     for (const job of current?.worldJobs ?? []) {
       if (job.phase !== 'complete' || before?.worldJobs?.some((old) => old.id === job.id && old.phase === 'complete')) continue
-      if (job.kind === 'chart') { const task = current?.tasks.find((task) => task.id === job.taskId); if (task?.payout) setReward(task.payout) }
-      setToast(job.kind === 'chart' ? 'Care documented. Task rewards added.' : job.kind === 'scanner' ? 'Scan complete. Medication verification recorded.' : job.kind === 'lab' ? 'Training sample delivered to the station.' : 'Support RN returned. Comfort care completed.')
+      if (job.kind === 'chart' || job.kind === 'scanner') continue
+      setToast(job.kind === 'lab' ? 'Training sample delivered to the station.' : 'Support RN returned. Comfort care completed.')
     }
   }), [])
+  useEffect(() => useStudySystemStore.subscribe((state, previous) => {
+    const changes = careCompletions(previous.tycoon, state.tycoon)
+    const latest = changes.at(-1)
+    if (!latest) return
+    setGuidedTaskId(latest.taskId)
+    setToast(null)
+    if (latest.reward) { setReward(latest.reward); setCompletion(null) }
+    else setCompletion(latest)
+  }), [])
+  const guidedTask = shift?.tasks.find(task => task.id === guidedTaskId)
+  const guidedStep = guidedTask ? nextCareStep(guidedTask) : null
   const bestTask = getBestTycoonTask(shift)
   const selectedTask =
     shift?.tasks.find((task) => task.id === (!commandOpen && nearbyTaskId ? nearbyTaskId : tycoon.selectedTaskId)) ??
@@ -228,10 +243,7 @@ export function NurseTycoonGame() {
     if (!shift || currentShift?.id !== shift.id || patientView?.shiftId !== shift.id) return
     const previousEvents = new Set(currentShift.events.map((event) => event.id))
     assessPatient(task.id, actionId, shift.id)
-    const assessed = useStudySystemStore.getState().tycoon.activeShift?.tasks.find((item) => item.id === task.id)
-    if (assessed?.careProgress?.steps.includes('assessment') && !task.careProgress?.steps.includes('assessment')) {
-      setToast(`Assessment recorded · next: ${CARE_LABELS[nextCareStep(assessed) ?? 'care']}`)
-    }
+
     const result = useStudySystemStore
       .getState()
       .tycoon.activeShift?.events.find(
@@ -251,16 +263,15 @@ export function NurseTycoonGame() {
   }
 
   function continueCare(task: TycoonTask) {
-    travelTo(careDestination(task), nextCareStep(task) === 'documentation' ? task.id : undefined)
+    const current = useStudySystemStore.getState().tycoon.activeShift?.tasks.find(item => item.id === task.id)
+    if (current && nextCareStep(current)) travelTo(careDestination(current), nextCareStep(current) === 'documentation' ? current.id : undefined)
   }
 
   function recordCareStep(task: TycoonTask, step: TycoonCareStep) {
     if (!shift) return
     advanceCare(task.id, step, shift.id)
-    const updated = useStudySystemStore.getState().tycoon.activeShift?.tasks.find((item) => item.id === task.id)
     setPatientView(null)
     setCommandOpen(false)
-    if (updated && nextCareStep(updated)) setToast(`${CARE_LABELS[step]} recorded · next: ${CARE_LABELS[nextCareStep(updated)!]}`)
   }
 
   function dismissFeedback() {
@@ -386,6 +397,7 @@ export function NurseTycoonGame() {
               ref={wardRef}
               tasks={shift.tasks}
               selectedTaskId={selectedTask?.id}
+              suggestedTargetId={guidedTask && guidedStep ? careDestination(guidedTask) : undefined}
               reviewedTaskIds={shift.equipmentReviewedTaskIds ?? []}
               upgrades={tycoon.upgrades}
               calls={shift.loop?.calls}
@@ -656,7 +668,7 @@ export function NurseTycoonGame() {
               onSaved={(noteId) => {
                 const readyToComplete = nextCareStep(modalTask) === 'documentation'
                 if (readyToComplete && modalTask.simulation?.physicalEquipment) { startWorldWork(modalTask, 'chart', noteId); return }
-                if (readyToComplete) advanceCare(modalTask.id, 'documentation', shift.id)
+                if (readyToComplete) { advanceCare(modalTask.id, 'documentation', shift.id); setPatientView(null); return }
                 setPatientView(null)
                 setFeedback({
                   title: readyToComplete ? 'Patient care complete' : 'Note saved',
@@ -786,7 +798,9 @@ export function NurseTycoonGame() {
         </TycoonDialog>
       ) : null}
       {shopDialog}
-      {reward ? <div className="tycoon-reward-feedback" role="status"><strong>+${reward.money}</strong><span>+{reward.xp} XP · Care recorded</span></div> : null}
+      {reward ? <div className="tycoon-reward-feedback" role="status"><Check aria-hidden="true" /><strong>+${reward.money}</strong><span>+{reward.xp} XP · Care recorded</span></div> : null}
+      {completion ? <div className="tycoon-step-completion" role="status"><Check aria-hidden="true" /><span>{CARE_LABELS[completion.step]} recorded</span></div> : null}
+      {guidedTask && guidedStep && !patientView && !feedback && !stationOpen && !showUpgrades && !panelVisible && shift.status === 'running' ? <button type="button" className="tycoon-next-care" onClick={() => continueCare(guidedTask)} disabled={manuallyPaused || Boolean(shift.worldJobs?.some(job => ['chart', 'scanner'].includes(job.kind) && worldJobActive(job)))}><span>{guidedTask.room} · Next</span><strong>{CARE_LABELS[guidedStep]}</strong><ChevronRight aria-hidden="true" /></button> : null}
       {toast ? <div className="tycoon-care-toast" role="status">{toast}</div> : null}
     </main>
   )

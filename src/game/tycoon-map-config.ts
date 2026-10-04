@@ -11,9 +11,13 @@ export interface RoomPlacement {
   unlock: { upgrade: 'extra-bed'; level: number }
 }
 
-/** Local coordinates deliberately retain the shipped template and save anchors. */
+/** Grow usable floor area without enlarging furniture or narrowing the central hall. */
+export const PATIENT_ROOM_AREA_SCALE = 1.15
+export const PATIENT_ROOM_DEPTH = 4.8 * PATIENT_ROOM_AREA_SCALE
+export const PUBLIC_WING_OFFSET = 3 * (PATIENT_ROOM_DEPTH - 4.8)
+/** Local bedside anchors remain compatible with the shipped template and saves. */
 export const PATIENT_ROOM = {
-  bounds: { minU: 3.7, maxU: 8.1, minV: -1, maxV: 3.8 },
+  bounds: { minU: 3.7, maxU: 8.1, minV: -1, maxV: -1 + PATIENT_ROOM_DEPTH },
   door: { minU: 5.75, maxU: 7.05 },
   props: {
     bed: { asset: 'bed-empty', point: { u: 6.45, v: .62 }, width: 200, footprint: { minU: 5.1, maxU: 7.43, minV: -.3, maxV: 1.33 } },
@@ -32,30 +36,30 @@ export const PATIENT_ROOM = {
   barrier: { u: 6.4, v: 2.8 },
 } as const
 const rooms: readonly RoomPlacement[] = Array.from({ length: 6 }, (_, i) => ({
-  id: `room-${101+i}`, label: `Room ${101+i}`, origin: { u: i < 3 ? 0 : 9.9, v: (i % 3) * 4.8 },
+  id: `room-${101+i}`, label: `Room ${101+i}`, origin: { u: i < 3 ? 0 : 9.9, v: (i % 3) * PATIENT_ROOM_DEPTH },
   orientation: 'standard', entrance: i < 3 ? 'maxU' : 'minU', unlock: { upgrade: 'extra-bed', level: Math.max(0, i-2) },
 }))
 const end = 19.8
 export const HOSPITAL_MAP = {
-  id: 'neighborhood-hospital-v7', rooms, roomTemplate: PATIENT_ROOM,
-  building: { minU: 2, maxU: 19.8, minV: -5.3, maxV: 17.4 },
+  id: 'neighborhood-hospital-v8', rooms, roomTemplate: PATIENT_ROOM,
+  building: { minU: 2, maxU: 19.8, minV: -5.3, maxV: 17.4 + PUBLIC_WING_OFFSET },
   publicObstacles: [
-    { minU: 8.8, maxU: 11.6, minV: 14.63, maxV: 15.71 },
-    { minU: 6.2, maxU: 9.6, minV: 13.25, maxV: 13.55 },
-    { minU: 12.2, maxU: 13.6, minV: 13.25, maxV: 13.55 },
+    { minU: 8.8, maxU: 11.6, minV: 14.63 + PUBLIC_WING_OFFSET, maxV: 15.71 + PUBLIC_WING_OFFSET },
+    { minU: 6.2, maxU: 9.6, minV: 13.25 + PUBLIC_WING_OFFSET, maxV: 13.55 + PUBLIC_WING_OFFSET },
+    { minU: 12.2, maxU: 13.6, minV: 13.25 + PUBLIC_WING_OFFSET, maxV: 13.55 + PUBLIC_WING_OFFSET },
   ],
   corridor: { id: 'main-corridor', minU: 0, maxU: end, minV: PATIENT_ROOM.bounds.maxV, maxV: 7.2 },
   corridors: [
-    { id: 'clinical-spine', minU: 8.1, maxU: 13.6, minV: -2.6, maxV: 14.1 },
+    { id: 'clinical-spine', minU: 8.1, maxU: 13.6, minV: -2.6, maxV: 14.1 + PUBLIC_WING_OFFSET },
     { id: 'service-corridor', minU: 2, maxU: end, minV: -2.6, maxV: -1 },
-    { id: 'public-lobby', minU: 6.2, maxU: 13.6, minV: 12.8, maxV: 17.4 },
+    { id: 'public-lobby', minU: 6.2, maxU: 13.6, minV: 12.8 + PUBLIC_WING_OFFSET, maxV: 17.4 + PUBLIC_WING_OFFSET },
   ],
   zones: {
     support: { id: 'support', minU: 2, maxU: 19.8, minV: -5.3, maxV: -2.6 },
     supplies: { id: 'supplies', minU: 4.91, maxU: 7.75, minV: -5.3, maxV: -2.6 },
-    arrival: { id: 'arrival', minU: 6.2, maxU: 13.6, minV: 13.4, maxV: 17.4 },
-    waiting: { id: 'waiting', minU: 2, maxU: 6.2, minV: 13.4, maxV: 17.4 },
-    washroom: { id: 'washroom', minU: 13.6, maxU: 17.2, minV: 13.4, maxV: 17.4 },
+    arrival: { id: 'arrival', minU: 6.2, maxU: 13.6, minV: 13.4 + PUBLIC_WING_OFFSET, maxV: 17.4 + PUBLIC_WING_OFFSET },
+    waiting: { id: 'waiting', minU: 2, maxU: 6.2, minV: 13.4 + PUBLIC_WING_OFFSET, maxV: 17.4 + PUBLIC_WING_OFFSET },
+    washroom: { id: 'washroom', minU: 13.6, maxU: 17.2, minV: 13.4 + PUBLIC_WING_OFFSET, maxV: 17.4 + PUBLIC_WING_OFFSET },
     staff: { id: 'staff', minU: 16.4, maxU: 19.8, minV: -5.3, maxV: -2.6 },
     practice: { id: 'practice', minU: 10.7, maxU: 13.7, minV: -5.3, maxV: -2.6 },
   },
@@ -72,7 +76,7 @@ export const HOSPITAL_MAP = {
     scanner: { id: 'med-safety-scanner', level: 1, prop: PATIENT_ROOM.props.scanner },
   },
   linenCabinets: Array.from({length:3},(_,i) => ({asset:'linen-cabinet',point:{u:-2.3+i*1.3,v:.35},width:88})),
-  ambient: { reception: {u:9.9,v:15.17}, cartStart: {u:4.7,v:-1.8}, cartTravel: 3.2 },
+  ambient: { reception: {u:9.9,v:15.17 + PUBLIC_WING_OFFSET}, cartStart: {u:4.7,v:-1.8}, cartTravel: 3.2 },
   roomDecor: {
     'decor-potted-plant-1': { asset: 'decor-potted-plant', point: { u: 5.2, v: -2.65 }, width: 46 },
     'linen-cabinet-1': { asset: 'linen-cabinet', point: { u: 6.8, v: -2.65 }, width: 74 },
@@ -98,8 +102,8 @@ export const HOSPITAL_MAP = {
     'equipment-medication-cart-3': { asset: 'equipment-medication-cart', point: { u: 4.7, v: -1.8 }, width: 48 },
   },
   camera: {
-    left: { u: 2, v: 17.4 }, right: { u: end, v: -5.3 },
-    top: { u: 2, v: -5.3 }, bottom: { u: end, v: 17.4 },
+    left: { u: 2, v: 17.4 + PUBLIC_WING_OFFSET }, right: { u: end, v: -5.3 },
+    top: { u: 2, v: -5.3 }, bottom: { u: end, v: 17.4 + PUBLIC_WING_OFFSET },
     padding: { left: 140, right: 140, top: 220, bottom: 140 },
   },
 } as const

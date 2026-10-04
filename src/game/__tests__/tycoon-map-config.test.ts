@@ -1,11 +1,21 @@
 import { describe, expect, it } from 'vitest'
-import { availableRoomCount, HOSPITAL_MAP, PATIENT_ROOM, placeRoomPoint, localRoomPoint, roomIsUnlocked, roomEntrance } from '../tycoon-map-config'
+import { availableRoomCount, HOSPITAL_MAP, PATIENT_ROOM, PUBLIC_WING_OFFSET, placeRoomPoint, localRoomPoint, roomIsUnlocked, roomEntrance } from '../tycoon-map-config'
 import { roomPoint, STATION_POSITION } from '../tycoon-ward-layout'
 import { clearSegment, findWardPath, isWardWalkable } from '../tycoon-navigation'
 import { followCamera, followZoom, overviewCamera } from '../tycoon-ward-camera'
 import { projectGround } from '../tycoon-care-presentation'
 
 describe('shipped map contract', () => {
+  it('adds 15% usable floor area without widening rooms or shrinking the corridor', () => {
+    const {minU,maxU,minV,maxV}=PATIENT_ROOM.bounds
+    expect((maxU-minU)*(maxV-minV)/(4.4*4.8)).toBeCloseTo(1.15)
+    for(let i=0;i<6;i++) {
+      const floor=roomPoint(i,{u:5,v:4.1})
+      expect(isWardWalkable(floor,6)).toBe(true)
+      expect(findWardPath(STATION_POSITION,floor,6)).not.toBeNull()
+    }
+    expect(HOSPITAL_MAP.rooms[2].origin.v+maxV).toBeCloseTo(HOSPITAL_MAP.zones.arrival.minV)
+  })
   it('joins neighboring rooms and preserves both circulation lanes beside the handoff desk',()=>{
     for(const i of [0,1,3,4]) {
       expect(HOSPITAL_MAP.rooms[i].origin.v+PATIENT_ROOM.bounds.maxV)
@@ -17,13 +27,13 @@ describe('shipped map contract', () => {
     }
   })
   it('connects the public vestibule and rear service corridor without crossing desks or ward partitions', () => {
-    for (const point of [{u:10.8,v:16.9},{u:11,v:13.4},{u:5.5,v:-1.8}]) {
+    for (const point of [{u:10.8,v:16.9+PUBLIC_WING_OFFSET},{u:11,v:13.4+PUBLIC_WING_OFFSET},{u:5.5,v:-1.8}]) {
       const path = findWardPath(STATION_POSITION,point,3)
       expect(path).not.toBeNull()
       let previous = STATION_POSITION
       for (const next of path!) { expect(clearSegment(previous,next,3)).toBe(true);previous=next }
     }
-    for (const point of [{u:10.2,v:15.28},{u:8.5,v:13.4},{u:13,v:13.4},{u:16,v:15.1},{u:10.5,v:6}]) {
+    for (const point of [{u:10.2,v:15.28+PUBLIC_WING_OFFSET},{u:8.5,v:13.4+PUBLIC_WING_OFFSET},{u:13,v:13.4+PUBLIC_WING_OFFSET},{u:16,v:15.1+PUBLIC_WING_OFFSET},{u:10.5,v:6}]) {
       expect(isWardWalkable(point,6)).toBe(false)
     }
   })
@@ -33,7 +43,7 @@ describe('shipped map contract', () => {
     expect(roomPoint(0,PATIENT_ROOM.anchors.patient)).toEqual({u:5.4,v:2.05})
     // Ordinary floor clicks retain their position; only the named care anchor moves.
     expect(roomPoint(0,{...PATIENT_ROOM.anchors.patient})).toEqual({u:6.4,v:1.85})
-    expect(roomPoint(5,PATIENT_ROOM.anchors.safety).u).toBeCloseTo(16.75)
+    expect(roomPoint(5,PATIENT_ROOM.anchors.safety).u).toBeCloseTo(14.7)
     expect(availableRoomCount(6,{})).toBe(6) // Legacy saves stay accessible.
     expect(availableRoomCount(3,{})).toBe(3)
     expect(availableRoomCount(3,{'extra-bed':1})).toBe(4)
@@ -51,8 +61,8 @@ describe('shipped map contract', () => {
     for(let i=0;i<6;i++) {
       const door=roomEntrance(i)
       expect(clearSegment(door.inside,door.outside,6)).toBe(true)
-      expect(clearSegment(roomPoint(i,{u:6.4,v:4.3}),roomPoint(i,{u:6.4,v:3.3}),6)).toBe(false)
-      expect(clearSegment(roomPoint(i,{u:4.1,v:4.3}),roomPoint(i,{u:4.1,v:3.3}),6)).toBe(false)
+      expect(clearSegment(roomPoint(i,{u:6.4,v:PATIENT_ROOM.bounds.maxV+.5}),roomPoint(i,{u:6.4,v:PATIENT_ROOM.bounds.maxV-.5}),6)).toBe(false)
+      expect(clearSegment(roomPoint(i,{u:4.1,v:PATIENT_ROOM.bounds.maxV+.5}),roomPoint(i,{u:4.1,v:PATIENT_ROOM.bounds.maxV-.5}),6)).toBe(false)
     }
   })
   it('reaches every clinical anchor around the configured furniture', () => {
@@ -112,3 +122,4 @@ describe('shipped map contract', () => {
     }
   })
 })
+
