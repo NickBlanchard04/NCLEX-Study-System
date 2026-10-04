@@ -45,6 +45,7 @@ import './tycoon-prototype.css'
 import './tycoon-ward.css'
 import './tycoon-gameplay.css'
 import './tycoon-code-red.css'
+import './tycoon-mobile-controls.css'
 import './tycoon-compact-care.css'
 
 const urgencyLabels: Record<TycoonTaskUrgency, string> = {

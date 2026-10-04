@@ -1,10 +1,11 @@
 import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type Ref } from 'react'
-import { MousePointer2, Pause, Play, Volume2, VolumeX } from 'lucide-react'
+import { MoreHorizontal, MousePointer2, Pause, Play, Volume2, VolumeX } from 'lucide-react'
 import type { TycoonCall, TycoonTask, TycoonWorldJob } from '../app/types'
 import { useStudySystemStore } from '../app/store'
 import { worldJobActive } from '../services/tycoon-world-jobs'
 import type { TycoonWard } from '../game/tycoon-ward-scene'
 import type { WardState, WardStatus, WardTarget } from '../game/tycoon-ward'
+import { TycoonTouchStick } from './TycoonTouchStick'
 import { CARE_LABELS, nextCareStep } from '../services/tycoon-care'
 
 export type WardMapHandle = { goTo: (id: string) => boolean; position: () => {u: number; v: number} | undefined }
@@ -37,6 +38,7 @@ export function TycoonHospitalMap({ ref, shiftId, tasks, calls, worldJobs, selec
   const [reducedMotion, setReducedMotion] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches)
   const [status, setStatus] = useState<WardStatus | null>(null)
   const [overview, setOverview] = useState(true)
+  const [controlsOpen, setControlsOpen] = useState(false)
   const [error, setError] = useState(false)
   const [attempt, setAttempt] = useState(0)
   const playerWorking = worldJobs?.some((job) => ['scanner', 'chart'].includes(job.kind) && worldJobActive(job)) ?? false
@@ -104,6 +106,7 @@ export function TycoonHospitalMap({ ref, shiftId, tasks, calls, worldJobs, selec
             </span>
             <span className="tycoon-key-hint" aria-hidden="true"><MousePointer2 /><span>Walk</span></span>
           </div>
+          <TycoonTouchStick disabled={paused || playerWorking || error || !status} onDirection={(x, y) => hospitalRef.current?.setDirection(x, y)} />
           <div className="tycoon-dpad" role="group" aria-label="Nurse movement">
             {([
               ['up', '↑', 0, -1], ['left', '←', -1, 0], ['down', '↓', 0, 1], ['right', '→', 1, 0],
@@ -124,11 +127,16 @@ export function TycoonHospitalMap({ ref, shiftId, tasks, calls, worldJobs, selec
             <span>{interactionLabel}</span>
           </button>
           <button type="button" className="tycoon-shop-key" onClick={onOpenShop} aria-label="Open shop"><kbd aria-hidden="true">I</kbd><span>Shop</span></button>
+          <div className="tycoon-control-options" data-open={controlsOpen}>
+            <button type="button" className="tycoon-controls-more" aria-label="More controls" aria-expanded={controlsOpen} aria-controls="tycoon-extra-controls" onClick={() => setControlsOpen(!controlsOpen)}><MoreHorizontal aria-hidden="true" /><span>More</span></button>
+            <div id="tycoon-extra-controls" className="tycoon-control-options-list" onClick={() => setControlsOpen(false)} onKeyDown={(event) => { if (event.key === 'Escape') setControlsOpen(false) }}>
           <button type="button" className="tycoon-overview" aria-label={overview ? 'Follow nurse' : 'Hospital overview'} aria-pressed={overview} onClick={() => { hospitalRef.current?.setOverview(!overview); setOverview(!overview) }}><span>{overview ? 'Follow nurse' : 'Overview'}</span></button>
-          <button type="button" className="tycoon-sound" onClick={toggleSound} aria-label={soundEnabled ? 'Mute sounds' : 'Enable sounds'} title={soundEnabled ? 'Mute sounds' : 'Enable sounds'} aria-pressed={soundEnabled}>{soundEnabled ? <Volume2 aria-hidden="true" /> : <VolumeX aria-hidden="true" />}</button>
+          <button type="button" className="tycoon-sound" onClick={toggleSound} aria-label={soundEnabled ? 'Mute sounds' : 'Enable sounds'} title={soundEnabled ? 'Mute sounds' : 'Enable sounds'} aria-pressed={soundEnabled}>{soundEnabled ? <Volume2 aria-hidden="true" /> : <VolumeX aria-hidden="true" />}<span className="tycoon-control-option-label">{soundEnabled ? 'Mute sounds' : 'Enable sounds'}</span></button>
           <button type="button" className="tycoon-pause" onClick={onTogglePause} aria-label={manuallyPaused ? 'Resume' : 'Pause'} title={manuallyPaused ? 'Resume' : 'Pause'} aria-pressed={manuallyPaused}>
-            {manuallyPaused ? <Play aria-hidden="true" /> : <Pause aria-hidden="true" />}
+            {manuallyPaused ? <Play aria-hidden="true" /> : <Pause aria-hidden="true" />}<span className="tycoon-control-option-label">{manuallyPaused ? 'Resume' : 'Pause'}</span>
           </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
