@@ -319,6 +319,7 @@ function AuthLanding({ onBack, savingResult }: { onBack: () => void; savingResul
   const [busy, setBusy] = useState(false)
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [termsCopyRequested, setTermsCopyRequested] = useState(false)
+  const [verificationEmail, setVerificationEmail] = useState<string | null>(null)
   const feedbackId = 'auth-form-feedback'
   const hasFeedback = Boolean(authError || message)
   const hasAuthError = Boolean(authError)
@@ -356,14 +357,14 @@ function AuthLanding({ onBack, savingResult }: { onBack: () => void; savingResul
           page_path: '/',
           feature_name: 'Beta Account',
         })
-        await signUp(email, password, {
+        const submittedEmail = email.trim()
+        await signUp(submittedEmail, password, {
           name: trimmedName,
         }, createBetaTermsConsent(termsCopyRequested))
-        setMessage(
-          termsCopyRequested
-            ? 'Verification email sent with a copy of the open beta terms. Open it to finish creating your account, then sign in.'
-            : 'Verification email sent. Open it to finish creating your account, then sign in.',
-        )
+        if (!useStudySystemStore.getState().authUser) {
+          setVerificationEmail(submittedEmail)
+          setPassword('')
+        }
       }
     } catch {
       // Store owns the visible error copy.
@@ -404,6 +405,7 @@ function AuthLanding({ onBack, savingResult }: { onBack: () => void; savingResul
       : mode === 'signin'
         ? 'Sign in'
         : 'Create account'
+  if (verificationEmail) return <VerificationEmailScreen email={verificationEmail} onBack={onBack} onSignIn={() => { setVerificationEmail(null); changeMode('signin') }} />
   return (
     <div className="nurse-command-app auth-page">
       <header className="auth-header">
@@ -517,17 +519,6 @@ function AuthLanding({ onBack, savingResult }: { onBack: () => void; savingResul
                       I agree to the beta terms, privacy notice, and study-support limitations.
                     </span>
                   </label>
-                  <label className="flex cursor-pointer gap-3 rounded-2xl border border-lime-200/18 bg-lime-300/8 p-4">
-                    <input
-                      type="checkbox"
-                      checked={termsCopyRequested}
-                      onChange={(event) => setTermsCopyRequested(event.target.checked)}
-                      className="mt-1 h-5 w-5 shrink-0 accent-lime-300"
-                    />
-                    <span className="text-sm leading-6 text-sky-100/72">
-                      <span className="font-black text-white">Email me a copy of these terms.</span> Include the current open beta terms in my verification email.
-                    </span>
-                  </label>
                 </>
               ) : null}
 
@@ -602,12 +593,35 @@ function AuthLanding({ onBack, savingResult }: { onBack: () => void; savingResul
               <p>
                 Support: <a className="font-semibold text-cyan-200" href="mailto:support@nursecommand.com">support@nursecommand.com</a>.
               </p>
+              {mode === 'signup' && <label className="flex min-h-11 cursor-pointer items-center gap-3 border-t border-sky-200/20 pt-3">
+                <input type="checkbox" checked={termsCopyRequested} onChange={(event) => setTermsCopyRequested(event.target.checked)} className="h-5 w-5 shrink-0 accent-cyan-300" />
+                <span>Email me a copy of these beta terms.</span>
+              </label>}
             </div>
           </details>
         </section>
       </main>
     </div>
   )
+}
+
+export function VerificationEmailScreen({ email, onBack, onSignIn }: { email: string; onBack: () => void; onSignIn: () => void }) {
+  return <div className="nurse-command-app auth-page">
+    <header className="auth-header">
+      <Link className="home-launcher-brand" to="/" aria-label="Nurse Command home"><img src={nursingCommandLogo} alt="" /><span>Nurse <span>Command</span></span></Link>
+      <button className="auth-back-button" type="button" onClick={onBack}><ArrowLeft size={22} aria-hidden="true" /> Go back</button>
+    </header>
+    <main className="auth-main">
+      <section className="auth-card" aria-labelledby="verification-title">
+        <h1 id="verification-title" tabIndex={-1} ref={(node) => { node?.focus() }}>Check your email</h1>
+        <p className="auth-description">We sent a verification email to:</p>
+        <p className="my-4 break-all text-lg font-bold text-cyan-200">{email}</p>
+        <p className="auth-description">Open the email and click the verification link to activate your account. Use this same browser to return to your study page.</p>
+        <p className="auth-description">Can’t find it? Check your spam or junk folder. If you already have an account, you can sign in below.</p>
+        <button type="button" className="auth-primary mt-6" onClick={onSignIn}>Back to sign in<ArrowRight size={18} aria-hidden="true" /></button>
+      </section>
+    </main>
+  </div>
 }
 
 function PasswordRecoveryLanding() {
