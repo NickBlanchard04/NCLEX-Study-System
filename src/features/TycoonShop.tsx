@@ -5,6 +5,7 @@ import type { TycoonGameState, TycoonUpgrade } from '../app/types'
 import { tycoonUpgrades } from '../data/tycoon'
 import { getUpgradeCost } from '../services/tycoon-engine'
 import { upgradeRequirement } from '../services/tycoon-progression'
+import { TycoonDialogPages } from './TycoonDialogPages'
 import './tycoon-shop.css'
 
 const columns = [
@@ -90,7 +91,7 @@ export function TycoonShop({ tycoon, onClose }: { tycoon: TycoonGameState; onClo
       <p className="tycoon-shop-funds"><strong>{price(tycoon.money)}</strong><span>Available</span></p>
       <button type="button" className="tycoon-shop-close" onClick={onClose} aria-label="Close shop"><kbd>I</kbd><span>Close</span><X aria-hidden="true" /></button>
     </header>
-    <div className="tycoon-shop-body">
+    <TycoonDialogPages><div className="tycoon-shop-body">
       <div className="tycoon-shop-equipment">
         {columns.map((column) => {
           const upgrade = items.get(column.id)!
@@ -113,7 +114,7 @@ export function TycoonShop({ tycoon, onClose }: { tycoon: TycoonGameState; onClo
         <h3 id="tycoon-shop-team-title">Team &amp; training</h3>
         <div>{team.map((id) => tile(items.get(id)!))}</div>
       </section>
-    </div>
+    </div></TycoonDialogPages>
     <footer className="tycoon-shop-footer">
       <p role="status">{receipt || 'Select equipment to inspect · Click an available tier to purchase'}</p>
       <span>{tycoon.activeShift?.status === 'running' ? 'Shift paused' : 'Unit upgrades'}</span>
