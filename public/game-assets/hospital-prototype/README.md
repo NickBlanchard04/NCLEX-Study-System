@@ -87,3 +87,23 @@ art. Keep the central 70% open pale sage-gray paving. Place muted ivory hospital
 buildings, olive trees, garden beds, paths and benches around the outer edges.
 Use diffuse daylight, subtle seams, low contrast and a desaturated warm palette.
 No people, text, logos, interface or game characters. Render opaque edge to edge.
+
+
+## Grounding standard for new artwork
+
+Room 101, its doorway, and the registered Nurse 03 are the comparison scene. The runtime standard is `src/game/tycoon-grounding.ts`; room furniture and collision bounds are in `tycoon-map-config.ts`.
+
+- Camera: orthographic isometric, projected axes (72,44) and (-72,44), with no perspective convergence. Reject assets whose camera angle cannot match without nonuniform scaling.
+- Materials: cream/navy/light oak, restrained texture, soft upper-left light. Runtime uses a subtle shared warm ambient tint. Cast direction is down-right; it cannot correct an incompatible baked light direction.
+- Scale: nurse sprite scale 0.5 is the reference. Bed visible width 200, bedside cabinet 52. Scale uniformly from registered opaque width; do not scale from transparent canvas dimensions.
+- Registration: record opaque bounds, source dimensions, ground origin, visual contact points at wheels/feet/plinth, and whether the PNG includes baked shadows. Preserve original source pixels and provenance.
+- Runtime grounding: one cached ground stamp per object, reused at any scale. Baked-shadow assets receive only restrained contact enhancement. Layered occupied beds use one bed-owned shadow and no automatic shadow per image slice.
+- Collision: declare a world footprint with clearance for clinical floor objects. Visual contact polygons describe support points, not navigation envelopes; update and validate both when moving an object. Decorative public-area props stay outside clinical navigation.
+- Occlusion: tall walls sort in baseline strips, low walls in short sections; beds have explicit layers. Never use an arbitrary large depth to fix one screenshot.
+- Animation: preserve registered foot origins on every frame; walk cycles and wheel hub motion follow traveled distance. No whole-sprite rotation that lifts planted feet. Freeze time-driven motion on pause/hidden tabs; reduced motion uses stable poses.
+- Acceptance: compare a close Room 101 screenshot and full overview; inspect feet, doorway, bed wheels, wall/furniture intersections, care facing, and shadows on light floors. Exercise station-to-room-to-station, lower shortcuts, pause, reduced motion, save/reload, and phone view. Reject duplicate shadows or props overlapping another object's base. Run map routes after changes to a collision envelope.
+
+Current contact polygons are visually registered approximations, not a 3D physics model. Asset perspective/lighting that remains incompatible requires replacement artwork in a separately budgeted art pass. This grounding pass generated no new images.
+# Studio headwall fixture (2026-10-03)
+
+`studio-headwall-v1.png`: one ChatGPT image-generation call, transparent RGBA 1536 × 1024. Reusable cream/brushed-metal medical headwall with warm integrated lighting, medical gas outlets and a monitor; no room number or baked room walls. Original: `C:/Users/lblan/.codex/generated_images/01a0a7fb-ee80-78e2-a6fd-6bf711ee0d37/exec-055ca463-80b2-4267-8144-bebd50ed3217.png`. The source remains unmodified. `tycoon-room-renderer.ts` applies a cached vertical affine shear of 0.21 to register its wall plane with the hospital projection, scales against its opaque width and mounts it above the shared wall baseline. Room numbers and wall geometry remain separate runtime layers. Generated furniture is visual artwork; navigation uses the existing explicit physical footprints.

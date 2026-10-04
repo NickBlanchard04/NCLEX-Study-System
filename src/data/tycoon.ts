@@ -206,7 +206,7 @@ export const tycoonUpgrades: TycoonUpgrade[] = [
   {
     id: 'vitals-monitor',
     name: 'Vitals Monitor',
-    description: 'Install a second bedside display. Each level reduces deterioration penalties by 3.',
+    description: 'See live vital trends on the ward board and bedside displays. Each level also reduces deterioration penalties by 3.',
     cost: 225,
     effectType: 'monitoring',
     effectValue: 3,
@@ -215,7 +215,7 @@ export const tycoonUpgrades: TycoonUpgrade[] = [
   {
     id: 'med-safety-scanner',
     name: 'Med Safety Scanner',
-    description: 'Install bedside scanning equipment. Each level adds $35 to medication-check rewards.',
+    description: 'Scan patient and medication at the bedside before recording verification. Each level also adds $35 to medication-check rewards.',
     cost: 260,
     effectType: 'med-safety',
     effectValue: 35,
@@ -224,7 +224,7 @@ export const tycoonUpgrades: TycoonUpgrade[] = [
   {
     id: 'lab-runner',
     name: 'Lab Runner',
-    description: 'Add a lab runner to the ward. Each level saves 4 minutes on vitals tasks.',
+    description: 'Add a lab runner to the ward. Collect and deliver a prepared training sample to save half a game minute per level on the vitals case.',
     cost: 180,
     effectType: 'lab-speed',
     effectValue: 4,
@@ -233,7 +233,7 @@ export const tycoonUpgrades: TycoonUpgrade[] = [
   {
     id: 'staff-training',
     name: 'Support Nurse',
-    description: 'Add a support nurse to the ward. Each level improves the staff energy buffer by 8.',
+    description: 'Delegate comfort requests while you handle clinical care; staff walk to the bedside, provide care, and return to report. Each level adds assignment capacity and 8 energy buffer.',
     cost: 240,
     effectType: 'staff-energy',
     effectValue: 8,
@@ -242,7 +242,7 @@ export const tycoonUpgrades: TycoonUpgrade[] = [
   {
     id: 'ehr-station',
     name: 'EHR Station',
-    description: 'Install a charting terminal. Each level saves 4 minutes on documentation tasks.',
+    description: 'Prepare a charting draft from the care and reassessment you recorded, then review, save, and finish charting at the station. Each level also saves half a game minute per patient.',
     cost: 190,
     effectType: 'ehr-speed',
     effectValue: 4,

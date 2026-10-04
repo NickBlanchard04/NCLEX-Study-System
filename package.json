@@ -16,7 +16,8 @@
     "qa:bundle-report": "node scripts/report-build-chunks.mjs",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "test:e2e:headed": "playwright test --headed"
+    "test:e2e:headed": "playwright test --headed",
+    "qa:tycoon-performance": "node scripts/benchmark-tycoon.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.105.3",

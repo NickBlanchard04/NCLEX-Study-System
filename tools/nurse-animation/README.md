@@ -1,0 +1,9 @@
+# Nurse sprite pipeline
+
+The live ward uses a 16-pose walk in four directions, rendered from a real skeleton. All poses share one ground origin, with transparent trim offsets retained in the Phaser atlas. No runtime 3D renderer, stretched feet or cropped torso overlays are needed.
+
+Sources: [Quaternius Universal Base Characters](https://quaternius.com/packs/universalbasecharacters.html) and [Universal Animation Library](https://quaternius.com/packs/universalanimationlibrary.html). Both free Standard packs are CC0; their license files are retained in `models`. This uses the female base, bun hair and Walk_Loop/Idle_Loop/Interact/Push_Loop. Blue scrubs and badge are applied in the baker. It is a new character treatment, not the original raster nurse.
+
+Run `node scripts/fetch-nurse-animation-source.mjs` to obtain the source archives when needed. The extracted source subset is retained in `models`; full archives are ignored. With Vite running on port 5173, run `node scripts/bake-nurse-sprites.mjs`. This uses local Edge to render through Three, exports 140 poses and rejects clipped frames. The game loads only the PNG atlas and ground pivot JSON. No image-generation credits or paid assets are required.
+
+Camera elevation matches the hospital ground axes (44/72), with four directional rotations. The push variant retains world-space holding arms over upright walking legs. Distance-driven playback keeps cadence independent of display FPS; pausing freezes movement and reduced motion uses the idle pose. Rebuild every direction together whenever projection, rig, clothing or camera bounds change.

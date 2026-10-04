@@ -331,6 +331,21 @@ export interface TycoonActionChoice {
 }
 
 export interface TycoonTask {
+  simulation?: {
+    workflow?: 'bedside'
+    scannerUsed?: boolean
+    physicalEquipment?: boolean
+    labDelivered?: boolean
+    scenario: 'chest' | 'medication' | 'falls'
+    variant: number
+    admittedMinute: number
+    condition: 'concerning' | 'worsening' | 'improving' | 'stable'
+    attempted: string[]
+    intervention?: string
+    reassessment?: string
+    discharged?: boolean
+  }
+  payout?: { money: number; xp: number }
   careProgress?: { steps: TycoonCareStep[]; assessmentActionId: string }
   id: string
   patientId: string
@@ -399,6 +414,13 @@ export interface TycoonShiftEvent {
 }
 
 export interface TycoonPayoutSummary {
+  highlights?: string[]
+  delays?: string[]
+  recommendedUpgrade?: string
+  objectiveMet?: boolean
+  objectiveBonus?: number
+  dischargedPatients?: number
+  decisions?: string[]
   completedTasks: number
   mistakes: number
   safetyScore: number
@@ -408,7 +430,23 @@ export interface TycoonPayoutSummary {
   recommendation: string
 }
 
+export interface TycoonCall {
+  id: string
+  taskId: string
+  kind: 'comfort' | 'change'
+  message: string
+  raisedMinute: number
+  dueMinute: number
+  status: 'ringing' | 'assigned' | 'answered' | 'missed'
+  deferred?: boolean
+  assignedUntil?: number
+  answeredBy?: 'player' | 'staff'
+}
+
 export interface TycoonShift {
+  worldJobs?: TycoonWorldJob[]
+  loop?: { calls: TycoonCall[]; comfortRaised: boolean; complicationRaised: boolean; physicalInteractions?: boolean }
+  simulation?: { sequence: number; duration: number; goal: number; admissionLimit: number; admitted: number; archived: TycoonTask[]; startingReputation: number }
   id: string
   unitId: string
   startedAt: string
@@ -421,7 +459,19 @@ export interface TycoonShift {
   payoutSummary?: TycoonPayoutSummary
 }
 
+export interface TycoonWorldJob {
+  id: string
+  taskId: string
+  callId?: string
+  noteId?: string
+  kind: 'support' | 'lab' | 'scanner' | 'chart'
+  phase: 'to-patient' | 'working' | 'to-station' | 'reporting' | 'complete' | 'cancelled'
+  anchor: { u: number; v: number }
+}
+
 export interface TycoonGameState {
+  mapVersion?: number
+  successfulShifts?: number
   money: number
   xp: number
   level: number

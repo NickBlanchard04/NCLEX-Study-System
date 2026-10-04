@@ -1,4 +1,4 @@
-.tycoon-hospital { background: url('/game-assets/hospital-prototype/campus-courtyard.png') center / cover no-repeat; }
+.tycoon-hospital { background: #e3e1d8; }
 .tycoon-prototype .tycoon-hud { right: auto; width: auto; height: 50px; padding: 6px 12px; gap: 16px; background: rgb(20 45 67 / 78%); backdrop-filter: none; }
 .tycoon-prototype .tycoon-hud > div { padding-right: 15px; gap: 8px; }
 .tycoon-prototype .tycoon-hud strong { font-size: 16px; }
@@ -75,3 +75,97 @@
   .tycoon-shop-key kbd { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .tycoon-monitor-preview path { animation: none; } }
+
+.tycoon-world-jobs { max-height: 90px; overflow-y: auto; font-size: 11px; }
+.tycoon-world-jobs p { margin: 3px 0; }
+
+/* Map-first polish: readable transparent surfaces and a compact phone drawer. */
+.tycoon-prototype .tycoon-hud, .tycoon-prototype .tycoon-priority { background: rgb(16 38 53 / 86%); border: 1px solid rgb(209 232 230 / 24%); }
+.tycoon-prototype .tycoon-command { background: rgb(16 38 53 / 91%); border: 1px solid rgb(209 232 230 / 35%); width: 286px; }
+.tycoon-prototype .tycoon-command-close { min-width: 44px; min-height: 44px; }
+.tycoon-prototype .tycoon-command-actions button { min-height: 44px; }
+.tycoon-prototype .tycoon-command-header { position: sticky; top: -12px; z-index: 2; background: #173544; }
+.tycoon-prototype .tycoon-command p, .tycoon-prototype .tycoon-command small { color: #e2edee; }
+.tycoon-observation-drawer > summary { cursor: pointer; padding: 10px 0; color: #e2edee; font-size: 13px; min-height: 44px; }
+.tycoon-observation-drawer > summary:focus-visible { outline: 2px solid #bce0d6; outline-offset: 2px; }
+.tycoon-movement .tycoon-sound { width: 44px; min-width: 44px; }
+.tycoon-reward-feedback { position: absolute; z-index: 4; left: 50%; bottom: 90px; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 10px 16px; border: 1px solid #90c4a8; background: rgb(24 63 47 / 94%); color: #f4fff7; pointer-events: none; border-radius: 4px; }
+.tycoon-reward-feedback strong { font-size: 22px; }
+.tycoon-reward-feedback span { font-size: 12px; white-space: nowrap; }
+@media (min-width: 900px) {
+  .tycoon-observation-drawer > summary { display: none; }
+  .tycoon-care-toast { top: 80px; max-width: min(420px, calc(100% - 620px)); }
+}
+@media (max-width: 899px) {
+  .tycoon-prototype .tycoon-command { width: auto; max-height: 54dvh; bottom: max(8px, env(safe-area-inset-bottom)); left: 8px; right: 8px; padding: 10px 12px; overscroll-behavior: contain; }
+  .tycoon-prototype .tycoon-command-header { top: -10px; }
+  .tycoon-prototype .tycoon-command .tycoon-patient { padding: 5px 0; }
+  .tycoon-prototype .tycoon-command .tycoon-care-steps { margin: 0 0 8px; }
+  .tycoon-prototype .tycoon-priority { max-height: 170px; overflow: auto; overscroll-behavior: contain; width: 220px; }
+  .tycoon-prototype .tycoon-priority .tycoon-saved-rooms { position: sticky; bottom: -9px; background: #173544; }
+  .tycoon-care-toast { top: auto; bottom: 174px; max-width: calc(100% - 24px); }
+  .tycoon-reward-feedback { bottom: 222px; }
+}
+@media (pointer: coarse), (max-width: 599px) {
+  .tycoon-movement-row { grid-template-columns: 140px minmax(0, 1fr) 44px 44px; column-gap: 6px; }
+  .tycoon-movement .tycoon-interact { grid-column: 2 / 5; }
+  .tycoon-movement .tycoon-sound { grid-column: 3; grid-row: 2; }
+  .tycoon-movement .tycoon-pause { grid-column: 4; }
+  .tycoon-movement button { background: rgb(16 38 53 / 72%); border: 1px solid rgb(209 232 230 / 35%); border-radius: 4px; }
+}
+
+.tycoon-goals-drawer > summary { cursor: pointer; min-height: 36px; align-content: center; font-size: 12px; }
+
+@media (max-width: 899px) {
+  .tycoon-prototype .tycoon-priority { max-height: calc(100dvh - 250px); width: 245px; }
+  .tycoon-prototype .tycoon-priority-copy > h3 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tycoon-prototype .tycoon-priority-select { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tycoon-prototype .tycoon-priority .tycoon-saved-rooms { position: static; margin-top: 4px; }
+  .tycoon-priority .tycoon-call-board { margin-top: 2px; padding-top: 2px; }
+  .tycoon-priority .tycoon-call-board > summary { min-height: 36px; }
+}
+
+@media (pointer: coarse), (max-width: 599px) {
+  .tycoon-movement .tycoon-overview { grid-column: 2; grid-row: 1; min-width: 0; font-size: 11px; padding-inline: 4px; }
+  .tycoon-movement .tycoon-interact { grid-column: 3 / 5; font-size: 11px; padding-inline: 4px; }
+}
+
+@media (min-width: 600px) and (pointer: fine) {
+  .tycoon-movement-row { background: rgb(16 38 53 / 78%); padding: 4px 12px; border-radius: 4px; gap: 18px; }
+}
+
+/* Patient work gets one focused surface, with the ward still visible around it. */
+.tycoon-prototype.is-patient-focus .tycoon-priority,
+.tycoon-prototype.is-patient-focus .tycoon-command,
+.tycoon-prototype.is-patient-focus .tycoon-movement { visibility: hidden; pointer-events: none; }
+.tycoon-prototype .tycoon-observation-drawer > summary { display: list-item; }
+.tycoon-prototype .tycoon-dialog::backdrop { background: rgb(9 28 37 / 20%); backdrop-filter: none; }
+.tycoon-dialog.tycoon-dialog-assessment {
+  width: min(540px, calc(100vw - 24px)); height: fit-content; max-height: calc(100dvh - 100px);
+  padding: 18px 20px; overflow-y: auto; background: rgb(20 45 60 / 96%); backdrop-filter: none;
+}
+.tycoon-dialog.tycoon-dialog-assessment > header { margin: 0 0 12px; padding: 0 0 10px; }
+.tycoon-dialog.tycoon-dialog-assessment > header h2 { font-size: 19px; }
+.tycoon-dialog.tycoon-dialog-assessment > header button { width: 44px; height: 44px; }
+.tycoon-dialog.tycoon-dialog-assessment .tycoon-dialog-patient { gap: 10px; margin: 0; }
+.tycoon-dialog.tycoon-dialog-assessment .tycoon-dialog-patient > span:first-child { width: 42px; height: 42px; }
+.tycoon-dialog.tycoon-dialog-assessment .tycoon-dialog-patient h3 { font-size: 18px; }
+.tycoon-dialog.tycoon-dialog-assessment .tycoon-dialog-patient p { font-size: 12px; line-height: 1.35; }
+.tycoon-dialog.tycoon-dialog-assessment .tycoon-badge { font-size: 11px; padding: 4px; }
+.tycoon-dialog .tycoon-current-step { margin: 10px 0; font-size: 12px; color: #bce0d6; }
+.tycoon-dialog.tycoon-dialog-assessment .tycoon-observations { padding: 0; font-size: 13px; }
+.tycoon-dialog.tycoon-dialog-assessment .tycoon-patient-response { padding: 0; margin: 6px 0; border: 0; }
+.tycoon-dialog.tycoon-dialog-assessment .tycoon-patient-response svg { display: none; }
+.tycoon-dialog.tycoon-dialog-assessment .tycoon-patient-response > div { display: flex; gap: 8px; flex-wrap: wrap; }
+.tycoon-dialog.tycoon-dialog-assessment .tycoon-observations p { margin: 5px 0; font-size: 13px; }
+.tycoon-dialog.tycoon-dialog-assessment .tycoon-observations dl { grid-template-columns: repeat(4, minmax(0,1fr)); margin: 8px 0; }
+.tycoon-dialog.tycoon-dialog-assessment .tycoon-dialog-intro { font-size: 13px; margin: 12px 0 8px !important; }
+.tycoon-dialog.tycoon-dialog-assessment .tycoon-assessment-choices { gap: 7px; flex: none; grid-auto-rows: auto; }
+.tycoon-dialog.tycoon-dialog-assessment .tycoon-assessment-choices button { min-height: 64px; padding: 10px 12px; gap: 3px; }
+.tycoon-dialog.tycoon-dialog-assessment .tycoon-assessment-choices strong { font-size: 14px; line-height: 1.3; }
+.tycoon-dialog.tycoon-dialog-assessment .tycoon-assessment-choices span { font-size: 12px; line-height: 1.35; }
+.tycoon-dialog.tycoon-dialog-assessment .tycoon-assessment-choices small { font-size: 10px; margin: 0; }
+@media (max-width: 599px) {
+  .tycoon-dialog.tycoon-dialog-assessment { max-height: calc(100dvh - 88px); padding: 12px; }
+  .tycoon-dialog.tycoon-dialog-assessment .tycoon-observations dl { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}

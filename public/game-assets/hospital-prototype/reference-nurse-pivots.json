@@ -1,0 +1,117 @@
+{
+  "frames": {
+    "se-idle-0": {
+      "pivotY": 0.95279,
+      "pivotX": 0.465364
+    },
+    "se-walk-0": {
+      "pivotY": 0.965665,
+      "pivotX": 0.392637
+    },
+    "se-walk-1": {
+      "pivotY": 0.969957,
+      "pivotX": 0.365364
+    },
+    "se-walk-2": {
+      "pivotY": 0.969957,
+      "pivotX": 0.383546
+    },
+    "se-walk-3": {
+      "pivotY": 0.969957,
+      "pivotX": 0.401728
+    },
+    "se-care-0": {
+      "pivotY": 0.95279,
+      "pivotX": 0.350773
+    },
+    "se-care-1": {
+      "pivotY": 0.948498,
+      "pivotX": 0.291864
+    },
+    "sw-idle-0": {
+      "pivotY": 0.95279,
+      "pivotX": 0.546818
+    },
+    "sw-walk-0": {
+      "pivotY": 0.961373,
+      "pivotX": 0.533182
+    },
+    "sw-walk-1": {
+      "pivotY": 0.957082,
+      "pivotX": 0.496818
+    },
+    "sw-walk-2": {
+      "pivotY": 0.961373,
+      "pivotX": 0.524091
+    },
+    "sw-walk-3": {
+      "pivotY": 0.957082,
+      "pivotX": 0.515
+    },
+    "sw-care-0": {
+      "pivotY": 0.95279,
+      "pivotX": 0.531909
+    },
+    "sw-care-1": {
+      "pivotY": 0.948498,
+      "pivotX": 0.646455
+    },
+    "nw-idle-0": {
+      "pivotY": 0.948498,
+      "pivotX": 0.448364
+    },
+    "nw-walk-0": {
+      "pivotY": 0.957082,
+      "pivotX": 0.398364
+    },
+    "nw-walk-1": {
+      "pivotY": 0.95279,
+      "pivotX": 0.375637
+    },
+    "nw-walk-2": {
+      "pivotY": 0.957082,
+      "pivotX": 0.366546
+    },
+    "nw-walk-3": {
+      "pivotY": 0.957082,
+      "pivotX": 0.371091
+    },
+    "nw-care-0": {
+      "pivotY": 0.944206,
+      "pivotX": 0.440091
+    },
+    "nw-care-1": {
+      "pivotY": 0.944206,
+      "pivotX": 0.467318
+    },
+    "ne-idle-0": {
+      "pivotY": 0.965665,
+      "pivotX": 0.541591
+    },
+    "ne-walk-0": {
+      "pivotY": 0.957082,
+      "pivotX": 0.509773
+    },
+    "ne-walk-1": {
+      "pivotY": 0.957082,
+      "pivotX": 0.477955
+    },
+    "ne-walk-2": {
+      "pivotY": 0.961373,
+      "pivotX": 0.500682
+    },
+    "ne-walk-3": {
+      "pivotY": 0.957082,
+      "pivotX": 0.505227
+    },
+    "ne-care-0": {
+      "pivotY": 0.961373,
+      "pivotX": 0.448455
+    },
+    "ne-care-1": {
+      "pivotY": 0.944206,
+      "pivotX": 0.479773
+    }
+  },
+  "walkAlignment": "Torso center registered to the matching idle hip anchor; source image bytes unchanged. Ground Y remains per-frame registered."
+}

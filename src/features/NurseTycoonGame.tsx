@@ -29,6 +29,9 @@ import { BedsideCareAction, CareCheckAction, CareChecklist } from './TycoonCareF
 import { TycoonClock } from './TycoonClock'
 import { TycoonHospitalMap, type WardMapHandle } from './TycoonHospitalMap'
 import { TycoonShop } from './TycoonShop'
+import { CallBellBoard, PatientCall, PatientObservations, ShiftObjectives } from './TycoonSimulation'
+import { worldJobActive } from '../services/tycoon-world-jobs'
+import { careNoteDraft } from '../services/tycoon-shift-loop'
 import { TycoonTooltip } from './TycoonTooltip'
 import type { WardTarget } from '../game/tycoon-ward'
 import {
@@ -41,6 +44,9 @@ import './tycoon-launch.css'
 import './tycoon-prototype.css'
 import './tycoon-ward.css'
 import './tycoon-gameplay.css'
+import './tycoon-code-red.css'
+import './tycoon-mobile-controls.css'
+import './tycoon-compact-care.css'
 
 const urgencyLabels: Record<TycoonTaskUrgency, string> = {
   critical: 'Critical',
@@ -56,7 +62,7 @@ const urgencyHelp: Record<TycoonTaskUrgency, string> = {
 }
 const formatTime = (minute: number) =>
   getTycoonClockTime(minute).shortLabel
-type PatientView = { kind: 'assess' | 'orders' | 'note' | 'equipment' | 'safety' | 'care' | 'reassessment'; taskId: string; shiftId: string } | null
+type PatientView = { kind: 'call' | 'assess' | 'orders' | 'note' | 'equipment' | 'safety' | 'care' | 'reassessment'; taskId: string; shiftId: string } | null
 
 export function NurseTycoonGame() {
   const navigate = useNavigate()
@@ -69,6 +75,7 @@ export function NurseTycoonGame() {
   const pendingNoteRef = useRef<string | null>(null)
   const [manuallyPaused, setManuallyPaused] = useState(false)
   const [stationOpen, setStationOpen] = useState(false)
+  const [briefingOpen, setBriefingOpen] = useState(false)
   const finishShift = useStudySystemStore((state) => state.finishTycoonShift)
   const [patientView, setPatientView] = useState<PatientView>(null)
   const [feedback, setFeedback] = useState<{
@@ -80,9 +87,10 @@ export function NurseTycoonGame() {
   const [showUpgrades, setShowUpgrades] = useState(false)
   const [commandOpen, setCommandOpen] = useState(false)
   const [nearbyTaskId, setNearbyTaskId] = useState<string | null>(null)
-  const [dismissedTaskId, setDismissedTaskId] = useState<string | null>(null)
+  const [reward, setReward] = useState<{money: number; xp: number} | null>(null)
+  useEffect(() => { if (!reward) return; const timer = window.setTimeout(() => setReward(null), 3600); return () => window.clearTimeout(timer) }, [reward])
   const [toast, setToast] = useState<string | null>(null)
-  const panelVisible = commandOpen || Boolean(nearbyTaskId && nearbyTaskId !== dismissedTaskId)
+  const panelVisible = commandOpen && !patientView && !feedback && !showUpgrades && !stationOpen
   useEffect(() => {
     const onShopKey = (event: KeyboardEvent) => {
       if (event.key.toLowerCase() !== 'i' || event.repeat || event.ctrlKey || event.metaKey || event.altKey) return
@@ -111,6 +119,15 @@ export function NurseTycoonGame() {
     return () => media.removeEventListener('change', update)
   }, [])
   const shift = tycoon.activeShift
+  useEffect(() => useStudySystemStore.subscribe((state, previous) => {
+    const current = state.tycoon.activeShift, before = previous.tycoon.activeShift
+    if (current?.id !== before?.id || current?.worldJobs === before?.worldJobs) return
+    for (const job of current?.worldJobs ?? []) {
+      if (job.phase !== 'complete' || before?.worldJobs?.some((old) => old.id === job.id && old.phase === 'complete')) continue
+      if (job.kind === 'chart') { const task = current?.tasks.find((task) => task.id === job.taskId); if (task?.payout) setReward(task.payout) }
+      setToast(job.kind === 'chart' ? 'Care documented. Task rewards added.' : job.kind === 'scanner' ? 'Scan complete. Medication verification recorded.' : job.kind === 'lab' ? 'Training sample delivered to the station.' : 'Support RN returned. Comfort care completed.')
+    }
+  }), [])
   const bestTask = getBestTycoonTask(shift)
   const selectedTask =
     shift?.tasks.find((task) => task.id === (!commandOpen && nearbyTaskId ? nearbyTaskId : tycoon.selectedTaskId)) ??
@@ -119,8 +136,10 @@ export function NurseTycoonGame() {
   const modalTask = shift?.id === patientView?.shiftId
     ? shift?.tasks.find((task) => task.id === patientView?.taskId)
     : undefined
+  const modalCall = shift?.loop?.calls.filter((call) => call.taskId === modalTask?.id && (call.status === 'ringing' || call.status === 'missed')).sort((a, b) => Number(b.kind === 'change') - Number(a.kind === 'change'))[0]
   const completedCount =
-    shift?.tasks.filter((task) => task.status === 'completed').length ?? 0
+    [...(shift?.simulation?.archived ?? []), ...(shift?.tasks ?? [])].filter((task) => task.status === 'completed').length
+  const patientCount = shift?.simulation?.admitted ?? shift?.tasks.length ?? 0
   const assessmentUnavailableReason =
     shift && shift.status !== 'running'
       ? 'Assessments are available during a running shift.'
@@ -138,7 +157,6 @@ export function NurseTycoonGame() {
 
   function returnToMap() {
     setCommandOpen(false)
-    setDismissedTaskId(nearbyTaskId)
     window.requestAnimationFrame(() => mapPanelRef.current?.focus({ preventScroll: true }))
   }
 
@@ -148,13 +166,22 @@ export function NurseTycoonGame() {
     setShowUpgrades(false)
     setCommandOpen(false)
     setStationOpen(false)
+    setBriefingOpen(true)
     setManuallyPaused(false)
     pendingNoteRef.current = null
     setNearbyTaskId(null)
-    setDismissedTaskId(null)
     setToast(null)
     const capacity = Math.min(6, 3 + (tycoon.upgrades['extra-bed'] ?? 0))
-    startShift('fundamentals-clinic', { roomIds: Array.from({ length: capacity }, (_, index) => `Room ${101 + index}`) })
+    startShift('fundamentals-clinic', { simulation: true, paced: true, physicalInteractions: true, roomIds: Array.from({ length: capacity }, (_, index) => `Room ${101 + index}`) })
+  }
+
+  function startWorldWork(task: TycoonTask, kind: 'lab' | 'scanner' | 'chart', noteId?: string) {
+    if (!shift) return
+    useStudySystemStore.getState().queueTycoonWorldJob(task.id, kind, shift.id, wardRef.current?.position(), noteId)
+    const job = useStudySystemStore.getState().tycoon.activeShift?.worldJobs?.find((job) => job.taskId === task.id && job.kind === kind && worldJobActive(job))
+    if (!job) { setToast('Visit the correct work area and finish the preceding care steps first.'); return }
+    setPatientView(null); setStationOpen(false); setManuallyPaused(false); returnToMap()
+    setToast(kind === 'lab' ? 'Sample pickup queued. The runner will collect and deliver it.' : kind === 'scanner' ? 'Scanning at the bedside…' : 'Note saved. Finishing charting at the station…')
   }
 
   function travelTo(targetId: string, noteTaskId?: string) {
@@ -163,7 +190,6 @@ export function NurseTycoonGame() {
     setStationOpen(false)
     setManuallyPaused(false)
     setCommandOpen(false)
-    setDismissedTaskId(nearbyTaskId)
     window.requestAnimationFrame(() => {
       mapPanelRef.current?.focus({ preventScroll: true })
       if (!wardRef.current?.goTo(targetId)) {
@@ -188,8 +214,9 @@ export function NurseTycoonGame() {
     if (!task) return
     selectTask(task.id)
     const step = nextCareStep(task)
+    const hasCall = target.kind === 'patient' && current.loop?.calls.some((call) => call.taskId === task.id && (call.status === 'ringing' || call.status === 'missed'))
     setPatientView({
-      kind: target.kind === 'equipment' ? 'equipment' : target.kind === 'safety' ? 'safety' : step === 'assessment' ? 'assess' : step === 'care' ? 'care' : step === 'reassessment' ? 'reassessment' : 'orders',
+      kind: hasCall ? 'call' : target.kind === 'equipment' ? 'equipment' : target.kind === 'safety' ? 'safety' : step === 'assessment' ? 'assess' : step === 'care' ? 'care' : step === 'reassessment' ? 'reassessment' : 'orders',
       taskId: task.id, shiftId: current.id,
     })
   }
@@ -201,7 +228,7 @@ export function NurseTycoonGame() {
     assessPatient(task.id, actionId, shift.id)
     const assessed = useStudySystemStore.getState().tycoon.activeShift?.tasks.find((item) => item.id === task.id)
     if (assessed?.careProgress?.steps.includes('assessment') && !task.careProgress?.steps.includes('assessment')) {
-      setToast('Assessment recorded · check the patient monitor next')
+      setToast(`Assessment recorded · next: ${CARE_LABELS[nextCareStep(assessed) ?? 'care']}`)
     }
     const result = useStudySystemStore
       .getState()
@@ -275,9 +302,8 @@ export function NurseTycoonGame() {
                 {Math.min(6, 3 + (tycoon.upgrades['extra-bed'] ?? 0))} patient rooms • 1 nursing station
               </span>
               <span className="tycoon-clinic-description">
-                Start here. Manage daily care, make
-                <br className="tycoon-desktop-break" /> decisions, and grow your
-                unit.
+                Complete and discharge 3 patients with 80% safety.
+                <br className="tycoon-desktop-break" /> 24 game minutes · new admissions · $150 goal bonus.
               </span>
             </span>
             <ChevronRight className="tycoon-clinic-arrow" aria-hidden="true" />
@@ -292,13 +318,13 @@ export function NurseTycoonGame() {
 
   return (
     <main
-      className={`tycoon tycoon-game tycoon-prototype${panelVisible ? ' is-command-open' : ''}`}
+      className={`tycoon tycoon-game tycoon-prototype tycoon-code-red${panelVisible ? ' is-command-open' : ''}${patientView || feedback || stationOpen ? ' is-patient-focus' : ''}`}
       aria-label="Nurse Command Tycoon shift"
     >
       <TycoonHud
         tycoon={tycoon}
         inGame
-        clockPaused={Boolean(patientView || feedback || stationOpen || showUpgrades || manuallyPaused || (compact && commandOpen))}
+        clockPaused={Boolean(briefingOpen || patientView || feedback || stationOpen || showUpgrades || manuallyPaused || (compact && commandOpen))}
       />
       <div className="tycoon-workspace">
         <section
@@ -308,21 +334,28 @@ export function NurseTycoonGame() {
           <div className="tycoon-priority-copy">
             <TycoonTooltip text="The game’s highest-urgency unfinished task. Earlier deadlines break ties.">
               <h2 className="tycoon-section-label" id="tycoon-priority-title">
-                Current priority
+                Next patient
               </h2>
             </TycoonTooltip>
             <h3>
               {bestTask ? (
                 <button type="button" className="tycoon-priority-select" onClick={() => selectRoomTask(bestTask)} aria-controls="tycoon-command-panel">
-                  {bestTask.patientName}: {bestTask.title}
+                  <span className="tycoon-priority-name">{bestTask.patientName}</span>
+                  <span className="tycoon-priority-task">{bestTask.title}</span>
                 </button>
-              ) : completedCount === shift.tasks.length ? 'Patient care complete' : 'No open care tasks'}
+              ) : 'Patient care complete — arrange discharge'}
             </h3>
             <p>
               {bestTask
                 ? `Due ${formatTime(bestTask.deadlineMinute)}`
                 : 'Finish your shift to review patient care and earnings.'}
             </p>
+            <details className="tycoon-goals-drawer"><summary>Shift goals{shift.simulation ? ` · ${Math.max(0, Math.ceil(shift.simulation.duration - shift.shiftMinute))} min left` : ''}</summary><ShiftObjectives tycoon={tycoon} /></details>
+            <CallBellBoard tycoon={tycoon} onVisit={(task) => travelTo(`patient:${task.id}`)} />
+            {shift.worldJobs?.some(worldJobActive) ? <div className="tycoon-world-jobs" role="status" aria-label="Ward work">{shift.worldJobs.filter(worldJobActive).map((job) => <p key={job.id}>{shift.tasks.find((task) => task.id === job.taskId)?.room} · {job.kind === 'support' ? 'Support RN' : job.kind === 'lab' ? 'Lab runner' : job.kind === 'scanner' ? 'Scanner' : 'Charting'}: {job.phase === 'to-patient' ? 'walking to room' : job.phase === 'to-station' ? 'returning to station' : job.phase === 'reporting' ? 'reporting completion' : 'working'}</p>)}</div> : null}
+            {shift.tasks.length > 1 ? <nav className="tycoon-saved-rooms" aria-label="Ward rooms">
+              {shift.tasks.map((task) => <button key={task.id} type="button" onClick={() => selectRoomTask(task)} aria-controls="tycoon-command-panel" aria-pressed={task.id === selectedTask?.id}>{task.room}</button>)}
+            </nav> : null}
           </div>
           {bestTask ? (
             <div className="tycoon-priority-status">
@@ -341,21 +374,6 @@ export function NurseTycoonGame() {
           <h2 className="tycoon-section-label" id="tycoon-map-title">
             Hospital ward
           </h2>
-          {shift.tasks.length > 1 ? (
-            <nav className="tycoon-saved-rooms" aria-label="Ward rooms">
-              {shift.tasks.map((task) => (
-                <button
-                  key={task.id}
-                  type="button"
-                  onClick={() => selectRoomTask(task)}
-                  aria-controls="tycoon-command-panel"
-                  aria-pressed={task.id === selectedTask?.id}
-                >
-                  {task.room}
-                </button>
-              ))}
-            </nav>
-          ) : null}
           {shift.tasks.length ? (
             <TycoonHospitalMap
               key={shift.id}
@@ -365,9 +383,11 @@ export function NurseTycoonGame() {
               selectedTaskId={selectedTask?.id}
               reviewedTaskIds={shift.equipmentReviewedTaskIds ?? []}
               upgrades={tycoon.upgrades}
+              calls={shift.loop?.calls}
+              worldJobs={shift.worldJobs}
               onOpenShop={() => setShowUpgrades(true)}
-              onNearbyTask={(id) => { setNearbyTaskId(id); if (!id) setDismissedTaskId(null) }}
-              paused={Boolean(patientView || feedback || stationOpen || showUpgrades || manuallyPaused || (compact && commandOpen)) || shift.status !== 'running'}
+              onNearbyTask={setNearbyTaskId}
+              paused={Boolean(briefingOpen || patientView || feedback || stationOpen || showUpgrades || manuallyPaused || (compact && commandOpen)) || shift.status !== 'running'}
               manuallyPaused={manuallyPaused}
               onTogglePause={() => setManuallyPaused((value) => !value)}
               onInteract={interactWithWard}
@@ -393,7 +413,7 @@ export function NurseTycoonGame() {
               Patient commands
             </h2>
             <span>
-              {completedCount}/{shift.tasks.length} complete
+              {completedCount}/{patientCount} complete
             </span>
             <button type="button" className="tycoon-command-close" onClick={returnToMap} aria-label="Close patient details">
               <X aria-hidden="true" />
@@ -409,7 +429,9 @@ export function NurseTycoonGame() {
                 <UrgencyBadge task={selectedTask} />
                 <span className="tycoon-patient-room">{selectedTask.room}</span>
               </div>
+              <details className="tycoon-observation-drawer"><summary>Observations &amp; care details</summary>
               <div className="tycoon-command-details">
+                <PatientObservations task={selectedTask} remote />
                 <section
                   className="tycoon-patient-tasks"
                   aria-labelledby="tycoon-tasks-title"
@@ -438,8 +460,15 @@ export function NurseTycoonGame() {
                   </dl>
                 </section>
               </div>
+              </details>
               <div className="tycoon-command-actions">
                 <CareChecklist task={selectedTask} />
+                {selectedTask.simulation?.physicalEquipment && selectedTask.category === 'vitals' && tycoon.upgrades['lab-runner'] > 0 && selectedTask.careProgress?.steps.includes('assessment') && selectedTask.status !== 'completed' && selectedTask.status !== 'failed' ? <button type="button" disabled={shift.status !== 'running' || shift.worldJobs?.some((job) => job.taskId === selectedTask.id && job.kind === 'lab' && job.phase !== 'cancelled')} onClick={() => startWorldWork(selectedTask, 'lab')}><ClipboardList aria-hidden="true" /><span>{selectedTask.simulation.labDelivered ? 'Training sample delivered' : shift.worldJobs?.some((job) => job.taskId === selectedTask.id && job.kind === 'lab' && worldJobActive(job)) ? 'Sample pickup in progress' : 'Request training sample pickup'}</span><ChevronRight aria-hidden="true" /></button> : null}
+                {selectedTask.simulation && selectedTask.status === 'completed' ? <button type="button" className="is-primary" disabled={Boolean(selectedTask.simulation.discharged) || shift.status !== 'running'} onClick={() => {
+                  useStudySystemStore.getState().dischargeTycoonPatient(selectedTask.id, shift.id)
+                  setNearbyTaskId(null)
+                  setToast('Patient discharged · admission board updated')
+                }}><Check aria-hidden="true" /><span>{selectedTask.simulation.discharged ? 'Room available' : 'Discharge & admit next patient'}</span><ChevronRight aria-hidden="true" /></button> : null}
                 <TycoonTooltip text={assessmentUnavailableReason}>
                   <span
                     className="tycoon-assessment-action"
@@ -508,14 +537,16 @@ export function NurseTycoonGame() {
           Return for handoff
         </button>
       </footer>
-      {patientView && modalTask ? (
+      {patientView && modalTask && shift.status === 'running' ? (
         <TycoonDialog
+          key={`${shift.id}-${modalTask.id}-${patientView.kind}`}
+          compact
           expanded={patientView.kind === 'assess'}
           title={
-            patientView.kind === 'assess'
-              ? 'Assess Patient'
+            patientView.kind === 'call' ? 'Call bell' : patientView.kind === 'assess'
+              ? 'Assess patient'
               : patientView.kind === 'orders'
-                ? 'View Orders'
+                ? 'Care orders'
                 : patientView.kind === 'equipment' ? 'Patient monitor'
                   : patientView.kind === 'safety' ? 'Bedside safety check'
                     : patientView.kind === 'care' ? 'Provide care'
@@ -530,28 +561,33 @@ export function NurseTycoonGame() {
             <div>
               <h3>{modalTask.patientName}</h3>
               <p>
-                {modalTask.room} · {modalTask.title}
+                {modalTask.room}
               </p>
             </div>
             <UrgencyBadge task={modalTask} />
           </div>
-          <CareChecklist task={modalTask} />
+          {['assess', 'equipment', 'care', 'reassessment'].includes(patientView.kind) || patientView.kind === 'call' && modalCall?.kind === 'change' ? <PatientObservations task={modalTask} compact /> : null}
+          {patientView.kind === 'call' && modalCall ? <PatientCall call={modalCall} onAttend={() => {
+            useStudySystemStore.getState().respondToTycoonCall(modalCall.id, 'attend', shift.id)
+            const step = nextCareStep(modalTask)
+            setPatientView({ kind: step === 'assessment' ? 'assess' : step === 'care' ? 'care' : step === 'reassessment' ? 'reassessment' : 'orders', taskId: modalTask.id, shiftId: shift.id })
+          }} /> : null}
           {patientView.kind === 'assess' ? (
             <>
               <p className="tycoon-dialog-intro">
-                Choose the safest next action.
+                Choose the safest next action using these findings.
               </p>
               <div className="tycoon-assessment-choices">
                 {modalTask.actions.map((action) => (
                   <TycoonTooltip
                     key={action.id}
-                    text={
+                    text={`${action.description} ${
                       action.scope === 'RN-only'
                         ? 'RN-only: an action assigned to the registered nurse in this game. This label does not mean it is the best next choice.'
                         : action.scope === 'UAP-safe'
                           ? 'UAP-safe: an action eligible for delegation to unlicensed assistive personnel in this game. It may still be the wrong choice for this task.'
-                          : undefined
-                    }
+                          : ''
+                    }`}
                   >
                     <button
                       type="button"
@@ -563,8 +599,6 @@ export function NurseTycoonGame() {
                       }
                     >
                       <strong>{action.label}</strong>
-                      <span>{action.description}</span>
-                      <small>{action.scope}</small>
                     </button>
                   </TycoonTooltip>
                 ))}
@@ -574,25 +608,18 @@ export function NurseTycoonGame() {
           {patientView.kind === 'equipment' || patientView.kind === 'safety' || patientView.kind === 'reassessment' ? (
             <CareCheckAction key={`${modalTask.id}-${patientView.kind}`} task={modalTask}
               step={patientView.kind === 'equipment' ? 'monitor' : patientView.kind}
+              onScan={() => startWorldWork(modalTask, 'scanner')}
               onComplete={(step) => recordCareStep(modalTask, step)} onContinue={() => continueCare(modalTask)} />
           ) : null}
           {patientView.kind === 'care' ? <BedsideCareAction key={modalTask.id} task={modalTask} paused={showUpgrades} onComplete={() => recordCareStep(modalTask, 'care')} onContinue={() => continueCare(modalTask)} /> : null}
           {patientView.kind === 'orders' ? (
             <div className="tycoon-orders">
-              <h3>Current care task</h3>
+              {modalTask.simulation?.physicalEquipment && modalTask.category === 'vitals' && tycoon.upgrades['lab-runner'] > 0 && modalTask.careProgress?.steps.includes('assessment') ? <button type="button" className="tycoon-modal-primary" disabled={shift.worldJobs?.some((job) => job.taskId === modalTask.id && job.kind === 'lab' && job.phase !== 'cancelled')} onClick={() => startWorldWork(modalTask, 'lab')}>{modalTask.simulation.labDelivered ? 'Training sample delivered' : shift.worldJobs?.some((job) => job.taskId === modalTask.id && job.kind === 'lab' && worldJobActive(job)) ? 'Sample pickup in progress' : 'Request training sample pickup'}</button> : null}
               <p>{modalTask.title}</p>
               <dl>
                 <div>
-                  <dt>Care category</dt>
-                  <dd>{modalTask.category.replaceAll('-', ' ')}</dd>
-                </div>
-                <div>
                   <dt>Due by</dt>
                   <dd>{formatTime(modalTask.deadlineMinute)}</dd>
-                </div>
-                <div>
-                  <dt>Status</dt>
-                  <dd>{modalTask.status}</dd>
                 </div>
               </dl>
               <p>{nextCareStep(modalTask) ? `Next: ${CARE_LABELS[nextCareStep(modalTask)!]}.` : 'Care task closed. Your saved notes remain available at the station.'}</p>
@@ -618,8 +645,9 @@ export function NurseTycoonGame() {
               key={`${shift.id}-${modalTask.id}`}
               shiftId={shift.id}
               task={modalTask}
-              onSaved={() => {
+              onSaved={(noteId) => {
                 const readyToComplete = nextCareStep(modalTask) === 'documentation'
+                if (readyToComplete && modalTask.simulation?.physicalEquipment) { startWorldWork(modalTask, 'chart', noteId); return }
                 if (readyToComplete) advanceCare(modalTask.id, 'documentation', shift.id)
                 setPatientView(null)
                 setFeedback({
@@ -631,25 +659,40 @@ export function NurseTycoonGame() {
               }}
             />
           ) : null}
+          <details className="tycoon-patient-details" key={`details-${modalTask.id}-${patientView.kind}`}>
+            <summary>Patient details</summary>
+            <p>{modalTask.title} · {modalTask.category.replaceAll('-', ' ')} · {modalTask.status}</p>
+            <PatientObservations task={modalTask} />
+            {patientView.kind === 'assess' ? <dl className="tycoon-choice-details">{modalTask.actions.map(action => <div key={action.id}><dt>{action.label}</dt><dd>{action.description} <small>{action.scope}</small></dd></div>)}</dl> : null}
+          </details>
         </TycoonDialog>
       ) : null}
       {stationOpen && shift.status === 'running' ? (
         <TycoonDialog title="Nursing station · handoff" onClose={() => setStationOpen(false)}>
-          <p className="tycoon-dialog-intro">{completedCount}/{shift.tasks.length} patients completed. Equipment reviewed in {shift.equipmentReviewedTaskIds?.length ?? 0}/{shift.tasks.length} rooms.</p>
+          <p className="tycoon-dialog-intro">{completedCount}/{patientCount} patients completed. Equipment reviewed in {shift.equipmentReviewedTaskIds?.length ?? 0}/{shift.tasks.length} current rooms.</p>
+          <div className="tycoon-dialog-intro"><ShiftObjectives tycoon={tycoon} />{shift.simulation ? <p>Handoff ends this shift. Unfinished patients remain on the review; discharge at least 3 patients and keep safety at 80% to earn the goal bonus.</p> : null}</div>
           <ul className="tycoon-handoff-list">
             {shift.tasks.map((task) => (
               <li key={task.id}>
                 <span>{task.room} · {task.patientName}</span>
                 <strong>{task.status === 'completed' ? 'Care complete' : task.status === 'failed' ? 'Task closed' : 'Needs care'}</strong>
+                {task.simulation && task.status === 'completed' && !task.simulation.discharged ? <button type="button" onClick={() => useStudySystemStore.getState().dischargeTycoonPatient(task.id, shift.id)}>Discharge patient</button> : null}
                 {task.status !== 'completed' && task.status !== 'failed' ? <button type="button" onClick={() => continueCare(task)}>Continue care</button> : null}
               </li>
             ))}
           </ul>
-          <button type="button" className="tycoon-modal-primary" disabled={shift.tasks.some((task) => task.status === 'available' || task.status === 'deteriorating')} onClick={() => { setStationOpen(false); finishShift() }}>Complete handoff & finish shift</button>
-          {shift.tasks.some((task) => task.status === 'available' || task.status === 'deteriorating') ? <p className="tycoon-dialog-intro">Visit the remaining patients before completing handoff.</p> : null}
+          <button type="button" className="tycoon-modal-primary" disabled={!shift.simulation && shift.tasks.some((task) => task.status === 'available' || task.status === 'deteriorating')} onClick={() => { setStationOpen(false); finishShift() }}>Complete handoff & finish shift</button>
+          {!shift.simulation && shift.tasks.some((task) => task.status === 'available' || task.status === 'deteriorating') ? <p className="tycoon-dialog-intro">Visit the remaining patients before completing handoff.</p> : null}
         </TycoonDialog>
       ) : null}
-      {feedback ? (
+      {briefingOpen && shift.status === 'running' ? <TycoonDialog title="Shift briefing" onClose={() => setBriefingOpen(false)}>
+        <div className="tycoon-debrief"><h3>One shift, three priorities.</h3>
+          <ol><li>Opening rounds: assess patients and combine routine bedside checks.</li><li>Respond &amp; recover: watch for a changed-symptom call. Comfort requests can wait or go to support staff; clinical changes need you.</li><li>Handoff: discharge at least 3 patients with safety at 80% or higher. Review your decisions and invest the earnings.</li></ol>
+          <p>24 game minutes. Dialogs, the shop, and Pause stop the clock. Two replacement admissions are available after discharge.</p>
+          <p>{tycoon.upgrades['staff-training'] ? 'Support staff available for comfort requests. ' : ''}{tycoon.upgrades['vitals-monitor'] ? 'Live ward-board telemetry installed. ' : ''}{tycoon.upgrades['ehr-station'] ? 'EHR care-note drafts available. ' : ''}</p>
+          <button type="button" className="tycoon-modal-primary" onClick={() => setBriefingOpen(false)}>Begin rounds</button>
+        </div></TycoonDialog> : null}
+      {feedback && shift.status === 'running' ? (
         <TycoonDialog title={feedback.title} onClose={dismissFeedback}>
           <div
             className={`tycoon-feedback ${feedback.good ? 'is-good' : 'is-warning'}${feedback.completedTaskId ? ' is-care-complete' : ''}`}
@@ -679,7 +722,7 @@ export function NurseTycoonGame() {
           <div className="tycoon-summary-rewards">
             <Reward
               label="Tasks completed"
-              value={`${shift.payoutSummary.completedTasks}/${shift.tasks.length}`}
+              value={`${shift.payoutSummary.completedTasks}/${patientCount}`}
             />
             <Reward
               label="Money earned"
@@ -705,6 +748,13 @@ export function NurseTycoonGame() {
           <p className="tycoon-dialog-intro">
             {shift.payoutSummary.recommendation}
           </p>
+          {shift.simulation ? <section className="tycoon-debrief">
+            <h3>{shift.payoutSummary.objectiveMet ? 'Shift goals achieved · $150 bonus paid' : 'Shift goals not yet achieved'}</h3>
+            <p>{shift.payoutSummary.dischargedPatients}/{shift.simulation.goal} patients discharged · {shift.payoutSummary.safetyScore}% safety (goal 80%). Earnings include the bonus and completed care; purchases and penalties are deducted from your wallet separately.</p>
+            <p>{shift.payoutSummary.objectiveMet ? 'Your successful shift counts toward room, staff, and equipment unlocks. Visit the shop before the next shift.' : 'Prioritize changing symptoms, reassess after care, and discharge documented patients. Try another shift with a new patient mix.'}</p>
+            {shift.payoutSummary.highlights ? <><h3>What went well</h3><ul>{shift.payoutSummary.highlights.map((item) => <li key={item}>{item}</li>)}</ul><h3>What waited</h3>{shift.payoutSummary.delays?.length ? <ul>{shift.payoutSummary.delays.map((item, i) => <li key={i}>{item}</li>)}</ul> : <p>No overdue patients or unanswered calls at handoff.</p>}<h3>Next investment: {shift.payoutSummary.recommendedUpgrade}</h3></> : null}
+            <details><summary>Review care decisions ({shift.payoutSummary.decisions?.length ?? 0})</summary><ol>{shift.payoutSummary.decisions?.map((decision, index) => <li key={index}>{decision}</li>)}</ol></details>
+          </section> : null}
           <div className="tycoon-summary-actions">
             <button
               type="button"
@@ -728,6 +778,7 @@ export function NurseTycoonGame() {
         </TycoonDialog>
       ) : null}
       {shopDialog}
+      {reward ? <div className="tycoon-reward-feedback" role="status"><strong>+${reward.money}</strong><span>+{reward.xp} XP · Care recorded</span></div> : null}
       {toast ? <div className="tycoon-care-toast" role="status">{toast}</div> : null}
     </main>
   )
@@ -770,6 +821,7 @@ function TycoonHud({
           <strong aria-label={`Money: $${tycoon.money}`}>
             ${tycoon.money.toLocaleString()}
           </strong>
+          {inGame ? <span className="tycoon-code-label">Funds</span> : null}
         </div>
       </TycoonTooltip>
       <TycoonTooltip
@@ -880,11 +932,13 @@ function TycoonDialog({
   children,
   onClose,
   expanded = false,
+  compact = false,
 }: {
   title: string
   children: ReactNode
   onClose?: () => void
   expanded?: boolean
+  compact?: boolean
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   useEffect(() => {
@@ -895,7 +949,7 @@ function TycoonDialog({
   return (
     <dialog
       ref={dialogRef}
-      className={`tycoon-dialog${expanded ? ' tycoon-dialog-assessment' : ''}`}
+      className={`tycoon-dialog${expanded ? ' tycoon-dialog-assessment' : ''}${compact ? ' tycoon-dialog-compact' : ''}`}
       aria-label={title}
       onCancel={(event) => {
         event.preventDefault()
@@ -921,7 +975,7 @@ function PatientNote({
 }: {
   shiftId: string
   task: TycoonTask
-  onSaved: () => void
+  onSaved: (noteId: string) => void
 }) {
   const [noteId, setNoteId] = useState<string | null>(null)
   const [failed, setFailed] = useState(false)
@@ -968,12 +1022,13 @@ function PatientNoteEditor({
 }: {
   noteId: string
   task: TycoonTask
-  onSaved: () => void
+  onSaved: (noteId: string) => void
 }) {
   const savedNote = useStudySystemStore((state) =>
     state.notes.find((note) => note.id === noteId),
   )
   const saveNote = useStudySystemStore((state) => state.saveNote)
+  const hasEhr = useStudySystemStore((state) => (state.tycoon.upgrades['ehr-station'] ?? 0) > 0)
   const [body, setBody] = useState(savedNote?.body ?? '')
   return (
     <form
@@ -989,10 +1044,11 @@ function PatientNoteEditor({
           category: 'General',
           updatedAt: new Date().toISOString(),
         })
-        onSaved()
+        onSaved(noteId)
       }}
     >
       <label htmlFor="tycoon-patient-note">Care note</label>
+      {hasEhr && task.simulation ? <><button type="button" className="tycoon-modal-primary" onClick={() => setBody(careNoteDraft(task))}>Prepare EHR care draft</button><p>Review the draft against the care you provided, edit as needed, then save.</p></> : null}
       <textarea
         id="tycoon-patient-note"
         value={body}

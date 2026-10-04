@@ -1,3 +1,4 @@
+import { migrateTycoonMap } from '../services/tycoon-map-migration'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type {
@@ -74,7 +75,11 @@ import {
 } from '../services/cloud-repositories'
 import { trackAppEvent } from '../services/analytics-client'
 import { createClientId } from '../services/ids'
-import { advanceTycoonCare, assessTycoonPatient } from '../services/tycoon-care'
+import { advanceTycoonCare, assessTycoonPatient, decideTycoonCare } from '../services/tycoon-care'
+import { dischargeTycoonPatient } from '../services/tycoon-engine'
+import { respondToCall } from '../services/tycoon-shift-loop'
+import { advanceWorldJob, queueWorldJob } from '../services/tycoon-world-jobs'
+import type { TycoonWorldJob } from './types'
 import type { TycoonCareStep } from './types'
 import { isSupabaseConfigured } from '../services/supabase'
 import { getSafeErrorCopy, reportSafeError } from '../services/safe-errors'
@@ -198,7 +203,12 @@ interface StudySystemState {
   updateProfile: (updates: Partial<UserProfile>) => void
   setExamDate: (examDate: string) => void
   setStudyIntensity: (studyIntensity: StudyIntensity) => void
-  startTycoonShift: (unitId: string, options?: { roomIds?: string[] }) => void
+  startTycoonShift: (unitId: string, options?: { roomIds?: string[]; simulation?: boolean; paced?: boolean; physicalInteractions?: boolean }) => void
+  queueTycoonWorldJob: (taskId: string, kind: 'lab' | 'scanner' | 'chart', shiftId: string, position?: {u: number; v: number}, noteId?: string) => void
+  advanceTycoonWorldJob: (jobId: string, phase: TycoonWorldJob['phase'], position: {u: number; v: number}, workedMs: number, shiftId: string) => void
+  respondToTycoonCall: (callId: string, response: 'attend' | 'delegate' | 'defer', shiftId: string) => void
+  decideTycoonCare: (taskId: string, choice: string, phase: 'care' | 'reassessment', shiftId: string) => void
+  dischargeTycoonPatient: (taskId: string, shiftId: string) => void
   selectTycoonTask: (taskId: string) => void
   reviewTycoonEquipment: (taskId: string, expectedShiftId: string) => void
   assessTycoonPatient: (taskId: string, actionId: string, shiftId: string) => void
@@ -2145,6 +2155,11 @@ export const useStudySystemStore = create<StudySystemState>()(
         set((state) => ({
           tycoon: startTycoonShiftForUnit(state.tycoon, unitId, options),
         })),
+      decideTycoonCare: (taskId, choice, phase, shiftId) => set((state) => ({ tycoon: decideTycoonCare(state.tycoon, taskId, choice, phase, shiftId) })),
+      respondToTycoonCall: (callId, response, shiftId) => set((state) => ({ tycoon: respondToCall(state.tycoon, callId, response, shiftId) })),
+      queueTycoonWorldJob: (taskId, kind, shiftId, position, noteId) => set((state) => ({ tycoon: kind === 'chart' && !state.notes.some((note) => note.id === noteId && note.body.trim()) ? state.tycoon : queueWorldJob(state.tycoon, taskId, kind, shiftId, position, noteId) })),
+      advanceTycoonWorldJob: (jobId, phase, position, workedMs, shiftId) => set((state) => ({ tycoon: advanceWorldJob(state.tycoon, jobId, phase, position, workedMs, shiftId) })),
+      dischargeTycoonPatient: (taskId, shiftId) => set((state) => ({ tycoon: dischargeTycoonPatient(state.tycoon, taskId, shiftId) })),
       selectTycoonTask: (taskId) =>
         set((state) => ({
           tycoon: selectTycoonTaskById(state.tycoon, taskId),
@@ -2220,6 +2235,10 @@ export const useStudySystemStore = create<StudySystemState>()(
     }),
     {
       name: 'nclex-study-system',
+      merge: (persisted, current) => {
+        const saved = persisted as Partial<typeof current> | undefined
+        return { ...current, ...saved, tycoon: migrateTycoonMap(saved?.tycoon ?? current.tycoon) }
+      },
       partialize: (state) => ({
         isDemoMode: state.isDemoMode,
         syncEvents: state.syncEvents,

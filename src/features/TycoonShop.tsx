@@ -4,6 +4,7 @@ import { useStudySystemStore } from '../app/store'
 import type { TycoonGameState, TycoonUpgrade } from '../app/types'
 import { tycoonUpgrades } from '../data/tycoon'
 import { getUpgradeCost } from '../services/tycoon-engine'
+import { upgradeRequirement } from '../services/tycoon-progression'
 import './tycoon-shop.css'
 
 const columns = [
@@ -17,11 +18,11 @@ const roman = ['I', 'II', 'III']
 const items = new Map(tycoonUpgrades.map((item) => [item.id, item]))
 const effects: Record<string, { value: string; label: string }> = {
   'extra-bed': { value: '+1', label: 'Patient next shift' },
-  'vitals-monitor': { value: '−3', label: 'Deterioration penalty' },
-  'ehr-station': { value: '−4 min', label: 'Documentation tasks' },
-  'med-safety-scanner': { value: '+$35', label: 'Medication-check rewards' },
-  'lab-runner': { value: '−4 min', label: 'Vitals tasks' },
-  'staff-training': { value: '+8', label: 'Staff energy buffer' },
+  'vitals-monitor': { value: 'Live', label: 'Ward-board vitals · −3 delay penalty per level' },
+  'ehr-station': { value: 'Draft', label: 'Prepare care notes · −½ min per level' },
+  'med-safety-scanner': { value: 'Verify', label: 'Bedside verification · +$35 per level' },
+  'lab-runner': { value: '−½ min', label: 'After sample delivery' },
+  'staff-training': { value: 'Delegate', label: 'Comfort requests · +8 energy per level' },
   'simulation-room': { value: '+4 XP', label: 'Completed care' },
 }
 type Selection = { id: string; tier?: number }
@@ -41,7 +42,8 @@ export function TycoonShop({ tycoon, onClose }: { tycoon: TycoonGameState; onClo
   const tier = selection.tier ?? Math.min(level + 1, item.maxLevel)
   const cost = getUpgradeCost(item.cost, tier - 1)
   const installed = level >= tier
-  const locked = tier > level + 1
+  const requirement = upgradeRequirement(tycoon, item.id)
+  const locked = tier > level + 1 || Boolean(requirement)
   const affordable = tycoon.money >= cost
   const canBuy = !installed && !locked && affordable
   const effect = effects[item.id]
@@ -62,10 +64,11 @@ export function TycoonShop({ tycoon, onClose }: { tycoon: TycoonGameState; onClo
     const owned = tycoon.upgrades[upgrade.id] ?? 0
     const rank = targetTier ?? Math.min(owned + 1, upgrade.maxLevel)
     const amount = getUpgradeCost(upgrade.cost, rank - 1)
-    const done = owned >= rank, future = rank > owned + 1, short = tycoon.money < amount
+    const required = upgradeRequirement(tycoon, upgrade.id)
+    const done = owned >= rank, future = rank > owned + 1 || Boolean(required), short = tycoon.money < amount
     const active = selection.id === upgrade.id && selection.tier === targetTier
     const name = `${upgrade.name}${targetTier ? ` ${roman[rank - 1]}` : ''}`
-    const state = done ? 'Installed' : future ? `Requires level ${rank - 1}` : short ? `Need ${price(amount - tycoon.money)} more` : `Buy for ${price(amount)}`
+    const state = done ? 'Installed' : required ?? (future ? `Requires level ${rank - 1}` : short ? `Need ${price(amount - tycoon.money)} more` : `Buy for ${price(amount)}`)
     const choose = () => setSelection({ id: upgrade.id, tier: targetTier })
     return <button type="button" key={`${upgrade.id}-${targetTier ?? 'next'}`}
       className={`tycoon-shop-tile${active ? ' is-selected' : ''}${done ? ' is-installed' : ''}${future ? ' is-locked' : ''}${short && !done && !future ? ' is-unaffordable' : ''}`}
@@ -102,8 +105,8 @@ export function TycoonShop({ tycoon, onClose }: { tycoon: TycoonGameState; onClo
         <img src={`/game-assets/tycoon-shop/${item.id}.png`} alt={item.name} draggable={false} />
         <div className="tycoon-shop-level"><span>Level {level} / {item.maxLevel}</span><LevelPips level={level} max={item.maxLevel} /></div>
         <p className="tycoon-shop-description">{item.description}</p>
-        <div className="tycoon-shop-effect"><strong>{effect.value}</strong><span>{effect.label}<small>Per level</small></span></div>
-        <p className="tycoon-shop-availability">{installed ? level >= item.maxLevel ? 'Fully upgraded' : `Tier ${roman[tier - 1]} installed` : locked ? `Install tier ${roman[tier - 2]} first` : !affordable ? `Need ${price(cost - tycoon.money)} more` : item.id === 'extra-bed' ? 'Room opens to patients next shift' : 'Ready to install in your ward'}</p>
+        <div className="tycoon-shop-effect"><strong>{effect.value}</strong><span>{effect.label}</span></div>
+        <p className="tycoon-shop-availability">{installed ? level >= item.maxLevel ? 'Fully upgraded' : `Tier ${roman[tier - 1]} installed` : requirement ?? (locked ? `Install tier ${roman[tier - 2]} first` : !affordable ? `Need ${price(cost - tycoon.money)} more` : item.id === 'extra-bed' ? 'Room opens to patients next shift' : 'Ready to install in your ward')}</p>
         <button type="button" className="tycoon-shop-buy" disabled={!canBuy} onClick={() => purchase(item, tier)}>{installed ? 'Owned' : locked ? 'Locked' : `Buy ${price(cost)}`}</button>
       </aside>
       <section className="tycoon-shop-team" aria-labelledby="tycoon-shop-team-title">
