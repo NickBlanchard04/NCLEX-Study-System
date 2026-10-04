@@ -1205,6 +1205,7 @@ const examPrepArtwork: Record<string, string> = {
 
 export function ExamPrepPage() {
   const [examOpen, setExamOpen] = useState(false)
+  const user = useStudySystemStore((state) => state.authUser)
   const profile = useStudySystemStore((state) => state.profile)
   const updateProfile = useStudySystemStore((state) => state.updateProfile)
   const active = useStudySystemStore((state) => state.activeSession)
@@ -1234,6 +1235,7 @@ export function ExamPrepPage() {
       </label>)}
     </fieldset>
     <button className="simple-study-start" disabled={isPending} onClick={start}>{isPending ? 'Building review…' : 'Start review'}<ArrowRight size={18} /></button>
+    {!user && trackId === 'nclex-rn' && <p>Practice with 300+ NCLEX-RN questions. <Link className="simple-study-link" to="/exam-prep?auth=signup">Sign up</Link> or <Link className="simple-study-link" to="/exam-prep?auth=signin">log in</Link> to save your progress.</p>}
     <details className="simple-study-details"><summary>Exam coverage & content details</summary>
       <p>{track.subtitle}</p><p>Boards: {track.boards.join(', ')}</p>
       <p>{quality.smeReviewed} SME-reviewed questions; {quality.authoredDraft} authored drafts. Practice is not a licensure prediction.</p>

@@ -3,10 +3,10 @@ import { getExamQuestionBank } from '../content'
 import { nclexCategoryExpansion } from '../nclex-category-expansion'
 
 describe('NCLEX category expansion', () => {
-  it('adds eleven questions in each requested category', () => {
-    expect(nclexCategoryExpansion).toHaveLength(55)
+  it('adds seventeen questions in each requested category', () => {
+    expect(nclexCategoryExpansion).toHaveLength(85)
     for (const category of ['Management of Care', 'Safety and Infection Control', 'Health Promotion', 'Psychosocial Integrity', 'Physiological Integrity']) {
-      expect(nclexCategoryExpansion.filter((q) => q.category === category)).toHaveLength(11)
+      expect(nclexCategoryExpansion.filter((q) => q.category === category)).toHaveLength(17)
     }
   })
 
