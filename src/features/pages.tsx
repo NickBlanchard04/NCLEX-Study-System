@@ -82,7 +82,6 @@ import {
 import {
   flashcards,
   getExamCategories,
-  getExamContentQualitySummary,
   getExamDashboardCopy,
   getExamSystems,
   loadLiveBetaFlashcards,
@@ -1215,7 +1214,6 @@ export function ExamPrepPage() {
   const [category, setCategory] = useState<QuestionCategory | 'All'>('All')
   const [isPending, startTransition] = useTransition()
   const track = getExamTrack(trackId)
-  const quality = getExamContentQualitySummary(trackId)
   if (active?.mode === 'practice' && isRenderableSession(active)) return <QuestionSessionRunner focused key={active.id + active.currentIndex} session={active} modeLabel="Exam Prep" onExit={abandonSession} />
   const start = () => startTransition(() => {
     updateProfile({ examTrack: trackId })
@@ -1223,6 +1221,7 @@ export function ExamPrepPage() {
   })
   return <section className="simple-study exam-prep-setup" aria-labelledby="prep-title">
     <header><h1 id="prep-title">Exam Prep</h1><p>Choose a topic. Review up to 10 questions.</p></header>
+    {trackId === 'nclex-rn' && <p><strong>Practice with 300+ NCLEX-RN questions.</strong>{!user && <> <Link className="simple-study-link" to="/exam-prep?auth=signup">Sign up</Link> or <Link className="simple-study-link" to="/exam-prep?auth=signin">log in</Link> to save your progress.</>}</p>}
     <div className="exam-prep-exam"><button className="exam-prep-switcher" aria-expanded={examOpen} aria-controls="prep-exam-choice" onClick={() => setExamOpen(!examOpen)}>{track.shortName}<span>Change exam</span></button>
       {examOpen && <div id="prep-exam-choice"><Field label="Your exam"><select className={selectClass} value={trackId} onChange={(event) => { setTrackId(event.target.value as ExamTrackId); setCategory('All'); setExamOpen(false) }}>{examTracks.map((item) => <option key={item.id} value={item.id}>{item.shortName}</option>)}</select></Field></div>}
     </div>
@@ -1235,13 +1234,6 @@ export function ExamPrepPage() {
       </label>)}
     </fieldset>
     <button className="simple-study-start" disabled={isPending} onClick={start}>{isPending ? 'Building review…' : 'Start review'}<ArrowRight size={18} /></button>
-    {!user && trackId === 'nclex-rn' && <p>Practice with 300+ NCLEX-RN questions. <Link className="simple-study-link" to="/exam-prep?auth=signup">Sign up</Link> or <Link className="simple-study-link" to="/exam-prep?auth=signin">log in</Link> to save your progress.</p>}
-    <details className="simple-study-details"><summary>Exam coverage & content details</summary>
-      <p>{track.subtitle}</p><p>Boards: {track.boards.join(', ')}</p>
-      <p>{quality.smeReviewed} SME-reviewed questions; {quality.authoredDraft} authored drafts. Practice is not a licensure prediction.</p>
-      <ul>{track.testingFormats.map((format) => <li key={format}>{format}</li>)}</ul>
-      <Link className="simple-study-link" to="/test-mode">Take a practice exam</Link>
-    </details>
   </section>
 }
 
