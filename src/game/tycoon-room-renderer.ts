@@ -17,18 +17,16 @@ export interface RoomDrawing {
   wall(key: string, from: GroundPoint, to: GroundPoint): void
   occupiedBed(point: GroundPoint, onSelect: () => void): Phaser.GameObjects.Image[]
 }
-export function drawRoomShell(o: RoomDrawing, index: number, color: number, closed = false) {
+export function drawRoomShell(o: RoomDrawing, index: number, _color: number, closed = false) {
   const { minU, maxU, minV, maxV } = WARD_ROOM
   const p = (u: number, v: number) => roomPoint(index, { u, v })
   const key = `ward-concept-floor-${index}`
-  const image = o.scene.textures.get('concept-warm-floor').getSourceImage()
-  const source = image instanceof HTMLImageElement || image instanceof HTMLCanvasElement ? image : undefined
-  const material = o.scene.textures.exists(key) ? null : createRoomMaterial(color, source, HOSPITAL_MAP.rooms[index].origin)
+  const material = o.scene.textures.exists(key) ? null : createRoomMaterial(HOSPITAL_MAP.rooms[index].origin)
   if (material) o.scene.textures.addCanvas(key, material.canvas)
   const at = projectGround(roomPoint(index, { u: minU, v: minV }))
   const x = projectGround(roomPoint(index, { u: minU, v: maxV })).x - 1
   const y = at.y - 1
-  o.scene.add.image(x, y, key).setOrigin(0).setDepth(-3).setTint(0xe5e3e6)
+  o.scene.add.image(x, y, key).setOrigin(0).setDepth(-3)
   const architecture = drawClinicalArchitecture(o.scene,index,closed)
   // Register the generated fixture to the wall plane (uprights stay upright).
   const fixtureKey='studio-headwall-registered-v1'

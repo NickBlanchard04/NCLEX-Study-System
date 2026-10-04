@@ -41,12 +41,12 @@ export function drawHospitalSurroundings(o:SurroundingsOptions) {
     const ctx=canvas.getContext('2d')!
     ctx.translate(-left,-top);ctx.beginPath()
     corners.forEach((at,i)=>i?ctx.lineTo(at.x,at.y):ctx.moveTo(at.x,at.y));ctx.closePath();ctx.clip()
-    fillWarmWardFloor(ctx,scene)
+    fillWarmWardFloor(ctx)
     scene.textures.addCanvas(key,canvas)
   }
   // Rear service props can have negative projected Y; the foundation must
   // stay below the entire world, not just objects in the clinical rooms.
-  scene.add.image(left,top,key).setOrigin(0).setDepth(-2000).setTint(0xf2e9d7)
+  scene.add.image(left,top,key).setOrigin(0).setDepth(-2000)
   const plaque=(caption:string,u:number,v:number)=>{
     const at=projectGround(p(u,v))
     scene.add.text(at.x,at.y-36,caption,{fontFamily:'Google Sans Text, sans-serif',fontSize:'13px',color:'#253d50',backgroundColor:'#ead9ba',padding:{x:7,y:3}})

@@ -46,10 +46,25 @@ interface Registration {width:number;height:number;visibleBounds:{x?:number;y?:n
 export function objectGrounding(scene:Phaser.Scene,key:string,entry:Registration,point:GroundPoint,width:number) {
   const profile=GROUND_PROFILES[key]
   if(!profile) return null // Layered beds own their grounding; unknown art requires registration.
-  const texture=`ground-contact-v1-${key}`
+  const texture=`ground-contact-ivory-v2-${key}`
   if(!scene.textures.exists(texture)) {
     const canvas=document.createElement('canvas');canvas.width=256;canvas.height=192
     const ctx=canvas.getContext('2d')!, bounds=entry.visibleBounds
+    // A short, faint reflection belongs to the polished floor beneath the object.
+    // Bake it with the existing contact stamp, preserving one draw per prop.
+    const source=scene.textures.get(key).getSourceImage()
+    if(source instanceof HTMLImageElement || source instanceof HTMLCanvasElement) {
+      const reflection=document.createElement('canvas');reflection.width=256;reflection.height=192
+      const r=reflection.getContext('2d')!, scale=100/bounds.width
+      r.save();r.translate(128,130);r.scale(scale,-scale*.22)
+      r.globalAlpha=.09;r.drawImage(source,-entry.groundOrigin.x*entry.width,-entry.groundOrigin.y*entry.height)
+      r.restore();r.globalCompositeOperation='destination-in'
+      const fade=r.createLinearGradient(0,127,0,170)
+      fade.addColorStop(0,'rgba(255,255,255,1)');fade.addColorStop(1,'rgba(255,255,255,0)')
+      r.fillStyle=fade;r.fillRect(0,127,256,65)
+      r.clearRect(0,0,256,127)
+      ctx.drawImage(reflection,0,0)
+    }
     const contacts=profile.contacts.map(([u,v])=>({
       x:128+((bounds.x??0)+u*bounds.width-entry.groundOrigin.x*entry.width)/bounds.width*100,
       y:128+((bounds.y??0)+v*(bounds.height??entry.height)-entry.groundOrigin.y*entry.height)/bounds.width*100,

@@ -1,21 +1,13 @@
-import { rubberPattern } from './tycoon-rubber-material'
+import { bakeIvoryFloor } from './tycoon-ivory-floor'
 import type Phaser from 'phaser'
 import { HOSPITAL_MAP, rectCorners } from './tycoon-map-config'
 import { projectGround, type GroundPoint } from './tycoon-care-presentation'
-import { bakeWardDaylight, WARD_FLOOR_REPEAT } from './tycoon-ward-lighting'
 
 /** Shared world-space material: all floors sample the same tile origin and scale. */
-export function fillWarmWardFloor(ctx: CanvasRenderingContext2D, scene: Phaser.Scene) {
-  const art = scene.textures.get('concept-warm-floor').getSourceImage()
-  if (!(art instanceof HTMLImageElement || art instanceof HTMLCanvasElement)) return
+export function fillWarmWardFloor(ctx: CanvasRenderingContext2D) {
   ctx.save()
   ctx.transform(72, 44, -72, 44, 600, 80)
-  const pattern = ctx.createPattern(art, 'repeat')!
-  pattern.setTransform(new DOMMatrix().scale(WARD_FLOOR_REPEAT))
-  ctx.fillStyle = pattern
-  const bounds = HOSPITAL_MAP.building
-  ctx.fillRect(bounds.minU, bounds.minV, bounds.maxU-bounds.minU, bounds.maxV-bounds.minV)
-  bakeWardDaylight(ctx, bounds)
+  bakeIvoryFloor(ctx,HOSPITAL_MAP.building)
   ctx.restore()
 }
 
@@ -50,10 +42,10 @@ export function drawCorridorFloor(scene: Phaser.Scene) {
     for(const c of HOSPITAL_MAP.corridors) {
       rectCorners(c).map(projectGround).forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath()
     }
-    ctx.clip();ctx.fillStyle=rubberPattern(ctx);ctx.fillRect(left,top,canvas.width,canvas.height)
+    ctx.clip()
     // One continuous material covers every corridor, aligned to all six rooms.
-    fillWarmWardFloor(ctx, scene)
+    fillWarmWardFloor(ctx)
     scene.textures.addCanvas(key,canvas)
   }
-  scene.add.image(left,top,key).setOrigin(0).setDepth(-4).setTint(0xe5e3e6)
+  scene.add.image(left,top,key).setOrigin(0).setDepth(-4)
 }
