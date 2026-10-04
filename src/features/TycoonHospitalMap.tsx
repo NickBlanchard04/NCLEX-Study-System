@@ -39,7 +39,7 @@ export function TycoonHospitalMap({ ref, shiftId, tasks, calls, worldJobs, selec
   const hospitalRef = useRef<TycoonWard | null>(null)
   const [reducedMotion, setReducedMotion] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches)
   const [status, setStatus] = useState<WardStatus | null>(null)
-  const [overview, setOverview] = useState(true)
+  const [overview, setOverview] = useState(false)
   const [controlsOpen, setControlsOpen] = useState(false)
   const [error, setError] = useState(false)
   const [attempt, setAttempt] = useState(0)

@@ -27,6 +27,25 @@ const samplePath = (start: GroundPoint, path: GroundPoint[]) => {
 }
 
 describe('playable ward', () => {
+  it('keeps destination guidance through pause and clears it on arrival or manual steering', () => {
+    const ward = new TycoonWardController(vi.fn()), initial = state()
+    ward.update(initial)
+    const id = `patient:${initial.tasks[0].id}`
+    expect(ward.goTo(id)).toBe(true)
+    expect(ward.snapshot().destination?.id).toBe(id)
+    ward.update({ ...initial, paused: true })
+    ward.tick(1000)
+    expect(ward.snapshot().destination?.id).toBe(id)
+    ward.update(initial)
+    drive(ward)
+    expect(ward.snapshot().destination).toBeNull()
+    expect(ward.snapshot().path).toHaveLength(0)
+    expect(ward.goTo('station')).toBe(true)
+    ward.tick(16, { x: 1, y: 0 })
+    expect(ward.snapshot().destination).toBeNull()
+    expect(ward.snapshot().path).toHaveLength(0)
+  })
+
   it('opens purchased empty rooms without allowing travel into still locked rooms', () => {
     const ward = new TycoonWardController(vi.fn()), initial = { ...state(3), upgrades: {} }
     ward.update(initial)

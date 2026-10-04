@@ -201,6 +201,6 @@ export class TycoonWardController {
   }
   snapshot() {
     const pose = this.state?.reducedMotion ? 'idle-0' : this.careMs > 0 ? `care-${Math.floor(this.animationMs / 320) % 2}` : this.moving ? `walk-${walkFrame(this.strideDistance)}` : 'idle-0'
-    return { direction: this.direction, speed: this.speed, strideDistance: this.strideDistance, footfall: Math.floor(this.strideDistance / (WALK_CYCLE_DISTANCE / 2)), position: { ...this.position }, screenPosition: projectGround(this.position), frame: `${this.direction}-${pose}`, path: this.path, ...this.status() }
+    return { direction: this.direction, speed: this.speed, strideDistance: this.strideDistance, footfall: Math.floor(this.strideDistance / (WALK_CYCLE_DISTANCE / 2)), position: { ...this.position }, screenPosition: projectGround(this.position), frame: `${this.direction}-${pose}`, path: this.path, destination: this.destination, ...this.status() }
   }
 }

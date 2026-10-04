@@ -66,7 +66,7 @@ export function createTycoonWard(options: Options): TycoonWard {
   const resetInput = () => { held.clear(); direction = { x: 0, y: 0 } }
 
   class WardScene extends Phaser.Scene {
-    private overview = true
+    private overview = false
     private hoveredTarget: string | null = null
     private animateSurroundings: ((elapsed: number, reduced: boolean) => void) | null = null
     setOverview(enabled: boolean) { this.overview = enabled; if (loaded) this.fitCamera() }
@@ -74,6 +74,10 @@ export function createTycoonWard(options: Options): TycoonWard {
     private nurse!: Phaser.GameObjects.Sprite
     private contact!: ReturnType<typeof actorContact>
     private route!: Phaser.GameObjects.Graphics
+    private destinationPin!: Phaser.GameObjects.Graphics
+    private destinationLabel!: Phaser.GameObjects.Text
+    private destinationDrawKey = ''
+    private readonly touch = window.matchMedia('(pointer: coarse)').matches
     private indicators: InteractionCue[] = []
     private lastFrame = ''
     private zoom = 1
@@ -159,7 +163,7 @@ export function createTycoonWard(options: Options): TycoonWard {
       this.sync()
     }
     private fitCamera() {
-      this.zoom = followZoom(this.scale.width, this.scale.height)
+      this.zoom = followZoom(this.scale.width, this.scale.height, this.touch)
       this.cameras.main.setZoom(this.zoom)
       this.followNurse(0, true)
     }
@@ -171,7 +175,7 @@ export function createTycoonWard(options: Options): TycoonWard {
         this.cameraAt = null
         return
       }
-      this.cameraAt = followCamera(width, height, this.zoom, controller.snapshot().screenPosition, this.cameraAt, delta, snap || Boolean(bridge?.reducedMotion))
+      this.cameraAt = followCamera(width, height, this.zoom, controller.snapshot().screenPosition, this.cameraAt, delta, snap || Boolean(bridge?.reducedMotion), this.touch)
       this.cameras.main.centerOn(this.cameraAt.x, this.cameraAt.y)
     }
     private polygon(points: ScreenPoint[], fill: number, alpha = 1, depth = 0) {
@@ -215,6 +219,9 @@ export function createTycoonWard(options: Options): TycoonWard {
       this.roomFx = tasks.map((task, index) => drawPatientRoom(this.roomDrawing(), task, index, id => controller.goTo(id)))
       this.drawUpgrades()
       this.route = this.add.graphics().setDepth(1)
+      this.destinationDrawKey = ''
+      this.destinationPin = this.add.graphics().setScrollFactor(0).setDepth(100000)
+      this.destinationLabel = this.add.text(0, 0, '', { fontFamily: 'system-ui', fontSize: '12px', color: '#ffffff', backgroundColor: '#202626', padding: { x: 8, y: 5 } }).setScrollFactor(0).setDepth(100001).setOrigin(.5, 1).setVisible(false)
       controller.targets().forEach((target) => {
         const at = projectGround(target.position)
         const graphic = this.add.circle(at.x, at.y, 16, 0x347f86, 0.08).setScale(1,44/72).setStrokeStyle(1.5, 0x347f86, 0.55).setDepth(-.6)
@@ -396,8 +403,40 @@ export function createTycoonWard(options: Options): TycoonWard {
         this.route.clear().lineStyle(2, 0x347f86, 0.6)
         if (s.path.length) this.route.strokePoints([s.screenPosition, ...s.path.map(projectGround)].map((p) => new Phaser.Math.Vector2(p.x, p.y)))
       }
-      if (refreshUi) this.indicators.forEach(cue => updateInteractionCue(cue, bridge, s.nearby, this.hoveredTarget, controller.paused))
+      if (refreshUi) this.indicators.forEach(cue => updateInteractionCue(cue, bridge, s.nearby, this.hoveredTarget, controller.paused, s.destination))
       this.followNurse(this.staffDelta)
+      // A single camera-space beacon stays readable even when the room is off-screen.
+      const endpoint = s.path.at(-1)
+      this.destinationLabel.setVisible(Boolean(endpoint))
+      if (!endpoint && this.destinationDrawKey) { this.destinationPin.clear(); this.destinationDrawKey = '' }
+      options.parent.dataset.destination = endpoint ? s.destination?.label ?? 'Walk here' : ''
+      if (endpoint) {
+        const view = cameraWorldBounds(this.cameras.main), point = projectGround(endpoint)
+        const x = (point.x - view.left) * this.cameras.main.zoom
+        const y = (point.y - view.top) * this.cameras.main.zoom
+        const footer = this.touch && this.scale.width > this.scale.height ? 100 : 150
+        const target = s.destination
+        const task = bridge?.tasks.find(task => task.id === target?.taskId)
+        const caption = target?.kind === 'station' ? 'Nursing station' : task ? `${task.room} · ${target?.kind === 'patient' ? 'Bedside' : target?.kind === 'safety' ? 'Safety check' : 'Monitor'}` : 'Walk here'
+        this.destinationLabel.setText(caption)
+        const margin = this.destinationLabel.width / 2 + 12
+        const pinX = Phaser.Math.Clamp(x, margin, this.scale.width - margin)
+        const pinY = Phaser.Math.Clamp(y, 55, Math.max(55, this.scale.height - footer))
+        const offscreen = Math.abs(pinX - x) > 1 || Math.abs(pinY - y) > 1
+        const angle = Math.atan2(y - pinY, x - pinX)
+        const key = `${caption}:${pinX.toFixed(1)}:${pinY.toFixed(1)}:${angle.toFixed(2)}:${offscreen}:${this.scale.width}:${this.scale.height}:${this.cameras.main.zoom}`
+        if (key !== this.destinationDrawKey) {
+        this.destinationDrawKey = key
+        const zoom = this.cameras.main.zoom, centerX = this.scale.width / 2, centerY = this.scale.height / 2
+        const px = pinX - centerX, py = pinY - centerY
+        this.destinationPin.clear().setPosition(centerX, centerY).setScale(1 / zoom).lineStyle(2, 0xffffff, .95).fillStyle(0xc72533, .9)
+        if (offscreen) {
+          const tip = { x: px + Math.cos(angle) * 12, y: py + Math.sin(angle) * 12 }
+          this.destinationPin.fillTriangle(tip.x, tip.y, px + Math.cos(angle + 2.3) * 8, py + Math.sin(angle + 2.3) * 8, px + Math.cos(angle - 2.3) * 8, py + Math.sin(angle - 2.3) * 8)
+        } else this.destinationPin.fillCircle(px, py, 7).strokeCircle(px, py, 10)
+        this.destinationLabel.setScale(1 / zoom).setPosition(centerX + px / zoom, centerY + (py - 17) / zoom)
+        }
+      }
       // CameraManager otherwise renders every column, even outside the viewport.
       // Cull actual crop bounds, rather than each column's full parent wall size.
       const camera=this.cameras.main,view=cameraWorldBounds(camera)
@@ -422,6 +461,7 @@ export function createTycoonWard(options: Options): TycoonWard {
         options.parent.dataset.backgroundActors = '2'
         options.parent.dataset.ambientTime = this.elapsed.toFixed(0)
         options.parent.dataset.overview = String(this.overview)
+        options.parent.dataset.cameraZoom = this.cameras.main.zoom.toFixed(2)
         options.parent.dataset.visibleMarkers = String(this.indicators.filter(item => item.graphic.visible).length)
         options.parent.dataset.mapRooms = String(HOSPITAL_MAP.rooms.length)
         options.parent.dataset.lockedRooms = String(HOSPITAL_MAP.rooms.length - availableRoomCount(bridge!.tasks.length, bridge?.upgrades))
