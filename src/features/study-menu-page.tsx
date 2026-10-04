@@ -18,7 +18,6 @@ export function StudyMenuPage() {
   const authInitialized = useStudySystemStore((state) => state.authInitialized)
   const syncStatus = useStudySystemStore((state) => state.syncStatus)
   const [launchError, setLaunchError] = useState('')
-  const [activeActivity, setActiveActivity] = useState(0)
 
   return (
     <div className="home-launcher">
@@ -33,19 +32,6 @@ export function StudyMenuPage() {
       </header>
 
       <main className="home-launcher-main" aria-label="Choose how to study">
-        <div className="home-activity-selector" role="group" aria-label="Choose a learning activity">
-          {learningActivities.map((activity, index) => (
-            <button
-              key={activity.route}
-              type="button"
-              aria-pressed={activeActivity === index}
-              aria-controls={`home-activity-${index}`}
-              onClick={() => setActiveActivity(index)}
-            >
-              {activity.title}
-            </button>
-          ))}
-        </div>
         <div className="home-launcher-stage">
           <div className="home-banner-trio">
             {learningActivities.map((activity, index) => (
@@ -63,7 +49,6 @@ export function StudyMenuPage() {
                 aria-label={`${activity.title}: ${activity.description}`}
                 className="home-learning-banner"
                 data-banner-tone={activity.tone}
-                data-active={activeActivity === index}
                 style={{ aspectRatio: `${activity.width} / 690` }}
               >
                 {/* Preserve the supplied artwork's exact crop and proportions. */}
@@ -74,6 +59,7 @@ export function StudyMenuPage() {
                   draggable={false}
                   style={{ width: `${1470 / activity.width * 100}%`, left: `${-activity.x / activity.width * 100}%`, top: `${-256 / 690 * 100}%` }}
                 />
+                <span className="home-mobile-card-copy" aria-hidden="true"><strong>{activity.title}</strong><span>{activity.description}</span></span>
               </Link>
             ))}
           </div>
