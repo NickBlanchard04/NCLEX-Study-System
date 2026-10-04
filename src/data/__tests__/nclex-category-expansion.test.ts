@@ -3,10 +3,10 @@ import { getExamQuestionBank } from '../content'
 import { nclexCategoryExpansion } from '../nclex-category-expansion'
 
 describe('NCLEX category expansion', () => {
-  it('adds five questions in each requested category', () => {
-    expect(nclexCategoryExpansion).toHaveLength(25)
+  it('adds eleven questions in each requested category', () => {
+    expect(nclexCategoryExpansion).toHaveLength(55)
     for (const category of ['Management of Care', 'Safety and Infection Control', 'Health Promotion', 'Psychosocial Integrity', 'Physiological Integrity']) {
-      expect(nclexCategoryExpansion.filter((q) => q.category === category)).toHaveLength(5)
+      expect(nclexCategoryExpansion.filter((q) => q.category === category)).toHaveLength(11)
     }
   })
 
@@ -33,6 +33,7 @@ describe('NCLEX category expansion', () => {
       }
     }
     expect(new Set(nclexCategoryExpansion.map((q) => q.correctAnswer[0])).size).toBe(4)
+    expect(new Set(nclexCategoryExpansion.map((q) => `${q.scenario}|${q.prompt}`)).size).toBe(nclexCategoryExpansion.length)
   })
 
   it('preserves honest draft status and authoritative answer sources', () => {
@@ -40,7 +41,7 @@ describe('NCLEX category expansion', () => {
       expect(question.contentQuality).toBe('authored-draft')
       expect(question.clinicalReviewStatus).toBe('not_sme_reviewed')
       expect(question.countsTowardOfficialReadiness).toBe(false)
-      expect(question.sourceRefs?.[0]).toMatch(/^https:\/\/(ncsbn\.org|www\.cdc\.gov|.*\.nih\.gov|www\.niddk\.nih\.gov|www\.nimh\.nih\.gov)\//)
+      expect(question.sourceRefs?.[0]).toMatch(/^https:\/\/(ncsbn\.org|www\.cdc\.gov|www\.ahrq\.gov|.*\.nih\.gov)\//)
       expect(question.learnerVisible).toBe(true)
     }
   })
