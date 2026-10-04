@@ -33,3 +33,43 @@
 
 .tycoon-control-option-label { display: none; }
 @media (pointer: coarse), (max-width: 599px) { .tycoon-control-option-label { display: inline; } }
+
+.tycoon-code-red .tycoon-patients-key, .tycoon-mobile-patients-close, .tycoon-handoff-mobile-label { display: none; }
+/* Landscape phones use a single edge dock, leaving the ward unobstructed. */
+@media (orientation: landscape) and (pointer: coarse), (orientation: landscape) and (max-width: 899px) {
+  .tycoon-code-red .tycoon-hud { position: fixed; inset: auto 0 calc(58px + env(safe-area-inset-bottom)) 0; height: 30px; padding: 0 max(12px, env(safe-area-inset-right)) 0 max(12px, env(safe-area-inset-left)); display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 20px; background: #181818d9; border-top: 1px solid #ffffff40; }
+  .tycoon-code-red .tycoon-hud > div:not(.tycoon-hud-time) { display: flex; align-items: baseline; gap: 6px; min-width: 0; padding: 0; background: none; border: 0; transform: none; }
+  .tycoon-code-red .tycoon-hud :is(strong, .tycoon-hud-level strong) { font-size: 18px; }
+  .tycoon-code-red .tycoon-hud :is(.tycoon-code-label, .tycoon-xp-remaining, .tycoon-safety-label) { font-size: 11px; }
+  .tycoon-code-red .tycoon-hud :is(.tycoon-hud-level > div, .tycoon-hud-safety > div) { display: flex; align-items: baseline; gap: 6px; }
+  .tycoon-code-red .tycoon-hud > .tycoon-hud-time { position: static; order: -1; width: auto; min-height: 0; padding: 0 !important; background: none; clip-path: none; transform: none; }
+  .tycoon-code-red .tycoon-clock-meta { display: flex; align-items: baseline; gap: 5px; }
+  .tycoon-code-red .tycoon-hud > .tycoon-hud-time .tycoon-clock-digital { font-size: 18px; }
+  .tycoon-code-red .tycoon-hud > .tycoon-hud-time .tycoon-clock-meridiem { font-size: 10px; }
+  .tycoon-code-red .tycoon-clock-shift { margin: 0 0 0 5px; padding: 1px 5px; font-size: 11px; }
+  .tycoon-code-red .tycoon-hud > .tycoon-hud-time .tycoon-clock-caption { font-size: 10px; }
+  .tycoon-code-red .tycoon-priority { display: none; }
+  .tycoon-code-red[data-patients-open="true"] .tycoon-priority { display: block; inset: auto auto calc(100px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); width: 310px; max-height: calc(100dvh - 116px - env(safe-area-inset-bottom)); background: #181818f2; padding: 8px; z-index: 5; }
+  .tycoon-code-red .tycoon-mobile-patients-close { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin-left: auto; background: transparent; border: 0; color: white; }
+  .tycoon-code-red .tycoon-movement { position: fixed; inset: auto 0 0 0; height: calc(58px + env(safe-area-inset-bottom)); background: #181818e6; padding: 7px max(12px, env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); }
+  .tycoon-code-red .tycoon-movement-row { display: grid; grid-template-columns: minmax(100px, 1fr) minmax(100px, 1fr) 64px 90px 54px; grid-template-rows: 44px; gap: 6px; max-width: 720px; margin-left: auto; }
+  .tycoon-code-red .tycoon-input-hints, .tycoon-code-red .tycoon-dpad { display: none; }
+  .tycoon-code-red .tycoon-touch-movement { position: absolute; left: max(16px, env(safe-area-inset-left)); bottom: calc(100px + env(safe-area-inset-bottom)); }
+  .tycoon-code-red .tycoon-touch-hint { display: none; }
+  .tycoon-code-red .tycoon-movement :is(.tycoon-interact, .tycoon-patients-key, .tycoon-shop-key) { display: flex; grid-row: 1; min-height: 44px; max-width: none; padding: 5px; transform: none; justify-content: center; font-size: 18px; border-bottom-width: 2px; }
+  .tycoon-code-red .tycoon-movement .tycoon-interact { grid-column: 2; }
+  .tycoon-code-red .tycoon-movement .tycoon-patients-key { grid-column: 1; }
+  .tycoon-code-red .tycoon-movement .tycoon-shop-key { grid-column: 3; }
+  .tycoon-code-red .tycoon-control-options { grid-column: 5; grid-row: 1; }
+  .tycoon-code-red .tycoon-control-options > .tycoon-controls-more { width: 54px; border-bottom-width: 2px; }
+  .tycoon-code-red .tycoon-controls-more svg { display: none; }
+  .tycoon-code-red .tycoon-control-options[data-open="true"] .tycoon-control-options-list { bottom: calc(100% + 44px); }
+  .tycoon-code-red .tycoon-game-footer { position: fixed; bottom: calc(7px + env(safe-area-inset-bottom)); right: calc(max(12px, env(safe-area-inset-right)) + 60px); z-index: 4; }
+  .tycoon-code-red .tycoon-finish { display: flex; align-items: center; justify-content: center; gap: 4px; width: 90px; min-height: 44px; padding: 5px; font-size: 18px !important; transform: none; border-bottom-width: 2px; }
+  .tycoon-code-red .tycoon-finish > * { transform: none; }
+  .tycoon-code-red .tycoon-finish svg { width: 16px; }
+  .tycoon-code-red .tycoon-handoff-desktop-label { display: none; }
+  .tycoon-code-red .tycoon-handoff-mobile-label { display: inline; }
+  .tycoon-code-red .tycoon-command { inset: auto max(12px, env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) auto; width: min(380px, calc(100vw - 24px)); max-height: calc(100dvh - 16px - env(safe-area-inset-bottom)); }
+  .tycoon-code-red.is-command-open :is(.tycoon-movement, .tycoon-game-footer) { visibility: hidden; }
+}

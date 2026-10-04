@@ -18,6 +18,8 @@ type Props = {
   selectedTaskId?: string
   reviewedTaskIds: string[]
   upgrades: Record<string, number>
+  onOpenPatients: () => void
+  patientsOpen: boolean
   onOpenShop: () => void
   onNearbyTask: (id: string | null) => void
   paused: boolean
@@ -26,7 +28,7 @@ type Props = {
   onInteract: (target: WardTarget) => void
 }
 
-export function TycoonHospitalMap({ ref, shiftId, tasks, calls, worldJobs, selectedTaskId, reviewedTaskIds, upgrades, paused, manuallyPaused, onTogglePause, onInteract, onOpenShop, onNearbyTask }: Props) {
+export function TycoonHospitalMap({ ref, shiftId, tasks, calls, worldJobs, selectedTaskId, reviewedTaskIds, upgrades, paused, manuallyPaused, onTogglePause, onInteract, onOpenShop, onOpenPatients, patientsOpen, onNearbyTask }: Props) {
   const [soundEnabled, setSoundEnabled] = useState(() => { try { return localStorage.getItem('tycoon-sound-v1') !== 'off' } catch { return true } })
   function toggleSound() {
     const next = !soundEnabled
@@ -126,6 +128,7 @@ export function TycoonHospitalMap({ ref, shiftId, tasks, calls, worldJobs, selec
             <kbd aria-hidden="true">E</kbd>
             <span>{interactionLabel}</span>
           </button>
+          <button type="button" className="tycoon-patients-key" onClick={onOpenPatients} aria-expanded={patientsOpen} aria-controls="tycoon-mobile-patients">Patients</button>
           <button type="button" className="tycoon-shop-key" onClick={onOpenShop} aria-label="Open shop"><kbd aria-hidden="true">I</kbd><span>Shop</span></button>
           <div className="tycoon-control-options" data-open={controlsOpen}>
             <button type="button" className="tycoon-controls-more" aria-label="More controls" aria-expanded={controlsOpen} aria-controls="tycoon-extra-controls" onClick={() => setControlsOpen(!controlsOpen)}><MoreHorizontal aria-hidden="true" /><span>More</span></button>

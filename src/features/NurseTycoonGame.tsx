@@ -86,6 +86,7 @@ export function NurseTycoonGame() {
   } | null>(null)
   const [showUpgrades, setShowUpgrades] = useState(false)
   const [commandOpen, setCommandOpen] = useState(false)
+  const [patientsOpen, setPatientsOpen] = useState(false)
   const [nearbyTaskId, setNearbyTaskId] = useState<string | null>(null)
   const [reward, setReward] = useState<{money: number; xp: number} | null>(null)
   useEffect(() => { if (!reward) return; const timer = window.setTimeout(() => setReward(null), 3600); return () => window.clearTimeout(timer) }, [reward])
@@ -106,11 +107,11 @@ export function NurseTycoonGame() {
     const timer = window.setTimeout(() => setToast(null), 4200)
     return () => window.clearTimeout(timer)
   }, [toast])
-  const [compact, setCompact] = useState(() => window.matchMedia('(max-width: 899px)').matches)
+  const [compact, setCompact] = useState(() => window.matchMedia('(max-width: 899px), (pointer: coarse)').matches)
   const commandPanelRef = useRef<HTMLElement>(null)
   const mapPanelRef = useRef<HTMLElement>(null)
   useEffect(() => {
-    const media = window.matchMedia('(max-width: 899px)')
+    const media = window.matchMedia('(max-width: 899px), (pointer: coarse)')
     const update = () => {
       setCompact(media.matches)
       setCommandOpen(false)
@@ -150,6 +151,7 @@ export function NurseTycoonGame() {
           : undefined
 
   function selectRoomTask(task: TycoonTask) {
+    setPatientsOpen(false)
     selectTask(task.id)
     setCommandOpen(true)
     window.requestAnimationFrame(() => commandPanelRef.current?.focus({ preventScroll: true }))
@@ -319,6 +321,7 @@ export function NurseTycoonGame() {
   return (
     <main
       className={`tycoon tycoon-game tycoon-prototype tycoon-code-red${panelVisible ? ' is-command-open' : ''}${patientView || feedback || stationOpen ? ' is-patient-focus' : ''}`}
+      data-patients-open={patientsOpen}
       aria-label="Nurse Command Tycoon shift"
     >
       <TycoonHud
@@ -329,8 +332,10 @@ export function NurseTycoonGame() {
       <div className="tycoon-workspace">
         <section
           className="tycoon-panel tycoon-priority"
+          id="tycoon-mobile-patients"
           aria-labelledby="tycoon-priority-title"
         >
+          <button type="button" className="tycoon-mobile-patients-close" aria-label="Close patients" onClick={() => setPatientsOpen(false)}><X aria-hidden="true" /></button>
           <div className="tycoon-priority-copy">
             <TycoonTooltip text="The game’s highest-urgency unfinished task. Earlier deadlines break ties.">
               <h2 className="tycoon-section-label" id="tycoon-priority-title">
@@ -385,7 +390,9 @@ export function NurseTycoonGame() {
               upgrades={tycoon.upgrades}
               calls={shift.loop?.calls}
               worldJobs={shift.worldJobs}
-              onOpenShop={() => setShowUpgrades(true)}
+              onOpenPatients={() => setPatientsOpen((open) => !open)}
+              patientsOpen={patientsOpen}
+              onOpenShop={() => { setPatientsOpen(false); setShowUpgrades(true) }}
               onNearbyTask={setNearbyTaskId}
               paused={Boolean(briefingOpen || patientView || feedback || stationOpen || showUpgrades || manuallyPaused || (compact && commandOpen)) || shift.status !== 'running'}
               manuallyPaused={manuallyPaused}
@@ -530,11 +537,12 @@ export function NurseTycoonGame() {
         <button
           type="button"
           className="tycoon-finish"
+          aria-label="Return for handoff"
           onClick={() => travelTo('station')}
           disabled={shift.status !== 'running'}
         >
           <FastForward fill="currentColor" aria-hidden="true" />
-          Return for handoff
+          <span className="tycoon-handoff-desktop-label">Return for handoff</span><span className="tycoon-handoff-mobile-label">Handoff</span>
         </button>
       </footer>
       {patientView && modalTask && shift.status === 'running' ? (
