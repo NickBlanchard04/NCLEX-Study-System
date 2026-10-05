@@ -1,4 +1,4 @@
-import { StudyToolsMenu } from '../features/study-tools-menu'
+import { StudyNavigation } from '../features/study-tools-menu'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   Bell,
@@ -548,7 +548,7 @@ function NclexAppShell() {
   }
   if (['/practice-questions', '/test-mode', '/exam-prep', '/study-plan', '/flashcards', '/notes', '/strategy-training'].includes(practiceRoute)) {
     return <AuthGate><div className="nurse-command-app home-route-shell text-white"><div className="simple-tools-page">
-      <header className="home-launcher-header"><Link className="home-launcher-brand" to="/"><img src={nursingCommandLogo} alt="" /><span>Nurse <span>Command</span></span></Link><div className="simple-tools-nav"><StudyToolsMenu /><Link className="home-tools-trigger" to="/">Home</Link></div></header>
+      <header className="home-launcher-header"><Link className="home-launcher-brand" to="/"><img src={nursingCommandLogo} alt="" /><span>Nurse <span>Command</span></span></Link><StudyNavigation /></header>
       <main className="guest-practice-content"><LazyRoute label="Loading study tools">{practiceRoute === '/flashcards' ? <FlashcardsPage /> : practiceRoute === '/notes' ? <NotesPage /> : practiceRoute === '/strategy-training' ? <StrategyTrainingPage /> : practiceRoute === '/study-plan' ? <StudyPlanPage /> : <AccountPracticePage key={practiceRoute} route={practiceRoute} />}</LazyRoute></main>
     </div></div></AuthGate>
   }
@@ -699,7 +699,7 @@ function NclexAppShell() {
               </div>
 
               <div className="flex items-center gap-2 md:gap-3">
-                <StudyToolsMenu />
+                <StudyNavigation />
                 <button
                   type="button"
                   onClick={() => void syncNow()}

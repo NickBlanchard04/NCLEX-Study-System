@@ -1,4 +1,4 @@
-import { StudyToolsMenu } from './study-tools-menu'
+import { StudyNavigation } from './study-tools-menu'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useStudySystemStore } from '../app/store'
@@ -8,7 +8,7 @@ import bannerReference from '../assets/home/banner-reference.webp'
 
 const learningActivities = [
   { title: 'Daily Lesson', description: 'The default 3–5 minute learning session', route: '/daily-lesson', tone: 'gold', x: 106, width: 402 },
-  { title: 'Practice', description: 'Quick nursing questions', route: '/quick-study', tone: 'blue', x: 542, width: 392 },
+  { title: 'Practice', description: '5 NCLEX questions · No account needed', route: '/quick-study?start=5', tone: 'blue', x: 542, width: 392 },
   { title: 'Review', description: 'Missed questions and weak areas', route: '/review', tone: 'teal', x: 964, width: 400 },
 ] as const
 
@@ -27,7 +27,7 @@ export function StudyMenuPage() {
           <span>Nurse <span>Command</span></span>
         </h1>
         <div className="home-launcher-actions">
-          <StudyToolsMenu />
+          <StudyNavigation />
         </div>
       </header>
 

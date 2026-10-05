@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { StudyNavigation } from '../features/study-tools-menu'
 import {
   ArrowLeft,
   ArrowRight,
@@ -416,6 +417,7 @@ function AuthLanding({ onBack, savingResult }: { onBack: () => void; savingResul
         <button className="auth-back-button" type="button" onClick={onBack}>
           <ArrowLeft size={22} aria-hidden="true" /> Go back
         </button>
+        <StudyNavigation />
       </header>
       <main className="auth-main">
         <section className="auth-card" aria-labelledby="auth-title">
@@ -610,6 +612,7 @@ export function VerificationEmailScreen({ email, onBack, onSignIn }: { email: st
     <header className="auth-header">
       <Link className="home-launcher-brand" to="/" aria-label="Nurse Command home"><img src={nursingCommandLogo} alt="" /><span>Nurse <span>Command</span></span></Link>
       <button className="auth-back-button" type="button" onClick={onBack}><ArrowLeft size={22} aria-hidden="true" /> Go back</button>
+      <StudyNavigation />
     </header>
     <main className="auth-main">
       <section className="auth-card" aria-labelledby="verification-title">

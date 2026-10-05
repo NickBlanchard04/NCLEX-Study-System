@@ -6,6 +6,7 @@ import { trackAppEvent } from '../services/analytics-client'
 import { Breadcrumbs } from '../seo/RouteSeo'
 import logo from '../assets/brand/nursing-command-logo-small.webp'
 import { TopicLinks } from './topic-links'
+import { StudyNavigation } from './study-tools-menu'
 
 export function TopicLandingPage({ slug }: { slug: string }) {
   const topic = topics.find(item => item.slug === slug)!
@@ -14,7 +15,7 @@ export function TopicLandingPage({ slug }: { slug: string }) {
   const practiceUrl = `/exam-prep?topic=${slug}&preview=5`
   useEffect(() => { void trackAppEvent('page_view', { page_path: path, feature_name: 'Topic guide', question_category: topic.category }) }, [path, topic.category])
   return <div className="topic-page">
-    <header className="home-launcher-header"><Link className="home-launcher-brand" to="/"><img src={logo} alt="" /><span>Nurse <span>Command</span></span></Link><Link className="home-tools-trigger" to="/exam-prep">Exam Prep</Link></header>
+    <header className="home-launcher-header"><Link className="home-launcher-brand" to="/"><img src={logo} alt="" /><span>Nurse <span>Command</span></span></Link><StudyNavigation /></header>
     <main className="topic-content">
       <Breadcrumbs />
       <h1>{topic.title}</h1>

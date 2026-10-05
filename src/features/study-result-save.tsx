@@ -1,4 +1,4 @@
-import { StudyToolsMenu } from './study-tools-menu'
+import { StudyNavigation } from './study-tools-menu'
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useStudySystemStore } from '../app/store'
@@ -7,15 +7,13 @@ import type { SavedStudyResult } from '../services/study-handoff'
 import { normalizeQuickStudyProgress, recordQuickStudyAnswer } from '../services/daily-lesson'
 import logo from '../assets/brand/nursing-command-logo.png'
 import { trackAppEvent } from '../services/analytics-client'
-import { getExamQuestionBank } from '../data/content'
-
-const availableRnQuestions = new Set(getExamQuestionBank('nclex-rn').filter(question => question.learnerVisible !== false && question.visibility !== 'internal').map(question => question.id)).size
+import { Sprout } from 'lucide-react'
 
 function ResultFrame({ children }: { children: React.ReactNode }) {
-  return <div className="quick-study-page"><header className="home-launcher-header"><Link className="home-launcher-brand" to="/"><img src={logo} alt="" /><span>Nurse <span>Command</span></span></Link><div className="home-launcher-actions"><StudyToolsMenu /><Link className="home-tools-trigger" to="/">Home</Link></div></header><div className="quick-study-main">{children}</div></div>
+  return <div className="quick-study-page"><header className="home-launcher-header"><Link className="home-launcher-brand" to="/"><img src={logo} alt="" /><span>Nurse <span>Command</span></span></Link><StudyNavigation /></header><div className="quick-study-main">{children}</div></div>
 }
 
-export function StudyResultSave({ result, autoSave = false, onContinue }: { result: SavedStudyResult; autoSave?: boolean; onContinue?: () => void }) {
+export function StudyResultSave({ result, autoSave = false, onContinue, compact = false }: { result: SavedStudyResult; autoSave?: boolean; onContinue?: () => void; compact?: boolean }) {
   const user = useStudySystemStore((state) => state.authUser)
   const profile = useStudySystemStore((state) => state.profile)
   const sync = useStudySystemStore((state) => state.syncStatus)
@@ -50,10 +48,15 @@ export function StudyResultSave({ result, autoSave = false, onContinue }: { resu
     <p>Connecting with other students is optional. Your results are not shared.</p>
     <Link to="/social">Explore the community</Link>
   </section>
+  if (compact) return <section className="study-save-prompt study-save-prompt-compact" aria-label="Save your progress">
+    <p><Sprout size={26} aria-hidden="true" />Keep your streak, grow each week.</p>
+    <button className="quick-session-primary" onClick={() => signIn('signup')}>Create account</button>
+    {error && <p role="alert">{error}</p>}
+  </section>
   return <section className="study-save-prompt" aria-labelledby="keep-progress-title">
-    <h2 id="keep-progress-title">Keep your progress. Keep practicing.</h2>
-    <p>Create an account to save your results and keep practicing{availableRnQuestions > 300 ? ' with 300+ NCLEX-RN questions.' : ' by topic.'}</p>
-    <div className="quick-session-review-actions"><button className="quick-session-primary" onClick={() => signIn('signup')}>Create my account</button>{onContinue ? <button className="quick-session-secondary" onClick={onContinue}>Keep practicing as a guest</button> : <Link className="quick-session-secondary" to={result.route}>Keep practicing as a guest</Link>}</div>
+    <h2 id="keep-progress-title">Keep the progress you just made.</h2>
+    <p>Save your results and pick up where you left off.</p>
+    <div className="quick-session-review-actions"><button className="quick-session-primary" onClick={() => signIn('signup')}>Create an account</button>{onContinue ? <button className="quick-session-secondary" onClick={onContinue}>Continue as guest</button> : <Link className="quick-session-secondary" to={result.route}>Continue as guest</Link>}</div>
     <button className="quick-session-text-button" onClick={() => signIn('signin')}>Already have an account? Sign in</button>
     <p className="quick-bank-muted">Private by default. Joining the community is optional.</p>
     {error && <p role="alert">{error}</p>}

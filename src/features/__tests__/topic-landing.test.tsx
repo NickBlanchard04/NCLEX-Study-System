@@ -33,9 +33,9 @@ describe('Public topic acquisition flow', () => {
   })
   it('offers result signup without removing guest continuation', () => {
     const html = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(StudyResultSave, { result: { id: 'test', title: 'Practice', route: '/exam-prep', completedAt: '2026-10-04', total: 1, answers: [{ id: 'sample', correct: true }] } })))
-    expect(html).toContain('Keep your progress. Keep practicing.')
-    expect(html).toContain('Create my account')
-    expect(html).toContain('300+ NCLEX-RN questions.')
-    expect(html).toContain('Keep practicing as a guest')
+    expect(html).toContain('Keep the progress you just made.')
+    expect(html).toContain('Create an account')
+    expect(html).toContain('Save your results and pick up where you left off.')
+    expect(html).toContain('Continue as guest')
   })
 })

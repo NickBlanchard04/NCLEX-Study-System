@@ -1,11 +1,11 @@
 import { Link } from 'react-router-dom'
 import { Breadcrumbs } from '../seo/RouteSeo'
-import { StudyToolsMenu } from './study-tools-menu'
+import { StudyNavigation } from './study-tools-menu'
 import logo from '../assets/brand/nursing-command-logo-small.webp'
 
 export function GameLandingPage() {
   return <div className="topic-page game-landing">
-    <header className="home-launcher-header"><Link className="home-launcher-brand" to="/"><img src={logo} alt="" /><span>Nurse <span>Command</span></span></Link><StudyToolsMenu /></header>
+    <header className="home-launcher-header"><Link className="home-launcher-brand" to="/"><img src={logo} alt="" /><span>Nurse <span>Command</span></span></Link><StudyNavigation /></header>
     <main className="topic-content">
       <Breadcrumbs />
       <h1>Nurse Command Tycoon</h1>

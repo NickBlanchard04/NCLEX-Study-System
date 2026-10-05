@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { StudyNavigation } from './study-tools-menu'
 import {
   Check,
   ChevronRight,
@@ -892,6 +893,7 @@ function TycoonHud({
         inGame={inGame}
         paused={clockPaused}
       />
+      <StudyNavigation />
     </header>
   )
 }

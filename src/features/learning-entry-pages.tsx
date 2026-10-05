@@ -1,4 +1,4 @@
-import { StudyToolsMenu } from './study-tools-menu'
+import { StudyNavigation } from './study-tools-menu'
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useStudySystemStore } from '../app/store'
@@ -11,7 +11,7 @@ import logo from '../assets/brand/nursing-command-logo.png'
 
 function EntryFrame({ title, children }: { title: string; children: React.ReactNode }) {
   return <div className="quick-study-page">
-    <header className="home-launcher-header"><Link className="home-launcher-brand" to="/"><img src={logo} alt="" /><span>Nurse <span>Command</span></span></Link><div className="home-launcher-actions"><StudyToolsMenu /><Link className="home-tools-trigger" to="/">Home</Link></div></header>
+    <header className="home-launcher-header"><Link className="home-launcher-brand" to="/"><img src={logo} alt="" /><span>Nurse <span>Command</span></span></Link><StudyNavigation /></header>
     <main className="quick-study-main"><section className="learning-entry"><h1>{title}</h1>{children}</section></main>
   </div>
 }

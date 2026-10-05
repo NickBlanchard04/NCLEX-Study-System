@@ -1,9 +1,9 @@
-import { StudyToolsMenu } from './study-tools-menu'
+import { StudyNavigation } from './study-tools-menu'
 import { useEffect, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Check, X } from 'lucide-react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Check, CircleX, X } from 'lucide-react'
 import { useStudySystemStore } from '../app/store'
-import { getNextQuickStudySessionId, getQuickStudyResult, getQuickStudySet, isQuickStudyCorrect, quickStudyBank, quickStudySources } from '../services/quick-study-bank'
+import { getIntroPracticeSet, getNextQuickStudySessionId, getQuickStudyResult, getQuickStudySet, isQuickStudyCorrect, quickStudyBank, quickStudySources } from '../services/quick-study-bank'
 import type { QuickStudyItem } from '../services/quick-study-bank'
 import { QuestionSessionRunner } from './ui'
 import { normalizeQuickStudyProgress, recordQuickStudyAnswer, readGuestSeenIds, writeGuestSeenIds } from '../services/daily-lesson'
@@ -16,6 +16,8 @@ import { StudyResultSave } from './study-result-save'
 // Draft-bank rounds never write attempts or official readiness evidence.
 export function QuickStudyPage({ initialItems, mode = 'practice', onComplete }: { initialItems?: QuickStudyItem[]; mode?: 'practice' | 'daily' | 'review'; onComplete?: () => void }) {
   const navigate = useNavigate()
+  const [search] = useSearchParams()
+  const intro = mode === 'practice' && search.get('start') === '5'
   const authUser = useStudySystemStore((state) => state.authUser)
   const profile = useStudySystemStore((state) => state.profile)
   const syncStatus = useStudySystemStore((state) => state.syncStatus)
@@ -31,7 +33,7 @@ export function QuickStudyPage({ initialItems, mode = 'practice', onComplete }: 
   const [storageFailed, setStorageFailed] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [sessionId, setSessionId] = useState(savedRound?.sessionId ?? 1)
-  const [items, setItems] = useState(() => savedRound ? savedRound.ids.map((id) => quickStudyBank.questions.find((q) => q.id === id)!) : initialItems ?? getQuickStudySet(1))
+  const [items, setItems] = useState(() => savedRound ? savedRound.ids.map((id) => quickStudyBank.questions.find((q) => q.id === id)!) : initialItems ?? (intro ? getIntroPracticeSet(authUser ? progress.seenIds : readGuestSeenIds()) : getQuickStudySet(1)))
   const [index, setIndex] = useState(savedRound?.index ?? 0)
   const [selected, setSelected] = useState<number[]>(savedRound?.selected ?? [])
   const [checked, setChecked] = useState(savedRound?.checked ?? false)
@@ -67,7 +69,7 @@ export function QuickStudyPage({ initialItems, mode = 'practice', onComplete }: 
   function start(id: number, subset?: QuickStudyItem[]) {
     setRoundId(crypto.randomUUID()); setStartedAt(new Date().toISOString()); setResumePrompt(false)
     setCompletedAt(undefined)
-    setSessionId(id); setItems(subset ?? getQuickStudySet(id)); setIndex(0)
+    setSessionId(id); setItems(subset ?? (intro ? getIntroPracticeSet(authUser ? progress.seenIds : readGuestSeenIds()) : getQuickStudySet(id))); setIndex(0)
     setSelected([]); setChecked(false); setResults([]); setFinished(false); setRetry(Boolean(subset))
     focusQuestion()
   }
@@ -106,17 +108,17 @@ export function QuickStudyPage({ initialItems, mode = 'practice', onComplete }: 
         </Link>
         <div className="quick-bank-header-actions">
           <button className="quick-session-text-button" onClick={() => showDetails('about')}>About this set</button>
-          <StudyToolsMenu />
-          <Link className="home-tools-trigger" to="/"><ArrowLeft size={16} aria-hidden="true" /> Home</Link>
+          <StudyNavigation />
         </div>
       </header>
       <main className="quick-study-main" aria-label={title}>
         {resumePrompt ? <section className="learning-entry"><h1>{finished ? 'Your previous results' : 'Welcome back'}</h1><p>{finished ? 'View your results or start a fresh round.' : 'Continue where you left off?'}</p><div className="quick-session-review-actions"><button className="quick-session-primary" onClick={() => setResumePrompt(false)}>{finished ? 'View results' : 'Resume session'}</button><button className="quick-session-secondary" onClick={() => { if (window.confirm('Start fresh and replace this saved round?')) start(1) }}>Start fresh</button></div></section> : legacy && previousSession ? <QuestionSessionRunner key={previousSession.id + '-' + previousSession.currentIndex} session={previousSession} modeLabel="Previous Quick Study" onExit={() => { abandonSession(); setLegacy(false) }} compact /> : (
-          <section className="quick-session" aria-label="Five-question session">
+          <section className="quick-session" aria-label="Five-question session" data-study-mode={mode} data-finished={finished}>
             <header className="quick-session-header">
               <div className="quick-session-heading">
                 <h1>{title}</h1>
-                {mode === 'practice' && <label className="quick-bank-selector">Topic session
+                {intro && <Link className="quick-session-text-button" to="/exam-prep/">Choose a topic</Link>}
+                {mode === 'practice' && !intro && <label className="quick-bank-selector">Topic session
                   <select aria-label="Session" value={sessionId} onChange={(event) => {
                     const id = Number(event.target.value)
                     if (!finished && (selected.length || results.length) && !window.confirm('Switch sessions? Your current round is not saved.')) return
@@ -129,14 +131,21 @@ export function QuickStudyPage({ initialItems, mode = 'practice', onComplete }: 
             </header>
             <div className="quick-session-body" ref={bodyRef}>
               {finished ? <div className="quick-session-summary">
-                <div className="quick-result-score-block">
-                <h2 tabIndex={-1} ref={headingRef}>Session complete</h2>
-                <p className="quick-session-score">{score} <span>/ {items.length}</span></p>
+                <div className="quick-result-score-block quick-completion-moment">
+                <span className="quick-completion-mark" aria-hidden="true"><Check size={36} strokeWidth={3} /></span>
+                <h2 tabIndex={-1} ref={headingRef}>Your session, at a glance</h2>
+                <p>{items.length} questions completed</p>
+                <ol className="practice-result-trail quick-result-trail" aria-label="Question results">
+                  {items.map((item, itemIndex) => {
+                    const correct = results.find((answer) => answer.id === item.id)?.correct === true
+                    return <li key={item.id} aria-label={`Question ${itemIndex + 1}: ${correct ? 'Correct' : 'To review'}`}><span>{itemIndex + 1}</span>{correct ? <Check className="practice-result-correct" size={32} aria-hidden="true" /> : <CircleX className="practice-result-missed" size={32} aria-hidden="true" />}</li>
+                  })}
+                </ol>
+                <div className="practice-result-legend"><span><Check className="practice-result-correct" size={26} aria-hidden="true" />{score} correct</span><span><CircleX className="practice-result-missed" size={26} aria-hidden="true" />{missed.length} to review</span><span className="practice-result-accuracy"><strong>{Math.round(score / items.length * 100)}%</strong> accuracy</span></div>
                 <p>{missed.length ? 'You have ' + missed.length + ' question' + (missed.length === 1 ? '' : 's') + ' to revisit.' : 'You answered every question correctly in this round.'}</p>
-                <p className="quick-bank-muted">Exact-match practice score, not an NCLEX readiness measure.</p>
-                <div className="quick-session-review-actions">{missed.length > 0 && <button className="quick-session-secondary" onClick={() => start(sessionId, missed)}>Retry missed questions</button>}<button className="quick-session-secondary" onClick={() => start(sessionId, initialItems)}>Repeat session</button></div>
+                <div className="quick-session-review-actions">{missed.length > 0 && <button className="quick-session-secondary" onClick={() => start(sessionId, missed)}>Review missed questions</button>}{mode === 'practice' ? <button className="quick-session-primary" onClick={advance}>Try 5 more</button> : <button className="quick-session-secondary" onClick={() => start(sessionId, initialItems)}>Repeat session</button>}</div>
                 </div>
-                {mode !== 'review' && <StudyResultSave autoSave={Boolean(authUser)} onContinue={advance} result={{ id: roundId, title, route: mode === 'daily' ? '/daily-lesson' : '/quick-study', completedAt: completedAt ?? startedAt, total: items.length, answers: results }} />}
+                {mode !== 'review' && <StudyResultSave compact autoSave={Boolean(authUser)} onContinue={advance} result={{ id: roundId, title, route: mode === 'daily' ? '/daily-lesson' : '/quick-study', completedAt: completedAt ?? startedAt, total: items.length, answers: results }} />}
               </div> : <>
                 <div className="quick-bank-result-row"><p className="quick-session-question-meta">{question.type === 'multiple' ? 'Select all that apply' : 'Choose the best answer'}</p>{authUser && <button className="quick-session-text-button" disabled={syncStatus === 'syncing'} onClick={() => {
                   const success = updateLearningProgress((current) => ({ ...current, savedIds: current.savedIds.includes(question.id) ? current.savedIds.filter((id) => id !== question.id) : [...current.savedIds, question.id] }))
@@ -157,13 +166,13 @@ export function QuickStudyPage({ initialItems, mode = 'practice', onComplete }: 
                 </div>
               </>}
             </div>
-            <footer className="quick-session-footer">
-              {!authUser && !finished && mode === 'practice' && <p className="quick-bank-muted">{storageFailed ? 'Storage unavailable. Keep this page open to retain this round.' : 'Saved on this device. Create an account after finishing to keep your results.'}</p>}
+            <footer className="quick-session-footer quick-bank-feedback-dock" data-result={checked && !finished ? result : undefined}>
+              {!authUser && !finished && mode === 'practice' && <p className="quick-bank-muted">{storageFailed ? 'Storage unavailable. Keep this page open to retain this round.' : <>Saved on this device. <Link className="quick-session-signup-link" to={intro ? '/quick-study?start=5&auth=signup' : '/quick-study?auth=signup'}>Create an account</Link> to keep your results.</>}</p>}
               {saveError && <p role="alert">{saveError}</p>}
               {authUser && (syncStatus === 'error' || syncStatus === 'offline') && <p role="alert">Changes have not synced. Keep this page open. <button className="quick-session-text-button" onClick={() => void syncNow()}>Retry sync</button></p>}
-              {checked && !finished && <div className="quick-session-feedback" data-result={result} role="status" aria-live="polite">
-                <div className="quick-bank-result-row"><p className="quick-session-result" data-result={result}>{result === 'correct' ? 'Correct!' : result === 'partial' ? 'Almost — check the highlighted answers.' : 'Not quite — the correct answer is highlighted.'}</p><button className="quick-session-text-button" onClick={() => showDetails('why')}>Why?</button></div>
-                <p className="quick-session-takeaway">{question.rationale}</p>
+              {checked && !finished && <div className="practice-feedback-summary" key={question.id} role="status" aria-live="polite">
+                <span className={`practice-feedback-icon${result === 'correct' ? ' practice-check-draw' : ''}`} aria-hidden="true">{result === 'correct' ? <Check size={32} strokeWidth={3} /> : <X size={32} strokeWidth={3} />}</span>
+                <div className="practice-feedback-copy"><p>{result === 'correct' ? 'Correct!' : result === 'partial' ? 'Almost!' : 'Not quite.'}</p><span>{result === 'correct' ? 'Nice work.' : 'Review the highlighted answers above.'}</span><div className="practice-feedback-actions"><button onClick={() => showDetails('why')}>Why?</button></div></div>
               </div>}
               <div className="quick-session-navigation"><span className="quick-bank-muted">{finished ? 'Five questions at a time' : checked ? 'Review, then continue' : question.type === 'multiple' ? 'Select all that apply' : 'Choose one answer'}</span><button className="quick-session-primary" onClick={advance} disabled={!finished && !selected.length}>{finished ? (mode !== 'practice' ? (mode === 'review' ? 'Back to review' : 'Back to home') : getNextQuickStudySessionId(sessionId) === quickStudyBank.sessions[0].id ? 'Back to session 1' : 'Next session') : checked ? (index === items.length - 1 ? 'Finish session' : 'Continue') : 'Check answer'}</button></div>
             </footer>

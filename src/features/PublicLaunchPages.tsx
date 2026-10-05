@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { StudyNavigation } from './study-tools-menu'
 import { Link, useLocation } from 'react-router-dom'
 import {
   BadgeCheck,
@@ -334,6 +335,7 @@ export function PublicLaunchPage() {
             <PublicNavLink to="/beta" label="Beta" />
             <PublicNavLink to="/pricing" label="Pricing" />
             <PublicNavLink to="/about" label="About" />
+            <StudyNavigation />
           </nav>
         </div>
       </header>

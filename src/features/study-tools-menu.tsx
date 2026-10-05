@@ -1,6 +1,6 @@
 import { useId, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { ChevronDown, X } from 'lucide-react'
+import { Home, Menu, X } from 'lucide-react'
 import { Breadcrumbs } from '../seo/RouteSeo'
 
 const studyToolGroups = [
@@ -35,7 +35,7 @@ export function StudyToolsMenu() {
             aria-controls={id}
             onClick={() => toolsDialog.current?.showModal()}
           >
-            Menu <ChevronDown size={16} aria-hidden="true" />
+            Menu <Menu size={18} aria-hidden="true" />
           </button>
       <dialog
         ref={toolsDialog}
@@ -73,4 +73,8 @@ export function StudyToolsMenu() {
         </div>
       </dialog>
   </>
+}
+
+export function StudyNavigation() {
+  return <nav className="study-site-navigation" aria-label="Site navigation"><StudyToolsMenu /><Link className="home-tools-trigger" to="/"><Home size={18} aria-hidden="true" />Home</Link></nav>
 }

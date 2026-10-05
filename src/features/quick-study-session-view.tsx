@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { ArrowLeft, ArrowRight, Check, CircleX, Flag, FileText, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { StudyToolsMenu } from './study-tools-menu'
+import { StudyNavigation } from './study-tools-menu'
+import logo from '../assets/brand/nursing-command-logo-small.webp'
 import type { ActiveSession, ConfidenceLevel, Question, SessionResponse } from '../app/types'
 import {
   contentFeedbackReasonLabels,
@@ -82,12 +83,12 @@ export function QuickStudyQuestionView(props: QuestionViewProps) {
     <section className={`quick-session${props.focused ? ' focused-practice' : ''}`} aria-label={props.focused ? 'Practice session' : 'Quick Study session'}>
       <header className="quick-session-header">
         {props.focused ? <><nav className="focused-practice-top" aria-label="Practice navigation">
-          <Link to="/" className="focused-practice-home"><ArrowLeft size={24} aria-hidden="true" />Home</Link>
+          <Link to="/" className="home-launcher-brand"><img src={logo} alt="" /><span>Nurse <span>Command</span></span></Link>
           <div className="focused-practice-progress">
           <progress value={session.currentIndex + 1} max={session.questionIds.length} aria-label="Question position" />
           <span>{session.currentIndex + 1} of {session.questionIds.length}</span>
           </div>
-          <StudyToolsMenu />
+          <StudyNavigation />
         </nav></> : <>
         <div className="quick-session-heading">
           <h1>Quick Study</h1>
@@ -281,7 +282,7 @@ export function QuickStudyCompleteView({ focused = false, completionActions, ses
 }) {
   const [reviewOpen, setReviewOpen] = useState(false)
   if (focused) return <section className="quick-session focused-practice practice-complete" aria-label="Practice results">
-    <header className="quick-session-header"><nav className="focused-practice-top" aria-label="Practice navigation"><Link to="/" className="focused-practice-home"><ArrowLeft size={24} aria-hidden="true" />Home</Link><StudyToolsMenu /></nav></header>
+    <header className="quick-session-header"><div className="focused-practice-top"><span>Practice results</span><StudyNavigation /></div></header>
     <div className="quick-session-body" tabIndex={0} aria-label="Session results and review">
       {!reviewOpen && <div className="practice-complete-summary">
         <h1>Your session, at a glance</h1>

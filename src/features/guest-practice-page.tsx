@@ -1,4 +1,4 @@
-import { StudyToolsMenu } from './study-tools-menu'
+import { StudyNavigation } from './study-tools-menu'
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { prepareGuestPractice, useStudySystemStore } from '../app/store'
@@ -49,7 +49,7 @@ export function GuestPracticePage({ route }: { route: string }) {
   function begin(resume: boolean) { prepareGuestPractice(resume ? saved : null); writeStudyLocal(`engine:${route}`, resume ? saved : null); setReady(true) }
   const title = route === '/test-mode' ? 'Exam practice' : route === '/exam-prep' ? 'Exam Prep' : 'Question Bank'
   return <div className="quick-study-page">
-    <header className="home-launcher-header"><Link className="home-launcher-brand" to="/"><img src={logo} alt="" /><span>Nurse <span>Command</span></span></Link><div className="home-launcher-actions"><StudyToolsMenu /><Link className="home-tools-trigger" to="/">Home</Link></div></header>
+    <header className="home-launcher-header"><Link className="home-launcher-brand" to="/"><img src={logo} alt="" /><span>Nurse <span>Command</span></span></Link><StudyNavigation /></header>
     <main className="guest-practice-content">
       {!initialized ? <p role="status">Loading study tools…</p> : !ready ? <section className="learning-entry"><h1>{saved?.endedAt ? 'Your previous results' : 'Welcome back'}</h1><p>{saved?.endedAt ? 'View your results or start a new session.' : 'Continue where you left off?'}</p>
         {saved?.config.timed && <p>The exam timer keeps running while you are away. Resuming an expired exam will show your results.</p>}
