@@ -35,6 +35,7 @@ import { careCompletions, type CareCompletion } from '../services/tycoon-care-fe
 import { worldJobActive } from '../services/tycoon-world-jobs'
 import { careNoteDraft } from '../services/tycoon-shift-loop'
 import { TycoonTooltip } from './TycoonTooltip'
+import { TycoonDialogPages } from './TycoonDialogPages'
 import type { WardTarget } from '../game/tycoon-ward'
 import {
   TycoonClinicImage,
@@ -49,6 +50,7 @@ import './tycoon-gameplay.css'
 import './tycoon-code-red.css'
 import './tycoon-mobile-controls.css'
 import './tycoon-compact-care.css'
+import './tycoon-dialog-pages.css'
 
 const urgencyLabels: Record<TycoonTaskUrgency, string> = {
   critical: 'Critical',
@@ -988,7 +990,7 @@ function TycoonDialog({
           </button>
         ) : null}
       </header>
-      {children}
+      <TycoonDialogPages>{children}</TycoonDialogPages>
     </dialog>
   )
 }
