@@ -1,0 +1,2 @@
+# Preserve exact bytes of content-addressed runtime metadata on every platform.
+public/game-assets/hospital-runtime/*.json -text

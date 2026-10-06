@@ -25,7 +25,8 @@ for (const name of names) {
   originalBytes += source.length; runtimeBytes += webp.length
 }
 for (const name of json) {
-  const source = await readFile(`public/game-assets/hospital-prototype/${name}.json`)
+  // Content addresses must be identical in Windows checkouts and Linux CI.
+  const source = Buffer.from((await readFile(`public/game-assets/hospital-prototype/${name}.json`, 'utf8')).replace(/\r\n/g, '\n'))
   sources[`${name}.json`] = createHash('sha256').update(source).digest('hex')
   const hash = createHash('sha256').update(source).digest('hex').slice(0, 16)
   const filename = `${name}-${hash}.json`
