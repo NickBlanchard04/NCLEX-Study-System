@@ -2850,6 +2850,11 @@ textarea {
 .study-select-menu { position: absolute; z-index: 30; left: 0; top: calc(100% + .5rem); width: 100%; min-width: min(20rem, calc(100vw - 3rem)); max-height: 20rem; overflow: auto; overscroll-behavior: contain; padding: .375rem; border: 1px solid #426576; border-radius: .5rem; background: #10212c; box-shadow: 0 4px 8px #0004; }
 .study-select-option { display: flex; align-items: center; gap: .625rem; min-height: 3rem; padding: .625rem; border-radius: .375rem; color: #e1edf3; cursor: pointer; border-left: 3px solid transparent; }
 .study-select-menu[data-up="true"] { top: auto; bottom: calc(100% + .5rem); }
+.study-select-inline:has(.study-select-menu) { background: #0c1c25; border-radius: .5rem; }
+.study-select-inline:has(.study-select-menu) .study-select-trigger { border-radius: .5rem .5rem 0 0; }
+.study-select-inline .study-select-menu { position: static; width: 100%; min-width: 0; max-height: none; padding: .5rem; border-top: 0; border-radius: 0 0 .5rem .5rem; background: #0c1c25; box-shadow: none; }
+.study-select-inline .study-select-option { min-height: 3.5rem; }
+.study-select-inline .study-select-option img { width: 2.25rem; height: 2.25rem; object-fit: contain; }
 .study-select-option > span { flex: 1; }
 .study-select-option[aria-selected="true"] { color: var(--select-accent, #a5e9b9); background: #173d36; }
 .study-select-option[data-active="true"] { background: #223a49; border-left-color: var(--select-accent, #a5e9b9); }

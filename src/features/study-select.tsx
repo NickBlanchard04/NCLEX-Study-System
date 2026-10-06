@@ -3,12 +3,12 @@ import { Check, ChevronDown, X } from 'lucide-react'
 
 export type StudySelectOption = { value: string; label: string; artwork?: string; icon?: ReactNode; tone?: string }
 
-export function StudySelect({ label, value, options, onChange, gallery = false }: { label: string; value: string; options: StudySelectOption[]; onChange: (value: string) => void; gallery?: boolean }) {
+export function StudySelect({ label, value, options, onChange, gallery = false, inline = label === 'Category' || label === 'Questions' }: { label: string; value: string; options: StudySelectOption[]; onChange: (value: string) => void; gallery?: boolean; inline?: boolean }) {
   const id = useId()
   const root = useRef<HTMLDivElement>(null)
   const trigger = useRef<HTMLButtonElement>(null)
   const dialog = useRef<HTMLDialogElement>(null)
-  const overlay = gallery || options.some(option => option.artwork || option.icon)
+  const overlay = !inline && (gallery || options.some(option => option.artwork || option.icon))
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(0)
   const [placement, setPlacement] = useState({ up: false, height: 320 })
@@ -17,9 +17,9 @@ export function StudySelect({ label, value, options, onChange, gallery = false }
   useEffect(() => {
     if (!open) return
     if (overlay) return
-    const dismiss = (event: PointerEvent) => { if (!root.current?.contains(event.target as Node)) setOpen(false) }
-    document.addEventListener('pointerdown', dismiss)
-    return () => document.removeEventListener('pointerdown', dismiss)
+    const dismiss = (event: MouseEvent) => { if (!root.current?.contains(event.target as Node)) setOpen(false) }
+    document.addEventListener('click', dismiss)
+    return () => document.removeEventListener('click', dismiss)
   }, [open, overlay])
   useEffect(() => {
     if (!open || !overlay) return
@@ -33,10 +33,6 @@ export function StudySelect({ label, value, options, onChange, gallery = false }
   function choose(index: number) { onChange(options[index].value); setOpen(false); trigger.current?.focus() }
   function reveal() {
     const section = root.current?.closest('section')
-    // Only one selector is open at a time, whether opened by touch or keyboard.
-    section?.querySelectorAll<HTMLButtonElement>('.study-select-trigger[aria-expanded="true"]').forEach(button => {
-      if (button !== trigger.current) button.click()
-    })
     // Top-level selectors replace More options; its own filters keep it expanded.
     section?.querySelectorAll<HTMLDetailsElement>('.simple-study-details[open]').forEach(details => {
       if (!details.contains(root.current)) details.open = false
@@ -45,7 +41,7 @@ export function StudySelect({ label, value, options, onChange, gallery = false }
     if (rect) { const below = window.innerHeight - rect.bottom; const up = below < 220 && rect.top > below; setPlacement({ up, height: Math.max(120, Math.min(320, (up ? rect.top : below) - 16)) }) }
     setOpen(true)
   }
-  return <div className={`study-select${gallery ? ' study-select-gallery' : ''}`} ref={root} onBlur={event => { if (!overlay && !event.currentTarget.contains(event.relatedTarget as Node)) setOpen(false) }}>
+  return <div className={`study-select${inline ? ' study-select-inline' : gallery ? ' study-select-gallery' : ''}`} ref={root} onBlur={event => { if (!overlay && !event.currentTarget.contains(event.relatedTarget as Node)) requestAnimationFrame(() => { if (!root.current?.contains(document.activeElement)) setOpen(false) }) }}>
     <span className="study-select-label" id={`${id}-label`}>{label}</span>
     <button ref={trigger} type="button" className="study-select-trigger" role="combobox" aria-labelledby={`${id}-label ${id}-value`} aria-haspopup="listbox" aria-expanded={open} aria-controls={`${id}-list`} aria-activedescendant={open ? `${id}-${active}` : undefined} data-tone={current.tone} onClick={() => { setActive(Math.max(0, selected)); if (open) setOpen(false); else reveal() }} onKeyDown={event => {
       if (event.key === 'Escape') { event.preventDefault(); setOpen(false) }
@@ -68,9 +64,9 @@ export function StudySelect({ label, value, options, onChange, gallery = false }
         </button>)}
       </div>
     </dialog>}
-    {open && !overlay && <div className="study-select-menu" data-up={!gallery && placement.up} style={gallery ? undefined : { maxHeight: placement.height }} role="listbox" id={`${id}-list`} aria-labelledby={`${id}-label`}>
+    {open && !overlay && <div className="study-select-menu" data-up={!inline && !gallery && placement.up} style={inline || gallery ? undefined : { maxHeight: placement.height }} role="listbox" id={`${id}-list`} aria-labelledby={`${id}-label`}>
       {options.map((option, index) => <div key={option.value} id={`${id}-${index}`} role="option" aria-selected={option.value === value} className="study-select-option" data-active={index === active} data-tone={option.tone} onPointerMove={() => setActive(index)} onMouseDown={event => event.preventDefault()} onClick={() => choose(index)}>
-        {option.artwork && <img src={option.artwork} alt="" width="36" height="36" />}<span>{option.label}</span>{option.value === value && <Check size={18} aria-hidden="true" />}
+        {option.artwork && <img src={option.artwork} alt="" width="36" height="36" />}{option.icon}<span>{option.label}</span>{option.value === value && <Check size={18} aria-hidden="true" />}
       </div>)}
     </div>}
   </div>
