@@ -23,19 +23,37 @@ export const REFERENCE_ROOM_ART = {
   },
 } as const
 
+/** Keep the opposite bank's equipment clear of its left-hand doorway. */
+export function referenceRoomLayout(leftDoor: boolean) {
+  if (!leftDoor) return REFERENCE_ROOM_LAYOUT
+  return {
+    ...REFERENCE_ROOM_LAYOUT,
+    monitor: { u: 4.1, v: 2.7 }, extraMonitor: { u: 4.1, v: 3.15 },
+    iv: { u: 4.1, v: 3.65 }, scanner: { u: 4.1, v: 4.05 },
+    equipment: { u: 5.05, v: 2.7 }, safety: { u: 5.05, v: 3.9 },
+    obstacles: [REFERENCE_ROOM_LAYOUT.obstacles[0], REFERENCE_ROOM_LAYOUT.obstacles[1],
+      { minU: 3.8, maxU: 4.45, minV: 2.4, maxV: 4.35 }],
+  }
+}
+
 /** Instance-specific furniture and approaches, shared by rendering and navigation. */
 export const REFERENCE_ROOM_LAYOUT = {
-  bed: { u: 5.35, v: .75 },
-  monitor: { u: 3.95, v: .15 },
-  patient: { u: 5.4, v: 2.05 },
-  equipment: { u: 4.4, v: 1.65 },
-  safety: { u: 4.8, v: 2.4 },
+  bed: { u: 5.05, v: .05 },
+  cabinet: { u: 4.1, v: .5 },
+  monitor: { u: 4.1, v: 1.45 },
+  iv: { u: 4.1, v: 2.55 },
+  extraMonitor: { u: 4.1, v: 2.05 },
+  scanner: { u: 4.1, v: 3.45 },
+  patient: { u: 5.9, v: 1.1 },
+  equipment: { u: 5.05, v: 1.6 },
+  safety: { u: 5.3, v: 2.5 },
   obstacles: [
-    { minU: 4.25, maxU: 6.58, minV: -.3, maxV: 1.33 },
-    { minU: 4.55, maxU: 5.2, minV: -.78, maxV: -.22 },
-    { minU: 5.15, maxU: 5.7, minV: -.78, maxV: -.5 },
-    { minU: 6.8, maxU: 7.14, minV: -.25, maxV: .1 },
+    { minU: 3.95, maxU: 6.28, minV: -1, maxV: .63 },
+    { minU: 3.8, maxU: 4.45, minV: .2, maxV: .8 },
+    { minU: 3.8, maxU: 4.45, minV: 1.1, maxV: 2.9 },
+    { minU: 3.8, maxU: 4.45, minV: 3.1, maxV: 3.8 },
   ],
 } as const
+
 
 

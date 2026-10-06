@@ -23,7 +23,9 @@ describe('intact nurse walking poses', () => {
     expect(sprite.setOrigin).toHaveBeenCalledWith(pivots.frames['se-walk-0'].pivotX, pivots.frames['se-walk-0'].pivotY)
   })
   it('keeps every complete pose inside the source rectangle with a fixed ground anchor', () => {
-    expect(Object.keys(atlas.frames)).toHaveLength(140)
+    // Care animations expanded the atlas. Require registration for every pose,
+    // rather than treating the older atlas's total count as an animation rule.
+    expect(Object.keys(atlas.frames).sort()).toEqual(Object.keys(pivots.frames).sort())
     for (const [name,entry] of Object.entries(atlas.frames)) {
       const crop=entry.spriteSourceSize
       expect(crop.x,name).toBeGreaterThan(0)

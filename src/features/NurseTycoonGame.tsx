@@ -8,9 +8,7 @@ import {
   ClipboardList,
   FastForward,
   MessageCircle,
-  Pencil,
   Play,
-  ShieldCheck,
   TriangleAlert,
   X,
   Zap,
@@ -42,6 +40,7 @@ import {
   TycoonLaunchLogo,
   TycoonPortrait,
 } from './tycoon-reference-art'
+import { TycoonInteractionIcon, type CareIconKind } from './TycoonInteractionIcon'
 import './nurse-tycoon.css'
 import './tycoon-launch.css'
 import './tycoon-prototype.css'
@@ -51,6 +50,7 @@ import './tycoon-code-red.css'
 import './tycoon-mobile-controls.css'
 import './tycoon-compact-care.css'
 import './tycoon-dialog-pages.css'
+import './tycoon-bubbly-care.css'
 
 const urgencyLabels: Record<TycoonTaskUrgency, string> = {
   critical: 'Critical',
@@ -80,6 +80,7 @@ export function NurseTycoonGame() {
   const [manuallyPaused, setManuallyPaused] = useState(false)
   const [stationOpen, setStationOpen] = useState(false)
   const [briefingOpen, setBriefingOpen] = useState(false)
+  const [readyWardId, setReadyWardId] = useState<string | null>(null)
   const finishShift = useStudySystemStore((state) => state.finishTycoonShift)
   const [patientView, setPatientView] = useState<PatientView>(null)
   const [feedback, setFeedback] = useState<{
@@ -221,6 +222,10 @@ export function NurseTycoonGame() {
   function interactWithWard(target: WardTarget) {
     const current = useStudySystemStore.getState().tycoon.activeShift
     if (!shift || current?.id !== shift.id || current.status !== 'running') return
+    if (target.kind === 'elevator') {
+      setToast('Floor 2 is locked. Support rooms will arrive in a future expansion.')
+      return
+    }
     if (target.kind === 'station') {
       const noteTaskId = pendingNoteRef.current
       pendingNoteRef.current = null
@@ -341,7 +346,7 @@ export function NurseTycoonGame() {
       <TycoonHud
         tycoon={tycoon}
         inGame
-        clockPaused={Boolean(briefingOpen || patientView || feedback || stationOpen || showUpgrades || manuallyPaused || (compact && commandOpen))}
+        clockPaused={readyWardId !== shift.id || Boolean(briefingOpen || patientView || feedback || stationOpen || showUpgrades || manuallyPaused || (compact && commandOpen))}
       />
       <div className="tycoon-workspace">
         <section
@@ -409,7 +414,8 @@ export function NurseTycoonGame() {
               patientsOpen={patientsOpen}
               onOpenShop={() => { setPatientsOpen(false); setShowUpgrades(true) }}
               onNearbyTask={setNearbyTaskId}
-              paused={Boolean(briefingOpen || patientView || feedback || stationOpen || showUpgrades || manuallyPaused || (compact && commandOpen)) || shift.status !== 'running'}
+              onReadyChange={(ready) => setReadyWardId(ready ? shift.id : null)}
+              paused={readyWardId !== shift.id || Boolean(briefingOpen || patientView || feedback || stationOpen || showUpgrades || manuallyPaused || (compact && commandOpen)) || shift.status !== 'running'}
               manuallyPaused={manuallyPaused}
               onTogglePause={() => setManuallyPaused((value) => !value)}
               onInteract={interactWithWard}
@@ -510,7 +516,7 @@ export function NurseTycoonGame() {
                       }
                       onClick={() => continueCare(selectedTask)}
                     >
-                      <ClipboardList aria-hidden="true" />
+                      <TycoonInteractionIcon kind={nextCareStep(selectedTask)==='monitor'?'equipment':nextCareStep(selectedTask)==='safety'?'safety':'patient'} />
                       <span>
                         {selectedTask.status === 'completed'
                           ? 'Care Complete'
@@ -527,7 +533,7 @@ export function NurseTycoonGame() {
                   disabled={shift.status !== 'running'}
                   onClick={() => travelTo(`equipment:${selectedTask.id}`)}
                 >
-                  <Pencil aria-hidden="true" />
+                  <TycoonInteractionIcon kind="equipment" />
                   <span>{shift.equipmentReviewedTaskIds?.includes(selectedTask.id) ? 'Revisit equipment' : 'Inspect equipment'}</span>
                   <ChevronRight aria-hidden="true" />
                 </button>
@@ -564,6 +570,7 @@ export function NurseTycoonGame() {
         <TycoonDialog
           key={`${shift.id}-${modalTask.id}-${patientView.kind}`}
           compact
+          careIcon={patientView.kind==='equipment'?'equipment':patientView.kind==='safety'?'safety':'patient'}
           expanded={patientView.kind === 'assess'}
           title={
             patientView.kind === 'call' ? 'Call bell' : patientView.kind === 'assess'
@@ -869,7 +876,7 @@ function TycoonHud({
       <TycoonTooltip text="Your unit’s safety score. Safe choices raise it; unsafe choices and overdue tasks lower it.">
         <div className="tycoon-hud-safety">
           <span className="tycoon-hud-icon">
-            <ShieldCheck aria-hidden="true" />
+            <TycoonInteractionIcon kind="safety" />
           </span>
           <div>
             <strong aria-label={`Patient safety: ${tycoon.patientSafety}%`}>
@@ -959,12 +966,14 @@ function TycoonDialog({
   onClose,
   expanded = false,
   compact = false,
+  careIcon,
 }: {
   title: string
   children: ReactNode
   onClose?: () => void
   expanded?: boolean
   compact?: boolean
+  careIcon?: CareIconKind
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   useEffect(() => {
@@ -975,7 +984,8 @@ function TycoonDialog({
   return (
     <dialog
       ref={dialogRef}
-      className={`tycoon-dialog${expanded ? ' tycoon-dialog-assessment' : ''}${compact ? ' tycoon-dialog-compact' : ''}`}
+      className={`tycoon-dialog${expanded ? ' tycoon-dialog-assessment' : ''}${compact ? ' tycoon-dialog-compact' : ''}${careIcon ? ' tycoon-dialog-care' : ''}`}
+      data-care-icon={careIcon}
       aria-label={title}
       onCancel={(event) => {
         event.preventDefault()
@@ -983,7 +993,7 @@ function TycoonDialog({
       }}
     >
       <header>
-        <h2>{title}</h2>
+        <h2>{careIcon ? <TycoonInteractionIcon kind={careIcon} size={36} /> : null}{title}</h2>
         {onClose ? (
           <button type="button" onClick={onClose} aria-label="Close dialog">
             <X aria-hidden="true" />

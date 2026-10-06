@@ -2,6 +2,7 @@ import Phaser from 'phaser'
 import type { ScreenPoint } from './tycoon-care-presentation'
 import { surfaceDepthAtX } from './tycoon-depth-order'
 import { architectureFrame, cachedArchitectureFrame } from './tycoon-architecture-atlas'
+import { cacheStaticWallQuad } from './tycoon-static-quad-cache'
 
 class SortedSurface extends Phaser.GameObjects.Image {
   slices:Phaser.GameObjects.Image[]=[]
@@ -36,6 +37,7 @@ export function depthSortedSurface(scene:Phaser.Scene,key:string,left:number,top
     const slice=x===0?root:scene.add.image(left,top,atlas.key,atlas.frame).setOrigin(0)
     slice.setCrop(x,0,span,height).setDepth(surfaceDepthAtX(a,b,(column+.5)*16,bias))
     slice.setData('wardCullBounds',{left:left+x,top,width:span,height})
+    cacheStaticWallQuad(slice,x,span,height)
     if(slice!==root)root.slices.push(slice)
     x+=span
   }

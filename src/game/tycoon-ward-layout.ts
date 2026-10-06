@@ -1,6 +1,6 @@
 import type { GroundPoint } from './tycoon-care-presentation'
 import { HOSPITAL_MAP, PATIENT_ROOM, placeRoomPoint } from './tycoon-map-config'
-import { REFERENCE_ROOM_LAYOUT } from './tycoon-reference-room'
+import { referenceRoomLayout } from './tycoon-reference-room'
 
 // Compatibility exports for existing jobs and saves; all values come from the map definition.
 export const WARD_ROOM = PATIENT_ROOM.bounds
@@ -16,14 +16,19 @@ export const ROOM_OBSTACLES = [PATIENT_ROOM.props.bed.footprint, PATIENT_ROOM.pr
 export const roomPoint = (index: number, point: GroundPoint): GroundPoint => {
   const room = HOSPITAL_MAP.rooms[index]
   if (!room) throw new RangeError(`Unknown hospital room index: ${index}`)
+  const layout = referenceRoomLayout(room.entrance === 'minU')
   // Compatibility callers pass the canonical template point objects. Arbitrary
   // floor-click coordinates are never remapped by numerical coincidence.
   {
-    if (point === ROOM_PROPS.bed) point = REFERENCE_ROOM_LAYOUT.bed
-    else if (point === ROOM_PROPS.monitor) point = REFERENCE_ROOM_LAYOUT.monitor
-    else if (point === ROOM_STOPS.patient) point = REFERENCE_ROOM_LAYOUT.patient
-    else if (point === ROOM_STOPS.equipment) point = REFERENCE_ROOM_LAYOUT.equipment
-    else if (point === ROOM_STOPS.safety) point = REFERENCE_ROOM_LAYOUT.safety
+    if (point === ROOM_PROPS.bed) point = layout.bed
+    else if (point === ROOM_PROPS.monitor) point = layout.monitor
+    else if (point === ROOM_PROPS.cabinet) point = layout.cabinet
+    else if (point === ROOM_PROPS.iv) point = layout.iv
+    else if (point === ROOM_PROPS.extraMonitor) point = layout.extraMonitor
+    else if (point === ROOM_PROPS.scanner) point = layout.scanner
+    else if (point === ROOM_STOPS.patient) point = layout.patient
+    else if (point === ROOM_STOPS.equipment) point = layout.equipment
+    else if (point === ROOM_STOPS.safety) point = layout.safety
   }
   return placeRoomPoint(room, point)
 }

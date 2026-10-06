@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { availableRoomCount, HOSPITAL_MAP, PATIENT_ROOM, PUBLIC_WING_OFFSET, placeRoomPoint, localRoomPoint, roomIsUnlocked, roomEntrance } from '../tycoon-map-config'
+import { availableRoomCount, HOSPITAL_MAP, PATIENT_ROOM, placeRoomPoint, localRoomPoint, roomIsUnlocked, roomEntrance } from '../tycoon-map-config'
 import { roomPoint, STATION_POSITION } from '../tycoon-ward-layout'
 import { clearSegment, findWardPath, isWardWalkable } from '../tycoon-navigation'
 import { followCamera, followZoom, overviewCamera } from '../tycoon-ward-camera'
@@ -26,24 +26,28 @@ describe('shipped map contract', () => {
       expect(findWardPath(STATION_POSITION,{u,v:4.8},6)).not.toBeNull()
     }
   })
-  it('connects the public vestibule and rear service corridor without crossing desks or ward partitions', () => {
-    for (const point of [{u:10.8,v:16.9+PUBLIC_WING_OFFSET},{u:11,v:13.4+PUBLIC_WING_OFFSET},{u:5.5,v:-1.8}]) {
+  it('connects both locked lift approaches and excludes retired wings and lift interiors', () => {
+    expect(HOSPITAL_MAP.corridors).toHaveLength(1)
+    expect(HOSPITAL_MAP.futureFloor.locked).toBe(true)
+    expect(HOSPITAL_MAP.futureFloor.number).toBe(2)
+    expect(HOSPITAL_MAP.futureFloor.rooms).toHaveLength(10)
+    for (const point of HOSPITAL_MAP.elevators.map(lift=>lift.approach)) {
       const path = findWardPath(STATION_POSITION,point,3)
       expect(path).not.toBeNull()
       let previous = STATION_POSITION
       for (const next of path!) { expect(clearSegment(previous,next,3)).toBe(true);previous=next }
     }
-    for (const point of [{u:10.2,v:15.28+PUBLIC_WING_OFFSET},{u:8.5,v:13.4+PUBLIC_WING_OFFSET},{u:13,v:13.4+PUBLIC_WING_OFFSET},{u:16,v:15.1+PUBLIC_WING_OFFSET},{u:10.5,v:6}]) {
+    for (const point of [...HOSPITAL_MAP.elevators.map(lift=>lift.point),{u:5.5,v:-1.8},{u:11,v:19},{u:16,v:-4},{u:10.5,v:6}]) {
       expect(isWardWalkable(point,6)).toBe(false)
     }
   })
   it('preserves stable room labels and exposes compact-map work anchors', () => {
     expect(HOSPITAL_MAP.rooms.map(room => room.id)).toEqual(['room-101','room-102','room-103','room-104','room-105','room-106'])
     expect(STATION_POSITION).toEqual({u:10.85,v:8.15})
-    expect(roomPoint(0,PATIENT_ROOM.anchors.patient)).toEqual({u:5.4,v:2.05})
+    expect(roomPoint(0,PATIENT_ROOM.anchors.patient)).toEqual({u:5.9,v:1.1})
     // Ordinary floor clicks retain their position; only the named care anchor moves.
     expect(roomPoint(0,{...PATIENT_ROOM.anchors.patient})).toEqual({u:6.4,v:1.85})
-    expect(roomPoint(5,PATIENT_ROOM.anchors.safety).u).toBeCloseTo(14.7)
+    expect(roomPoint(5,PATIENT_ROOM.anchors.safety)).toEqual({u:14.95,v:HOSPITAL_MAP.rooms[5].origin.v+3.9})
     expect(availableRoomCount(6,{})).toBe(6) // Legacy saves stay accessible.
     expect(availableRoomCount(3,{})).toBe(3)
     expect(availableRoomCount(3,{'extra-bed':1})).toBe(4)
@@ -122,4 +126,5 @@ describe('shipped map contract', () => {
     }
   })
 })
+
 

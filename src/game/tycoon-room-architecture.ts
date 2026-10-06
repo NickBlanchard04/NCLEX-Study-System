@@ -30,8 +30,8 @@ export function drawClinicalArchitecture(scene:Phaser.Scene,index:number,closed:
   // The next room's head wall is this room's foot partition. Draw it once:
   // overlapping translucent faces produce dark seams and clipping at joins.
   wall('head',p(b.minU,b.minV),p(b.maxU,b.minV))
-  // The last row shares the public lobby's rear partition, also drawn once
-  // by the building shell. Every room still has a physical fourth boundary.
+  // The last row closes the ward; intermediate foot walls are the next head wall.
+  if(index%3===2) wall('foot',p(b.minU,b.maxV),p(b.maxU,b.maxV),true)
   for(const side of ['minU','maxU'] as const) {
     const u=b[side],near=side==='maxU'
     if(side===door.side) {

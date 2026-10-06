@@ -8,7 +8,7 @@ import { ROOM_PROPS, ROOM_STOPS, STATION_POSITION, roomPoint } from './tycoon-wa
 export { ROOM_SPACING, STATION_POSITION } from './tycoon-ward-layout'
 
 export type WardTask = Pick<TycoonTask, 'id' | 'room' | 'patientName' | 'status' | 'category' | 'careProgress' | 'simulation'>
-export type WardTarget = { id: string; kind: 'patient' | 'equipment' | 'safety' | 'station'; label: string; position: GroundPoint; taskId?: string }
+export type WardTarget = { id: string; kind: 'patient' | 'equipment' | 'safety' | 'station' | 'elevator'; label: string; position: GroundPoint; taskId?: string }
 export type WardState = {
   soundEnabled?: boolean
   suggestedTargetId?: string
@@ -27,6 +27,7 @@ export const unprojectGround = ({ x, y }: ScreenPoint): GroundPoint => ({
 export function wardTargets(tasks: readonly WardTask[]): WardTarget[] {
   return [
     { id: 'station', kind: 'station', label: 'Nursing station · handoff', position: STATION_POSITION },
+    ...HOSPITAL_MAP.elevators.map((lift): WardTarget => ({id:lift.id,kind:'elevator',label:'Floor 2 · Locked',position:lift.approach})),
     ...tasks.flatMap((task, i): WardTarget[] => task.simulation?.discharged ? [] : [
       { id: `patient:${task.id}`, kind: 'patient', taskId: task.id, label: `${task.room} · ${task.patientName}`, position: roomPoint(i, ROOM_STOPS.patient) },
       { id: `equipment:${task.id}`, kind: 'equipment', taskId: task.id, label: `${task.room} · ${task.category === 'medication-check' ? 'Medication checks' : 'Patient monitor'}`, position: roomPoint(i, ROOM_STOPS.equipment) },
@@ -135,6 +136,11 @@ export class TycoonWardController {
     this.pendingFacing = null; this.turnMs = 0
   }
   faceTarget(target: WardTarget) {
+    if(target.kind==='elevator') {
+      const lift=HOSPITAL_MAP.elevators.find(lift=>lift.id===target.id)
+      if(lift)this.facePoint(lift.point)
+      return
+    }
     const index = this.state?.tasks.findIndex((task) => task.id === target.taskId) ?? -1
     this.facePoint(target.kind === 'station' ? HOSPITAL_MAP.station.prop.point : roomPoint(Math.max(0, index), target.kind === 'equipment' ? ROOM_PROPS.monitor : target.kind === 'safety' ? ROOM_PROPS.scanner : ROOM_PROPS.bed))
   }

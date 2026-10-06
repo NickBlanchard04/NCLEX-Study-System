@@ -1,9 +1,9 @@
 import { wardCanvasPointer } from './tycoon-pointer'
+import { PatientThoughtBubble } from './tycoon-thought-bubble'
 import { HOSPITAL_MAP, PATIENT_ROOM, roomEntrance } from './tycoon-map-config'
 import type Phaser from 'phaser'
 import { projectGround, type GroundPoint, type ScreenPoint } from './tycoon-care-presentation'
 import { createRoomMaterial } from './tycoon-room-material'
-import { drawWoodRoomNumber } from './tycoon-room-signage'
 import { ROOM_PROPS, WARD_ROOM, roomPoint } from './tycoon-ward-layout'
 import type { WardTask } from './tycoon-ward'
 import { drawClinicalArchitecture } from './tycoon-room-architecture'
@@ -39,11 +39,7 @@ export function drawRoomShell(o: RoomDrawing, index: number, _color: number, clo
   const fixtureAt=projectGround(p(5.7,minV))
   o.scene.add.image(fixtureAt.x,fixtureAt.y-118,fixtureKey).setScale(156/1415)
     .setDepth(projectGround(p(maxU,minV)).y+2)
-  o.prop('furniture-bedside-cabinet',p(4.85,-.4),52)
-  o.prop('decor-potted-plant',p(5.45,-.65),38)
-  const number = HOSPITAL_MAP.rooms[index].label.replace('Room ', '')
-  drawWoodRoomNumber(o.scene, number, p(minU + .55, minV), false, 164)
-    .setDepth(projectGround(p(maxU,minV)).y+4)
+  o.prop('furniture-bedside-cabinet',roomPoint(index,ROOM_PROPS.cabinet),52)
   return o.prop(PATIENT_ROOM.props.monitor.asset,roomPoint(index,ROOM_PROPS.monitor),52,20)
     .setData('doorFrame',architecture.frame).setData('doorLeaf',architecture.leaf).setData('doorHit',architecture.hit)
 }
@@ -66,7 +62,7 @@ export function drawPatientRoom(o: RoomDrawing, task: WardTask, i: number, goTo:
   // Call status stays at the doorway, separate from the permanent wall plaque.
   const doorway = projectGround(roomEntrance(i).center)
   const light = o.scene.add.circle(doorway.x, doorway.y - 190, 5, 0xe3b565).setStrokeStyle(2, 0xf4f2e9).setDepth(1250)
-  const reaction = o.text('', p(ROOM_PROPS.bed.u - 0.9, ROOM_PROPS.bed.v + 0.08), '#214b56', 12).setY(at.y - 126).setVisible(false)
+  const reaction = new PatientThoughtBubble(o.scene, at.x - 25, at.y - 145)
   const progress = o.scene.add.graphics().setDepth(1250)
   return { ambient, taskId: task.id, light, monitor, patient, reaction, progress, point: { x: at.x - 30, y: at.y - 108 }, previous: '', until: 0 }
 }
