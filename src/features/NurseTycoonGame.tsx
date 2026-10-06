@@ -5,6 +5,8 @@ import {
   Check,
   BatteryFull,
   Signal,
+  ArrowLeft,
+  Users,
   ChevronRight,
   CircleDollarSign,
   ClipboardList,
@@ -54,6 +56,7 @@ import './tycoon-compact-care.css'
 import './tycoon-dialog-pages.css'
 import './tycoon-bubbly-care.css'
 import './tycoon-care-phone.css'
+import './tycoon-clean-hud.css'
 
 const urgencyLabels: Record<TycoonTaskUrgency, string> = {
   critical: 'Critical',
@@ -95,6 +98,7 @@ export function NurseTycoonGame() {
   const [showUpgrades, setShowUpgrades] = useState(false)
   const [commandOpen, setCommandOpen] = useState(false)
   const [patientsOpen, setPatientsOpen] = useState(false)
+  const [patientBrowserTaskId, setPatientBrowserTaskId] = useState<string | null>(null)
   const [nearbyTaskId, setNearbyTaskId] = useState<string | null>(null)
   const [reward, setReward] = useState<{money: number; xp: number} | null>(null)
   useEffect(() => { if (!reward) return; const timer = window.setTimeout(() => setReward(null), 3600); return () => window.clearTimeout(timer) }, [reward])
@@ -159,6 +163,7 @@ export function NurseTycoonGame() {
   const modalTask = shift?.id === patientView?.shiftId
     ? shift?.tasks.find((task) => task.id === patientView?.taskId)
     : undefined
+  const browserTask = shift?.tasks.find(task => task.id === patientBrowserTaskId)
   const modalCall = shift?.loop?.calls.filter((call) => call.taskId === modalTask?.id && (call.status === 'ringing' || call.status === 'missed')).sort((a, b) => Number(b.kind === 'change') - Number(a.kind === 'change'))[0]
   const completedCount =
     [...(shift?.simulation?.archived ?? []), ...(shift?.tasks ?? [])].filter((task) => task.status === 'completed').length
@@ -344,12 +349,13 @@ export function NurseTycoonGame() {
     <main
       className={`tycoon tycoon-game tycoon-prototype tycoon-code-red${panelVisible ? ' is-command-open' : ''}${patientView || feedback || stationOpen ? ' is-patient-focus' : ''}`}
       data-patients-open={patientsOpen}
+      data-compact-hud={compact}
       aria-label="Nurse Command Tycoon shift"
     >
       <TycoonHud
         tycoon={tycoon}
         inGame
-        clockPaused={readyWardId !== shift.id || Boolean(briefingOpen || patientView || feedback || stationOpen || showUpgrades || manuallyPaused || (compact && commandOpen))}
+        clockPaused={readyWardId !== shift.id || Boolean(briefingOpen || patientView || feedback || stationOpen || showUpgrades || manuallyPaused || (compact && (commandOpen || patientsOpen)))}
       />
       <div className="tycoon-workspace">
         <section
@@ -413,12 +419,12 @@ export function NurseTycoonGame() {
               upgrades={tycoon.upgrades}
               calls={shift.loop?.calls}
               worldJobs={shift.worldJobs}
-              onOpenPatients={() => setPatientsOpen((open) => !open)}
+              onOpenPatients={() => { setPatientBrowserTaskId(null); setPatientsOpen((open) => !open) }}
               patientsOpen={patientsOpen}
               onOpenShop={() => { setPatientsOpen(false); setShowUpgrades(true) }}
               onNearbyTask={setNearbyTaskId}
               onReadyChange={(ready) => setReadyWardId(ready ? shift.id : null)}
-              paused={readyWardId !== shift.id || Boolean(briefingOpen || patientView || feedback || stationOpen || showUpgrades || manuallyPaused || (compact && commandOpen)) || shift.status !== 'running'}
+              paused={readyWardId !== shift.id || Boolean(briefingOpen || patientView || feedback || stationOpen || showUpgrades || manuallyPaused || (compact && (commandOpen || patientsOpen))) || shift.status !== 'running'}
               manuallyPaused={manuallyPaused}
               onTogglePause={() => setManuallyPaused((value) => !value)}
               onInteract={interactWithWard}
@@ -569,6 +575,19 @@ export function NurseTycoonGame() {
           <span className="tycoon-handoff-desktop-label">Return for handoff</span><span className="tycoon-handoff-mobile-label">Handoff</span>
         </button>
       </footer>
+      {compact && patientsOpen ? <TycoonDialog browser title={browserTask ? 'Patient profile' : 'Patients'} careIcon="patient" onClose={() => setPatientsOpen(false)} onBack={browserTask ? () => setPatientBrowserTaskId(null) : undefined}>
+        {browserTask ? <div className="tycoon-browser-profile">
+          <div className="tycoon-dialog-patient"><span><TycoonPortrait task={browserTask} /></span><div><h3>{browserTask.patientName}</h3><p>{browserTask.room}</p></div><UrgencyBadge task={browserTask} /></div>
+          <p className="tycoon-browser-task">{browserTask.title}</p>
+          <p className="tycoon-dialog-intro">Due {formatTime(browserTask.deadlineMinute)} · {browserTask.status === 'completed' ? 'Care complete' : browserTask.status === 'failed' ? 'Task closed' : 'Needs care'}</p>
+          <div className="tycoon-browser-actions">
+            <button type="button" className="tycoon-modal-primary" onClick={() => { setPatientsOpen(false); selectTask(browserTask.id); continueCare(browserTask) }} disabled={browserTask.status === 'completed' || browserTask.status === 'failed'}><TycoonInteractionIcon kind="patient" />{CARE_LABELS[nextCareStep(browserTask) ?? 'assessment']}</button>
+            <button type="button" onClick={() => { setPatientsOpen(false); travelTo(`equipment:${browserTask.id}`) }}><TycoonInteractionIcon kind="equipment" />Inspect equipment</button>
+          </div>
+        </div> : <>
+          <nav className="tycoon-room-picker" aria-label="Patient rooms">{shift.tasks.map(task => <button key={task.id} type="button" aria-label={task.room} onClick={() => { selectTask(task.id); setPatientBrowserTaskId(task.id) }}><Users aria-hidden="true" /><strong>{task.room.replace('Room ', '')}</strong><span>{task.status === 'completed' ? 'Complete' : task.status === 'failed' ? 'Closed' : urgencyLabels[task.safetyRisk]}</span></button>)}</nav>
+        </>}
+      </TycoonDialog> : null}
       {patientView && modalTask && shift.status === 'running' ? (
         <TycoonDialog
           key={`${shift.id}-${modalTask.id}-${patientView.kind}`}
@@ -972,6 +991,8 @@ function TycoonDialog({
   expanded = false,
   compact = false,
   careIcon,
+  onBack,
+  browser,
 }: {
   title: string
   children: ReactNode
@@ -979,6 +1000,8 @@ function TycoonDialog({
   expanded?: boolean
   compact?: boolean
   careIcon?: CareIconKind
+  onBack?: () => void
+  browser?: boolean
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
@@ -994,7 +1017,7 @@ function TycoonDialog({
   return (
     <dialog
       ref={dialogRef}
-      className={`tycoon-dialog${expanded ? ' tycoon-dialog-assessment' : ''}${compact ? ' tycoon-dialog-compact' : ''}${careIcon ? ' tycoon-dialog-care' : ''}`}
+      className={`tycoon-dialog${expanded ? ' tycoon-dialog-assessment' : ''}${compact ? ' tycoon-dialog-compact' : ''}${careIcon ? ' tycoon-dialog-care' : ''}${browser ? ' tycoon-dialog-browser' : ''}`}
       data-care-icon={careIcon}
       data-phone-details={careIcon && detailsOpen ? 'true' : undefined}
       aria-label={careIcon && detailsOpen ? 'Patient details' : title}
@@ -1005,7 +1028,8 @@ function TycoonDialog({
     >
       {careIcon ? <div className="tycoon-phone-status" aria-hidden="true"><span>Nurse Command</span><i /><span><Signal size={14} /><BatteryFull size={18} /></span></div> : null}
       <header>
-        <h2>{careIcon ? <TycoonInteractionIcon kind={careIcon} size={36} /> : null}{careIcon && detailsOpen ? 'Patient details' : title}</h2>
+        {onBack ? <button type="button" onClick={onBack} aria-label="Back to rooms"><ArrowLeft aria-hidden="true" /></button> : null}
+        <h2>{browser ? <Users aria-hidden="true" /> : careIcon ? <TycoonInteractionIcon kind={careIcon} size={36} /> : null}{careIcon && detailsOpen ? 'Patient details' : title}</h2>
         {onClose ? (
           <button type="button" onClick={onClose} aria-label="Close dialog">
             <X aria-hidden="true" />
@@ -1117,3 +1141,5 @@ function PatientNoteEditor({
     </form>
   )
 }
+
+
