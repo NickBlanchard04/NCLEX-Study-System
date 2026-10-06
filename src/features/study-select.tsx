@@ -32,6 +32,15 @@ export function StudySelect({ label, value, options, onChange, gallery = false }
   useEffect(() => { if (open) document.getElementById(`${id}-${active}`)?.scrollIntoView({ block: 'nearest' }) }, [active, open, id])
   function choose(index: number) { onChange(options[index].value); setOpen(false); trigger.current?.focus() }
   function reveal() {
+    const section = root.current?.closest('section')
+    // Only one selector is open at a time, whether opened by touch or keyboard.
+    section?.querySelectorAll<HTMLButtonElement>('.study-select-trigger[aria-expanded="true"]').forEach(button => {
+      if (button !== trigger.current) button.click()
+    })
+    // Top-level selectors replace More options; its own filters keep it expanded.
+    section?.querySelectorAll<HTMLDetailsElement>('.simple-study-details[open]').forEach(details => {
+      if (!details.contains(root.current)) details.open = false
+    })
     const rect = trigger.current?.getBoundingClientRect()
     if (rect) { const below = window.innerHeight - rect.bottom; const up = below < 220 && rect.top > below; setPlacement({ up, height: Math.max(120, Math.min(320, (up ? rect.top : below) - 16)) }) }
     setOpen(true)

@@ -8,8 +8,8 @@
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "orientation": "portrait-primary",
-  "background_color": "#F6F8FB",
-  "theme_color": "#003B66",
+  "background_color": "#101f29",
+  "theme_color": "#101f29",
   "categories": ["education", "medical", "productivity"],
   "icons": [
     {
