@@ -21,14 +21,14 @@ export function PatientObservations({ task, remote = false, compact = false }: {
       </svg><div><strong>{response.expression}</strong><q>{response.dialogue}</q></div>
     </div> : null}
     {!compact ? <strong>{task.simulation.discharged ? 'Room available' : `Condition: ${task.simulation.condition}`}</strong> : null}
-    <p>{observation.symptoms}</p>
+    <p className="tycoon-key-findings">{observation.symptoms}</p>
     {hideVitals ? <p className="tycoon-remote-hint">Read vitals at the bedside. Install a Vitals Monitor for live ward-board trends.</p> : <>
     {remote && task.simulation.workflow === 'bedside' ? <strong className="tycoon-telemetry">Live telemetry · {task.simulation.condition === 'worsening' ? 'Worsening ↓' : task.simulation.condition === 'improving' ? 'Improving ↑' : task.simulation.condition}</strong> : null}
     <dl>
-      <div><dt>Pulse</dt><dd>{observation.pulse} bpm</dd></div>
-      <div><dt>Respirations</dt><dd>{observation.respiration}/min</dd></div>
+      <div data-key-finding={task.simulation.scenario === "medication"}><dt>Pulse</dt><dd>{observation.pulse} bpm</dd></div>
+      <div data-key-finding={task.simulation.scenario === "chest"}><dt>Respirations</dt><dd>{observation.respiration}/min</dd></div>
       <div><dt>SpO₂</dt><dd>{observation.oxygen}%</dd></div>
-      <div><dt>BP</dt><dd>{observation.pressure}</dd></div>
+      <div data-key-finding={task.simulation.scenario === "falls"}><dt>BP</dt><dd>{observation.pressure}</dd></div>
     </dl>
     </>}
     {task.simulation.scannerUsed ? <p>Scanner: patient and medication verification recorded.</p> : null}
@@ -45,13 +45,14 @@ export function PatientDecision({ task, phase, onContinue }: { task: TycoonTask;
     { id: 'improved', label: 'Findings improved: continue the agreed plan and document' },
     { id: 'escalate', label: 'Findings remain concerning: escalate and obtain further review' },
   ]
+  const suggestedChoice = phase === 'care' ? tycoonScenarios[sim.scenario].intervention : sim.condition === 'worsening' ? 'escalate' : 'improved'
   const finished = Boolean(phase === 'care' ? sim.intervention : sim.reassessment)
   const last = tycoon.activeShift?.events.find((event) => event.taskId === task.id && ['Care decision', 'Reassessment recorded', 'Decision needs review'].includes(event.title))
   return <div className="tycoon-decision">
     <h3>{phase === 'care' ? 'Choose the care response' : 'Interpret the patient response'}</h3>
-    <div>{choices.map((choice) => <button type="button" key={choice.id} disabled={finished || sim.attempted.includes(`${phase}:${choice.id}`)} onClick={() => {
+    <div>{choices.map((choice) => <button type="button" key={choice.id} className={choice.id === suggestedChoice ? "tycoon-suggested-choice" : undefined} disabled={finished || sim.attempted.includes(`${phase}:${choice.id}`)} onClick={() => {
       if (tycoon.activeShift) decide(task.id, choice.id, phase, tycoon.activeShift.id)
-    }}>{choice.label}</button>)}</div>
+    }}>{choice.label}{choice.id === suggestedChoice ? <small aria-hidden="true" className="tycoon-suggested-tag">Suggested</small> : null}</button>)}</div>
     {last ? <p role="status">{last.message}{last.type === 'penalty' ? ' −$25 · −4 safety. Review the findings and try another response.' : ''}</p> : null}
     {finished && phase === 'reassessment' ? <button type="button" className="tycoon-modal-primary" onClick={onContinue}>Continue to documentation</button> : null}
   </div>

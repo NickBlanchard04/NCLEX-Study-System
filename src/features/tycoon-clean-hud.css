@@ -55,3 +55,26 @@
   .tycoon-game.tycoon-code-red .tycoon-hud { top:70px; gap:12px; }
   .tycoon-game.tycoon-code-red .tycoon-hud > .tycoon-hud-time { top:8px; }
 }
+
+/* Findings and suggestions belong to the care screen, not the world state. */
+@media (pointer:coarse),(max-width:899px) {
+  .tycoon-code-red .tycoon-dialog-care .tycoon-key-findings { border-left:3px solid #d99a25; padding-left:8px; font-weight:650; color:#3d463d; }
+  .tycoon-code-red .tycoon-dialog-care .tycoon-observations dl > div[data-key-finding=true] { background:#fff0c9; box-shadow:inset 0 0 0 1px #d7b461; }
+  .tycoon-code-red .tycoon-dialog-care :is(.tycoon-assessment-choices,.tycoon-decision) button.tycoon-suggested-choice { border:2px solid #167768; background:#def1e5; }
+  .tycoon-code-red .tycoon-dialog-care .tycoon-suggested-tag { display:inline-block; margin-left:8px; color:#126557; font-size:10px; font-weight:750; white-space:nowrap; }
+}
+@media (orientation:landscape) and (pointer:coarse),(orientation:landscape) and (max-width:899px) {
+  .tycoon-game.tycoon-code-red .tycoon-movement { background:none; border:0; pointer-events:none; }
+  .tycoon-game.tycoon-code-red .tycoon-movement-row { width:100%; max-width:none; margin:0; grid-template-columns:76px minmax(0,1fr) 64px 90px 54px; background:none; }
+  .tycoon-game.tycoon-code-red .tycoon-movement button { pointer-events:auto; }
+  .tycoon-game.tycoon-code-red .tycoon-movement .tycoon-interact { justify-self:center; width:min(180px,100%); }
+  .tycoon-game.tycoon-code-red .tycoon-movement .tycoon-interact:disabled { visibility:hidden; }
+  .tycoon-game.tycoon-code-red .tycoon-movement .tycoon-patients-key { justify-self:start; }
+  .tycoon-game.tycoon-code-red .tycoon-movement :is(.tycoon-patients-key,.tycoon-shop-key,.tycoon-controls-more), .tycoon-game.tycoon-code-red .tycoon-finish { background:none; border:0; clip-path:none; text-shadow:0 1px 3px #000,0 0 6px #0009; }
+  .tycoon-game.tycoon-code-red .tycoon-touch-movement { bottom:calc(64px + env(safe-area-inset-bottom)); }
+}
+
+.tycoon-suggested-tag { display:none; }
+@media (pointer:coarse),(max-width:899px) { .tycoon-suggested-tag { display:inline-block; } }
+/* Overview exposes the whole building rather than covering rooms with the patient board. */
+.tycoon-game:has(.tycoon-overview[aria-pressed=true]) .tycoon-priority { display:none; }

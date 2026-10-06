@@ -100,7 +100,7 @@ describe('shipped map contract', () => {
     }
   })
   it('fits the full configured building at desktop and phone sizes', () => {
-    for(const [width,height] of [[1440,900],[375,667]]) {
+    for(const [width,height] of [[1440,900],[375,667],[667,300],[844,390]]) {
       const camera=overviewCamera(width,height), bounds=HOSPITAL_MAP.camera
       const left=projectGround(bounds.left).x-bounds.padding.left
       const right=projectGround(bounds.right).x+bounds.padding.right

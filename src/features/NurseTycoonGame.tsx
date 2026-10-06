@@ -643,6 +643,7 @@ export function NurseTycoonGame() {
                   >
                     <button
                       type="button"
+                      className={compact && action.id === modalTask.correctActionId ? "tycoon-suggested-choice" : undefined}
                       onClick={() => chooseAction(modalTask, action.id)}
                       disabled={
                         shift.status !== 'running' ||
@@ -650,7 +651,7 @@ export function NurseTycoonGame() {
                         modalTask.status === 'failed'
                       }
                     >
-                      <strong>{action.label}</strong>
+                      <strong>{action.label}</strong>{compact && action.id === modalTask.correctActionId ? <small aria-hidden="true" className="tycoon-suggested-tag">Suggested</small> : null}
                     </button>
                   </TycoonTooltip>
                 ))}

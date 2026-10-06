@@ -107,7 +107,7 @@ export const HOSPITAL_MAP = {
   camera: {
     left: { u: 3.7, v: 17.2 }, right: { u: 18, v: -2.6 },
     top: { u: 3.7, v: -2.6 }, bottom: { u: 18, v: 17.2 },
-    padding: { left: 140, right: 140, top: 220, bottom: 140 },
+    padding: { left: 70, right: 70, top: 190, bottom: 30 },
   },
 } as const
 export function roomIsUnlocked(index: number, upgrades: Readonly<Record<string,number>>) {

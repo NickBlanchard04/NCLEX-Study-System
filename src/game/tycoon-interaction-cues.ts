@@ -3,7 +3,7 @@ import type { WardState, WardTarget } from './tycoon-ward'
 import { CARE_LABELS, nextCareStep } from '../services/tycoon-care'
 import { patientObservation } from '../data/tycoon-scenarios'
 export const INTERACTION_COLORS = { patient: 0x49baff, equipment: 0x52dea0, safety: 0xffc65c, station: 0xbf9aff, elevator: 0x9ba4af } as const
-export interface InteractionCue { target: WardTarget; graphic: Phaser.GameObjects.Arc; glow: Phaser.GameObjects.Image; icon: Phaser.GameObjects.Image | null; label: Phaser.GameObjects.Text }
+export interface InteractionCue { target: WardTarget; graphic: Phaser.GameObjects.Arc; glow: Phaser.GameObjects.Image; icon: Phaser.GameObjects.Image | null; label: Phaser.GameObjects.Text; bubble: Phaser.GameObjects.Graphics }
 export function createInteractionIcon(scene: Phaser.Scene,target:WardTarget,x:number,y:number) {
  const key='care-icon-'+target.kind
  return scene.textures.exists(key)?scene.add.image(x,y,key).setDisplaySize(32,32*44/72).setDepth(-.5):null
@@ -26,7 +26,7 @@ export function createInteractionGlow(scene: Phaser.Scene, target: WardTarget, x
   return scene.add.image(x, y, key).setScale(.9, .9 * 44 / 72).setTint(INTERACTION_COLORS[target.kind]).setDepth(-.65)
 }
 /** Presentation only: this module never starts care or mutates game state. */
-export function updateInteractionCue({ target, graphic, glow, icon, label }: InteractionCue, state: WardState | null, nearbyTarget: WardTarget | null, hoveredTarget: string | null, paused: boolean, walkingTo: WardTarget | null = null) {
+export function updateInteractionCue({ target, graphic, glow, icon, label, bubble }: InteractionCue, state: WardState | null, nearbyTarget: WardTarget | null, hoveredTarget: string | null, paused: boolean, walkingTo: WardTarget | null = null, touch = false) {
   const task = state?.tasks.find((t) => t.id === target.taskId)
   const complete = target.kind === 'equipment' ? state?.reviewedTaskIds.includes(target.taskId!) : target.kind === 'safety' ? task?.careProgress?.steps.includes('safety') : task?.status === 'completed'
   const failed = target.kind === 'patient' && task?.status === 'failed'
@@ -50,7 +50,17 @@ export function updateInteractionCue({ target, graphic, glow, icon, label }: Int
   const hovered = hoveredTarget === target.id
   const nearby = nearbyTarget?.id === target.id
   const selectedRoom = Boolean(target.taskId && state?.selectedTaskId === target.taskId)
-  label.setVisible(!paused && !state?.playerWorking && (hovered || nearby || selectedRoom || target.kind === 'station' || travelling))
+  label.setVisible(!paused && !state?.playerWorking && (touch ? nearby : hovered || nearby || selectedRoom || target.kind === 'station' || travelling))
+  bubble.setVisible(label.visible).setPosition(label.x, label.y)
+  const bubbleKey = label.text
+  if (bubble.getData('text') !== bubbleKey) {
+    bubble.setData('text', bubbleKey)
+    const w = label.width + 6, h = label.height + 4
+    bubble.clear().fillStyle(0xfffaf0).lineStyle(2, color)
+      .fillRoundedRect(-w/2,-h/2,w,h,14).strokeRoundedRect(-w/2,-h/2,w,h,14)
+      .fillTriangle(-6,h/2-1,6,h/2-1,0,h/2+9)
+      .lineBetween(-6,h/2,0,h/2+9).lineBetween(0,h/2+9,6,h/2)
+  }
   const highlighted = travelling || destination || hovered || nearby
   // Restore care labels in the selected room and the shared handoff location.
   graphic.setVisible(true).setAlpha(complete || failed ? .4 : highlighted ? 1 : .65)

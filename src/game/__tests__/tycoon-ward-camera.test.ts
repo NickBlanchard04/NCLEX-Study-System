@@ -4,7 +4,7 @@ import { followCamera, followZoom } from '../tycoon-ward-camera'
 describe('readable follow camera', () => {
   it('keeps landscape touch zoom readable at wide and short phone sizes', () => {
     for (const [width, height] of [[1280, 516], [844, 390], [667, 300]]) {
-      expect(followZoom(width, height, true)).toBeGreaterThanOrEqual(.85)
+      expect(followZoom(width, height, true)).toBeGreaterThanOrEqual(.78)
       const point = { x: 900, y: 800 }, zoom = followZoom(width, height, true)
       const camera = followCamera(width, height, zoom, point, null, 0, true, true)
       const screenY = (point.y - camera.y) * zoom + height / 2

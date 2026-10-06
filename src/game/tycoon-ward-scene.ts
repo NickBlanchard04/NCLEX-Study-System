@@ -270,8 +270,9 @@ export function createTycoonWard(options: Options): TycoonWard {
         hit.on('pointerout', () => { this.hoveredTarget = null; this.invalidate() })
         const glow = createInteractionGlow(this, target, at.x, at.y)
         const icon=createInteractionIcon(this,target,at.x,at.y)
-        label.setBackgroundColor('#26343d').setColor('#fff').setPadding(8,6).setY(at.y-48)
-        this.indicators.push({ target, graphic, glow, icon, label })
+        label.setBackgroundColor('#00000000').setColor('#273c3c').setPadding(10,7).setY(at.y-48)
+        const bubble = this.add.graphics().setDepth(label.depth-1)
+        this.indicators.push({ target, graphic, glow, icon, label, bubble })
       })
       this.contact = actorContact(this)
       this.nurse = this.add.sprite(0, 0, 'nurse-03', 'se-idle-0').setScale(WARD_ART_STANDARD.nurseScale)
@@ -318,7 +319,7 @@ export function createTycoonWard(options: Options): TycoonWard {
         const done = bridge?.tasks.find((task) => task.id === scanner.taskId)?.simulation?.scannerUsed
         scanner.light.setFillStyle(scanning ? 0x6df2bc : done ? 0x6fa990 : 0x214b56).setAlpha(scanning && !reduced ? 0.7 + Math.sin(this.elapsed / 130) * 0.3 : 1)
       }
-      if (refreshUi) for (const item of this.equipmentLabels) item.label.setVisible(!controller.paused && !bridge?.playerWorking && Math.hypot(player.position.u - item.point.u, player.position.v - item.point.v) < 1.8)
+      if (refreshUi) for (const item of this.equipmentLabels) item.label.setVisible(!this.touch && !controller.paused && !bridge?.playerWorking && Math.hypot(player.position.u - item.point.u, player.position.v - item.point.v) < 1.8)
       if(refreshUi) {
       sound.configure(bridge?.soundEnabled !== false, Boolean(bridge?.paused || document.hidden))
       if (!this.seenJobs) this.seenJobs = new Set(bridge?.worldJobs?.filter((job) => job.phase === 'complete').map((job) => job.id))
@@ -465,13 +466,13 @@ export function createTycoonWard(options: Options): TycoonWard {
         this.route.clear().lineStyle(2, 0x347f86, 0.6)
         if (s.path.length) this.route.strokePoints([s.screenPosition, ...s.path.map(projectGround)].map((p) => new Phaser.Math.Vector2(p.x, p.y)))
       }
-      if (refreshUi) this.indicators.forEach(cue => updateInteractionCue(cue, bridge, s.nearby, this.hoveredTarget, controller.paused, s.destination))
+      if (refreshUi) this.indicators.forEach(cue => updateInteractionCue(cue, bridge, s.nearby, this.hoveredTarget, controller.paused, s.destination, this.touch))
       this.followNurse(this.staffDelta)
       // A single camera-space beacon stays readable even when the room is off-screen.
       const suggested = controller.targets().find(target => target.id === bridge?.suggestedTargetId)
       const guided = !controller.paused && !s.caring && s.nearby?.id !== suggested?.id ? suggested : undefined
       const endpoint = s.path.at(-1) ?? guided?.position
-      this.destinationLabel.setVisible(Boolean(endpoint))
+      this.destinationLabel.setVisible(!this.touch && Boolean(endpoint))
       if (!endpoint && this.destinationDrawKey) { this.destinationPin.clear(); this.destinationDrawKey = '' }
       const destination = endpoint ? s.destination?.label ?? guided?.label ?? 'Walk here' : ''
       if(options.parent.dataset.destination!==destination)options.parent.dataset.destination=destination
@@ -514,7 +515,10 @@ export function createTycoonWard(options: Options): TycoonWard {
         }
       }
       this.animateWard(refreshUi)
-      if (refreshUi) this.placeLabels()
+      if (refreshUi) {
+        this.placeLabels()
+        this.indicators.forEach(({bubble,label}) => bubble.setVisible(label.visible).setPosition(label.x,label.y))
+      }
       const status = controller.status()
       if (bridge?.playerWorking && !bridge.paused && !document.hidden) { const job = bridge.worldJobs?.find(job => worldJobActive(job) && ['chart', 'scanner'].includes(job.kind)); status.workKind = job?.kind === 'chart' ? 'chart' : 'scanner'; status.label = status.workKind === 'chart' ? 'Charting care…' : 'Scanning at bedside…'; status.caring = true }
       const key = `${status.label}:${status.workKind}:${status.moving}:${status.caring}:${status.nearby?.id ?? ''}`
