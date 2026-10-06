@@ -31,6 +31,15 @@ describe('Public topic acquisition flow', () => {
     const html = renderToStaticMarkup(<MemoryRouter initialEntries={['/exam-prep?topic=unknown&preview=5']}><ExamPrepPage /></MemoryRouter>)
     expect(html).toContain('Review up to 10 questions')
   })
+  it('offers a compact result footer without a duplicate guest action', () => {
+    const html = renderToStaticMarkup(<MemoryRouter><StudyResultSave resultFooter result={{ id: 'footer-test', title: 'Practice', route: '/practice-questions', completedAt: '2026-10-05', total: 1, answers: [{ id: 'sample', correct: true }] }} /></MemoryRouter>)
+    expect(html).toContain('study-save-result-footer')
+    expect(html).toContain('saved-results-bookmark.webp')
+    expect(html).toContain('Create account')
+    expect(html).toContain('Sign in')
+    expect(html).not.toContain('Continue as guest')
+    expect(html).not.toContain('Joining the community')
+  })
   it('offers result signup without removing guest continuation', () => {
     const html = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(StudyResultSave, { result: { id: 'test', title: 'Practice', route: '/exam-prep', completedAt: '2026-10-04', total: 1, answers: [{ id: 'sample', correct: true }] } })))
     expect(html).toContain('Keep the progress you just made.')

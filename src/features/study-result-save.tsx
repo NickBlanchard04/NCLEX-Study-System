@@ -13,7 +13,7 @@ function ResultFrame({ children }: { children: React.ReactNode }) {
   return <div className="quick-study-page"><header className="home-launcher-header"><Link className="home-launcher-brand" to="/"><img src={logo} alt="" /><span>Nurse <span>Command</span></span></Link><StudyNavigation /></header><div className="quick-study-main">{children}</div></div>
 }
 
-export function StudyResultSave({ result, autoSave = false, onContinue, compact = false }: { result: SavedStudyResult; autoSave?: boolean; onContinue?: () => void; compact?: boolean }) {
+export function StudyResultSave({ result, autoSave = false, onContinue, compact = false, resultFooter = false }: { result: SavedStudyResult; autoSave?: boolean; onContinue?: () => void; compact?: boolean; resultFooter?: boolean }) {
   const user = useStudySystemStore((state) => state.authUser)
   const profile = useStudySystemStore((state) => state.profile)
   const sync = useStudySystemStore((state) => state.syncStatus)
@@ -47,6 +47,12 @@ export function StudyResultSave({ result, autoSave = false, onContinue, compact 
     <Link to="/study-results">Saved results</Link>
     <p>Connecting with other students is optional. Your results are not shared.</p>
     <Link to="/social">Explore the community</Link>
+  </section>
+  if (resultFooter) return <section className="study-save-prompt study-save-result-footer" aria-label="Save your progress">
+    <img src="/images/question-bank/filters/saved-results-bookmark.webp" alt="" width={48} height={48} />
+    <div><h2>Keep your progress.</h2><p>Save this session and pick up where you left off.</p></div>
+    <div className="study-save-result-buttons"><button className="quick-session-secondary" onClick={() => signIn('signup')}>Create account</button><button className="quick-session-text-button" onClick={() => signIn('signin')}>Sign in</button></div>
+    {error && <p role="alert">{error}</p>}
   </section>
   if (compact) return <section className="study-save-prompt study-save-prompt-compact" aria-label="Save your progress">
     <p><Sprout size={26} aria-hidden="true" />Keep your streak, grow each week.</p>

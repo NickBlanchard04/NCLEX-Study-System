@@ -295,11 +295,13 @@ export function QuickStudyCompleteView({ focused = false, completionActions, ses
         </ol>
         <div className="practice-result-legend"><span><Check className="practice-result-correct" size={26} aria-hidden="true" />{session.responses.filter(response => response.isCorrect).length} correct</span><span><CircleX className="practice-result-missed" size={26} aria-hidden="true" />{missed.length} to review</span><span className="practice-result-accuracy"><strong>{score}%</strong> accuracy</span></div>
       </div>}
+      <div className="practice-complete-next">
       <div className="practice-complete-actions">
         {!reviewOpen && <p>{missed.length ? 'Revisit the questions you missed.' : 'You answered every question correctly.'}</p>}
         <div>{missed.length > 0 && <button className="quick-session-primary" onClick={() => setReviewOpen(value => !value)} aria-expanded={reviewOpen}>{reviewOpen ? 'Back to results' : 'Review missed questions'}<ArrowRight size={18} aria-hidden="true" /></button>}<button className="quick-session-secondary" onClick={onExit}>Done</button></div>
       </div>
-      {completionActions && !reviewOpen ? <div className="practice-complete-details">{completionActions}</div> : null}
+      {completionActions && !reviewOpen ? completionActions : null}
+      </div>
       {reviewOpen && <section className="quick-session-missed" aria-label="Missed questions"><h2>Review missed questions</h2>{missed.map((item,index) => <details key={item.id}><summary>{index + 1}. {item.question?.prompt ?? 'Saved question unavailable'}</summary>{item.question ? <><p>{item.question.scenario}</p><p><strong>Correct answer: </strong>{item.question.choices.filter(choice => item.question!.correctAnswer.includes(choice.id)).map(choice => choice.text).join(' ')}</p><p>{item.question.rationale.whyCorrect}</p></> : <p>This saved question is no longer available.</p>}</details>)}</section>}
       <details className="practice-complete-details"><summary>Session details</summary><p>Practice results only, not a licensure prediction.</p><dl>{breakdown.map(item => <div key={item.category}><dt>{item.category}</dt><dd>{Math.round(item.accuracy * 100)}%</dd></div>)}</dl>{onRepair && <button className="quick-session-secondary" onClick={onRepair}>Practice missed topic</button>}<button className="quick-session-text-button" onClick={onRemediation}>Open study review</button></details>
     </div>
