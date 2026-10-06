@@ -283,7 +283,7 @@ export function QuickStudyCompleteView({ focused = false, completionActions, ses
   const [reviewOpen, setReviewOpen] = useState(false)
   if (focused) return <section className="quick-session focused-practice practice-complete" aria-label="Practice results">
     <header className="quick-session-header"><div className="focused-practice-top"><span>Practice results</span><StudyNavigation /></div></header>
-    <div className="quick-session-body" tabIndex={0} aria-label="Session results and review">
+    <div className="quick-session-body" tabIndex={0} aria-label="Session results and review" data-review-visible={reviewOpen || missed.length === 0}>
       {!reviewOpen && <div className="practice-complete-summary">
         <h1>Your session, at a glance</h1>
         <p>{session.responses.length} questions completed</p>
