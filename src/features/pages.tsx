@@ -5,6 +5,7 @@ import topicGuides from '../seo/topics.json'
 import { TopicLinks } from './topic-links'
 import { StudySelect } from './study-select'
 import { studySystemArtwork } from './study-system-artwork'
+import { StudyFilterIcon } from './study-filter-icon'
 import {
   CartesianGrid,
   Line,
@@ -1104,7 +1105,6 @@ export function PracticeQuestionsPage() {
   const [isPending, startTransition] = useTransition()
   const [category, setCategory] = useState<QuestionCategory | 'All'>('All')
   const [system, setSystem] = useState<string | 'All'>('All')
-  const [board, setBoard] = useState<string | 'All'>('All')
   const [questionStatus, setQuestionStatus] = useState<'unused' | 'incorrect' | 'all'>('all')
   const [format, setFormat] = useState<'multiple-choice' | 'select-all-that-apply' | 'mixed'>('mixed')
   const [difficulty, setDifficulty] = useState<'foundation' | 'developing' | 'advanced' | 'adaptive' | 'mixed'>('adaptive')
@@ -1119,7 +1119,7 @@ export function PracticeQuestionsPage() {
       startPracticeSession({
         category,
         system,
-        board,
+        board: 'All',
         questionStatus,
         format,
         difficulty,
@@ -1143,14 +1143,13 @@ export function PracticeQuestionsPage() {
     <header className="question-bank-heading"><img src="/images/question-bank/header-book.webp" alt="" width="160" height="128" /><div><h1 id="bank-title">Question <span>Bank</span></h1><p>{activeTrack.shortName} · A little practice, a stronger you.</p></div></header>
     <div className="simple-study-fields">
       <StudySelect gallery label="Category" value={category} onChange={value => setCategory(value as QuestionCategory | 'All')} options={['All', ...trackCategories].map((item, index) => ({ value: item, label: item === 'All' ? 'All categories' : item, artwork: `/images/${['Psychosocial Integrity', 'Physiological Integrity', 'Health Promotion'].includes(item) ? 'question-bank' : 'exam-prep'}/${examPrepArtwork[item] ?? 'all-topics'}.webp`, tone: ['mint', 'blue', 'cyan', 'mint', 'lavender', 'coral'][index % 6] }))} />
-      <StudySelect label="Questions" value={String(questionCount)} onChange={value => setQuestionCount(Number(value))} options={[5,10,15,20].map(count => ({ value: String(count), label: `Up to ${count} questions`, tone: 'mint' }))} />
+      <StudySelect label="Questions" value={String(questionCount)} onChange={value => setQuestionCount(Number(value))} options={[5,10,15,20].map(count => ({ value: String(count), label: `Up to ${count} questions`, icon: <StudyFilterIcon kind="count" value={String(count)} />, tone: 'mint' }))} />
     </div>
     <details className="simple-study-details"><summary><Settings size={18} aria-hidden="true" />More options<ChevronDown size={18} aria-hidden="true" /></summary><div className="simple-study-fields">
       <StudySelect label="System" value={system} onChange={setSystem} options={['All', ...trackSystems].map(item => ({ value: item, label: item === 'All' ? 'All systems' : item, artwork: studySystemArtwork[item], tone: 'cyan' }))} />
-      <StudySelect label="Board / blueprint" value={board} onChange={setBoard} options={['All', ...activeTrack.boards].map(item => ({ value: item, label: item === 'All' ? 'All boards' : item, tone: 'blue' }))} />
-      <StudySelect label="Question status" value={questionStatus} onChange={value => setQuestionStatus(value as typeof questionStatus)} options={[{ value: 'all', label: 'All questions' }, { value: 'unused', label: 'Unused' }, { value: 'incorrect', label: 'Previously incorrect' }]} />
-      <StudySelect label="Question type" value={format} onChange={value => setFormat(value as typeof format)} options={[{ value: 'mixed', label: 'Mixed' }, { value: 'multiple-choice', label: 'Multiple choice' }, { value: 'select-all-that-apply', label: 'Select all that apply' }]} />
-      <StudySelect label="Difficulty" value={difficulty} onChange={value => setDifficulty(value as typeof difficulty)} options={['adaptive', 'foundation', 'developing', 'advanced', 'mixed'].map(item => ({ value: item, label: item[0].toUpperCase() + item.slice(1), tone: 'lavender' }))} />
+      <StudySelect label="Question status" value={questionStatus} onChange={value => setQuestionStatus(value as typeof questionStatus)} options={[{ value: 'all', label: 'All questions' }, { value: 'unused', label: 'Unused' }, { value: 'incorrect', label: 'Previously incorrect' }].map(option => ({ ...option, icon: <StudyFilterIcon kind="status" value={option.value} /> }))} />
+      <StudySelect label="Question type" value={format} onChange={value => setFormat(value as typeof format)} options={[{ value: 'mixed', label: 'Mixed' }, { value: 'multiple-choice', label: 'Multiple choice' }, { value: 'select-all-that-apply', label: 'Select all that apply' }].map(option => ({ ...option, icon: <StudyFilterIcon kind="type" value={option.value} /> }))} />
+      <StudySelect label="Difficulty" value={difficulty} onChange={value => setDifficulty(value as typeof difficulty)} options={['adaptive', 'foundation', 'developing', 'advanced', 'mixed'].map(item => ({ value: item, label: item[0].toUpperCase() + item.slice(1), icon: <StudyFilterIcon kind="difficulty" value={item} />, tone: 'lavender' }))} />
 </div></details>
     <button className="simple-study-start" disabled={isPending} onClick={() => launchPracticeSession()}>{isPending ? 'Building set…' : 'Start practice'}<ArrowRight size={18} /></button>
     <Link className="simple-study-link" to="/study-results"><Bookmark size={18} aria-hidden="true" />Saved results</Link>
