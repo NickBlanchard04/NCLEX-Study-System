@@ -4,6 +4,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import topicGuides from '../seo/topics.json'
 import { TopicLinks } from './topic-links'
 import { StudySelect } from './study-select'
+import { studySystemArtwork } from './study-system-artwork'
 import {
   CartesianGrid,
   Line,
@@ -1145,7 +1146,7 @@ export function PracticeQuestionsPage() {
       <StudySelect label="Questions" value={String(questionCount)} onChange={value => setQuestionCount(Number(value))} options={[5,10,15,20].map(count => ({ value: String(count), label: `Up to ${count} questions`, tone: 'mint' }))} />
     </div>
     <details className="simple-study-details"><summary><Settings size={18} aria-hidden="true" />More options<ChevronDown size={18} aria-hidden="true" /></summary><div className="simple-study-fields">
-      <StudySelect label="System" value={system} onChange={setSystem} options={['All', ...trackSystems].map(item => ({ value: item, label: item === 'All' ? 'All systems' : item, tone: 'cyan' }))} />
+      <StudySelect label="System" value={system} onChange={setSystem} options={['All', ...trackSystems].map(item => ({ value: item, label: item === 'All' ? 'All systems' : item, artwork: studySystemArtwork[item], tone: 'cyan' }))} />
       <StudySelect label="Board / blueprint" value={board} onChange={setBoard} options={['All', ...activeTrack.boards].map(item => ({ value: item, label: item === 'All' ? 'All boards' : item, tone: 'blue' }))} />
       <StudySelect label="Question status" value={questionStatus} onChange={value => setQuestionStatus(value as typeof questionStatus)} options={[{ value: 'all', label: 'All questions' }, { value: 'unused', label: 'Unused' }, { value: 'incorrect', label: 'Previously incorrect' }]} />
       <StudySelect label="Question type" value={format} onChange={value => setFormat(value as typeof format)} options={[{ value: 'mixed', label: 'Mixed' }, { value: 'multiple-choice', label: 'Multiple choice' }, { value: 'select-all-that-apply', label: 'Select all that apply' }]} />
