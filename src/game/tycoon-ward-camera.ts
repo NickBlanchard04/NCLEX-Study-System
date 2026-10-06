@@ -4,7 +4,7 @@ import { cameraBlend } from './tycoon-ward-polish'
 
 // Fit the room's wall height and adjoining hall between the fixed HUD rows.
 // Keep phone characters readable; overview remains the full-building view.
-export const followZoom = (width: number, height = 760, touch = false) => touch && width > height ? Math.max(.85, Math.min(1.05, (height - 88) / 340)) : width < 600 ? .85 : width < 900 ? 1 : Math.max(.65,Math.min(1.08,(height-180)/615,(width-280)/850))
+export const followZoom = (width: number, height = 760, touch = false) => touch && width > height ? Math.max(.85, Math.min(.96, (height - 88) / 340)) : width < 600 ? .8 : width < 900 ? .92 : Math.max(.6,Math.min(.98,(height-180)/615,(width-280)/850))
 export function overviewCamera(width: number, height: number) {
   const bounds = HOSPITAL_MAP.camera
   const left = projectGround(bounds.left).x - bounds.padding.left

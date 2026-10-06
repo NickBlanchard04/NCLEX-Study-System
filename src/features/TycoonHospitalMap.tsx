@@ -1,5 +1,5 @@
 import { useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type Ref } from 'react'
-import { MoreHorizontal, MousePointer2, Pause, Play, Volume2, VolumeX } from 'lucide-react'
+import { MoreHorizontal, MousePointer2, Pause, Play, Volume2, VolumeX, Users, ShoppingBag, Map, LocateFixed, Hand } from 'lucide-react'
 import type { TycoonCall, TycoonTask, TycoonWorldJob } from '../app/types'
 import { useStudySystemStore } from '../app/store'
 import { worldJobActive } from '../services/tycoon-world-jobs'
@@ -130,15 +130,15 @@ export function TycoonHospitalMap({ ref, shiftId, tasks, calls, worldJobs, selec
             ))}
           </div>
           <button type="button" className="tycoon-interact" disabled={paused || playerWorking || !status?.nearby || status.caring} onClick={() => hospitalRef.current?.interact()}>
-            {status?.nearby && ['patient','equipment','safety'].includes(status.nearby.kind) ? <TycoonInteractionIcon kind={status.nearby.kind as 'patient' | 'equipment' | 'safety'} /> : <kbd aria-hidden="true">E</kbd>}
+            {status?.nearby && ['patient','equipment','safety'].includes(status.nearby.kind) ? <TycoonInteractionIcon kind={status.nearby.kind as 'patient' | 'equipment' | 'safety'} /> : <Hand aria-hidden="true" />}
             <span>{status?.nearby?.kind === 'elevator' ? 'Floor 2 · Locked' : interactionLabel}</span>
           </button>
-          <button type="button" className="tycoon-patients-key" onClick={onOpenPatients} aria-expanded={patientsOpen} aria-controls="tycoon-mobile-patients">Patients</button>
-          <button type="button" className="tycoon-shop-key" onClick={onOpenShop} aria-label="Open shop"><kbd aria-hidden="true">I</kbd><span>Shop</span></button>
+          <button type="button" className="tycoon-patients-key" onClick={onOpenPatients} aria-label="Patients" aria-expanded={patientsOpen} aria-controls="tycoon-mobile-patients"><Users aria-hidden="true" /><span>Patients</span></button>
+          <button type="button" className="tycoon-shop-key" onClick={onOpenShop} aria-label="Open shop"><ShoppingBag aria-hidden="true" /><span>Shop</span></button>
           <div className="tycoon-control-options" data-open={controlsOpen}>
             <button type="button" className="tycoon-controls-more" aria-label="More controls" aria-expanded={controlsOpen} aria-controls="tycoon-extra-controls" onClick={() => setControlsOpen(!controlsOpen)}><MoreHorizontal aria-hidden="true" /><span>More</span></button>
             <div id="tycoon-extra-controls" className="tycoon-control-options-list" onClick={() => setControlsOpen(false)} onKeyDown={(event) => { if (event.key === 'Escape') setControlsOpen(false) }}>
-          <button type="button" className="tycoon-overview" aria-label={overview ? 'Follow nurse' : 'Hospital overview'} aria-pressed={overview} onClick={() => { hospitalRef.current?.setOverview(!overview); setOverview(!overview) }}><span>{overview ? 'Follow nurse' : 'Overview'}</span></button>
+          <button type="button" className="tycoon-overview" aria-label={overview ? 'Follow nurse' : 'Hospital overview'} aria-pressed={overview} onClick={() => { hospitalRef.current?.setOverview(!overview); setOverview(!overview) }}>{overview ? <LocateFixed aria-hidden="true" /> : <Map aria-hidden="true" />}<span>{overview ? 'Follow nurse' : 'Overview'}</span></button>
           <button type="button" className="tycoon-sound" onClick={toggleSound} aria-label={soundEnabled ? 'Mute sounds' : 'Enable sounds'} title={soundEnabled ? 'Mute sounds' : 'Enable sounds'} aria-pressed={soundEnabled}>{soundEnabled ? <Volume2 aria-hidden="true" /> : <VolumeX aria-hidden="true" />}<span className="tycoon-control-option-label">{soundEnabled ? 'Mute sounds' : 'Enable sounds'}</span></button>
           <button type="button" className="tycoon-pause" onClick={onTogglePause} aria-label={manuallyPaused ? 'Resume' : 'Pause'} title={manuallyPaused ? 'Resume' : 'Pause'} aria-pressed={manuallyPaused}>
             {manuallyPaused ? <Play aria-hidden="true" /> : <Pause aria-hidden="true" />}<span className="tycoon-control-option-label">{manuallyPaused ? 'Resume' : 'Pause'}</span>
