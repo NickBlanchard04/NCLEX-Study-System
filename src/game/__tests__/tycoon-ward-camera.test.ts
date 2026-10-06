@@ -8,8 +8,8 @@ describe('readable follow camera', () => {
       const point = { x: 900, y: 800 }, zoom = followZoom(width, height, true)
       const camera = followCamera(width, height, zoom, point, null, 0, true, true)
       const screenY = (point.y - camera.y) * zoom + height / 2
-      expect(screenY).toBeGreaterThan(80)
-      expect(screenY).toBeLessThan(height - 100)
+      expect((point.x - camera.x) * zoom + width / 2).toBeCloseTo(width / 2)
+      expect(screenY - 47 * zoom).toBeCloseTo(height / 2)
     }
   })
   it('preserves desktop camera framing and stops easing for reduced motion', () => {

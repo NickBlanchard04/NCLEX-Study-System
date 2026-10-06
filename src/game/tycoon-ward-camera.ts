@@ -18,7 +18,9 @@ export function overviewCamera(width: number, height: number) {
 export function followCamera(width: number, height: number, zoom: number, at: ScreenPoint, previous: ScreenPoint | null, delta: number, snap: boolean, touch = false) {
   const mobileLandscape = touch && width > height
   const targetX = mobileLandscape ? width / 2 : width < 900 ? width/2 : width*.44
-  const targetY = mobileLandscape ? (height - 88) * .52 : height*(width < 900 ? .58 : .54)
+  // The registered nurse is 94 world pixels tall above the ground anchor.
+  // Center her body, rather than her feet, in the landscape phone viewport.
+  const targetY = mobileLandscape ? height / 2 + 47 * zoom : height*(width < 900 ? .58 : .54)
   const goal = { x: at.x+(width/2-targetX)/zoom, y: at.y+(height/2-targetY)/zoom }
   const blend = snap || !previous ? 1 : cameraBlend(delta)
   return { x: (previous?.x ?? goal.x)+(goal.x-(previous?.x ?? goal.x))*blend, y: (previous?.y ?? goal.y)+(goal.y-(previous?.y ?? goal.y))*blend }
