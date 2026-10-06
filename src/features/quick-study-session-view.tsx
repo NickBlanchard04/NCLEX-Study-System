@@ -281,6 +281,14 @@ export function QuickStudyCompleteView({ focused = false, completionActions, ses
   onExit: () => void
 }) {
   const [reviewOpen, setReviewOpen] = useState(false)
+  useEffect(() => {
+    if (!focused) return
+    const theme = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
+    if (!theme) return
+    const previous = theme.content
+    theme.content = '#101f29'
+    return () => { theme.content = previous }
+  }, [focused])
   if (focused) return <section className="quick-session focused-practice practice-complete" aria-label="Practice results">
     <header className="quick-session-header"><div className="focused-practice-top"><span>Practice results</span><StudyNavigation /></div></header>
     <div className="quick-session-body" tabIndex={0} aria-label="Session results and review" data-review-visible={reviewOpen || missed.length === 0}>

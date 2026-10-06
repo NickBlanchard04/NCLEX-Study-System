@@ -2883,6 +2883,7 @@ textarea {
 .simple-tools-page:has(.reference-page){background:#080f15}
 
 /* Focused lessons share one canvas and a stable feedback dock on every device. */
+html:has(.focused-practice), body:has(.focused-practice), #root:has(.focused-practice) { background-color: #101f29; }
 .nurse-command-app:has(.focused-practice) { background: #101f29; }
 .nurse-command-app:has(.focused-practice)::before,
 .nurse-command-app:has(.focused-practice)::after { display: none; }
@@ -2999,6 +3000,7 @@ textarea {
 .study-save-result-buttons button { min-height: 2.75rem; }
 .study-save-result-footer > [role="alert"] { grid-column: 1 / -1; }
 @media (max-width: 767px) {
+  .practice-complete .quick-session-body:has(.practice-complete-summary) { justify-content: safe center; padding-top: 1rem; padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
   .practice-complete .quick-session-body[data-review-visible="false"] > .practice-complete-details { display: none; }
   .practice-complete-next { padding: 1rem; }
   .practice-complete-next .practice-complete-actions > p { display: none; }
