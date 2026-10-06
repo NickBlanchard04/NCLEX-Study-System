@@ -1,0 +1,40 @@
+/* A care app inside a handset. Form controls remain mounted across screens. */
+.tycoon-code-red .tycoon-dialog.tycoon-dialog-care[open] {
+  display:flex; flex-direction:column; gap:0;
+  width:min(720px,calc(100vw - 16px - env(safe-area-inset-left) - env(safe-area-inset-right)));
+  border:7px solid #273c3c; border-radius:30px;
+  padding:6px 12px 4px; background:#fffaf0;
+  box-shadow:0 0 0 2px #779790,0 12px 32px #0004;
+}
+.tycoon-phone-status { display:flex; align-items:center; justify-content:space-between; position:relative; flex:0 0 20px; margin-bottom:4px; color:#386158; font:600 10px/1.2 'Google Sans Text',sans-serif; }
+.tycoon-phone-status > span:last-child { display:flex; align-items:center; gap:4px; }
+.tycoon-phone-status > i { position:absolute; top:4px; left:50%; transform:translateX(-50%); width:42px; height:5px; border-radius:9px; background:#273c3c; }
+.tycoon-phone-home { flex:0 0 12px; display:flex; align-items:center; justify-content:center; margin-top:4px; }
+.tycoon-phone-home > span { width:72px; height:4px; border-radius:8px; background:#779790; }
+.tycoon-code-red .tycoon-dialog-care > header { background:#e4f3e9; border-radius:16px 16px 8px 8px; padding:4px 6px; }
+.tycoon-code-red .tycoon-dialog-care > header button { background:#cfe8dd; }
+.tycoon-code-red .tycoon-dialog-care .tycoon-modal-primary { background:#167768; border-color:#126557; }
+.tycoon-code-red .tycoon-dialog-care .tycoon-modal-primary:hover:not(:disabled) { background:#126557; }
+.tycoon-code-red .tycoon-dialog-care .tycoon-patient-details > summary { color:#167768; font-weight:600; }
+.tycoon-code-red .tycoon-dialog-care .tycoon-patient-details .tycoon-observations dl { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; }
+.tycoon-code-red .tycoon-dialog-care .tycoon-patient-details .tycoon-observations dl > div { padding:6px 4px; border:0; border-radius:10px; background:#e9f1ed; }
+.tycoon-code-red .tycoon-dialog-care .tycoon-action-explanations { margin:12px 0; }
+.tycoon-code-red .tycoon-dialog-care .tycoon-action-explanations > summary { min-height:44px; align-content:center; color:#167768; font-size:12px; cursor:pointer; }
+.tycoon-code-red .tycoon-dialog-care[data-phone-details=true] .tycoon-dialog-page-body > :not(.tycoon-dialog-patient):not(.tycoon-patient-details) { display:none; }
+.tycoon-code-red .tycoon-dialog-care[data-phone-details=true] .tycoon-patient-details { margin-top:0; border:0; }
+.tycoon-code-red .tycoon-dialog-care .tycoon-phone-return { background:#167768; color:#fff; border:0; border-radius:14px; width:100%; min-height:44px; padding:10px; font-weight:700; }
+@media (min-width:600px) and (min-height:601px) {
+  .tycoon-code-red .tycoon-dialog.tycoon-dialog-care[open] { width:min(420px,calc(100vw - 32px)); height:min(820px,calc(100dvh - 32px)); max-height:calc(100dvh - 32px); padding:10px 16px 6px; border-width:9px; border-radius:38px; }
+  .tycoon-code-red .tycoon-dialog-care > header { flex:0 0 auto; margin-bottom:12px; }
+  .tycoon-code-red .tycoon-dialog-care .tycoon-dialog-page-body { display:block; min-height:0; flex:1; overflow-y:auto; scrollbar-width:thin; scrollbar-color:#9fbfb2 transparent; }
+  .tycoon-phone-status { flex-basis:24px; margin-bottom:8px; }
+  .tycoon-phone-home { flex-basis:18px; }
+}
+@media (max-height:600px) {
+  .tycoon-code-red .tycoon-dialog-care .tycoon-monitor-preview { margin:6px 0; padding:6px; }
+  .tycoon-code-red .tycoon-dialog-care .tycoon-monitor-preview svg { height:40px; }
+}
+@media (prefers-reduced-motion:no-preference) {
+  .tycoon-code-red .tycoon-dialog.tycoon-dialog-care[open] { animation:care-phone-open 180ms ease-out; }
+  @keyframes care-phone-open { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+}

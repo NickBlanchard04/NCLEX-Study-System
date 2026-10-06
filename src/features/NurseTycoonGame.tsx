@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { StudyNavigation } from './study-tools-menu'
 import {
   Check,
+  BatteryFull,
+  Signal,
   ChevronRight,
   CircleDollarSign,
   ClipboardList,
@@ -51,6 +53,7 @@ import './tycoon-mobile-controls.css'
 import './tycoon-compact-care.css'
 import './tycoon-dialog-pages.css'
 import './tycoon-bubbly-care.css'
+import './tycoon-care-phone.css'
 
 const urgencyLabels: Record<TycoonTaskUrgency, string> = {
   critical: 'Critical',
@@ -693,7 +696,9 @@ export function NurseTycoonGame() {
             <summary>Patient details</summary>
             <p>{modalTask.title} · {modalTask.category.replaceAll('-', ' ')} · {modalTask.status}</p>
             <PatientObservations task={modalTask} />
-            {patientView.kind === 'assess' ? <dl className="tycoon-choice-details">{modalTask.actions.map(action => <div key={action.id}><dt>{action.label}</dt><dd>{action.description} <small>{action.scope}</small></dd></div>)}</dl> : null}
+            {nextCareStep(modalTask) ? <p className="tycoon-phone-next">Next step: <strong>{CARE_LABELS[nextCareStep(modalTask)!]}</strong></p> : null}
+            {patientView.kind === 'assess' ? <details className="tycoon-action-explanations"><summary>Action explanations</summary><dl className="tycoon-choice-details">{modalTask.actions.map(action => <div key={action.id}><dt>{action.label}</dt><dd>{action.description} <small>{action.scope}</small></dd></div>)}</dl></details> : null}
+            <button type="button" className="tycoon-phone-return" onClick={(event) => { const details = event.currentTarget.closest('details'); if (details) details.open = false }}>{patientView.kind === 'equipment' ? 'Return to monitor' : 'Return to care'}</button>
           </details>
         </TycoonDialog>
       ) : null}
@@ -976,24 +981,31 @@ function TycoonDialog({
   careIcon?: CareIconKind
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null)
+  const [detailsOpen, setDetailsOpen] = useState(false)
   useEffect(() => {
     const dialog = dialogRef.current
+    const onToggle = (event: Event) => {
+      if (careIcon && event.target instanceof HTMLDetailsElement && event.target.classList.contains('tycoon-patient-details')) setDetailsOpen(event.target.open)
+    }
+    dialog?.addEventListener('toggle', onToggle, true)
     dialog?.showModal()
-    return () => dialog?.close()
-  }, [])
+    return () => { dialog?.removeEventListener('toggle', onToggle, true); dialog?.close() }
+  }, [careIcon])
   return (
     <dialog
       ref={dialogRef}
       className={`tycoon-dialog${expanded ? ' tycoon-dialog-assessment' : ''}${compact ? ' tycoon-dialog-compact' : ''}${careIcon ? ' tycoon-dialog-care' : ''}`}
       data-care-icon={careIcon}
-      aria-label={title}
+      data-phone-details={careIcon && detailsOpen ? 'true' : undefined}
+      aria-label={careIcon && detailsOpen ? 'Patient details' : title}
       onCancel={(event) => {
         event.preventDefault()
         onClose?.()
       }}
     >
+      {careIcon ? <div className="tycoon-phone-status" aria-hidden="true"><span>Nurse Command</span><i /><span><Signal size={14} /><BatteryFull size={18} /></span></div> : null}
       <header>
-        <h2>{careIcon ? <TycoonInteractionIcon kind={careIcon} size={36} /> : null}{title}</h2>
+        <h2>{careIcon ? <TycoonInteractionIcon kind={careIcon} size={36} /> : null}{careIcon && detailsOpen ? 'Patient details' : title}</h2>
         {onClose ? (
           <button type="button" onClick={onClose} aria-label="Close dialog">
             <X aria-hidden="true" />
@@ -1001,6 +1013,7 @@ function TycoonDialog({
         ) : null}
       </header>
       <TycoonDialogPages>{children}</TycoonDialogPages>
+      {careIcon ? <div className="tycoon-phone-home" aria-hidden="true"><span /></div> : null}
     </dialog>
   )
 }
