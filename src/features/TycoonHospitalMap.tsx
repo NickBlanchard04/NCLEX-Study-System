@@ -5,6 +5,7 @@ import { useStudySystemStore } from '../app/store'
 import { worldJobActive } from '../services/tycoon-world-jobs'
 import type { TycoonWard } from '../game/tycoon-ward-scene'
 import type { WardState, WardStatus, WardTarget } from '../game/tycoon-ward'
+import { TycoonInteractionIcon } from './TycoonInteractionIcon'
 import { TycoonTouchStick } from './TycoonTouchStick'
 import { CARE_LABELS, nextCareStep } from '../services/tycoon-care'
 
@@ -23,13 +24,14 @@ type Props = {
   patientsOpen: boolean
   onOpenShop: () => void
   onNearbyTask: (id: string | null) => void
+  onReadyChange: (ready: boolean) => void
   paused: boolean
   manuallyPaused: boolean
   onTogglePause: () => void
   onInteract: (target: WardTarget) => void
 }
 
-export function TycoonHospitalMap({ ref, shiftId, tasks, calls, worldJobs, selectedTaskId, suggestedTargetId, reviewedTaskIds, upgrades, paused, manuallyPaused, onTogglePause, onInteract, onOpenShop, onOpenPatients, patientsOpen, onNearbyTask }: Props) {
+export function TycoonHospitalMap({ ref, shiftId, tasks, calls, worldJobs, selectedTaskId, suggestedTargetId, reviewedTaskIds, upgrades, paused, manuallyPaused, onTogglePause, onInteract, onOpenShop, onOpenPatients, patientsOpen, onNearbyTask, onReadyChange }: Props) {
   const [soundEnabled, setSoundEnabled] = useState(() => { try { return localStorage.getItem('tycoon-sound-v1') !== 'off' } catch { return true } })
   function toggleSound() {
     const next = !soundEnabled
@@ -46,12 +48,12 @@ export function TycoonHospitalMap({ ref, shiftId, tasks, calls, worldJobs, selec
   const [attempt, setAttempt] = useState(0)
   const playerWorking = worldJobs?.some((job) => ['scanner', 'chart'].includes(job.kind) && worldJobActive(job)) ?? false
   const snapshot: WardState = { soundEnabled, shiftId, tasks, calls, worldJobs, playerWorking, selectedTaskId, suggestedTargetId, reviewedTaskIds, upgrades, paused, reducedMotion }
-  const latest = useRef({ snapshot, onInteract, onNearbyTask, onOpenShop })
+  const latest = useRef({ snapshot, onInteract, onNearbyTask, onOpenShop, onReadyChange })
   const lastNearby = useRef<string | null>(null)
   useImperativeHandle(ref, () => ({ goTo: (id) => hospitalRef.current?.goTo(id) ?? false, position: () => hospitalRef.current?.snapshot().position }), [])
 
   useLayoutEffect(() => {
-    latest.current = { snapshot, onInteract, onNearbyTask, onOpenShop }
+    latest.current = { snapshot, onInteract, onNearbyTask, onOpenShop, onReadyChange }
     hospitalRef.current?.update(snapshot)
   })
   useEffect(() => {
@@ -64,11 +66,13 @@ export function TycoonHospitalMap({ ref, shiftId, tasks, calls, worldJobs, selec
     const parent = hostRef.current
     if (!parent) return
     let disposed = false
+    latest.current.onReadyChange(false)
     let hospital: TycoonWard | undefined
     void import('../game/tycoon-ward-scene').then(({ createTycoonWard }) => {
       if (disposed) return
       hospital = createTycoonWard({
         parent,
+        onReady: () => { if (!disposed) latest.current.onReadyChange(true) },
         onOpenShop: () => latest.current.onOpenShop(),
         onJobProgress: (...args) => useStudySystemStore.getState().advanceTycoonWorldJob(...args),
         onInteract: (target) => latest.current.onInteract(target),
@@ -78,11 +82,11 @@ export function TycoonHospitalMap({ ref, shiftId, tasks, calls, worldJobs, selec
           const id = next.nearby?.taskId ?? null
           if (lastNearby.current !== id) { lastNearby.current = id; latest.current.onNearbyTask(id) }
         },
-        onError: () => { if (!disposed) setError(true) },
+        onError: () => { if (!disposed) { latest.current.onReadyChange(false); setError(true) } },
       })
       hospitalRef.current = hospital
       hospital.update(latest.current.snapshot)
-    }).catch(() => { if (!disposed) setError(true) })
+    }).catch(() => { if (!disposed) { latest.current.onReadyChange(false); setError(true) } })
     return () => { disposed = true; hospitalRef.current = null; hospital?.destroy() }
   }, [attempt])
 
@@ -126,8 +130,8 @@ export function TycoonHospitalMap({ ref, shiftId, tasks, calls, worldJobs, selec
             ))}
           </div>
           <button type="button" className="tycoon-interact" disabled={paused || playerWorking || !status?.nearby || status.caring} onClick={() => hospitalRef.current?.interact()}>
-            <kbd aria-hidden="true">E</kbd>
-            <span>{interactionLabel}</span>
+            {status?.nearby && ['patient','equipment','safety'].includes(status.nearby.kind) ? <TycoonInteractionIcon kind={status.nearby.kind as 'patient' | 'equipment' | 'safety'} /> : <kbd aria-hidden="true">E</kbd>}
+            <span>{status?.nearby?.kind === 'elevator' ? 'Floor 2 · Locked' : interactionLabel}</span>
           </button>
           <button type="button" className="tycoon-patients-key" onClick={onOpenPatients} aria-expanded={patientsOpen} aria-controls="tycoon-mobile-patients">Patients</button>
           <button type="button" className="tycoon-shop-key" onClick={onOpenShop} aria-label="Open shop"><kbd aria-hidden="true">I</kbd><span>Shop</span></button>

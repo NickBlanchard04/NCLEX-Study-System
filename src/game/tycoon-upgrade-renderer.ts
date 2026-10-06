@@ -1,6 +1,6 @@
 import { wardCanvasPointer } from './tycoon-pointer'
 import type Phaser from 'phaser'
-import { HOSPITAL_MAP, unlockedRoomCount, rectCorners, roomEntrance } from './tycoon-map-config'
+import { HOSPITAL_MAP, unlockedRoomCount, roomEntrance } from './tycoon-map-config'
 import { ROOM_PROPS, roomPoint } from './tycoon-ward-layout'
 import { projectGround, type GroundPoint } from './tycoon-care-presentation'
 import type { WardState } from './tycoon-ward'
@@ -16,11 +16,8 @@ export function drawWardUpgrades(o: RoomDrawing, state: WardState, paused: () =>
     labels.push({ label: caption, point })
   }
   if (upgrades['ehr-station']) install(HOSPITAL_MAP.upgrades.ehr.prop.asset, HOSPITAL_MAP.upgrades.ehr.prop.point, HOSPITAL_MAP.upgrades.ehr.prop.width, `EHR · Lv ${upgrades['ehr-station']}`)
-  if (upgrades['simulation-room']) {
-    o.polygon(rectCorners(HOSPITAL_MAP.zones.practice).map(projectGround), 0xd6e8e8, 1, -3)
-    install(HOSPITAL_MAP.upgrades.practice.bed.asset, HOSPITAL_MAP.upgrades.practice.bed.point, HOSPITAL_MAP.upgrades.practice.bed.width, `Practice bay · Lv ${upgrades['simulation-room']}`)
-    install(HOSPITAL_MAP.upgrades.practice.monitor.asset, HOSPITAL_MAP.upgrades.practice.monitor.point, HOSPITAL_MAP.upgrades.practice.monitor.width, 'Simulation')
-  }
+  // Existing simulation upgrades retain their state benefits. Their physical bay
+  // belongs to the future floor, so it must not reveal a room outside this ward.
   const capacity = unlockedRoomCount(upgrades)
   for (let i = state.tasks.length; i < HOSPITAL_MAP.rooms.length; i++) {
     const locked = i >= capacity

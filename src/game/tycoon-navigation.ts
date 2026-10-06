@@ -1,7 +1,7 @@
 import type { GroundPoint } from './tycoon-care-presentation'
 import { HOSPITAL_MAP, roomEntrance, type GroundRect } from './tycoon-map-config'
 import { WARD_ROOM } from './tycoon-ward-layout'
-import { REFERENCE_ROOM_LAYOUT } from './tycoon-reference-room'
+import { referenceRoomLayout } from './tycoon-reference-room'
 
 const distance = (a: GroundPoint, b: GroundPoint) => Math.hypot(a.u - b.u, a.v - b.v)
 const inside = (p: GroundPoint, a: number, b: number, c: number, d: number) => p.u >= a && p.u <= b && p.v >= c && p.v <= d
@@ -20,7 +20,7 @@ function navigationGeometry(roomCount: number) {
     const door=roomEntrance(i)
     floors.push(rect(door.u-.3,door.u+.3,door.minV+.18,door.maxV-.18))
     blocks.push(rect(door.leaf.minU,door.leaf.maxU,door.leaf.minV,door.leaf.maxV))
-    for(const o of REFERENCE_ROOM_LAYOUT.obstacles) blocks.push(rect(o.minU,o.maxU,o.minV,o.maxV))
+    for(const o of referenceRoomLayout(door.side === 'minU').obstacles) blocks.push(rect(o.minU,o.maxU,o.minV,o.maxV))
   }
   return {floors,blocks}
 }

@@ -101,7 +101,7 @@ describe('playable ward', () => {
     drive(ward)
     expect(interact).toHaveBeenCalledTimes(1)
     expect(interact.mock.calls[0][0].taskId).toBe('new-admission')
-    expect(wardTargets([{ ...replacement, simulation: { scenario: 'chest', variant: 0, admittedMinute: 0, condition: 'stable', attempted: [], discharged: true } }])).toHaveLength(1)
+    expect(wardTargets([{ ...replacement, simulation: { scenario: 'chest', variant: 0, admittedMinute: 0, condition: 'stable', attempted: [], discharged: true } }])).toHaveLength(3)
   })
   it('routes through doors and around furniture to every patient and monitor, including legacy six-room saves', () => {
     const interact = vi.fn(), ward = new TycoonWardController(interact)
@@ -112,11 +112,11 @@ describe('playable ward', () => {
       expect(interact).toHaveBeenLastCalledWith(target)
       expect(ward.snapshot().position).toEqual(target.position)
     }
-    expect(interact).toHaveBeenCalledTimes(19)
+    expect(interact).toHaveBeenCalledTimes(ward.targets().length)
   })
 
   it('rejects beds, walls, station furniture and the outside of the ward', () => {
-    for (const point of [{ u: 5.4, v: 1.2 }, { u: 6.97, v: -0.08 }, { u: 3.7, v: 2 }, { u: 4.5, v: WARD_ROOM.maxV }, { u: 10.85, v: 6.65 }, { u: -10, v: 4 }]) {
+    for (const point of [{ u: 5.05, v: .05 }, { u: 4.1, v: 1.45 }, { u: 3.7, v: 2 }, { u: 4.5, v: WARD_ROOM.maxV }, { u: 10.85, v: 6.65 }, { u: -10, v: 4 }]) {
       expect(isWardWalkable(point, 3)).toBe(false)
       expect(findWardPath(STATION_POSITION, point, 3)).toBeNull()
     }
@@ -153,7 +153,7 @@ describe('playable ward', () => {
   it('uses the corridor and both doorways when travelling between neighboring rooms', () => {
     for (let room = 0; room < 5; room++) {
       const start = roomPoint(room, { u: 7.7, v: 0.8 })
-      const end = roomPoint(room + 1, { u: 4.1, v: 0.5 })
+      const end = roomPoint(room + 1, { u: 5.1, v: 3.9 })
       const path = findWardPath(start, end, 6)
       expect(path).not.toBeNull()
       const samples = samplePath(start, path!)
@@ -289,3 +289,6 @@ describe('playable ward', () => {
     expect(ward.snapshot().direction).toBe('ne')
   })
 })
+
+
+

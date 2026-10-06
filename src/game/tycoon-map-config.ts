@@ -41,18 +41,21 @@ const rooms: readonly RoomPlacement[] = Array.from({ length: 6 }, (_, i) => ({
 }))
 const end = 19.8
 export const HOSPITAL_MAP = {
-  id: 'neighborhood-hospital-v8', rooms, roomTemplate: PATIENT_ROOM,
+  id: 'patient-floor-v9', rooms, roomTemplate: PATIENT_ROOM,
+  floor: 1,
+  futureFloor: { number: 2, locked: true, rooms: ['ward', 'entry', 'wc', 'wait', 'medic', 'clean', 'linen', 'treat', 'dirty', 'staff'] },
+  elevators: [
+    { id: 'elevator-north', point: { u: 10.85, v: -1.8 }, approach: { u: 10.85, v: -.55 } },
+    { id: 'elevator-south', point: { u: 10.85, v: 16.4 }, approach: { u: 10.85, v: 15.15 } },
+  ],
   building: { minU: 2, maxU: 19.8, minV: -5.3, maxV: 17.4 + PUBLIC_WING_OFFSET },
   publicObstacles: [
-    { minU: 8.8, maxU: 11.6, minV: 14.63 + PUBLIC_WING_OFFSET, maxV: 15.71 + PUBLIC_WING_OFFSET },
-    { minU: 6.2, maxU: 9.6, minV: 13.25 + PUBLIC_WING_OFFSET, maxV: 13.55 + PUBLIC_WING_OFFSET },
-    { minU: 12.2, maxU: 13.6, minV: 13.25 + PUBLIC_WING_OFFSET, maxV: 13.55 + PUBLIC_WING_OFFSET },
+    { minU: 9.55, maxU: 12.15, minV: -2.6, maxV: -1.2 },
+    { minU: 9.55, maxU: 12.15, minV: 15.8, maxV: 17.2 },
   ],
   corridor: { id: 'main-corridor', minU: 0, maxU: end, minV: PATIENT_ROOM.bounds.maxV, maxV: 7.2 },
   corridors: [
-    { id: 'clinical-spine', minU: 8.1, maxU: 13.6, minV: -2.6, maxV: 14.1 + PUBLIC_WING_OFFSET },
-    { id: 'service-corridor', minU: 2, maxU: end, minV: -2.6, maxV: -1 },
-    { id: 'public-lobby', minU: 6.2, maxU: 13.6, minV: 12.8 + PUBLIC_WING_OFFSET, maxV: 17.4 + PUBLIC_WING_OFFSET },
+    { id: 'clinical-spine', minU: 8.1, maxU: 13.6, minV: -2.6, maxV: 17.2 },
   ],
   zones: {
     support: { id: 'support', minU: 2, maxU: 19.8, minV: -5.3, maxV: -2.6 },
@@ -102,8 +105,8 @@ export const HOSPITAL_MAP = {
     'equipment-medication-cart-3': { asset: 'equipment-medication-cart', point: { u: 4.7, v: -1.8 }, width: 48 },
   },
   camera: {
-    left: { u: 2, v: 17.4 + PUBLIC_WING_OFFSET }, right: { u: end, v: -5.3 },
-    top: { u: 2, v: -5.3 }, bottom: { u: end, v: 17.4 + PUBLIC_WING_OFFSET },
+    left: { u: 3.7, v: 17.2 }, right: { u: 18, v: -2.6 },
+    top: { u: 3.7, v: -2.6 }, bottom: { u: 18, v: 17.2 },
     padding: { left: 140, right: 140, top: 220, bottom: 140 },
   },
 } as const

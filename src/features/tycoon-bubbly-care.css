@@ -1,0 +1,46 @@
+/* Patient dialogs keep the existing mobile paging and dimensions. */
+.tycoon-interaction-icon { display:inline-block; flex-shrink:0; object-fit:contain; vertical-align:middle; }
+.tycoon-code-red .tycoon-dialog.tycoon-dialog-care {
+  --care-accent:#49baff; background:#fffaf0; color:#27343c;
+  border:2px solid #c2e4f2; border-top:5px solid var(--care-accent); border-radius:22px;
+  box-shadow:0 5px 0 #27343c33;
+}
+.tycoon-code-red .tycoon-dialog-care[data-care-icon=equipment] { --care-accent:#52dea0; border-color:#bde8d7; }
+.tycoon-code-red .tycoon-dialog-care[data-care-icon=safety] { --care-accent:#ffc65c; border-color:#efdbab; }
+.tycoon-code-red .tycoon-dialog-care > header { border-bottom:1px solid #dddcd3; }
+.tycoon-code-red .tycoon-dialog-care > header h2 { display:flex; align-items:center; gap:10px; color:#27343c; font:750 21px/1.15 'Google Sans Text',sans-serif; }
+.tycoon-code-red .tycoon-dialog-care > header h2 .tycoon-interaction-icon { padding:5px; background:#e8f2f1; border-radius:12px; box-sizing:content-box; }
+.tycoon-code-red .tycoon-dialog-care > header button { border-radius:50%; color:#38434c; background:#eee9de; }
+.tycoon-code-red .tycoon-dialog-care .tycoon-dialog-patient { padding:8px 10px; border-radius:14px; background:#f1ece1; }
+.tycoon-code-red .tycoon-dialog-care :is(h3,h4,.tycoon-orders > p,.tycoon-modal-primary strong) { color:#27343c; }
+.tycoon-code-red .tycoon-dialog-care :is(.tycoon-dialog-intro,.tycoon-dialog-patient p,.tycoon-current-step,.tycoon-patient-details > p,.tycoon-choice-details dd,.tycoon-assessment-choices span,.tycoon-assessment-choices small,.tycoon-orders dt,.tycoon-call-action > small) { color:#52616a; }
+.tycoon-code-red .tycoon-dialog-care .is-compact dl { gap:6px; border:0; padding:6px 0; }
+.tycoon-code-red .tycoon-dialog-care .is-compact dl > div { padding:6px 4px; background:#e9f1ed; border-radius:10px; }
+.tycoon-code-red .tycoon-dialog-care .is-compact dt { color:#52616a; }
+.tycoon-code-red .tycoon-dialog-care .is-compact dd { color:#27343c; }
+.tycoon-code-red .tycoon-dialog-care :is(.tycoon-assessment-choices button,.tycoon-orders-list button,.tycoon-checklist-option,.tycoon-care-choice,.tycoon-decision > div > button) {
+  border:1px solid #c8d5d7; border-radius:14px; background:#f2f7f5; color:#27343c;
+}
+.tycoon-code-red .tycoon-dialog-care :is(.tycoon-assessment-choices button,.tycoon-decision > div > button):hover:not(:disabled) { background:#e3f0ec; border-color:#718d87; }
+.tycoon-code-red .tycoon-dialog-care .tycoon-care-check label { padding:8px 10px; border-radius:12px; background:#f2f7f5; border:1px solid #d8e2dc; }
+.tycoon-code-red .tycoon-dialog-care :is(textarea,input) { background:#fff; color:#27343c; border:1px solid #a9bbb9; border-radius:10px; accent-color:#278469; }
+.tycoon-code-red .tycoon-dialog-care .tycoon-modal-primary { border-radius:14px; background:#bd3453; border:1px solid #a22642; color:#fff; font-weight:700; }
+.tycoon-code-red .tycoon-dialog-care .tycoon-modal-primary:hover:not(:disabled) { background:#a22642; }
+.tycoon-code-red .tycoon-dialog-care .tycoon-modal-primary:disabled { background:#e5e5df; color:#69716f; border-color:#d0d4cc; }
+.tycoon-code-red .tycoon-dialog-care :is(.tycoon-patient-details,.tycoon-orders dl > div,.tycoon-dialog-page-nav) { border-color:#d5dad3; }
+.tycoon-code-red .tycoon-dialog-care .tycoon-dialog-page-nav button { background:#e9f1ed; color:#27343c; border-color:#b6cbc1; border-radius:12px; }
+.tycoon-code-red .tycoon-dialog-care .tycoon-dialog-page-nav span { color:#52616a; }
+.tycoon-code-red .tycoon-dialog-care :is(button,summary,textarea,input):focus-visible { outline:3px solid #278469; outline-offset:2px; }
+@media (max-width:599px),(max-width:1100px) and (max-height:600px),(pointer:coarse) and (max-height:600px) {
+  .tycoon-code-red .tycoon-dialog-care > header h2 { font-size:18px; gap:8px; }
+  .tycoon-code-red .tycoon-dialog-care > header h2 .tycoon-interaction-icon { width:26px; height:26px; padding:3px; border-radius:9px; }
+  .tycoon-code-red .tycoon-dialog-care .tycoon-dialog-patient { padding:4px 8px; }
+  .tycoon-code-red .tycoon-dialog-care .is-compact dl > div { padding:4px 2px; }
+  .tycoon-code-red .tycoon-dialog-care .tycoon-care-check label { padding:6px 8px; }
+}
+.tycoon-code-red .tycoon-dialog-care .tycoon-observations,
+.tycoon-code-red .tycoon-dialog-care .tycoon-observations :is(p,strong,small) { color:#3f515b; }
+.tycoon-code-red .tycoon-dialog-care .tycoon-observations a { color:#27645b; }
+.tycoon-code-red .tycoon-dialog-care .tycoon-badge.critical { color:#9d203c; background:#ffe1e7; border:1px solid #efb7c3; border-radius:10px; }
+.tycoon-code-red .tycoon-dialog-care .tycoon-badge.urgent { color:#755013; background:#ffefcc; border:1px solid #ead294; border-radius:10px; }
+.tycoon-code-red .tycoon-dialog-care .tycoon-badge:is(.watch,.stable) { color:#256054; background:#e3f2ef; border:1px solid #b9dcd3; border-radius:10px; }

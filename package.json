@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build && node scripts/create-spa-route-fallbacks.mjs",
+    "build": "node scripts/check-tycoon-artwork.mjs && tsc -b && vite build && node scripts/create-spa-route-fallbacks.mjs",
+    "prepare:tycoon-artwork": "node scripts/prepare-tycoon-artwork.mjs",
     "build:nursing-directory": "node scripts/build-nursing-school-directory.mjs",
     "lint": "eslint .",
     "qa:question-engine": "node scripts/question-engine-simulation-report.mjs",
