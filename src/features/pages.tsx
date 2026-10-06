@@ -3,6 +3,7 @@ import { useDeferredValue, useEffect, useMemo, useRef, useState, useTransition }
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import topicGuides from '../seo/topics.json'
 import { TopicLinks } from './topic-links'
+import { StudySelect } from './study-select'
 import {
   CartesianGrid,
   Line,
@@ -22,6 +23,7 @@ import {
   BarChart3,
   BrainCircuit,
   BookOpen,
+  Bookmark,
   CalendarClock,
   CheckCircle2,
   ChevronLeft,
@@ -1136,62 +1138,21 @@ export function PracticeQuestionsPage() {
     )
   }
 
-  return <section className="simple-study" aria-labelledby="bank-title">
-    <header><h1 id="bank-title">Question Bank</h1><p>{activeTrack.shortName} · Practice at your own pace.</p></header>
+  return <section className="simple-study question-bank-setup" aria-labelledby="bank-title">
+    <header className="question-bank-heading"><img src="/images/question-bank/header-book.webp" alt="" width="160" height="128" /><div><h1 id="bank-title">Question <span>Bank</span></h1><p>{activeTrack.shortName} · A little practice, a stronger you.</p></div></header>
     <div className="simple-study-fields">
-            <Field label="Category">
-              <select value={category} onChange={(event) => setCategory(event.target.value as QuestionCategory | 'All')} className={selectClass}>
-                <option value="All">All categories</option>
-                {trackCategories.map((item) => (
-                  <option key={item} value={item}>{item}</option>
-                ))}
-              </select>
-            </Field>
-
-      <Field label="Questions"><select className={selectClass} value={questionCount} onChange={(event) => setQuestionCount(Number(event.target.value))}>{[5,10,15,20].map((count) => <option key={count} value={count}>Up to {count} questions</option>)}</select></Field>
+      <StudySelect gallery label="Category" value={category} onChange={value => setCategory(value as QuestionCategory | 'All')} options={['All', ...trackCategories].map((item, index) => ({ value: item, label: item === 'All' ? 'All categories' : item, artwork: `/images/${['Psychosocial Integrity', 'Physiological Integrity', 'Health Promotion'].includes(item) ? 'question-bank' : 'exam-prep'}/${examPrepArtwork[item] ?? 'all-topics'}.webp`, tone: ['mint', 'blue', 'cyan', 'mint', 'lavender', 'coral'][index % 6] }))} />
+      <StudySelect label="Questions" value={String(questionCount)} onChange={value => setQuestionCount(Number(value))} options={[5,10,15,20].map(count => ({ value: String(count), label: `Up to ${count} questions`, tone: 'mint' }))} />
     </div>
-    <details className="simple-study-details"><summary>More options</summary><div className="simple-study-fields">            <Field label="System">
-              <select value={system} onChange={(event) => setSystem(event.target.value)} className={selectClass}>
-                <option value="All">All systems</option>
-                {trackSystems.map((item) => (
-                  <option key={item} value={item}>{item}</option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Board / blueprint">
-              <select value={board} onChange={(event) => setBoard(event.target.value)} className={selectClass}>
-                <option value="All">All boards</option>
-                {activeTrack.boards.map((item) => (
-                  <option key={item} value={item}>{item}</option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Question status">
-              <select value={questionStatus} onChange={(event) => setQuestionStatus(event.target.value as typeof questionStatus)} className={selectClass}>
-                <option value="all">All questions</option>
-                <option value="unused">Unused</option>
-                <option value="incorrect">Previously incorrect</option>
-              </select>
-            </Field>
-            <Field label="Question type">
-              <select value={format} onChange={(event) => setFormat(event.target.value as typeof format)} className={selectClass}>
-                <option value="mixed">Mixed</option>
-                <option value="multiple-choice">Multiple choice</option>
-                <option value="select-all-that-apply">Select all that apply</option>
-              </select>
-            </Field>
-            <Field label="Difficulty">
-              <select value={difficulty} onChange={(event) => setDifficulty(event.target.value as typeof difficulty)} className={selectClass}>
-                <option value="adaptive">Adaptive</option>
-                <option value="foundation">Foundation</option>
-                <option value="developing">Developing</option>
-                <option value="advanced">Advanced</option>
-                <option value="mixed">Mixed</option>
-              </select>
-            </Field>
+    <details className="simple-study-details"><summary><Settings size={18} aria-hidden="true" />More options<ChevronDown size={18} aria-hidden="true" /></summary><div className="simple-study-fields">
+      <StudySelect label="System" value={system} onChange={setSystem} options={['All', ...trackSystems].map(item => ({ value: item, label: item === 'All' ? 'All systems' : item, tone: 'cyan' }))} />
+      <StudySelect label="Board / blueprint" value={board} onChange={setBoard} options={['All', ...activeTrack.boards].map(item => ({ value: item, label: item === 'All' ? 'All boards' : item, tone: 'blue' }))} />
+      <StudySelect label="Question status" value={questionStatus} onChange={value => setQuestionStatus(value as typeof questionStatus)} options={[{ value: 'all', label: 'All questions' }, { value: 'unused', label: 'Unused' }, { value: 'incorrect', label: 'Previously incorrect' }]} />
+      <StudySelect label="Question type" value={format} onChange={value => setFormat(value as typeof format)} options={[{ value: 'mixed', label: 'Mixed' }, { value: 'multiple-choice', label: 'Multiple choice' }, { value: 'select-all-that-apply', label: 'Select all that apply' }]} />
+      <StudySelect label="Difficulty" value={difficulty} onChange={value => setDifficulty(value as typeof difficulty)} options={['adaptive', 'foundation', 'developing', 'advanced', 'mixed'].map(item => ({ value: item, label: item[0].toUpperCase() + item.slice(1), tone: 'lavender' }))} />
 </div></details>
     <button className="simple-study-start" disabled={isPending} onClick={() => launchPracticeSession()}>{isPending ? 'Building set…' : 'Start practice'}<ArrowRight size={18} /></button>
-    <Link className="simple-study-link" to="/study-results">Saved results</Link>
+    <Link className="simple-study-link" to="/study-results"><Bookmark size={18} aria-hidden="true" />Saved results</Link>
   </section>
 }
 
