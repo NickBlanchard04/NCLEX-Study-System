@@ -25,7 +25,6 @@ import {
   BarChart3,
   BrainCircuit,
   BookOpen,
-  Bookmark,
   CalendarClock,
   CheckCircle2,
   ChevronLeft,
@@ -1145,14 +1144,14 @@ export function PracticeQuestionsPage() {
       <StudySelect gallery label="Category" value={category} onChange={value => setCategory(value as QuestionCategory | 'All')} options={['All', ...trackCategories].map((item, index) => ({ value: item, label: item === 'All' ? 'All categories' : item, artwork: `/images/${['Psychosocial Integrity', 'Physiological Integrity', 'Health Promotion'].includes(item) ? 'question-bank' : 'exam-prep'}/${examPrepArtwork[item] ?? 'all-topics'}.webp`, tone: ['mint', 'blue', 'cyan', 'mint', 'lavender', 'coral'][index % 6] }))} />
       <StudySelect label="Questions" value={String(questionCount)} onChange={value => setQuestionCount(Number(value))} options={[5,10,15,20].map(count => ({ value: String(count), label: `Up to ${count} questions`, icon: <StudyFilterIcon kind="count" value={String(count)} />, tone: 'mint' }))} />
     </div>
-    <details className="simple-study-details"><summary><Settings size={18} aria-hidden="true" />More options<ChevronDown size={18} aria-hidden="true" /></summary><div className="simple-study-fields">
+    <details className="simple-study-details"><summary><img className="study-options-gear" src="/images/question-bank/filters/more-options-gear.webp" alt="" width="32" height="32" />More options<ChevronDown size={18} aria-hidden="true" /></summary><div className="simple-study-fields">
       <StudySelect label="System" value={system} onChange={setSystem} options={['All', ...trackSystems].map(item => ({ value: item, label: item === 'All' ? 'All systems' : item, artwork: studySystemArtwork[item], tone: 'cyan' }))} />
       <StudySelect label="Question status" value={questionStatus} onChange={value => setQuestionStatus(value as typeof questionStatus)} options={[{ value: 'all', label: 'All questions' }, { value: 'unused', label: 'Unused' }, { value: 'incorrect', label: 'Previously incorrect' }].map(option => ({ ...option, icon: <StudyFilterIcon kind="status" value={option.value} /> }))} />
       <StudySelect label="Question type" value={format} onChange={value => setFormat(value as typeof format)} options={[{ value: 'mixed', label: 'Mixed' }, { value: 'multiple-choice', label: 'Multiple choice' }, { value: 'select-all-that-apply', label: 'Select all that apply' }].map(option => ({ ...option, icon: <StudyFilterIcon kind="type" value={option.value} /> }))} />
       <StudySelect label="Difficulty" value={difficulty} onChange={value => setDifficulty(value as typeof difficulty)} options={['adaptive', 'foundation', 'developing', 'advanced', 'mixed'].map(item => ({ value: item, label: item[0].toUpperCase() + item.slice(1), icon: <StudyFilterIcon kind="difficulty" value={item} />, tone: 'lavender' }))} />
 </div></details>
     <button className="simple-study-start" disabled={isPending} onClick={() => launchPracticeSession()}>{isPending ? 'Building set…' : 'Start practice'}<ArrowRight size={18} /></button>
-    <Link className="simple-study-link" to="/study-results"><Bookmark size={18} aria-hidden="true" />Saved results</Link>
+    <Link className="simple-study-link" to="/study-results"><img src="/images/question-bank/filters/saved-results-bookmark.webp" alt="" width="28" height="28" />Saved results</Link>
   </section>
 }
 

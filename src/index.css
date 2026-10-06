@@ -2808,6 +2808,8 @@ textarea {
 .question-bank-setup .simple-study-details summary { color: #bddae7; display: flex; align-items: center; gap: .75rem; font-weight: 400; }
 .question-bank-setup .simple-study-details summary > svg:last-child { margin-left: auto; }
 .question-bank-setup .simple-study-details[open] summary > svg:last-child { transform: rotate(180deg); }
+.question-bank-setup .simple-study-details > .simple-study-fields { padding-bottom: 1.25rem; }
+.study-options-gear { width: 2rem; height: 2rem; flex-shrink: 0; object-fit: contain; }
 .question-bank-setup .simple-study-link { display: flex; justify-content: center; border-top: 1px solid #285268; margin-top: 1.25rem; padding-top: .5rem; text-decoration: none; }
 .question-bank-setup .study-select-trigger { background: #0c1c25; }
 .question-bank-setup .simple-study-link { gap: .625rem; }
